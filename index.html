@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>進階 AI 聊天機器人 Astra-nos-13.7.0</title>
+    <title>進階 AI 聊天機器人 Astra-nos-13.7.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -1376,7 +1376,7 @@
 本服務不以追蹤廣告為目的，不進行跨站追蹤或販售個資。未成年人使用本服務時，應先取得法定監護人之同意並於其指導下進行。使用者就其資料享有存取、匯出與刪除之控制權；得於「資料管理」頁面匯出備份，或清除瀏覽器資料使之歸零。本政策將視功能、法規或營運需要不時更新，最新版本公布後即刻生效；重大變更將以合理方式提示。若使用者對資料保護有任何疑問、要求或建議，敬請循指定聯絡窗口與我們聯繫，我們將於合理期間內提供協助。
                         </p>
                         <h3 class="text-lg font-semibold mb-3">版本號</h3>
-                        <p class="text-sm text-[var(--text-secondary)]">Astra-nos-13.7.0</p>
+                        <p class="text-sm text-[var(--text-secondary)]">Astra-nos-13.7.1</p>
                     </div>
                 </div>
             </div>
@@ -3078,8 +3078,57 @@
                 sendConfirmed = false;
                 updateInputState();
                 
-                // 為了讓使用者訊息上的刪除按鈕能夠出現，在 AI 回覆完成後重新渲染整個聊天室
-                renderChat();
+                // ▼▼▼ 修正閃爍問題的程式碼 ▼▼▼
+                // 舊方法：重新渲染整個聊天室，會導致閃爍。
+                // renderChat();
+                
+                // 新方法：直接更新最後一組對話的 UI，避免閃爍，並在完成後顯示功能按鈕。
+                // 1. 找到剛剛完成的 AI 訊息 DOM 元素。
+                const lastMessageDiv = ALL_ELEMENTS.messageList.lastElementChild;
+                if (lastMessageDiv && lastMessageDiv.classList.contains('model-message')) {
+                    const bubble = lastMessageDiv.querySelector('.message-bubble');
+                    const content = lastMessageDiv.querySelector('.message-content');
+                    const aiMessageObject = conv.messages[conv.messages.length - 1];
+
+                    if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute')) { // 確保按鈕尚未存在
+                        // 確保內容區域有足夠的底部空間給按鈕。
+                        content.classList.add('pb-8');
+                        
+                        // 複製 addMessageToUI 中的按鈕和時間戳 HTML。
+                        const timeString = formatFullTimestamp(aiMessageObject.createdAt);
+                        const actionButtonsHTML = `
+                            <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
+                                <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="複製內容">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                </button>
+                                <span class="text-xs text-gray-400">${timeString}</span>
+                            </div>
+                        `;
+                        // 附加到泡泡中。
+                        bubble.insertAdjacentHTML('beforeend', actionButtonsHTML);
+                    }
+                }
+
+                // 2. 更新 AI 回覆前的 使用者訊息 DOM 元素，加上刪除按鈕。
+                const userMessageDiv = lastMessageDiv ? lastMessageDiv.previousElementSibling : null;
+                if (userMessageDiv && userMessageDiv.classList.contains('user-message')) {
+                    const bubble = userMessageDiv.querySelector('.message-bubble');
+                    const content = userMessageDiv.querySelector('.message-content');
+                    // 確保按鈕尚未存在。
+                    if (bubble && content && !bubble.querySelector('.delete-message-btn')) {
+                        content.classList.add('pb-8');
+                        // 複製 addMessageToUI 中的刪除按鈕 HTML。
+                        const deleteButtonHTML = `
+                            <div class="absolute bottom-2 left-2 flex items-center">
+                                <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="刪除此對話與 AI 回覆">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                </button>
+                            </div>
+                        `;
+                        bubble.insertAdjacentHTML('beforeend', deleteButtonHTML);
+                    }
+                }
+                // ▲▲▲ 結束修正 ▲▲▲
             }
         };
         function cleanGeminiHistory(history) {
