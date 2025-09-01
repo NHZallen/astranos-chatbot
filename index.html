@@ -3,8 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>進階 AI 聊天機器人 Astra-nos-13.6.0</title>
+    <title>進階 AI 聊天機器人 Astra-nos-13.7.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- 新增：引入 Chart.js 函式庫以繪製圖表 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- ▼▼▼ 新增：引入 Cropper.js 函式庫以進行圖片裁切 ▼▼▼ -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <!-- ▲▲▲ 結束新增 ▲▲▲ -->
     <style>
         :root {
             --chat-bg: #ffffff;
@@ -943,11 +951,19 @@
             animation: pulse-red-border 1.5s infinite;
         }
         /* ▲▲▲ 結束新增 ▲▲▲ */
+
+        /* ▼▼▼ 新增：桌布裁切 Modal 相關樣式 ▼▼▼ */
+        #wallpaper-crop-container {
+            width: 100%;
+            max-height: 60vh;
+            margin-bottom: 1rem;
+        }
+        /* 確保 cropper.js 的圖片不會超出容器 */
+        #wallpaper-crop-container img {
+            max-width: 100%;
+        }
+        /* ▲▲▲ 結束新增 ▲▲▲ */
     </style>
-    <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <!-- 新增：引入 Chart.js 函式庫以繪製圖表 -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="font-sans">
     <!-- ▼▼▼ 新增：桌布容器 ▼▼▼ -->
@@ -1360,7 +1376,7 @@
 本服務不以追蹤廣告為目的，不進行跨站追蹤或販售個資。未成年人使用本服務時，應先取得法定監護人之同意並於其指導下進行。使用者就其資料享有存取、匯出與刪除之控制權；得於「資料管理」頁面匯出備份，或清除瀏覽器資料使之歸零。本政策將視功能、法規或營運需要不時更新，最新版本公布後即刻生效；重大變更將以合理方式提示。若使用者對資料保護有任何疑問、要求或建議，敬請循指定聯絡窗口與我們聯繫，我們將於合理期間內提供協助。
                         </p>
                         <h3 class="text-lg font-semibold mb-3">版本號</h3>
-                        <p class="text-sm text-[var(--text-secondary)]">Astra-nos-13.6.0</p>
+                        <p class="text-sm text-[var(--text-secondary)]">Astra-nos-13.7.0</p>
                     </div>
                 </div>
             </div>
@@ -1600,6 +1616,23 @@
         </div>
     </div>
     <!-- ▲▲▲ 結束新增 ▲▲▲ -->
+    <!-- ▼▼▼ 新增：桌布裁切 Modal ▼▼▼ -->
+    <div id="wallpaper-crop-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[51]">
+        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-4xl p-6">
+            <h2 class="text-2xl font-bold mb-4">裁切桌布</h2>
+            <p class="text-sm text-[var(--text-secondary)] mb-4">
+                拖動選框以調整您想要的桌布區域，建議使用符合螢幕比例的裁切。
+            </p>
+            <div id="wallpaper-crop-container">
+                <img id="wallpaper-crop-image" src="" alt="Wallpaper for cropping">
+            </div>
+            <div class="flex justify-end gap-3 mt-4">
+                <button id="cancel-crop-btn" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]">取消</button>
+                <button id="confirm-crop-btn" class="px-4 py-2 rounded-md btn-primary">確認並套用</button>
+            </div>
+        </div>
+    </div>
+    <!-- ▲▲▲ 結束新增 ▲▲▲ -->
     <!-- Hidden File Inputs -->
     <input type="file" id="image-video-input" class="hidden" accept="image/*,video/*" multiple>
     <input type="file" id="file-upload-input" class="hidden" multiple>
@@ -1774,6 +1807,12 @@
             timeAnalysisMonthSelect: document.getElementById('time-analysis-month-select'),
             timeAnalysisDaySelect: document.getElementById('time-analysis-day-select'), // 新增日選擇器
             // ▲▲▲ 結束新增 ▲▲▲
+            // ▼▼▼ 新增：桌布裁切 Modal 元素 ▼▼▼
+            wallpaperCropModal: document.getElementById('wallpaper-crop-modal'),
+            wallpaperCropImage: document.getElementById('wallpaper-crop-image'),
+            cancelCropBtn: document.getElementById('cancel-crop-btn'),
+            confirmCropBtn: document.getElementById('confirm-crop-btn'),
+            // ▲▲▲ 結束新增 ▲▲▲
         };
         // 修正: 模型ID更新為最新的公開版本
         const MODELS = [
@@ -1875,6 +1914,9 @@
         // ▼▼▼ 需求 1 新增：圖表實例變數 ▼▼▼
         let modelPieChart = null;
         let timeDistChart = null;
+        // ▲▲▲ 結束新增 ▲▲▲
+        // ▼▼▼ 新增：桌布裁切實例變數 ▼▼▼
+        let cropperInstance = null;
         // ▲▲▲ 結束新增 ▲▲▲
         // IndexedDB 配置
         const DB_NAME = 'ChatAppDB';
@@ -2582,7 +2624,7 @@
             } else {
                 // ▼▼▼ 程式碼修正 ▼▼▼
                 conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
-                // ▲▲▲ 程式碼修正 ▲▲▲
+                // ▲▲▲ 程式碼修正 ▼▼▼
             }
             
             // 強制瀏覽器重繪，為動畫做準備
@@ -4168,8 +4210,7 @@
                 reader.onload = (e) => {
                     uploadedFiles.push({
                         id: crypto.randomUUID(),
-                        name: file.name,
-                        type: file.type,
+                        name: file.name,type: file.type,
                         base64: e.target.result,
                     });
                     renderFilePreviews();
@@ -5162,29 +5203,61 @@
             if (!file) return;
 
             const reader = new FileReader();
-            reader.onload = async (e) => {
-                const imageDataUrl = e.target.result;
-                try {
-                    const brightness = await analyzeImageBrightness(imageDataUrl);
-                    const palette = await getDominantColorPalette(imageDataUrl);
+            reader.onload = (e) => {
+                const imageUrl = e.target.result;
+                ALL_ELEMENTS.wallpaperCropImage.src = imageUrl;
 
-                    config.customWallpaper = imageDataUrl;
-                    config.wallpaperBrightness = brightness;
-                    config.uiTheme.adaptivePalette = palette;
-                    config.uiTheme.adaptiveColor = palette[0] || '#3b82f6';
-                    
-                    await saveConfig();
-                    applyCustomWallpaper();
-                    applyUiTheme();
-                    
-                    showNotification('桌布已更新！', 'success');
-                } catch (error) {
-                    console.error("桌布處理失敗:", error);
-                    showNotification('桌布圖片處理失敗，請嘗試其他圖片。', 'error');
+                toggleModal(ALL_ELEMENTS.wallpaperCropModal, true);
+                
+                if (cropperInstance) {
+                    cropperInstance.destroy();
                 }
+
+                cropperInstance = new Cropper(ALL_ELEMENTS.wallpaperCropImage, {
+                    aspectRatio: window.innerWidth / window.innerHeight,
+                    viewMode: 1,
+                    background: false,
+                    autoCropArea: 1,
+                });
             };
             reader.readAsDataURL(file);
+             // 清空 input 的值，以便下次可以選擇同一個檔案
+            event.target.value = '';
         };
+        
+        const handleConfirmCrop = async () => {
+            if (!cropperInstance) return;
+
+            const canvas = cropperInstance.getCroppedCanvas({
+                // 為了效能，設定一個最大寬度，避免產生過大的圖片
+                maxWidth: 1920, 
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high',
+            });
+            
+            const imageDataUrl = canvas.toDataURL('image/jpeg', 0.9); // 轉換為高質量的 JPEG
+
+            try {
+                const brightness = await analyzeImageBrightness(imageDataUrl);
+                const palette = await getDominantColorPalette(imageDataUrl);
+
+                config.customWallpaper = imageDataUrl;
+                config.wallpaperBrightness = brightness;
+                config.uiTheme.adaptivePalette = palette;
+                config.uiTheme.adaptiveColor = palette[0] || '#3b82f6';
+                
+                await saveConfig();
+                applyCustomWallpaper();
+                applyUiTheme();
+                
+                toggleModal(ALL_ELEMENTS.wallpaperCropModal, false);
+                showNotification('桌布已更新！', 'success');
+            } catch (error) {
+                console.error("桌布處理失敗:", error);
+                showNotification('桌布圖片處理失敗，請嘗試其他圖片。', 'error');
+            }
+        };
+
 
         const restoreDefaultWallpaper = async () => {
             config.customWallpaper = null;
@@ -5444,6 +5517,18 @@
             ALL_ELEMENTS.uploadWallpaperBtn.addEventListener('click', () => ALL_ELEMENTS.wallpaperUploadInput.click());
             ALL_ELEMENTS.wallpaperUploadInput.addEventListener('change', handleWallpaperUpload);
             ALL_ELEMENTS.restoreWallpaperBtn.addEventListener('click', restoreDefaultWallpaper);
+            
+            // ▼▼▼ 新增：桌布裁切 Modal 事件 ▼▼▼
+            ALL_ELEMENTS.confirmCropBtn.addEventListener('click', handleConfirmCrop);
+            ALL_ELEMENTS.cancelCropBtn.addEventListener('click', () => {
+                toggleModal(ALL_ELEMENTS.wallpaperCropModal, false);
+                if(cropperInstance) {
+                    cropperInstance.destroy();
+                    cropperInstance = null;
+                }
+            });
+            // ▲▲▲ 結束新增 ▲▲▲
+
 
             updateFileInputUI();
             
