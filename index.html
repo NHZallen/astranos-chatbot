@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>進階 AI 聊天機器人 Astra-nos-13.5.1</title>
+    <title>進階 AI 聊天機器人 Astra-nos-13.5.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
@@ -1360,7 +1360,7 @@
 本服務不以追蹤廣告為目的，不進行跨站追蹤或販售個資。未成年人使用本服務時，應先取得法定監護人之同意並於其指導下進行。使用者就其資料享有存取、匯出與刪除之控制權；得於「資料管理」頁面匯出備份，或清除瀏覽器資料使之歸零。本政策將視功能、法規或營運需要不時更新，最新版本公布後即刻生效；重大變更將以合理方式提示。若使用者對資料保護有任何疑問、要求或建議，敬請循指定聯絡窗口與我們聯繫，我們將於合理期間內提供協助。
                         </p>
                         <h3 class="text-lg font-semibold mb-3">版本號</h3>
-                        <p class="text-sm text-[var(--text-secondary)]">Astra-nos-13.5.1</p>
+                        <p class="text-sm text-[var(--text-secondary)]">Astra-nos-13.5.2</p>
                     </div>
                 </div>
             </div>
@@ -2516,7 +2516,9 @@
                 const greeting = `${currentUser.username} 有什麼可以為您服務的嗎？`;
                 messageList.innerHTML = `<div class="text-center text-[var(--text-secondary)] mt-16"><p class="text-lg">${greeting}</p></div>`;
             } else {
-                conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false));
+                // ▼▼▼ 程式碼修正 ▼▼▼
+                conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
+                // ▲▲▲ 程式碼修正 ▲▲▲
             }
             
             // 強制瀏覽器重繪，為動畫做準備
@@ -2755,8 +2757,8 @@
             updateApiKeyWarningBadge();
         };
         
-        // ▼▼▼ 程式碼修改：增加刪除功能到使用者訊息泡泡中 ▼▼▼
-        const addMessageToUI = (msg, index, shouldSave = true) => {
+        // ▼▼▼ 程式碼修改 ▼▼▼
+        const addMessageToUI = (msg, index, shouldSave = true, shouldScroll = true) => {
             const conv = getActiveConversation();
             if (shouldSave) {
                  if (isTemporaryChat) {
@@ -2857,11 +2859,13 @@
             if (ALL_ELEMENTS.messageList.querySelector('.text-center')) ALL_ELEMENTS.messageList.innerHTML = '';
 
             ALL_ELEMENTS.messageList.appendChild(messageDiv);
-            ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
+            if (shouldScroll) {
+                ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
+            }
 
             return messageDiv;
         };
-        // ▲▲▲ 結束修改 ▲▲▲
+        // ▲▲▲ 程式碼修改 ▲▲▲
 
         const handleFormSubmit = async (e) => {
             e.preventDefault();
