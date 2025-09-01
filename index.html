@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>進階 AI 聊天機器人 Astra-nos-13.5.2</title>
+    <title>進階 AI 聊天機器人 Astra-nos-13.6.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
@@ -1360,7 +1360,7 @@
 本服務不以追蹤廣告為目的，不進行跨站追蹤或販售個資。未成年人使用本服務時，應先取得法定監護人之同意並於其指導下進行。使用者就其資料享有存取、匯出與刪除之控制權；得於「資料管理」頁面匯出備份，或清除瀏覽器資料使之歸零。本政策將視功能、法規或營運需要不時更新，最新版本公布後即刻生效；重大變更將以合理方式提示。若使用者對資料保護有任何疑問、要求或建議，敬請循指定聯絡窗口與我們聯繫，我們將於合理期間內提供協助。
                         </p>
                         <h3 class="text-lg font-semibold mb-3">版本號</h3>
-                        <p class="text-sm text-[var(--text-secondary)]">Astra-nos-13.5.2</p>
+                        <p class="text-sm text-[var(--text-secondary)]">Astra-nos-13.6.0</p>
                     </div>
                 </div>
             </div>
@@ -1427,6 +1427,22 @@
             <div id="archived-chats-container" class="p-6 overflow-y-auto space-y-2 scroll-area"></div>
         </div>
     </div>
+    <!-- ▼▼▼ 新增：封存對話檢視 Modal ▼▼▼ -->
+    <div id="view-archived-chat-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[51]">
+        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-3xl flex flex-col" style="max-height: 90vh;">
+            <div class="p-6 border-b border-[var(--border-color)] flex justify-between items-center flex-shrink-0">
+                <h2 id="view-archived-title" class="text-2xl font-bold truncate">檢視封存的對話</h2>
+                <button id="close-view-archived-modal-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
+            </div>
+            <div id="view-archived-content" class="p-6 overflow-y-auto space-y-4 scroll-area flex-1">
+                <!-- Archived messages will be dynamically inserted here -->
+            </div>
+            <div class="p-4 bg-[var(--sidebar-bg)] border-t border-[var(--border-color)] flex justify-end gap-3 flex-shrink-0">
+                <button id="close-view-archived-modal-btn-footer" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]">關閉</button>
+            </div>
+        </div>
+    </div>
+    <!-- ▲▲▲ 結束新增 ▲▲▲ -->
     <div id="rename-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
         <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl p-6 w-full max-w-md">
             <h2 class="text-xl font-bold mb-4">重新命名</h2>
@@ -1633,6 +1649,13 @@
             archivedChatsModal: document.getElementById('archived-chats-modal'),
             closeArchivedModalBtn: document.getElementById('close-archived-modal-btn'),
             archivedChatsContainer: document.getElementById('archived-chats-container'),
+            // ▼▼▼ 新增：封存對話檢視相關元素 ▼▼▼
+            viewArchivedChatModal: document.getElementById('view-archived-chat-modal'),
+            viewArchivedTitle: document.getElementById('view-archived-title'),
+            viewArchivedContent: document.getElementById('view-archived-content'),
+            closeViewArchivedModalBtn: document.getElementById('close-view-archived-modal-btn'),
+            closeViewArchivedModalBtnFooter: document.getElementById('close-view-archived-modal-btn-footer'),
+            // ▲▲▲ 結束新增 ▲▲▲
             renameModal: document.getElementById('rename-modal'),
             renameInput: document.getElementById('rename-input'),
             saveRenameBtn: document.getElementById('save-rename-btn'),
@@ -2244,10 +2267,51 @@
             await saveAppData();
             renderAll();
         };
-        const viewArchivedChat = (id, event) => {
+        const showArchivedChatPreview = (id, event) => {
             event?.stopPropagation();
-            toggleModal(ALL_ELEMENTS.archivedChatsModal, false);
-            loadChat(id);
+            const conv = conversations.find(c => c.id === id);
+            if (!conv) return;
+
+            ALL_ELEMENTS.viewArchivedTitle.textContent = conv.title;
+            const contentContainer = ALL_ELEMENTS.viewArchivedContent;
+            contentContainer.innerHTML = ''; // Clear previous content
+
+            if (conv.messages.length === 0) {
+                contentContainer.innerHTML = '<p class="text-center text-[var(--text-secondary)]">此對話沒有訊息。</p>';
+            } else {
+                conv.messages.forEach(msg => {
+                    const isUser = msg.role === 'user';
+                    const messageDiv = document.createElement('div');
+                    // Match the structure from addMessageToUI for styling
+                    messageDiv.className = `flex items-start gap-2 md:gap-4 ${isUser ? 'justify-end user-message' : 'model-message'}`;
+                    const icon = isUser 
+                        ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>` 
+                        : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
+
+                    let contentHTML = '';
+                    msg.parts.forEach(part => {
+                        if (part.text) {
+                             contentHTML += `<div>${isUser ? part.text.replace(/\n/g, '<br>') : renderMarkdown(part.text)}</div>`;
+                        } else if (part.inlineData) {
+                            const src = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+                             if (part.inlineData.mimeType.startsWith('image/')) {
+                                contentHTML += `<img src="${src}" class="mt-2 max-w-xs max-h-48 rounded-lg object-cover border border-[var(--border-color)]">`;
+                            }
+                        }
+                    });
+
+                    const messageBubble = `
+                        <div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble">
+                            <div class="prose prose-sm max-w-none message-content ${isUser ? 'text-white' : 'text-[var(--text-primary)]'}">${contentHTML}</div>
+                        </div>`;
+                    
+                    messageDiv.innerHTML = isUser ? `${messageBubble}${icon}` : `${icon}${messageBubble}`;
+
+                    contentContainer.appendChild(messageDiv);
+                });
+            }
+
+            toggleModal(ALL_ELEMENTS.viewArchivedChatModal, true);
         };
         const togglePinChat = async (id, event) => {
             event?.stopPropagation();
@@ -2488,7 +2552,7 @@
                 `;
                 ALL_ELEMENTS.archivedChatsContainer.appendChild(item);
             });
-            ALL_ELEMENTS.archivedChatsContainer.querySelectorAll('.view-archived-btn').forEach(btn => btn.addEventListener('click', (e) => viewArchivedChat(e.target.dataset.id, e)));
+            ALL_ELEMENTS.archivedChatsContainer.querySelectorAll('.view-archived-btn').forEach(btn => btn.addEventListener('click', (e) => showArchivedChatPreview(e.target.dataset.id, e)));
             ALL_ELEMENTS.archivedChatsContainer.querySelectorAll('.unarchive-btn').forEach(btn => btn.addEventListener('click', (e) => unarchiveChat(e.target.dataset.id, e)));
             ALL_ELEMENTS.archivedChatsContainer.querySelectorAll('.delete-archived-btn').forEach(btn => btn.addEventListener('click', (e) => deleteChat(e.target.dataset.id, e)));
         };
@@ -5192,6 +5256,11 @@
             ALL_ELEMENTS.themeDarkBtn.addEventListener('click', () => setTheme('dark'));
             ALL_ELEMENTS.openArchivedModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.archivedChatsModal, true));
             ALL_ELEMENTS.closeArchivedModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.archivedChatsModal, false));
+            // ▼▼▼ 新增：封存對話檢視 Modal 的關閉事件 ▼▼▼
+            const closeViewArchivedModal = () => toggleModal(ALL_ELEMENTS.viewArchivedChatModal, false);
+            ALL_ELEMENTS.closeViewArchivedModalBtn.addEventListener('click', closeViewArchivedModal);
+            ALL_ELEMENTS.closeViewArchivedModalBtnFooter.addEventListener('click', closeViewArchivedModal);
+            // ▲▲▲ 結束新增 ▲▲▲
             ALL_ELEMENTS.saveRenameBtn.addEventListener('click', handleRename);
             ALL_ELEMENTS.cancelRenameBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.renameModal, false));
             ALL_ELEMENTS.saveFolderSettingsBtn.addEventListener('click', handleSaveFolderSettings);
