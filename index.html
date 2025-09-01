@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>進階 AI 聊天機器人 Astra-nos-13.5.0</title>
+    <title>進階 AI 聊天機器人 Astra-nos-13.5.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
@@ -982,11 +982,11 @@
     <div id="app-container" class="hidden">
         <div class="relative flex h-screen w-full bg-[var(--chat-bg)]">
             <!-- Sidebar Overlay (for mobile) -->
-            <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden opacity-0"></div>
+            <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 opacity-0"></div>
 
 
             <!-- Sidebar -->
-            <aside id="sidebar" class="sidebar w-64 lg:w-72 flex-shrink-0 flex flex-col fixed lg:relative h-full z-40 transform -translate-x-full lg:translate-x-0">
+            <aside id="sidebar" class="sidebar w-64 lg:w-72 flex-shrink-0 flex flex-col fixed h-full z-40 transform -translate-x-full">
                 <!-- Sidebar Top Section -->
                 <div class="p-2">
                     <div class="flex gap-2 mb-2">
@@ -1059,8 +1059,8 @@
                 <header class="relative z-10 p-2 md:p-4 flex justify-between items-center border-b border-[var(--border-color)]">
                 <!-- ▲▲▲ 程式碼修正 ▲▲▲ -->
                     <div class="flex items-center gap-2">
-                        <!-- Mobile Menu Button -->
-                        <button id="menu-toggle-btn" class="lg:hidden p-2 rounded-md hover:bg-[var(--hover-bg)]">
+                        <!-- Menu Button -->
+                        <button id="menu-toggle-btn" class="p-2 rounded-md hover:bg-[var(--hover-bg)]">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                         </button>
                         <h1 id="header-title" class="text-xl font-semibold truncate">新對話</h1>
@@ -1360,7 +1360,7 @@
 本服務不以追蹤廣告為目的，不進行跨站追蹤或販售個資。未成年人使用本服務時，應先取得法定監護人之同意並於其指導下進行。使用者就其資料享有存取、匯出與刪除之控制權；得於「資料管理」頁面匯出備份，或清除瀏覽器資料使之歸零。本政策將視功能、法規或營運需要不時更新，最新版本公布後即刻生效；重大變更將以合理方式提示。若使用者對資料保護有任何疑問、要求或建議，敬請循指定聯絡窗口與我們聯繫，我們將於合理期間內提供協助。
                         </p>
                         <h3 class="text-lg font-semibold mb-3">版本號</h3>
-                        <p class="text-sm text-[var(--text-secondary)]">Astra-nos-13.5.0</p>
+                        <p class="text-sm text-[var(--text-secondary)]">Astra-nos-13.5.1</p>
                     </div>
                 </div>
             </div>
@@ -3149,10 +3149,8 @@
 
                 const result = await response.json();
                 
-                // --- 修正後的程式碼區塊 (解決 ?. 語法錯誤) ---
-                const jsonString = result && result.candidates && result.candidates[0] && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts[0] && result.candidates[0].content.parts[0].text;
-                // --- 結束修正 ---
-                
+                const jsonString = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
                 if (jsonString) {
                     let cleanedJsonString = jsonString.trim();
                     if (cleanedJsonString.startsWith("```json")) {
@@ -3710,7 +3708,7 @@
 
 
         const createNewFolder = (name) => {
-            const newFolder = { id: crypto.randomUUID(), name, conversationIds: [], ...getDefaultFolder() };
+            const newFolder = { id: crypto.randomUUID(), name,conversationIds: [], ...getDefaultFolder() };
             folders.push(newFolder);
             saveAppData();
             renderFolders();
@@ -4481,8 +4479,8 @@
 
         function toggleSidebar(show) {
             const { sidebar, sidebarOverlay } = ALL_ELEMENTS;
-            sidebarOpen = show;
-            if (show) {
+            sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
+            if (sidebarOpen) {
                 sidebar.style.transform = 'translateX(0)';
                 sidebarOverlay.classList.add('visible');
             } else {
@@ -5145,7 +5143,7 @@
             renderAll();
             updateInputState();
             setupVoiceInput();
-            ALL_ELEMENTS.menuToggleBtn.addEventListener('click', () => toggleSidebar(true));
+            ALL_ELEMENTS.menuToggleBtn.addEventListener('click', () => toggleSidebar());
             ALL_ELEMENTS.sidebarOverlay.addEventListener('click', () => toggleSidebar(false));
             document.addEventListener('click', (e) => {
                 if (sidebarOpen && !ALL_ELEMENTS.sidebar.contains(e.target) && !ALL_ELEMENTS.menuToggleBtn.contains(e.target)) {
@@ -5375,9 +5373,7 @@
             ALL_ELEMENTS.restoreWallpaperBtn.addEventListener('click', restoreDefaultWallpaper);
 
             updateFileInputUI();
-            if (window.matchMedia('(min-width: 1024px)').matches) {
-                toggleSidebar(true);
-            }
+            
             startNewChat(false);
         }
 
@@ -5426,4 +5422,3 @@
     </script>
 </body>
 </html>
-
