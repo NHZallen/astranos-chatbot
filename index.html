@@ -13,9 +13,6 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <!-- ▲▲▲ 結束新增 ▲▲▲ -->
-    <!-- ▼▼▼ 新增：引入 Google Identity Services Library ▼▼▼ -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <!-- ▲▲▲ 結束新增 ▲▲▲ -->
     <style>
         :root {
             --chat-bg: #ffffff;
@@ -278,11 +275,6 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.2);
             color: var(--text-primary);
         }
-        /* ▼▼▼ 新增：永久性通知樣式 ▼▼▼ */
-        .notification.permanent {
-            animation: fadeInRight 0.3s ease forwards;
-        }
-        /* ▲▲▲ 結束新增 ▲▲▲ */
         .dark .notification {
             background-color: rgba(20, 20, 20, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1062,18 +1054,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         登入 / 註冊
                     </button>
                     <button type="button" id="import-btn-auth" class="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
-                        匯入紀錄 (舊版)
+                        匯入紀錄
                     </button>
                 </div>
             </form>
-            <!-- ▼▼▼ 新增：Google 登入按鈕 ▼▼▼ -->
-            <div class="relative flex py-5 items-center">
-                <div class="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
-                <span class="flex-shrink mx-4 text-gray-400 dark:text-gray-500">或</span>
-                <div class="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
-            </div>
-            <div id="google-signin-btn" class="flex justify-center"></div>
-            <!-- ▲▲▲ 結束新增 ▲▲▲ -->
         </div>
     </div>
     <!-- Main App Container -->
@@ -1276,9 +1260,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 <!-- Settings Navigation -->
                 <nav class="w-1/4 border-r border-[var(--border-color)] overflow-y-auto scroll-area">
                     <ul id="settings-nav" class="space-y-2 p-4">
-                        <!-- ▼▼▼ 新增：帳號分頁 ▼▼▼ -->
-                        <li class="settings-nav-item p-3 rounded-md" data-section="account">帳號</li>
-                        <!-- ▲▲▲ 結束新增 ▲▲▲ -->
                         <li class="settings-nav-item p-3 rounded-md active" data-section="personalization">個人化</li>
                         <li class="settings-nav-item p-3 rounded-md" data-section="memory">記憶管理</li>
                         <li class="settings-nav-item p-3 rounded-md" data-section="model-management">模型管理</li>
@@ -1289,14 +1270,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 </nav>
                 <!-- Settings Content -->
                 <div class="flex-1 p-6 overflow-y-auto scroll-area space-y-6">
-                    <!-- ▼▼▼ 新增：帳號設定區塊 ▼▼▼ -->
-                    <div id="account-section" class="settings-section">
-                        <h3 class="text-lg font-semibold mb-3">帳號資訊</h3>
-                        <div id="account-info-container" class="space-y-4">
-                            <!-- JS will populate this -->
-                        </div>
-                    </div>
-                    <!-- ▲▲▲ 結束新增 ▲▲▲ -->
                     <!-- 個人化 -->
                     <div id="personalization-section" class="settings-section active">
                         <h3 class="text-lg font-semibold mb-3">外觀</h3>
@@ -1907,9 +1880,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             confirmCropBtn: document.getElementById('confirm-crop-btn'),
             // ▲▲▲ 結束新增 ▲▲▲
         };
-        // ▼▼▼ 新增：Google Client ID ▼▼▼
-        const GOOGLE_CLIENT_ID = "571802519054-hqao5npomj0ovqvrngrq54b280tnt546.apps.googleusercontent.com";
-        // ▲▲▲ 結束新增 ▲▲▲
         // 修正: 模型ID更新為最新的公開版本
         const MODELS = [
             { id: 'gemini-2.5-flash', name: 'astra-pro', provider: 'gemini', description: '高速生成與中高精度，適合長篇內容與綜合分析。', limits: '10次/分鐘、250次/天' },
@@ -2099,17 +2069,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const getConfigKey = () => `chatConfig_v_v8.6_${currentUser.username}`;
         const getAppDataKey = () => `chatAppData_v8.6_${currentUser.username}`;
         const getUserKey = (username) => `chatUser_${username}`;
-        
-        const showNotification = (message, type = 'success', permanent = false) => {
+        const showNotification = (message, type = 'success') => {
             const notification = document.createElement('div');
-            notification.className = `notification ${type} ${permanent ? 'permanent' : ''}`;
+            notification.className = `notification ${type}`;
             notification.textContent = message;
             ALL_ELEMENTS.notificationContainer.appendChild(notification);
-            if (!permanent) {
-                setTimeout(() => { notification.remove(); }, 3000);
-            }
+            setTimeout(() => { notification.remove(); }, 3000);
         };
-
         const toggleModal = (modalElement, show) => {
             if (show) {
                 modalElement.classList.remove('hidden');
@@ -3628,7 +3594,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderAiBubbleColorDropdown();
             renderUserBubbleColorDropdown();
             renderUiColorOptions();
-            renderAccountSection(); // ▼▼▼ 新增呼叫 ▼▼▼
             const navItems = ALL_ELEMENTS.settingsNav.querySelectorAll('.settings-nav-item');
             navItems.forEach(item => {
                 item.addEventListener('click', () => {
@@ -3917,21 +3882,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 ALL_ELEMENTS.themeLightBtn.classList.add('active');
             }
         };
-        
-        const initializeAppTransition = () => {
-            ALL_ELEMENTS.authContainer.classList.add('fade-out');
-            ALL_ELEMENTS.appContainer.classList.remove('hidden');
-
-            requestAnimationFrame(() => {
-                ALL_ELEMENTS.appContainer.classList.add('visible');
-            });
-
-            ALL_ELEMENTS.authContainer.addEventListener('transitionend', () => {
-                ALL_ELEMENTS.authContainer.style.display = 'none';
-            }, { once: true });
-        };
-        
-        // ▼▼▼ 修改：傳統登入函式 ▼▼▼
         const handleLogin = async (e) => {
             e.preventDefault();
             const username = ALL_ELEMENTS.usernameInput.value.trim();
@@ -3943,70 +3893,44 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const userKey = getUserKey(username);
             const savedUser = await getItem(userKey);
             const passwordHash = await hashString(password);
-            
             if (savedUser) { // Login
                 const parsedUser = JSON.parse(savedUser);
-                // 允許舊版無密碼hash的用戶或密碼相符的用戶登入
-                if (parsedUser.passwordHash && parsedUser.passwordHash !== passwordHash) {
+                if (parsedUser.passwordHash !== passwordHash) {
                     showNotification('密碼錯誤。', 'error');
                     return;
                 }
-                 // 登入成功後，確保 authMethod 被設定
-                currentUser = { ...parsedUser, authMethod: parsedUser.authMethod || 'password' };
-                await setItem(userKey, JSON.stringify(currentUser)); // 更新用戶資訊
+                currentUser = parsedUser;
             } else { // Register
-                currentUser = { username, passwordHash, authMethod: 'password' };
+                currentUser = { username, passwordHash };
                 await setItem(userKey, JSON.stringify(currentUser));
             }
 
+
             await setItem('chat_lastUser', username);
-            initializeAppTransition();
+
+            // 觸發登出動畫
+            ALL_ELEMENTS.authContainer.classList.add('fade-out');
+            ALL_ELEMENTS.appContainer.classList.remove('hidden');
+
+            // 確保瀏覽器在添加下一個 class 前有時間反應
+            requestAnimationFrame(() => {
+                ALL_ELEMENTS.appContainer.classList.add('visible');
+            });
+
+            // 動畫結束後徹底隱藏登入畫面
+            ALL_ELEMENTS.authContainer.addEventListener('transitionend', () => {
+                ALL_ELEMENTS.authContainer.style.display = 'none';
+            }, { once: true });
+
             initChatApp();
         };
-        
-        // ▼▼▼ 新增：Google 登入處理函式 ▼▼▼
-        const handleGoogleCredentialResponse = async (response) => {
-            const id_token = response.credential;
-            // 解碼 JWT 以獲取使用者資訊
-            const decodedToken = JSON.parse(atob(id_token.split('.')[1]));
-
-            const googleId = decodedToken.sub;
-            const email = decodedToken.email;
-            const name = decodedToken.name;
-
-            // 使用 googleId 作為獨一無二的使用者名稱
-            const username = `google_${googleId}`;
-            const userKey = getUserKey(username);
-            let savedUser = await getItem(userKey);
-
-            if (savedUser) { // Google user exists
-                currentUser = JSON.parse(savedUser);
-            } else { // New Google user registration
-                currentUser = {
-                    username: username,
-                    googleId: googleId,
-                    email: email,
-                    displayName: name,
-                    authMethod: 'google'
-                };
-                await setItem(userKey, JSON.stringify(currentUser));
-            }
-            
-            await setItem('chat_lastUser', username);
-            initializeAppTransition();
-            initChatApp();
-        };
-        
         const handleLogout = async () => {
             if (await showCustomConfirm('您確定要登出嗎？', '登出確認')) {
-                // 如果是 Google 登入，也撤銷 token
-                if (currentUser && currentUser.authMethod === 'google') {
-                    google.accounts.id.disableAutoSelect();
-                }
                 await removeItem('chat_lastUser');
                 window.location.reload();
             }
         };
+
 
         const createNewFolder = (name) => {
             const newFolder = { id: crypto.randomUUID(), name,conversationIds: [], ...getDefaultFolder() };
@@ -4102,7 +4026,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
             const selectedColor = ALL_ELEMENTS.colorSwatchesContainer.querySelector('.selected')?.dataset.color;
             const selectedIcon = ALL_ELEMENTS.iconOptionsContainer.querySelector('.selected')?.dataset.icon;
-            if (selectedColor) folder.color = selectedColor;
             if (selectedIcon) folder.icon = selectedIcon;
             await saveAppData();
             renderAll();
@@ -4210,18 +4133,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         const renderBatchMoveModal = () => {
             const container = ALL_ELEMENTS.batchMoveFolderList;
-            container.innerHTML = `
-                <button class="w-full text-left p-2 rounded-md hover:bg-[var(--hover-bg)]" data-folder-id="none">
-                    移出資料夾
-                </button>
-            `;
-            folders.forEach(folder => {
-                 const option = document.createElement('button');
-                 option.className = 'w-full text-left p-2 rounded-md hover:bg-[var(--hover-bg)]';
-                 option.dataset.folderId = folder.id;
-                 option.textContent = folder.name;
-                 container.appendChild(option);
-            });
+            container.innerHTML = '';
             // 新增資料夾選項
             const newFolderOption = document.createElement('button');
             newFolderOption.className = 'w-full text-left p-2 rounded-md hover:bg-[var(--hover-bg)] flex items-center gap-2 border-t border-[var(--border-color)] mt-2';
@@ -4417,10 +4329,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const dataToExport = {
                 user_credentials: {
                     username: currentUser.username,
-                    // ▼▼▼ 修改：根據登入方式匯出不同憑證 ▼▼▼
-                    ...(currentUser.authMethod === 'google' 
-                        ? { googleId: currentUser.googleId } 
-                        : { passwordHash: currentUser.passwordHash })
+                    passwordHash: currentUser.passwordHash
                 }
             };
 
@@ -4479,43 +4388,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
 
         const performImport = async (data) => {
-            // ▼▼▼ 修改：增強匯入驗證邏輯 ▼▼▼
             if (!currentUser) {
                 throw new Error("無法在沒有登入使用者的情況下匯入資料。");
             }
-            
-            const backupCreds = data.user_credentials;
-            if (!backupCreds) {
-                throw new Error("無效的備份檔案：缺少使用者憑證。");
-            }
-
-            // 新版 Google 帳號驗證
-            if (backupCreds.googleId) {
-                if (currentUser.authMethod !== 'google' || currentUser.googleId !== backupCreds.googleId) {
-                    throw new Error("此備份檔案屬於不同的 Google 帳號，無法匯入。");
-                }
-            } 
-            // 舊版或密碼帳號驗證
-            else if (backupCreds.username) {
-                if (currentUser.authMethod === 'google') {
-                    // 允許 Google 用戶匯入舊版資料
-                    const confirmed = await showCustomConfirm(
-                        `這是一個舊版備份檔案。匯入後，此份資料將與您目前的 Google 帳號 (${currentUser.email}) 關聯。確定要繼續嗎？`,
-                        "匯入舊版資料"
-                    );
-                    if (!confirmed) return; // 使用者取消
-                } else if (currentUser.username !== backupCreds.username) {
-                    // 密碼用戶匯入不同用戶名的備份
-                    const confirmed = await showCustomConfirm(
-                        `此備份檔案屬於使用者「${backupCreds.username}」。您目前登入的身分是「${currentUser.username}」。確定要覆蓋並匯入嗎？`,
-                        "使用者不符警告"
-                    );
-                    if (!confirmed) return; // 使用者取消
-                }
-            } else {
-                 throw new Error("備份檔案格式不正確，無法識別使用者。");
-            }
-            // ▲▲▲ 結束修改 ▲▲▲
 
             conversations = data.conversations || [];
             folders = data.folders || [];
@@ -4543,55 +4418,61 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             reader.onload = async (e) => {
                 try {
                     const data = JSON.parse(e.target.result);
+
+                    if (data.user_credentials && data.user_credentials.username !== currentUser.username) {
+                        const confirmed = await showCustomConfirm(
+                            `此備份檔案屬於使用者「${data.user_credentials.username}」。您目前登入的身分是「${currentUser.username}」。匯入此檔案將會覆蓋您目前的資料。確定要繼續嗎？`,
+                            "使用者不符警告"
+                        );
+                        if (!confirmed) return;
+                    } else {
+                         if (!(await showCustomConfirm('匯入將會覆蓋所有現有資料，確定要繼續嗎？'))) return;
+                    }
+                    
                     await performImport(data);
                     
                     toggleModal(ALL_ELEMENTS.importDataModal, false);
-                    showNotification('資料匯入成功！將重新載入介面...', 'success');
+                    showNotification('資料匯入成功！', 'success');
 
-                    // 重新載入所有設定與資料
-                    setTimeout(async () => {
-                        await loadConfig();
-                        await loadAppData();
-                        
-                        if (config.customWallpaper) {
-                            try {
-                                const brightness = await analyzeImageBrightness(config.customWallpaper);
-                                config.wallpaperBrightness = brightness;
-                                 if (config.uiTheme.mode === 'adaptive') {
-                                    const palette = await getDominantColorPalette(config.customWallpaper);
-                                    config.uiTheme.adaptivePalette = palette;
-                                    config.uiTheme.adaptiveColor = palette[0] || '#3b82f6';
-                                }
-                                await saveConfig();
-                            } catch (err) { /* keep default */ }
-                        }
-                        applyCustomWallpaper();
-                        applyUiTheme();
-                        setAiBubbleColor();
-                        setUserBubbleColor();
-                        
-                        const firstConv = conversations.find(c => !c.archived);
-                        if (firstConv) {
-                            loadChat(firstConv.id);
-                        } else {
-                            startNewChat(false);
-                        }
-                    }, 500);
-
+                    await loadConfig();
+                    await loadAppData();
+                    
+                    if (config.customWallpaper) {
+                        try {
+                            const brightness = await analyzeImageBrightness(config.customWallpaper);
+                            config.wallpaperBrightness = brightness;
+                             if (config.uiTheme.mode === 'adaptive') {
+                                const palette = await getDominantColorPalette(config.customWallpaper);
+                                config.uiTheme.adaptivePalette = palette;
+                                config.uiTheme.adaptiveColor = palette[0] || '#3b82f6';
+                            }
+                            await saveConfig();
+                        } catch (err) { /* keep default */ }
+                    }
+                    applyCustomWallpaper();
+                    applyUiTheme();
+                    setAiBubbleColor();
+                    setUserBubbleColor();
+                    
+                    const firstConv = conversations.find(c => !c.archived);
+                    if (firstConv) {
+                        loadChat(firstConv.id);
+                    } else {
+                        startNewChat(false);
+                    }
                 } catch (error) {
-                    showNotification(`匯入失敗: ${error.message}`, 'error');
+                    showNotification(`匯入失败: ${error.message}`, 'error');
                     console.error(error);
                 }
             };
             reader.readAsText(file);
         };
         
-        // ▼▼▼ 修改：專為舊版使用者在登入頁面匯入的函式 ▼▼▼
         const handleImportOnAuth = async () => {
             const username = ALL_ELEMENTS.usernameInput.value.trim();
             const password = ALL_ELEMENTS.passwordInput.value;
             if (!username || !password) {
-                showNotification('請輸入您舊版的帳號密碼以驗證備份檔案。', 'warning');
+                showNotification('請輸入使用者名稱和密碼以驗證備份檔案。', 'warning');
                 return;
             }
             const passwordHash = await hashString(password);
@@ -4609,34 +4490,38 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 reader.onload = async (event) => {
                     try {
                         const data = JSON.parse(event.target.result);
-                        const backupCreds = data.user_credentials;
-                        
-                        if (!backupCreds || !backupCreds.username || !backupCreds.passwordHash) {
-                           throw new Error("無效的舊版備份檔案，無法進行驗證。");
+
+                        if (!data.user_credentials || !data.user_credentials.username || !data.user_credentials.passwordHash) {
+                           throw new Error("無效的備份檔案或檔案來自舊版本，無法進行驗證。");
                         }
 
-                        if (backupCreds.username !== username || backupCreds.passwordHash !== passwordHash) {
+                        if (data.user_credentials.username !== username || data.user_credentials.passwordHash !== passwordHash) {
                             throw new Error("您輸入的帳號或密碼與此備份檔案的所有者不符。");
                         }
 
-                        // 驗證通過，建立一個傳統用戶
-                        currentUser = { username, passwordHash, authMethod: 'password' };
-                        await setItem(getUserKey(username), JSON.stringify(currentUser));
+                        // 驗證通過
+                        const userKey = getUserKey(username);
+                        const savedUser = await getItem(userKey);
+                        if (!savedUser) { // 如果使用者在此裝置上不存在，則建立
+                           await setItem(userKey, JSON.stringify({ username, passwordHash }));
+                        }
+                        currentUser = { username, passwordHash };
                         await setItem('chat_lastUser', username);
-                        
-                        // 直接執行匯入的核心邏輯，但不進行二次驗證
-                        conversations = data.conversations || [];
-                        folders = data.folders || [];
-                        astras = data.astras || [];
-                        personalMemories = data.personalMemories || [];
-                        await saveAppData();
-                        if (data.settings) Object.assign(config, data.settings);
-                        if (data.apiKeys) config.apiKeys = { ...config.apiKeys, ...data.apiKeys };
-                        await saveConfig();
 
-                        initializeAppTransition();
-                        // 傳入 true 表示是從舊版匯入，觸發提示
-                        initChatApp(true); 
+                        await performImport(data);
+
+                        // 轉場到主應用
+                        ALL_ELEMENTS.authContainer.classList.add('fade-out');
+                        ALL_ELEMENTS.appContainer.classList.remove('hidden');
+                        requestAnimationFrame(() => {
+                            ALL_ELEMENTS.appContainer.classList.add('visible');
+                        });
+                        ALL_ELEMENTS.authContainer.addEventListener('transitionend', () => {
+                             ALL_ELEMENTS.authContainer.style.display = 'none';
+                        }, { once: true });
+                        
+                        initChatApp();
+                        showNotification('紀錄匯入成功！', 'success');
 
                     } catch (error) {
                         showNotification(`匯入失敗: ${error.message}`, 'error');
@@ -5486,59 +5371,19 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             showNotification('已還原預設外觀。', 'success');
         };
         // ▲▲▲ 結束：自訂桌布 & UI 顏色功能相關函式 ▲▲▲
-        
-        // ▼▼▼ 新增：渲染帳號設定區塊的函式 ▼▼▼
-        const renderAccountSection = () => {
-            const container = document.getElementById('account-info-container');
-            container.innerHTML = '';
-            
-            if (currentUser.authMethod === 'google') {
-                container.innerHTML = `
-                    <div class="p-4 bg-[var(--sidebar-bg)] rounded-lg border border-[var(--border-color)]">
-                        <p class="text-sm">登入方式：<span class="font-semibold">Google</span></p>
-                        <p class="text-sm mt-2">電子郵件：<span class="font-semibold">${currentUser.email}</span></p>
-                    </div>
-                `;
-            } else { // authMethod is 'password'
-                container.innerHTML = `
-                     <div class="p-4 bg-orange-50 dark:bg-orange-900/20 border-l-4 border-orange-400 rounded-r-lg">
-                        <h4 class="font-bold text-orange-800 dark:text-orange-300">帳號升級建議</h4>
-                        <p class="text-sm text-orange-700 dark:text-orange-400 mt-1">
-                            您目前使用傳統帳號密碼登入。建議連結您的 Google 帳號，以享受更安全、便利的登入體驗，並確保您的資料可以在不同裝置間同步。
-                        </p>
-                    </div>
-                    <div class="mt-4">
-                        <p class="text-sm mb-2">登入方式：<span class="font-semibold">帳號密碼</span></p>
-                        <div id="google-connect-btn"></div>
-                    </div>
-                `;
-                // 在設定頁面中也渲染一個 Google 按鈕，用於綁定
-                google.accounts.id.renderButton(
-                    document.getElementById('google-connect-btn'),
-                    { theme: "outline", size: "large", text: "continue_with", shape: "rectangular" }
-                );
-            }
-        };
-        // ▲▲▲ 結束新增 ▲▲▲
 
 
-        async function initChatApp(isLegacyImport = false) {
+        async function initChatApp() {
             await loadConfig();
             await loadAppData();
             applyCustomWallpaper(); 
             applyUiTheme();
             setTheme(config.theme); 
-            ALL_ELEMENTS.usernameDisplay.textContent = currentUser.displayName || currentUser.username;
+            ALL_ELEMENTS.usernameDisplay.textContent = currentUser.username;
             if (!conversations.find(c => !c.archived)) startNewChat(false);
             renderAll();
             updateInputState();
             setupVoiceInput();
-
-            // ▼▼▼ 新增：如果是舊版匯入，顯示永久提示 ▼▼▼
-            if (isLegacyImport) {
-                showNotification('舊版紀錄匯入成功！請前往「設定 > 帳號」完成 Google 帳號註冊以確保資料安全。', 'warning', true);
-            }
-
             ALL_ELEMENTS.menuToggleBtn.addEventListener('click', () => toggleSidebar());
             ALL_ELEMENTS.sidebarOverlay.addEventListener('click', () => toggleSidebar(false));
             document.addEventListener('click', (e) => {
@@ -5816,27 +5661,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         // ▲▲▲ 結束新增 ▲▲▲
         
-        // ▼▼▼ 修改：頁面載入後的初始化邏輯 ▼▼▼
-        window.onload = async () => {
-            // 初始化 Google 登入服務
-            google.accounts.id.initialize({
-                client_id: GOOGLE_CLIENT_ID,
-                callback: handleGoogleCredentialResponse,
-                auto_select: true // 嘗試自動登入
-            });
-            // 渲染 Google 登入按鈕
-            google.accounts.id.renderButton(
-                document.getElementById('google-signin-btn'),
-                { theme: "filled_blue", size: "large", text: "continue_with", shape: "rectangular" }
-            );
-
-            // 預填上次登入的使用者名稱
-            const lastUser = await getItem('chat_lastUser');
-            if (lastUser && !lastUser.startsWith('google_')) {
-                ALL_ELEMENTS.usernameInput.value = lastUser;
-            }
-        };
-
         ALL_ELEMENTS.authForm.addEventListener('submit', handleLogin);
         
         const toggleAuthImportButton = () => {
@@ -5848,7 +5672,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         ALL_ELEMENTS.passwordInput.addEventListener('input', toggleAuthImportButton);
         ALL_ELEMENTS.importBtnAuth.addEventListener('click', handleImportOnAuth);
         
+        (async function prefillLastUser() {
+            const last = await getItem('chat_lastUser');
+            if (last) ALL_ELEMENTS.usernameInput.value = last;
+        })();
         const FOLDER_ICONS = ['📁', '📂', '🗂️', '📚', '📝', '🗃️', '📘', '📙', '📗', '📕'];
     </script>
 </body>
 </html>
+
