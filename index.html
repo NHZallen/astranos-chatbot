@@ -77,7 +77,7 @@
         /* --- 結束 全局動畫 --- */
 
 
-        body { background-color: var(--chat-bg); color: var(--text-primary); } /* 移除 height: 100vh; overflow: hidden; */
+        body { background-color: var(--chat-bg); color: var(--text-primary); height: 100vh; overflow: hidden; }
         .sidebar { background-color: var(--sidebar-bg); border-right: 1px solid var(--border-color); transition: transform 0.3s ease-in-out; }
         .scroll-area::-webkit-scrollbar { width: 8px; }
         .scroll-area::-webkit-scrollbar-track { background: transparent; }
@@ -154,8 +154,16 @@
         .input-wrapper.pulse-glow {
             animation: pulse-glow 0.5s ease-out;
         }
-        
-        #auth-container .auth-form-container {
+        /* 移除: focus-within 的藍色邊框效果 */
+        /* 
+        .input-wrapper:focus-within {
+            border-color: #3b82f6;
+        }
+        */
+        /* ▲▲▲ 新增/修改的程式碼 ▲▲▲ */
+
+
+        #auth-container > div {
             animation: subtleFadeInUp 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
         }
 
@@ -1015,31 +1023,6 @@
             border-color: rgba(255, 255, 255, 0.25) !important;
         }
         /* ▲▲▲ 結束：深色模式白色文字設定 ▲▲▲ */
-
-        /* ▼▼▼ 新增：登入頁面展示區塊樣式 ▼▼▼ */
-        .demo-model-selector .selector-btn {
-            transition: all 0.3s ease;
-        }
-        .demo-model-selector .selector-btn.active {
-            color: #2563eb;
-            background-color: #eff6ff;
-            border-color: #2563eb;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-        .demo-chat-content {
-            display: none;
-            animation: fadeIn 0.5s ease-in-out;
-        }
-        .demo-chat-content.active {
-            display: block;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        /* ▲▲▲ 結束：登入頁面展示區塊樣式 ▲▲▲ */
-
     </style>
 
 <script>
@@ -1048,114 +1031,37 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 <script defer src="/_vercel/insights/script.js"></script>
 </head>
 
-<body class="font-sans bg-gray-50">
+<body class="font-sans">
     <!-- ▼▼▼ 新增：桌布容器 ▼▼▼ -->
     <div id="wallpaper-container"></div>
     <!-- ▲▲▲ 新增：桌布容器 ▲▲▲ -->
-
-    <!-- ▼▼▼ 修改：全新的登入頁面 ▼▼▼ -->
-    <div id="auth-container">
-        <div class="min-h-screen flex flex-col">
-            <!-- Header -->
-            <header class="p-4 sm:px-6 lg:px-8 bg-white/80 backdrop-blur-sm sticky top-0 z-20 border-b border-gray-200">
-                <div class="max-w-7xl mx-auto flex justify-between items-center">
-                    <div class="flex items-center gap-2">
-                        <svg class="h-8 w-auto text-blue-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
-                        <span class="text-xl font-bold text-gray-800">ASTRA</span>
-                    </div>
-                    <a href="#login-section" class="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
-                        登入
-                    </a>
+    <!-- Auth Container -->
+    <div id="auth-container" class="fixed inset-0 bg-gray-100 dark:bg-gray-900 flex items-center justify-center z-50">
+        <div class="w-full max-w-sm p-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
+            <h1 class="text-2xl font-bold text-center text-gray-800 dark:text-gray-100 mb-2">Welcome to use ASTRA</h1>
+            <p class="text-center text-gray-500 dark:text-gray-400 mb-8">從創意到決策，一鍵直達</p>
+            <form id="auth-form">
+                <div class="mb-4">
+                    <label for="username-input" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">使用者名稱</label>
+                    <input type="text" id="username-input" class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none bg-gray-50 dark:bg-gray-700 dark:text-white" placeholder="請輸入您的名稱" required>
                 </div>
-            </header>
-
-            <main class="flex-grow">
-                <!-- Hero Section with Login Form -->
-                <section id="login-section" class="relative py-20 lg:py-32 bg-white">
-                    <div class="absolute inset-0 overflow-hidden">
-                         <div class="absolute top-0 left-0 w-96 h-96 bg-blue-100 rounded-full opacity-50 -translate-x-20 -translate-y-20"></div>
-                         <div class="absolute bottom-0 right-0 w-96 h-96 bg-indigo-100 rounded-full opacity-50 translate-x-20 translate-y-20"></div>
-                    </div>
-                    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-16 items-center">
-                        <div class="text-center lg:text-left">
-                            <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 tracking-tight">
-                                歡迎使用 <span class="text-blue-600">ASTRA</span>
-                            </h1>
-                            <p class="mt-4 text-lg md:text-xl text-gray-600 max-w-2xl mx-auto lg:mx-0">
-                                從創意激盪到數據決策，一鍵直達。體驗前所未有的 AI 協作，釋放您的全部潛力。
-                            </p>
-                        </div>
-                        
-                        <!-- Login Form -->
-                        <div class="w-full max-w-md mx-auto auth-form-container">
-                             <div class="p-8 bg-white/70 backdrop-blur-md rounded-2xl shadow-lg border border-gray-200">
-                                <h2 class="text-2xl font-bold text-center text-gray-800 mb-2">登入或註冊</h2>
-                                <p class="text-center text-gray-500 mb-8 text-sm">開始您的智慧旅程</p>
-                                <form id="auth-form">
-                                    <div class="mb-4">
-                                        <label for="username-input" class="block text-sm font-medium text-gray-700 mb-1">使用者名稱</label>
-                                        <input type="text" id="username-input" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50" placeholder="請輸入您的名稱" required>
-                                    </div>
-                                    <div class="mb-6">
-                                        <label for="password-input" class="block text-sm font-medium text-gray-700 mb-1">密碼</label>
-                                        <input type="password" id="password-input" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50" placeholder="用於登入驗證" required>
-                                    </div>
-                                    <div class="space-y-3">
-                                        <button type="submit" id="register-btn" class="w-full p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors">
-                                            登入 / 註冊
-                                        </button>
-                                        <button type="button" id="import-btn-auth" class="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
-                                            匯入紀錄
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- AI Model Showcase Section -->
-                <section class="py-20 lg:py-24 bg-gray-50">
-                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div class="text-center">
-                            <h2 class="text-3xl lg:text-4xl font-bold text-gray-900">探索我們的 AI 模型</h2>
-                            <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">
-                                我們提供一系列為不同任務量身打造的頂尖模型，無論是創意寫作、程式設計還是商業分析，總有一款適合您。
-                            </p>
-                        </div>
-
-                        <div class="mt-16 max-w-5xl mx-auto">
-                            <!-- Model Selector -->
-                            <div class="demo-model-selector grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 lg:gap-4">
-                                <!-- Selector Buttons will be inserted by JS -->
-                            </div>
-
-                            <!-- Chat Window -->
-                            <div class="mt-8 bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-                                <div class="p-4 border-b border-gray-200">
-                                    <h3 id="demo-chat-title" class="text-lg font-semibold text-gray-800 text-center">Astra-Pro 對話範例</h3>
-                                </div>
-                                <div id="demo-chat-window" class="p-6 h-96 overflow-y-auto space-y-6 bg-gray-100">
-                                    <!-- Chat Content will be inserted by JS -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </main>
-
-            <!-- Footer -->
-            <footer class="bg-white border-t border-gray-200">
-                <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 text-center text-sm text-gray-500">
-                    <p>&copy; 2025 ASTRA. All Rights Reserved.</p>
+                <div class="mb-6">
+                    <label for="password-input" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">密碼</label>
+                    <input type="password" id="password-input" class="w-full p-3 border border-gray-600 rounded-lg focus:outline-none bg-gray-50 dark:bg-gray-700 dark:text-white" placeholder="用於登入驗證" required>
                 </div>
-            </footer>
+                <div class="space-y-3">
+                    <button type="submit" id="register-btn" class="w-full p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 font-semibold btn-primary">
+                        登入 / 註冊
+                    </button>
+                    <button type="button" id="import-btn-auth" class="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                        匯入紀錄
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
-    <!-- ▲▲▲ 結束：全新的登入頁面 ▲▲▲ -->
-    
     <!-- Main App Container -->
-    <div id="app-container" class="hidden h-screen"> <!-- 新增 h-screen -->
+    <div id="app-container" class="hidden">
         <div class="relative flex h-screen w-full bg-[var(--chat-bg)]">
             <!-- Sidebar Overlay (for mobile) -->
             <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 opacity-0"></div>
@@ -1811,149 +1717,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     <input type="file" id="wallpaper-upload-input" class="hidden" accept="image/*">
     <!-- ▲▲▲ 新增：隱藏的桌布上傳輸入框 ▲▲▲ -->
     <script>
-        // ▼▼▼ 新增：登入頁面 Demo 區塊的互動邏輯 ▼▼▼
-        document.addEventListener('DOMContentLoaded', () => {
-            const demoModels = [
-                { id: 'pro', name: 'Astra-Pro', title: 'Astra-Pro 對話範例', desc: '綜合分析' },
-                { id: 'plus', name: 'Astra-Plus', title: 'Astra-Plus 對話範例', desc: '日常助理' },
-                { id: 'mini', name: 'Astra-Mini', title: 'Astra-Mini 對話範例', desc: '深度問答' },
-                { id: 'mill', name: 'Astra-Mill', title: 'Astra-Mill 對話範例', desc: '創意發想' },
-                { id: 'nano', name: 'Astra-Nano', title: 'Astra-Nano 對話範例', desc: '程式開發' },
-                { id: 'pico', name: 'Astra-Pico', title: 'Astra-Pico 對話範例', desc: '即時翻譯' },
-            ];
-            
-            const demoConversations = {
-                pro: `
-                    <div class="flex gap-3">
-                        <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold flex-shrink-0">U</div>
-                        <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">請幫我總結一下近期「空間計算」技術的市場趨勢，並列出三個主要的潛在應用領域。</div>
-                    </div>
-                    <div class="flex gap-3">
-                        <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center flex-shrink-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
-                        </div>
-                        <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
-                            好的。近期「空間計算」的市場趨勢主要有三點：1. 硬體微型化與效能提升；2. AI 演算法整合，提升環境感知與互動能力；3. 開發者生態系逐漸成熟，內容更豐富。<br><br>三個主要潛在應用領域：<br>1. <strong>工業製造：</strong>用於遠程協作、數位分身模擬與維護指導。<br>2. <strong>醫療保健：</strong>應用於手術導航、醫學影像視覺化與遠程診療。<br>3. <strong>零售與娛樂：</strong>提供沉浸式購物體驗與互動式遊戲內容。
-                        </div>
-                    </div>`,
-                plus: `
-                    <div class="flex gap-3">
-                        <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold flex-shrink-0">U</div>
-                        <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">幫我草擬一封電子郵件，通知團隊下週三的專案進度會議，時間是下午兩點，地點在 301 會議室。語氣要專業但友善。</div>
-                    </div>
-                     <div class="flex gap-3">
-                        <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center flex-shrink-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
-                        </div>
-                        <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
-                           當然，這是一份草稿：<br><br><strong>主旨：</strong> 關於：下週三專案進度會議通知<br><br>大家好，<br><br>提醒一下，我們將於下週三（日期）下午 2:00 在 301 會議室舉行專案進度會議。<br><br>屆時請準備好分享您負責部分的最新進展與遇到的挑戰。期待在會上見到各位！<br><br>祝好，<br>[您的名字]
-                        </div>
-                    </div>`,
-                mini: `
-                    <div class="flex gap-3">
-                        <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold flex-shrink-0">U</div>
-                        <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">用一個簡單的比喻，向一個五歲小孩解釋什麼是黑洞。</div>
-                    </div>
-                     <div class="flex gap-3">
-                        <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center flex-shrink-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
-                        </div>
-                        <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
-                           你可以把黑洞想像成宇宙裡的超級吸塵器！它的吸力非常非常強，強到連光線都跑不掉。就像你把玩具丟到吸塵器前面，咻一下就被吸進去一樣，任何東西只要太靠近黑洞，也會被吸進去，然後就再也出不來了。
-                        </div>
-                    </div>`,
-                mill: `
-                    <div class="flex gap-3">
-                        <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold flex-shrink-0">U</div>
-                        <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">我們正在為一款新的環保咖啡杯發想行銷標語，請給我五個有創意的點子。</div>
-                    </div>
-                     <div class="flex gap-3">
-                        <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center flex-shrink-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
-                        </div>
-                        <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
-                            這就為您獻上五個標語：<br>1. <strong>地球的溫度，由你的杯子決定。</strong> (強調環保責任)<br>2. <strong>品味咖啡，也品味生活態度。</strong> (連結生活風格)<br>3. <strong>今天，為地球少製造一個垃圾。</strong> (直接的行動呼籲)<br>4. <strong>不只裝咖啡，更承裝一份未來。</strong> (感性與未來感)<br>5. <strong>好咖啡，值得一個好歸宿。</strong> (擬人化，提升價值感)
-                        </div>
-                    </div>`,
-                nano: `
-                    <div class="flex gap-3">
-                        <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold flex-shrink-0">U</div>
-                        <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">這段 Python 程式碼是做什麼的？<br><code>squares = [x**2 for x in range(10)]</code></div>
-                    </div>
-                     <div class="flex gap-3">
-                        <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center flex-shrink-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
-                        </div>
-                        <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
-                           這是一段 Python 的「列表生成式」(List Comprehension)。<br><br>它的作用是快速建立一個列表，內容是 0 到 9 這十個數字的平方。<br><br>執行後的結果會是：<br><code>[0, 1, 4, 9, 16, 25, 36, 49, 64, 81]</code><br><br>這是一種比傳統 for 迴圈更簡潔、更具 Python 風格的寫法。
-                        </div>
-                    </div>`,
-                pico: `
-                    <div class="flex gap-3">
-                        <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold flex-shrink-0">U</div>
-                        <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">幫我把「雙贏策略」快速翻譯成英文、日文和法文。</div>
-                    </div>
-                     <div class="flex gap-3">
-                        <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center flex-shrink-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
-                        </div>
-                        <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
-                           好的，馬上為您翻譯：<br>
-                           <ul>
-                            <li><strong>英文:</strong> Win-win strategy</li>
-                            <li><strong>日文:</strong> ウィンウィン戦略 (Uin-uin senryaku)</li>
-                            <li><strong>法文:</strong> Stratégie gagnant-gagnant</li>
-                           </ul>
-                        </div>
-                    </div>`,
-            };
-
-            const selectorContainer = document.querySelector('.demo-model-selector');
-            const chatWindow = document.getElementById('demo-chat-window');
-            const chatTitle = document.getElementById('demo-chat-title');
-
-            if (selectorContainer && chatWindow && chatTitle) {
-                // Populate selector buttons and chat content divs
-                demoModels.forEach((model, index) => {
-                    const button = document.createElement('button');
-                    button.className = `selector-btn text-center p-3 rounded-lg border-2 border-gray-200 bg-white ${index === 0 ? 'active' : ''}`;
-                    button.dataset.modelId = model.id;
-                    button.innerHTML = `
-                        <div class="font-semibold text-sm text-gray-800">${model.name}</div>
-                        <div class="text-xs text-gray-500">${model.desc}</div>
-                    `;
-                    selectorContainer.appendChild(button);
-
-                    const contentDiv = document.createElement('div');
-                    contentDiv.id = `demo-chat-${model.id}`;
-                    contentDiv.className = `demo-chat-content space-y-6 ${index === 0 ? 'active' : ''}`;
-                    contentDiv.innerHTML = demoConversations[model.id];
-                    chatWindow.appendChild(contentDiv);
-                });
-
-                // Add event listener to selector buttons
-                selectorContainer.addEventListener('click', (e) => {
-                    const button = e.target.closest('.selector-btn');
-                    if (!button) return;
-                    
-                    const modelId = button.dataset.modelId;
-                    
-                    // Update active button
-                    selectorContainer.querySelector('.active').classList.remove('active');
-                    button.classList.add('active');
-                    
-                    // Update active chat content
-                    chatWindow.querySelector('.active').classList.remove('active');
-                    document.getElementById(`demo-chat-${modelId}`).classList.add('active');
-
-                    // Update chat title
-                    const modelInfo = demoModels.find(m => m.id === modelId);
-                    chatTitle.textContent = modelInfo.title;
-                });
-            }
-        });
-
-        // 原有的應用程式邏輯
         const ALL_ELEMENTS = {
             authContainer: document.getElementById('auth-container'),
             appContainer: document.getElementById('app-container'),
@@ -2328,7 +2091,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             setTimeout(() => { notification.remove(); }, 3000);
         };
         const toggleModal = (modalElement, show) => {
-            if (!modalElement) return;
             if (show) {
                 modalElement.classList.remove('hidden');
                 requestAnimationFrame(() => {
@@ -4318,7 +4080,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
             const selectedColor = ALL_ELEMENTS.colorSwatchesContainer.querySelector('.selected')?.dataset.color;
             const selectedIcon = ALL_ELEMENTS.iconOptionsContainer.querySelector('.selected')?.dataset.icon;
-            if (selectedColor) folder.color = selectedColor;
             if (selectedIcon) folder.icon = selectedIcon;
             await saveAppData();
             renderAll();
@@ -4426,18 +4187,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         const renderBatchMoveModal = () => {
             const container = ALL_ELEMENTS.batchMoveFolderList;
-            container.innerHTML = `
-                <button class="w-full text-left p-2 rounded-md hover:bg-[var(--hover-bg)]" data-folder-id="none">
-                    移出資料夾
-                </button>
-            `;
-            folders.forEach(folder => {
-                const btn = document.createElement('button');
-                btn.className = 'w-full text-left p-2 rounded-md hover:bg-[var(--hover-bg)]';
-                btn.dataset.folderId = folder.id;
-                btn.textContent = folder.name;
-                container.appendChild(btn);
-            });
+            container.innerHTML = '';
             // 新增資料夾選項
             const newFolderOption = document.createElement('button');
             newFolderOption.className = 'w-full text-left p-2 rounded-md hover:bg-[var(--hover-bg)] flex items-center gap-2 border-t border-[var(--border-color)] mt-2';
