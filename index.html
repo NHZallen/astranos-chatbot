@@ -2100,12 +2100,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         // 修正: 模型ID更新為最新的公開版本
         const MODELS = [
-            { id: 'gemini-2.5-flash', name: 'astra-pro', provider: 'gemini', description: '高速生成與中高精度，適合長篇內容與綜合分析。', limits: '10次/分鐘、250次/天' },
-            { id: 'gemini-2.5-flash-lite', name: 'astra-plus', provider: 'gemini', description: '高速生成與適中精度，適合日常內容與長文處理。', limits: '15次/分鐘、1000次/天' },
-            { id: 'tngtech/deepseek-r1t2-chimera:free', name: 'astra-mini', provider: 'openrouter', description: '強大推理與長文處理，適合多步推理與深度問答。', limits: '20次/分鐘、50次/天' },
-            { id: 'meta-llama/llama-3.3-70b-instruct:free', name: 'astra-mill', provider: 'openrouter', description: '高校泛用推理，適合跨領域中大型任務。', limits: '20次/分鐘、50次/天' },
-            { id: 'Qwen/Qwen3-235B-A22B:free', name: 'astra-nano', provider: 'openrouter', description: '中文與技術領域專長，適合專業知識與程式開發。', limits: '20次/分鐘、50次/天' },
-            { id: 'z-ai/glm-4.5-air:free', name: 'astra-pico', provider: 'openrouter', description: '高速多語推理，適合即時運用與跨語言應用。', limits: '20次/分鐘、50次/天' },
+            { id: 'gemini-2.5-flash', name: 'astra-pro', provider: 'gemini', descriptionKey: 'model_pro_desc', limitsKey: 'model_pro_limits' },
+            { id: 'gemini-2.5-flash-lite', name: 'astra-plus', provider: 'gemini', descriptionKey: 'model_plus_desc', limitsKey: 'model_plus_limits' },
+            { id: 'tngtech/deepseek-r1t2-chimera:free', name: 'astra-mini', provider: 'openrouter', descriptionKey: 'model_mini_desc', limitsKey: 'model_mini_limits' },
+            { id: 'meta-llama/llama-3.3-70b-instruct:free', name: 'astra-mill', provider: 'openrouter', descriptionKey: 'model_mill_desc', limitsKey: 'model_mill_limits' },
+            { id: 'Qwen/Qwen3-235B-A22B:free', name: 'astra-nano', provider: 'openrouter', descriptionKey: 'model_nano_desc', limitsKey: 'model_nano_limits' },
+            { id: 'z-ai/glm-4.5-air:free', name: 'astra-pico', provider: 'openrouter', descriptionKey: 'model_pico_desc', limitsKey: 'model_pico_limits' },
         ];
         // 修正: 使用 gemini-2.5-flash-lite 作為生成標題和後續追問的低成本模型
         const CHEAP_MODEL_ID = 'gemini-2.5-flash-lite';
@@ -3099,15 +3099,20 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const currentModel = MODELS.find(m => m.id === conv.model) || MODELS[0];
             const isArchived = conv.archived;
             let optionsHTML = '';
+            const translations = i18n[config.uiLanguage] || i18n['zh-TW']; // 取得目前的語言包
+
             visibleModels.forEach(m => {
+                // 從語言包中讀取描述和限制，如果找不到則顯示空字串
+                const description = translations[m.descriptionKey] || '';
+                const limits = translations[m.limitsKey] || '';
+
                 optionsHTML += `
                     <div data-model="${m.id}" class="model-option-btn-container ${isArchived ? 'cursor-not-allowed opacity-50' : ''}">
                         <h4 class="font-semibold">${m.name}</h4>
-                        <p class="model-description">${m.description}<span class="whitespace-nowrap"> (${m.limits})</span></p>
+                        <p class="model-description">${description}<span class="whitespace-nowrap"> (${limits})</span></p>
                     </div>
                 `;
             });
-
             {/* <!-- ▼▼▼ 修正 #1：提升 z-index ▼▼▼ --> */}
             ALL_ELEMENTS.modelSwitcherContainer.innerHTML = `
                 <button id="current-model-btn" class="flex items-center gap-2 text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] px-2 py-1 md:px-3 rounded-md ${isArchived ? 'cursor-not-allowed' : ''}" ${isArchived ? 'disabled' : ''}>
