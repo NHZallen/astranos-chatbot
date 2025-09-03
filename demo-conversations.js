@@ -1,4 +1,4 @@
-window demoConversations = {
+window.demoConversations = {
   // 超大規模：戰略分析
   pro: `
     <!-- Round 1 -->
