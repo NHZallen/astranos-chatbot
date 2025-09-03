@@ -1,4 +1,4 @@
-const i18n = {
+window.i18n = {
             'zh-TW': {
                 // Login Page
                 login: '登入',
