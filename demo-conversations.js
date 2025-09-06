@@ -1,4 +1,63 @@
 window.demoConversations = {
+  // 頂級推理AI
+ultra: `
+    <!-- Round 1 -->
+    <div class="flex justify-end gap-3">
+      <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">
+        我有一個創業構想，是關於一個結合 AI 和永續時尚的個人化推薦 App。我們的目標客群是 Z 世代，但我對如何制定一個有效的市場進入策略感到迷茫。Astra-ULTRA，可以給我一些初步的戰略方向嗎？
+      </div>
+      <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">U</div>
+    </div>
+    <div class="flex gap-3 mt-3">
+      <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center">AI</div>
+      <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
+        這是一個非常有潛力的構想，完美結合了當前兩大趨勢：個人化 AI 與永續消費。針對 Z 世代的市場進入策略，我建議採用一個三階段的精實啟動模式：<br><br>
+        <strong>1. 第一階段：MVP 與社群預熱</strong><br>
+        專注於獨特的推薦演算法，並在 TikTok/Instagram 透過討論永續時尚來吸引早期粉絲。<br><br>
+        <strong>2. 第二階段：目標式上市 (Go-to-Market)</strong><br>
+        與關心永續議題的微型網紅合作，並為早期使用者提供獨家計畫，創造稀有性。<br><br>
+        <strong>3. 第三階段：數據驅動的成長與迭代</strong><br>
+        利用早期數據快速優化 AI 推薦，形成「越多人用，越好用」的正向循環，並根據社群反饋擴展功能。<br><br>
+        這個框架可以幫助您在控制成本的同時，驗證市場並建立忠實的品牌社群。您對哪個階段的細節最感興趣？
+      </div>
+    </div>
+    <!-- Round 2 -->
+    <div class="flex justify-end gap-3 mt-3">
+      <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">
+        謝謝你的結構化建議！我對第一階段的「社群建立」和第二階段提到的「微型網紅合作」特別感興趣。針對 Z 世代，有沒有一些具體、創新的操作方式，而不是傳統的廣告投放？
+      </div>
+      <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">U</div>
+    </div>
+    <div class="flex gap-3 mt-3">
+      <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center">AI</div>
+      <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
+        當然。要吸引 Z 世代，關鍵在於「真實性」與「參與感」。這裡有幾個創新的策略：<br><br>
+        • <strong>發起 #永續穿搭挑戰：</strong>在 TikTok/Reels 上鼓勵用戶用舊衣物搭配出多樣造型，讓行銷變得有趣。<br><br>
+        • <strong>透明度報告與「成分解碼器」：</strong>定期發布品牌環保分析，並預告 App 內建的掃描功能，將社群內容與產品緊密連結。<br><br>
+        • <strong>AI 造型師共創計畫：</strong>邀請核心粉絲參與「訓練」AI，讓他們上傳穿搭並標註風格。這會給予他們無與倫比的主人翁意識。<br><br>
+        • <strong>選擇「故事型」網紅：</strong>合作對象應是真正實踐永續生活的人，分享他們如何利用 App 解決真實困境。<br><br>
+        這些策略的核心是將行銷轉化為有價值的內容和社群互動。「AI 造型師共創計畫」將會是您最強大的護城河。
+      </div>
+    </div>
+    <!-- Round 3 -->
+    <div class="flex justify-end gap-3 mt-3">
+      <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">
+        「AI 造型師共創計畫」這個點子太棒了！完全打中了核心。要實現這個功能，在技術上我應該選擇什麼樣的 AI 模型或技術堆疊？希望能兼顧成本效益與未來的擴展性。
+      </div>
+      <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">U</div>
+    </div>
+    <div class="flex gap-3 mt-3">
+      <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center">AI</div>
+      <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
+        很好的問題。為了兼顧成本與擴展性，我建議採用「雲端服務 API + 開源模型微調」的混合策略。這是一個高層次的技術路線圖：<br><br>
+        <strong>技術堆疊建議：</strong><br>
+        1. <strong>圖像辨識：</strong>使用 Google Vision AI 或 AWS Rekognition API，以低成本快速分析用戶上傳的衣物圖片，建立基礎數據。<br><br>
+        2. <strong>推薦引擎：</strong>利用 TensorFlow Recommenders (TFRS) 這類開源函式庫來建構，並部署在可擴展的雲端伺服器上。<br><br>
+        3. <strong>風格生成 (共創核心)：</strong>對輕量級的開源文生圖模型（如 Stable Diffusion）進行微調 (Fine-tuning)，讓模型學習核心社群的獨特風格，生成全新的搭配建議圖。<br><br>
+        這個路線圖可以確保您的 App 從一個輕量級的 MVP 平滑過渡到功能強大的平台。祝您專案順利！
+      </div>
+    </div>
+  `,
   // 超大規模：戰略分析
   pro: `
     <!-- Round 1 -->
