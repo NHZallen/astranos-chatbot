@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>進階 AI 聊天機器人 Astra-nos-14.2.0</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.1.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -107,13 +107,13 @@
             transform: scale(0.95);
             pointer-events: none; /* 避免在淡出時被點擊 */
         }
-        #app-container {
+        #app-container, #astras-store-page {
             /* 初始狀態 */
             opacity: 0;
             transform: scale(1.05);
             transition: opacity 0.4s ease-in 0.2s, transform 0.4s ease-in 0.2s;
         }
-        #app-container.visible {
+        #app-container.visible, #astras-store-page.visible {
             /* 結束狀態 */
             opacity: 1;
             transform: scale(1);
@@ -762,10 +762,10 @@
         .dark .sidebar-item:hover, .sidebar-item:hover {
             color: #111827;
         }
-        #logout-btn, .folder-options-btn, .chat-options-btn, .astras-options-btn, #new-folder-btn, #new-astras-btn {
+        #logout-btn, .folder-options-btn, .chat-options-btn, .astras-options-btn, #new-folder-btn, #new-astras-btn, #open-astras-store-btn {
             color: #6b7280;
         }
-        #logout-btn:hover, .folder-options-btn:hover, .chat-options-btn:hover, .astras-options-btn:hover, #new-folder-btn:hover, #new-astras-btn:hover {
+        #logout-btn:hover, .folder-options-btn:hover, .chat-options-btn:hover, .astras-options-btn:hover, #new-folder-btn:hover, #new-astras-btn:hover, #open-astras-store-btn:hover {
             color: #111827;
         }
         #temp-chat-indicator { /* 臨時對話標籤顏色保持不變 */
@@ -972,7 +972,8 @@
         .dark #close-astras-btn,
         .dark .follow-up-prompt-btn,
         .dark .color-dropdown-btn span,
-        .dark #message-input::placeholder {
+        .dark #message-input::placeholder,
+        .dark #astras-store-page * { /* 新增：商店頁面文字顏色 */
             color: #ffffff !important;
         }
 
@@ -990,6 +991,9 @@
         /* 修正：確保主要按鈕在深色模式下文字仍為設定的顏色(通常是白色) */
         .dark .btn-primary, .dark .modal .btn-primary, .dark #confirm-import-btn {
             color: var(--button-primary-text, #ffffff) !important;
+        }
+        .dark .btn-secondary { /* 新增：商店頁面次要按鈕文字 */
+            color: #ffffff !important;
         }
 
         /* 修正：保持特殊顏色元素的原始顏色 */
@@ -1039,6 +1043,72 @@
             to { opacity: 1; }
         }
         /* ▲▲▲ 結束：登入頁面展示區塊樣式 ▲▲▲ */
+
+        /* ▼▼▼ 新增：Astras 商店頁面與頭像相關樣式 ▼▼▼ */
+        #astras-store-page {
+            background-color: var(--chat-bg);
+            color: var(--text-primary);
+        }
+
+        .astras-store-card {
+            background-color: var(--sidebar-bg);
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            animation: subtleFadeInUp 0.5s ease-out forwards;
+        }
+        .astras-store-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px var(--shadow-color), 0 4px 6px -2px var(--shadow-color);
+        }
+
+        .astras-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--modal-bg);
+            box-shadow: 0 2px 4px var(--shadow-color);
+        }
+        
+        .sidebar-astras-avatar {
+             width: 24px;
+             height: 24px;
+             border-radius: 50%;
+             object-fit: cover;
+             flex-shrink: 0;
+        }
+
+        .btn-subscribe {
+            background-color: #3b82f6;
+            color: #ffffff;
+        }
+        .btn-subscribe:hover {
+            background-color: #2563eb;
+        }
+        .btn-subscribed {
+            background-color: var(--hover-bg);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+        .btn-subscribed:hover {
+            background-color: #ef4444;
+            color: #ffffff;
+            border-color: transparent;
+        }
+        .btn-subscribed .subscribed-text { display: inline; }
+        .btn-subscribed .unsubscribe-text { display: none; }
+        .btn-subscribed:hover .subscribed-text { display: none; }
+        .btn-subscribed:hover .unsubscribe-text { display: inline; }
+
+        #astras-avatar-crop-container {
+            width: 100%;
+            max-height: 60vh;
+            margin-bottom: 1rem;
+        }
+        #astras-avatar-crop-container img {
+            max-width: 100%;
+        }
+        /* ▲▲▲ 結束新增 ▲▲▲ */
 
     </style>
 
@@ -1150,7 +1220,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             <!-- Chat Window -->
                             <div class="mt-8 bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
                                 <div class="p-4 border-b border-gray-200">
-                                    <h3 id="demo-chat-title" class="text-lg font-semibold text-gray-800 text-center" data-lang-key="demoChatTitle">Astra-ultra 對話範例</h3>
+                                    <h3 id="demo-chat-title" class="text-lg font-semibold text-gray-800 text-center" data-lang-key="demoChatTitle">Astra-Pro 對話範例</h3>
                                 </div>
                                 <div id="demo-chat-window" class="p-6 h-96 overflow-y-auto space-y-6 bg-gray-100">
                                     <!-- Chat Content will be inserted by JS -->
@@ -1204,9 +1274,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     <div class="border-b border-[var(--border-color)] mb-2 pb-2">
                         <div class="flex justify-between items-center px-3 py-1">
                             <h2 class="text-sm font-semibold text-[var(--text-secondary)]" data-lang-key="astras">Astras</h2>
-                            <button id="new-astras-btn" title="新增 Astras" class="p-1 rounded-md hover:bg-[var(--active-bg)] text-[var(--text-secondary)]" data-lang-key-title="addAstras">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path><line x1="12" y1="10" x2="12" y2="16"></line><line x1="9" y1="13" x2="15" y2="13"></line></svg>
-                            </button>
+                            <div class="flex items-center gap-1">
+                                <!-- ▼▼▼ 新增：商店按鈕 ▼▼▼ -->
+                                <button id="open-astras-store-btn" title="Astras 商店" class="p-1 rounded-md hover:bg-[var(--active-bg)] text-[var(--text-secondary)]" data-lang-key-title="astrasStore">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                                </button>
+                                <!-- ▲▲▲ 結束新增 ▲▲▲ -->
+                                <button id="new-astras-btn" title="新增 Astras" class="p-1 rounded-md hover:bg-[var(--active-bg)] text-[var(--text-secondary)]" data-lang-key-title="addAstras">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path><line x1="12" y1="10" x2="12" y2="16"></line><line x1="9" y1="13" x2="15" y2="13"></line></svg>
+                                </button>
+                            </div>
                         </div>
                         <div id="astras-list" class="flex-1 pr-1 mt-1"></div>
                     </div>
@@ -1358,6 +1435,23 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             </main>
         </div>
     </div>
+    
+    <!-- ▼▼▼ 新增：Astras 商店頁面 ▼▼▼ -->
+    <div id="astras-store-page" class="hidden w-full h-screen flex flex-col">
+        <header class="relative z-10 p-4 flex items-center border-b border-[var(--border-color)] flex-shrink-0">
+            <button id="close-astras-store-btn" class="p-2 rounded-md hover:bg-[var(--hover-bg)] mr-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            </button>
+            <h1 class="text-xl font-semibold" data-lang-key="astrasStore">Astras 商店</h1>
+        </header>
+        <main class="flex-1 p-4 md:p-8 overflow-y-auto scroll-area">
+            <div id="astras-store-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <!-- Astras Store Cards will be dynamically inserted here -->
+            </div>
+        </main>
+    </div>
+    <!-- ▲▲▲ 結束新增 ▲▲▲ -->
+    
     <!-- Modals -->
     <div id="settings-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
         <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-2xl flex flex-col" style="max-height: 90vh;">
@@ -1734,6 +1828,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     <div id="astras-create-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
         <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl p-6 w-full max-w-md">
             <h2 class="text-xl font-bold mb-4" data-lang-key="createAstras">創建 Astras</h2>
+            <!-- ▼▼▼ 新增：頭像上傳區塊 ▼▼▼ -->
+            <div class="flex items-center gap-4 mb-4">
+                <img id="astras-avatar-preview" src="" class="w-16 h-16 rounded-full bg-gray-200 object-cover border-2 border-gray-300">
+                <button id="upload-astras-avatar-btn" class="px-4 py-2 text-sm rounded-md bg-[var(--hover-bg)] hover:bg-[var(--active-bg)]" data-lang-key="uploadAvatar">上傳頭像</button>
+            </div>
+            <!-- ▲▲▲ 結束新增 ▲▲▲ -->
             <div class="space-y-4">
                 <div>
                     <label for="astras-name-input" class="block text-sm font-medium mb-1" data-lang-key="name">名稱</label>
@@ -1840,12 +1940,32 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         </div>
     </div>
     <!-- ▲▲▲ 結束新增 ▲▲▲ -->
+    <!-- ▼▼▼ 新增：Astras 頭像裁切 Modal ▼▼▼ -->
+    <div id="astras-avatar-crop-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[52]">
+        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-lg p-6">
+            <h2 class="text-2xl font-bold mb-4" data-lang-key="cropAvatar">裁切頭像</h2>
+            <p class="text-sm text-[var(--text-secondary)] mb-4" data-lang-key="cropAvatarDesc">
+                請調整選框，選擇您想要的圓形頭像區域。
+            </p>
+            <div id="astras-avatar-crop-container">
+                <img id="astras-avatar-crop-image" src="">
+            </div>
+            <div class="flex justify-end gap-3 mt-4">
+                <button id="cancel-astras-crop-btn" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]" data-lang-key="cancel">取消</button>
+                <button id="confirm-astras-crop-btn" class="px-4 py-2 rounded-md btn-primary" data-lang-key="confirm">確認</button>
+            </div>
+        </div>
+    </div>
+    <!-- ▲▲▲ 結束新增 ▲▲▲ -->
+
     <!-- Hidden File Inputs -->
     <input type="file" id="image-video-input" class="hidden" accept="image/*,video/*" multiple>
     <input type="file" id="file-upload-input" class="hidden" multiple>
-    <!-- ▼▼▼ 新增：隱藏的桌布上傳輸入框 ▼▼▼ -->
     <input type="file" id="wallpaper-upload-input" class="hidden" accept="image/*">
-    <!-- ▲▲▲ 新增：隱藏的桌布上傳輸入框 ▲▲▲ -->
+    <!-- ▼▼▼ 新增：隱藏的 Astras 頭像上傳輸入框 ▼▼▼ -->
+    <input type="file" id="astras-avatar-upload-input" class="hidden" accept="image/*">
+    <!-- ▲▲▲ 結束新增 ▲▲▲ -->
+    
     <script src="./i18n.js"></script>
     <script src="./demo-conversations.js"></script>
     <script src="./main.js"></script>
@@ -1853,7 +1973,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         // ▼▼▼ 新增：登入頁面 Demo 區塊的互動邏輯 ▼▼▼
         document.addEventListener('DOMContentLoaded', () => {
             const demoModels = [
-                { id: 'ultra', name: 'Astra-ultra', title: 'Astra-ultra 對話範例', desc: '新型旗艦' },
                 { id: 'pro', name: 'Astra-Pro', title: 'Astra-Pro 對話範例', desc: '高速精準' },
                 { id: 'plus', name: 'Astra-Plus', title: 'Astra-Plus 對話範例', desc: '輕巧迅捷' },
                 { id: 'mini', name: 'Astra-Mini', title: 'Astra-Mini 對話範例', desc: '混和推理' },
@@ -2091,10 +2210,22 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             uiLanguageSelect: document.getElementById('ui-language-select'),
             aiLanguageSelect: document.getElementById('ai-language-select'),
             // ▲▲▲ 結束新增 ▲▲▲
+            // ▼▼▼ 新增：Astras 商店與頭像相關元素 ▼▼▼
+            astrasStorePage: document.getElementById('astras-store-page'),
+            openAstrasStoreBtn: document.getElementById('open-astras-store-btn'),
+            closeAstrasStoreBtn: document.getElementById('close-astras-store-btn'),
+            astrasStoreGrid: document.getElementById('astras-store-grid'),
+            uploadAstrasAvatarBtn: document.getElementById('upload-astras-avatar-btn'),
+            astrasAvatarPreview: document.getElementById('astras-avatar-preview'),
+            astrasAvatarUploadInput: document.getElementById('astras-avatar-upload-input'),
+            astrasAvatarCropModal: document.getElementById('astras-avatar-crop-modal'),
+            astrasAvatarCropImage: document.getElementById('astras-avatar-crop-image'),
+            cancelAstrasCropBtn: document.getElementById('cancel-astras-crop-btn'),
+            confirmAstrasCropBtn: document.getElementById('confirm-astras-crop-btn'),
+            // ▲▲▲ 結束新增 ▲▲▲
         };
         // 修正: 模型ID更新為最新的公開版本
         const MODELS = [
-            { id: 'openrouter/sonoma-sky-alpha', name: 'astra-ultra', provider: 'openrouter', descriptionKey: 'model_ultra_desc', limitsKey: 'model_ultra_limits' },
             { id: 'gemini-2.5-flash', name: 'astra-pro', provider: 'gemini', descriptionKey: 'model_pro_desc', limitsKey: 'model_pro_limits' },
             { id: 'gemini-2.5-flash-lite', name: 'astra-plus', provider: 'gemini', descriptionKey: 'model_plus_desc', limitsKey: 'model_plus_limits' },
             { id: 'tngtech/deepseek-r1t2-chimera:free', name: 'astra-mini', provider: 'openrouter', descriptionKey: 'model_mini_desc', limitsKey: 'model_mini_limits' },
@@ -2145,6 +2276,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let conversations = [];
         let folders = [];
         let astras = [];
+        let subscribedOfficialAstraIds = []; // 新增：儲存已訂閱的官方 Astras ID
         let personalMemories = []; // 第一類記憶: 陣列 of {id, content, enabled}
         let activeConversationId = null;
         let lastNonTempConversationId = null;
@@ -2198,8 +2330,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let modelPieChart = null;
         let timeDistChart = null;
         // ▲▲▲ 結束新增 ▲▲▲
-        // ▼▼▼ 新增：桌布裁切實例變數 ▼▼▼
         let cropperInstance = null;
+        // ▼▼▼ 新增：Astras 頭像裁切相關變數 ▼▼▼
+        let astrasCropper = null;
+        let tempAvatarData = null;
         // ▲▲▲ 結束新增 ▲▲▲
         // IndexedDB 配置
         const DB_NAME = 'ChatAppDB';
@@ -2403,7 +2537,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 config.lastUsedModel = MODELS[0].id;
             }
         };
-        const saveAppData = async () => { if (currentUser && !isTemporaryChat) await setItem(getAppDataKey(), JSON.stringify({ conversations, folders, astras, personalMemories })); };
+        const saveAppData = async () => { if (currentUser && !isTemporaryChat) await setItem(getAppDataKey(), JSON.stringify({ conversations, folders, astras, personalMemories, subscribedOfficialAstraIds })); };
         const loadAppData = async () => {
             if (!currentUser) return;
             const saved = await getItem(getAppDataKey());
@@ -2421,6 +2555,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         }))
                     }));
                     astras = data.astras || [];
+                    subscribedOfficialAstraIds = data.subscribedOfficialAstraIds || []; // 新增
                     personalMemories = data.personalMemories || [];
                 } catch (e) {
                     console.error("Failed to parse app data:", e);
@@ -2428,6 +2563,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     conversations = [];
                     folders = [];
                     astras = [];
+                    subscribedOfficialAstraIds = [];
                     personalMemories = [];
                     await removeItem(getAppDataKey()); // Clear corrupted data
                 }
@@ -2435,6 +2571,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 conversations = [];
                 folders = [];
                 astras = [];
+                subscribedOfficialAstraIds = [];
                 personalMemories = [];
             }
         };
@@ -2718,12 +2855,24 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         const renderAstras = () => {
             ALL_ELEMENTS.astrasList.innerHTML = '';
-            astras.forEach(ast => {
+            
+            const subscribedOfficial = OFFICIAL_ASTRAS.filter(oa => subscribedOfficialAstraIds.includes(oa.id));
+            const allUserAstras = [...subscribedOfficial, ...astras];
+
+            allUserAstras.forEach(ast => {
                 const item = document.createElement('div');
                 item.className = `sidebar-item w-full text-left p-3 rounded-lg flex items-center justify-between cursor-pointer ${ast.id === getActiveAstrasId() && !isTemporaryChat && !isSelectionMode ? 'active' : ''}`;
                 item.dataset.id = ast.id;
+
+                const avatarHTML = ast.avatar 
+                    ? `<img src="${ast.avatar}" class="sidebar-astras-avatar mr-2">` 
+                    : `<div class="sidebar-astras-avatar mr-2 bg-gray-300 flex items-center justify-center text-gray-500 text-xs">A</div>`;
+
                 item.innerHTML = `
-                    <span class="truncate pr-2">${ast.name}</span>
+                    <div class="flex items-center truncate">
+                        ${avatarHTML}
+                        <span class="truncate">${ast.name}</span>
+                    </div>
                     <button class="astras-options-btn flex-shrink-0 w-6 h-6 rounded-md hover:bg-[var(--hover-bg)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
                     </button>
@@ -2733,10 +2882,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     setAstrasForConversation(ast.id);
                 });
                 const optionsBtn = item.querySelector('.astras-options-btn');
-                optionsBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    createAstrasMenu(ast.id, optionsBtn);
-                });
+                if (ast.isOfficial) {
+                    optionsBtn.style.display = 'none'; // 隱藏官方Astras的選項按鈕
+                } else {
+                    optionsBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        createAstrasMenu(ast.id, optionsBtn);
+                    });
+                }
                 ALL_ELEMENTS.astrasList.appendChild(item);
             });
         };
@@ -2923,7 +3076,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const updateAstrasIndicator = () => {
             const conv = getActiveConversation();
             const astrasId = conv ? conv.astrasId : null;
-            const ast = astras.find(a => a.id === astrasId);
+            const allUserAstras = [...OFFICIAL_ASTRAS, ...astras];
+            const ast = allUserAstras.find(a => a.id === astrasId);
+
             const astIndicator = ALL_ELEMENTS.astrasIndicator;
             const currentAstrasName = ALL_ELEMENTS.currentAstrasName;
             
@@ -2959,10 +3114,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         const createAstras = async () => {
             editingAstrasId = null;
+            tempAvatarData = null; // 重置暫存頭像
             ALL_ELEMENTS.astrasCreateModal.querySelector('h2').textContent = i18n[config.uiLanguage].createAstras;
             ALL_ELEMENTS.astrasNameInput.value = '';
             ALL_ELEMENTS.astrasDescInput.value = '';
             ALL_ELEMENTS.astrasInstructionsInput.value = '';
+            ALL_ELEMENTS.astrasAvatarPreview.src = ''; // 清空預覽
             toggleModal(ALL_ELEMENTS.astrasCreateModal, true);
         };
         const handleSaveAstras = async () => {
@@ -2979,6 +3136,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     ast.name = name;
                     ast.description = description;
                     ast.instructions = instructions;
+                    if(tempAvatarData) ast.avatar = tempAvatarData; // 儲存頭像
                     showNotification(i18n[config.uiLanguage].astrasUpdated || 'Astras 已更新');
                 }
                 editingAstrasId = null;
@@ -2988,10 +3146,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     name,
                     description,
                     instructions,
+                    avatar: tempAvatarData, // 儲存頭像
                 };
                 astras.unshift(newAstras);
                 showNotification(i18n[config.uiLanguage].astrasCreated ||'Astras 已創建');
             }
+            tempAvatarData = null; // 清空暫存
             await saveAppData();
             renderAstras();
             toggleModal(ALL_ELEMENTS.astrasCreateModal, false);
@@ -3046,9 +3206,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 const ast = astras.find(a => a.id === astrasId);
                 if (ast) {
                     editingAstrasId = astrasId;
+                    tempAvatarData = ast.avatar || null;
                     ALL_ELEMENTS.astrasNameInput.value = ast.name;
                     ALL_ELEMENTS.astrasDescInput.value = ast.description;
                     ALL_ELEMENTS.astrasInstructionsInput.value = ast.instructions;
+                    ALL_ELEMENTS.astrasAvatarPreview.src = ast.avatar || '';
                     ALL_ELEMENTS.astrasCreateModal.querySelector('h2').textContent = i18n[config.uiLanguage].editAstras || '編輯 Astras';
                     toggleModal(ALL_ELEMENTS.astrasCreateModal, true);
                 }
@@ -3464,7 +3626,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             // ▲▲▲ 結束新增 ▲▲▲
 
             if (conv.astrasId) {
-                const ast = astras.find(a => a.id === conv.astrasId);
+                const allUserAstras = [...OFFICIAL_ASTRAS, ...astras];
+                const ast = allUserAstras.find(a => a.id === conv.astrasId);
                 if (ast) {
                     systemInstruction = { parts: [{ text: `${ast.instructions}\n\n${languageInstruction}` }] };
                 }
@@ -3873,7 +4036,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             
             await saveConfig();
             applyLanguage(config.uiLanguage); // 儲存後立即應用新語言
-            renderModelSwitcher();
             toggleModal(ALL_ELEMENTS.settingsModal, false);
             updateApiKeyWarningBadge();
             updateInputState();
@@ -4629,6 +4791,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
             if (ALL_ELEMENTS.exportAstrasCheck.checked) {
                 dataToExport.astras = astras;
+                dataToExport.subscribedOfficialAstraIds = subscribedOfficialAstraIds; // 新增
             }
             if (ALL_ELEMENTS.exportSettingsCheck.checked) {
                 dataToExport.settings = {
@@ -4687,6 +4850,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             conversations = data.conversations || [];
             folders = data.folders || [];
             astras = data.astras || [];
+            subscribedOfficialAstraIds = data.subscribedOfficialAstraIds || []; // 新增
             personalMemories = data.personalMemories || [];
             await saveAppData();
 
@@ -5666,6 +5830,130 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         // ▲▲▲ 結束：自訂桌布 & UI 顏色功能相關函式 ▲▲▲
         
+        // ▼▼▼ 新增：Astras 商店與頭像功能相關函式 ▼▼▼
+        const OFFICIAL_ASTRAS = [
+            // 這裡我先放一些範例資料，您可以後續自行修改或擴充
+            { id: 'official-writer', name: '創意寫手', description: '提供寫作靈感、草稿和多種風格的文案。', instructions: '作為一個創意寫手，你的任務是幫助使用者產出高品質的文字內容...', avatar: 'https://storage.googleapis.com/gemini-prod-us-west1-assets/original_images/writing_icon_gm3.svg', isOfficial: true },
+            { id: 'official-translator', name: '語言翻譯家', description: '精準翻譯多國語言，並提供文化背景解釋。', instructions: '你是一個專業的翻譯家...', avatar: 'https://storage.googleapis.com/gemini-prod-us-west1-assets/original_images/translation_icon_gm3.svg', isOfficial: true },
+            { id: 'official-coder', name: '程式碼大師', description: '解決程式問題、生成程式碼片段、除錯。', instructions: '你是一個全能的程式設計師...', avatar: 'https://storage.googleapis.com/gemini-prod-us-west1-assets/original_images/code_icon_gm3.svg', isOfficial: true },
+            { id: 'official-planner', name: '旅行規劃師', description: '為您的下一次冒險規劃完美的行程。', instructions: '你是一個經驗豐富的旅行規劃師...', avatar: 'https://storage.googleapis.com/gemini-prod-us-west1-assets/original_images/trip_icon_gm3.svg', isOfficial: true },
+        ];
+        
+        const openAstrasStore = () => {
+            renderAstrasStore();
+            ALL_ELEMENTS.appContainer.classList.remove('visible');
+            ALL_ELEMENTS.astrasStorePage.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                ALL_ELEMENTS.astrasStorePage.classList.add('visible');
+            });
+        };
+
+        const closeAstrasStore = () => {
+            ALL_ELEMENTS.astrasStorePage.classList.remove('visible');
+            ALL_ELEMENTS.appContainer.classList.add('visible');
+            ALL_ELEMENTS.astrasStorePage.addEventListener('transitionend', () => {
+                ALL_ELEMENTS.astrasStorePage.classList.add('hidden');
+            }, { once: true });
+        };
+        
+        const renderAstrasStore = () => {
+            const grid = ALL_ELEMENTS.astrasStoreGrid;
+            grid.innerHTML = '';
+            OFFICIAL_ASTRAS.forEach(ast => {
+                const isSubscribed = subscribedOfficialAstraIds.includes(ast.id);
+                const card = document.createElement('div');
+                card.className = 'astras-store-card rounded-lg p-6 flex flex-col items-center text-center';
+                
+                const avatarHTML = ast.avatar 
+                    ? `<img src="${ast.avatar}" class="astras-avatar -mt-12 mb-4">` 
+                    : `<div class="astras-avatar -mt-12 mb-4 bg-gray-300 flex items-center justify-center text-gray-500 text-3xl font-bold">A</div>`;
+
+                card.innerHTML = `
+                    ${avatarHTML}
+                    <h3 class="text-lg font-bold mb-2">${ast.name}</h3>
+                    <p class="text-sm text-[var(--text-secondary)] flex-grow mb-4">${ast.description}</p>
+                    <button class="w-full py-2 px-4 rounded-lg font-semibold transition-colors duration-200 ${isSubscribed ? 'btn-subscribed' : 'btn-subscribe'}" data-id="${ast.id}">
+                        <span class="subscribed-text">${i18n[config.uiLanguage].subscribed || '已訂閱'}</span>
+                        <span class="unsubscribe-text">${i18n[config.uiLanguage].unsubscribe || '取消訂閱'}</span>
+                        <span class="subscribe-text">${i18n[config.uiLanguage].subscribe || '訂閱'}</span>
+                    </button>
+                `;
+                
+                const button = card.querySelector('button');
+                if (isSubscribed) {
+                    button.querySelector('.subscribe-text').style.display = 'none';
+                } else {
+                    button.querySelector('.subscribed-text').style.display = 'none';
+                    button.querySelector('.unsubscribe-text').style.display = 'none';
+                }
+
+                button.addEventListener('click', (e) => {
+                    toggleSubscription(e.currentTarget.dataset.id);
+                });
+
+                grid.appendChild(card);
+            });
+        };
+        
+        const toggleSubscription = (astrasId) => {
+            const index = subscribedOfficialAstraIds.indexOf(astrasId);
+            if (index > -1) {
+                subscribedOfficialAstraIds.splice(index, 1);
+                showNotification(i18n[config.uiLanguage].unsubscribedSuccess || '已取消訂閱', 'success');
+            } else {
+                subscribedOfficialAstraIds.push(astrasId);
+                showNotification(i18n[config.uiLanguage].subscribedSuccess || '訂閱成功！', 'success');
+            }
+            saveAppData();
+            renderAstrasStore();
+            renderAstras(); // 更新側邊欄
+        };
+
+        const handleAstrasAvatarUpload = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const imageUrl = e.target.result;
+                ALL_ELEMENTS.astrasAvatarCropImage.src = imageUrl;
+                toggleModal(ALL_ELEMENTS.astrasAvatarCropModal, true);
+
+                if (astrasCropper) {
+                    astrasCropper.destroy();
+                }
+
+                astrasCropper = new Cropper(ALL_ELEMENTS.astrasAvatarCropImage, {
+                    aspectRatio: 1,
+                    viewMode: 1,
+                    background: false,
+                    autoCropArea: 0.8,
+                    cropBoxResizable: false,
+                    cropBoxMovable: true,
+                    guides: false,
+                    center: false,
+                    highlight: false,
+                    toggleDragModeOnDblclick: false,
+                });
+            };
+            reader.readAsDataURL(file);
+            event.target.value = '';
+        };
+
+        const handleConfirmAstrasCrop = () => {
+            if (!astrasCropper) return;
+            const canvas = astrasCropper.getCroppedCanvas({
+                width: 128,
+                height: 128,
+                imageSmoothingQuality: 'high',
+            });
+            tempAvatarData = canvas.toDataURL('image/png');
+            ALL_ELEMENTS.astrasAvatarPreview.src = tempAvatarData;
+            toggleModal(ALL_ELEMENTS.astrasAvatarCropModal, false);
+        };
+        // ▲▲▲ 結束：Astras 商店與頭像功能相關函式 ▲▲▲
+
+
         // ▼▼▼ 新增：語言切換功能 ▼▼▼
         const applyLanguage = (lang) => {
             const translations = i18n[lang] || i18n['zh-TW'];
@@ -5942,7 +6230,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.wallpaperUploadInput.addEventListener('change', handleWallpaperUpload);
             ALL_ELEMENTS.restoreWallpaperBtn.addEventListener('click', restoreDefaultWallpaper);
             
-            // ▼▼▼ 新增：桌布裁切 Modal 事件 ▼▼▼
             ALL_ELEMENTS.confirmCropBtn.addEventListener('click', handleConfirmCrop);
             ALL_ELEMENTS.cancelCropBtn.addEventListener('click', () => {
                 toggleModal(ALL_ELEMENTS.wallpaperCropModal, false);
@@ -5951,16 +6238,28 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     cropperInstance = null;
                 }
             });
+
+            // ▼▼▼ 新增：Astras 商店與頭像事件綁定 ▼▼▼
+            ALL_ELEMENTS.openAstrasStoreBtn.addEventListener('click', openAstrasStore);
+            ALL_ELEMENTS.closeAstrasStoreBtn.addEventListener('click', closeAstrasStore);
+            ALL_ELEMENTS.uploadAstrasAvatarBtn.addEventListener('click', () => ALL_ELEMENTS.astrasAvatarUploadInput.click());
+            ALL_ELEMENTS.astrasAvatarUploadInput.addEventListener('change', handleAstrasAvatarUpload);
+            ALL_ELEMENTS.confirmAstrasCropBtn.addEventListener('click', handleConfirmAstrasCrop);
+            ALL_ELEMENTS.cancelAstrasCropBtn.addEventListener('click', () => {
+                toggleModal(ALL_ELEMENTS.astrasAvatarCropModal, false);
+                if (astrasCropper) {
+                    astrasCropper.destroy();
+                    astrasCropper = null;
+                }
+            });
             // ▲▲▲ 結束新增 ▲▲▲
-            // ▼▼▼ 新增：清除資料按鈕事件 ▼▼▼
+            
             ALL_ELEMENTS.deleteAllDataBtn.addEventListener('click', handleDeleteAllData);
-            // ▲▲▲ 結束新增 ▲▲▲
-             // ▼▼▼ 新增：設定頁面語言切換事件 ▼▼▼
+            
             ALL_ELEMENTS.uiLanguageSelect.addEventListener('change', (e) => {
                 config.uiLanguage = e.target.value;
                 applyLanguage(config.uiLanguage);
             });
-            // ▲▲▲ 結束新增 ▲▲▲
 
 
             updateFileInputUI();
@@ -6037,4 +6336,3 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     </script>
 </body>
 </html>
-
