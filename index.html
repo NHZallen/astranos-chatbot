@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>進階 AI 聊天機器人 Astra-nos-14.4.0</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.5.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -495,16 +495,31 @@
             max-height: calc(100vh - 150px);
             overflow-y: auto;
         }
-        /* AI Bubble Colors */
-        .model-message .message-bubble {
+        
+        /* ▼▼▼ 需求 1 修正：修正複製 AI 回覆會憶起把底色也複製的問題 ▼▼▼ */
+        /* AI/User Bubble Colors & Fix for copying background color */
+        .message-bubble {
+            position: relative;
+            background-color: transparent;
+            z-index: 0;
+        }
+        .message-bubble::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: 0.5rem; /* Corresponds to Tailwind's rounded-lg */
+            z-index: -1;
+        }
+        .model-message .message-bubble::before {
             background-color: var(--ai-bubble-bg);
         }
         .user-message .message-content {
             white-space: pre-line;
         }
-        .user-message .message-bubble {
+        .user-message .message-bubble::before {
             background-color: var(--user-bubble-bg);
         }
+        /* ▲▲▲ 結束修正 ▲▲▲ */
         
         /* 檔案預覽動畫 */
         .file-preview-item {
@@ -677,30 +692,38 @@
             background-color: transparent !important;
         }
 
-        /* ▼▼▼ 需求 2 & 3 修正：聊天泡泡在桌布模式下的玻璃效果與文字顏色 ▼▼▼ */
+        /* ▼▼▼ 需求 2 & 3 修正：聊天泡泡在桌布模式下的玻璃效果與文字顏色 (with copy-paste fix) ▼▼▼ */
         body.custom-wallpaper-active .message-bubble {
-            backdrop-filter: blur(16px); /* 增強毛玻璃效果 */
-            -webkit-backdrop-filter: blur(16px);
+            /* border stays on the element itself */
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
-
+        body.custom-wallpaper-active .message-bubble::before {
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+        
         /* 在桌布模式下，AI 泡泡使用變數定義的半透明背景，文字為黑色 */
-        body.custom-wallpaper-active .model-message .message-bubble {
+        body.custom-wallpaper-active .model-message .message-bubble::before {
             background-color: var(--ai-bubble-bg); /* Use variable for customizable color */
-            color: #111827 !important;
+        }
+        body.custom-wallpaper-active .model-message .message-bubble {
+            color: #111827 !important; /* Text color stays on the element */
         }
         body.custom-wallpaper-active .model-message .message-bubble .prose {
             color: #111827 !important;
         }
-
+        
         /* 在桌布模式下，使用者泡泡也使用變數定義的半透明背景，文字改為黑色 */
-        body.custom-wallpaper-active .user-message .message-bubble {
+        body.custom-wallpaper-active .user-message .message-bubble::before {
             background-color: var(--user-bubble-bg); /* Use variable for customizable color */
-            color: #111827 !important;
+        }
+        body.custom-wallpaper-active .user-message .message-bubble {
+            color: #111827 !important; /* Text color stays on the element */
         }
         body.custom-wallpaper-active .user-message .message-bubble .prose {
             color: #111827 !important;
         }
+        /* ▲▲▲ 結束修正 ▲▲▲ */
         
         /* 確保在桌布模式下，AI泡泡中的程式碼區塊也是淺色底、深色字 */
         body.custom-wallpaper-active .model-message .message-bubble .prose pre {
@@ -710,7 +733,6 @@
         body.custom-wallpaper-active .model-message .message-bubble .prose pre code {
              color: #111827 !important; /* 確保所有 code 元素都是黑色文字 */
         }
-        /* ▲▲▲ 結束修正 ▲▲▲ */
         
         /* 確保文字顏色在桌布模式下為淺色模式的顏色 */
         body.custom-wallpaper-active {
@@ -1615,19 +1637,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                 <label for="gemini-api-key-input" class="block text-sm font-medium mb-1" data-lang-key="geminiApiKey">Gemini API 金鑰</label>
                                 <input type="password" id="gemini-api-key-input" class="w-full p-2 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)]" placeholder="輸入您的 Google API 金鑰" data-lang-key-placeholder="geminiApiPlaceholder">
                             </div>
+                            <!-- ▼▼▼ 需求 2 修正：修改為單一 OpenRouter API 金鑰輸入框 ▼▼▼ -->
                             <div>
-                                <label class="block text-sm font-medium mb-1" data-lang-key="openRouterApiKey">OpenRouter API 模型金鑰</label>
-                                <p class="text-xs text-[var(--text-secondary)] mb-2" data-lang-key="openRouterApiDesc">新增模型金鑰後，該模型才能被選用。</p>
-                                <div class="flex items-center gap-2">
-                                    <select id="openrouter-model-select" class="flex-1 p-2 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)]">
-                                        <option value="" data-lang-key="selectModel">選擇一個模型</option>
-                                    </select>
-                                    <input type="password" id="openrouter-api-key-input" class="flex-1 p-2 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)]" placeholder="輸入 API 金鑰" data-lang-key-placeholder="enterApiKey">
-                                    <button id="save-openrouter-key-btn" class="flex-shrink:0 px-4 py-2 rounded-md disabled:bg-gray-400 btn-primary" disabled data-lang-key="save">儲存</button>
-                                </div>
-                                <div id="openrouter-models-list" class="mt-4 space-y-2">
-                                </div>
+                                <label for="openrouter-api-key-input-all" class="block text-sm font-medium mb-1" data-lang-key="openRouterApiKey">OpenRouter API 金鑰</label>
+                                <p class="text-xs text-[var(--text-secondary)] mb-2" data-lang-key="openRouterApiDescAll">輸入您的單一 OpenRouter 金鑰以啟用所有相關模型。</p>
+                                <input type="password" id="openrouter-api-key-input-all" class="w-full p-2 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)]" placeholder="sk-or-..." data-lang-key-placeholder="openRouterApiPlaceholder">
                             </div>
+                            <!-- ▲▲▲ 結束修正 ▲▲▲ -->
                         </div>
                         <h3 class="text-lg font-semibold mb-3 mt-6" data-lang-key="modelListManagement">模型清單管理</h3>
                         <p class="text-sm text-[var(--text-secondary)] mb-3" data-lang-key="modelListManagementDesc">點擊箭頭以排序、點擊眼睛以隱藏/顯示、點擊圓圈以設定預設模型。</p>
@@ -2066,11 +2082,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             saveSettingsBtn: document.getElementById('save-settings-btn'),
             closeSettingsBtn: document.getElementById('close-settings-btn'),
             geminiApiKeyInput: document.getElementById('gemini-api-key-input'),
-            // 新增 OpenRouter 相關元素
-            openrouterModelSelect: document.getElementById('openrouter-model-select'),
-            openrouterApiKeyInput: document.getElementById('openrouter-api-key-input'),
-            saveOpenrouterKeyBtn: document.getElementById('save-openrouter-key-btn'),
-            openrouterModelsList: document.getElementById('openrouter-models-list'),
+            // ▼▼▼ 需求 2 修正：更新為單一 OpenRouter 金鑰輸入框 ▼▼▼
+            openrouterApiKeyInputAll: document.getElementById('openrouter-api-key-input-all'),
+            // ▲▲▲ 結束修正 ▲▲▲
             modelManagementList: document.getElementById('model-management-list'),
             openArchivedModalBtn: document.getElementById('open-archived-modal-btn'),
             themeLightBtn: document.getElementById('theme-light-btn'),
@@ -2290,7 +2304,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let activeConversationId = null;
         let lastNonTempConversationId = null;
         let config = {
-            apiKeys: { gemini: '', openrouter: {} },
+            // ▼▼▼ 需求 2 修正：將 openrouter 的結構從物件改為字串 ▼▼▼
+            apiKeys: { gemini: '', openrouter: '' },
+            // ▲▲▲ 結束修正 ▲▲▲
             defaultModel: MODELS[0].id,
             theme: 'light',
             modelSettings: [],
@@ -2505,12 +2521,30 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const saved = await getItem(getConfigKey());
             if (saved) {
                 const savedConfig = JSON.parse(saved);
+                
+                // ▼▼▼ 需求 2 修正：處理舊版 OpenRouter 金鑰格式的遷移 ▼▼▼
+                let openrouterKey = '';
+                if (savedConfig.apiKeys && typeof savedConfig.apiKeys.openrouter === 'object' && savedConfig.apiKeys.openrouter !== null) {
+                    // 如果是舊的物件格式，取第一個找到的金鑰
+                    openrouterKey = Object.values(savedConfig.apiKeys.openrouter)[0] || '';
+                } else if (savedConfig.apiKeys && typeof savedConfig.apiKeys.openrouter === 'string') {
+                    // 如果是新的字串格式，直接使用
+                    openrouterKey = savedConfig.apiKeys.openrouter;
+                }
+                // ▲▲▲ 結束修正 ▲▲▲
+                
                 const savedOpenrouterKeys = savedConfig.apiKeys?.openrouter || {};
                 // 合併設定，確保新版本的預設值能被加入
                 const defaultConfig = {
                     ...config, // Keep new default values
                     ...savedConfig, // Overwrite with saved values
-                    apiKeys: { ...config.apiKeys, ...savedConfig.apiKeys, openrouter: savedOpenrouterKeys },
+                    // ▼▼▼ 需求 2 修正：確保 apiKeys 結構正確 ▼▼▼
+                    apiKeys: { 
+                        ...config.apiKeys, 
+                        ...savedConfig.apiKeys, 
+                        openrouter: openrouterKey // 使用新的單一金鑰字串
+                    },
+                     // ▲▲▲ 結束修正 ▲▲▲
                     uiTheme: { ...config.uiTheme, ...(savedConfig.uiTheme || {}) } // Merge uiTheme object
                 };
                  // 確保舊版本設定檔升級時，新屬性不會是 undefined
@@ -3605,9 +3639,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             let apiKey;
             if (provider === 'gemini') {
                 apiKey = config.apiKeys.gemini;
+            // ▼▼▼ 需求 2 修正：所有 OpenRouter 模型共用一個金鑰 ▼▼▼
             } else if (provider === 'openrouter') {
-                apiKey = config.apiKeys.openrouter[modelId];
+                apiKey = config.apiKeys.openrouter;
             }
+            // ▲▲▲ 結束修正 ▲▲▲
 
 
             if (!apiKey) throw new Error(`請先在設定中提供 ${modelInfo.name} 所需的 API 金鑰。`);
@@ -3953,7 +3989,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (provider === 'gemini') {
                 hasApiKey = !!config.apiKeys.gemini;
             } else if (provider === 'openrouter') {
-                hasApiKey = !!config.apiKeys.openrouter[conv.model];
+                hasApiKey = !!config.apiKeys.openrouter; // ▼▼▼ 需求 2 修正：檢查單一金鑰 ▼▼▼
             }
 
 
@@ -3975,6 +4011,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
         const setupSettingsModal = () => {
             ALL_ELEMENTS.geminiApiKeyInput.value = config.apiKeys.gemini;
+            // ▼▼▼ 需求 2 修正：設定單一 OpenRouter 金鑰輸入框的值 ▼▼▼
+            ALL_ELEMENTS.openrouterApiKeyInputAll.value = config.apiKeys.openrouter;
+             // ▲▲▲ 結束修正 ▲▲▲
             ALL_ELEMENTS.followUpToggleSwitch.checked = config.enableFollowUp;
             ALL_ELEMENTS.autoNamingToggleSwitch.checked = config.autoNaming;
             ALL_ELEMENTS.autoWebSearchToggleSwitch.checked = config.enableAutoWebSearch;
@@ -3987,7 +4026,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderPersonalMemoryList();
             updateThemeButtons();
             renderModelManagementUI();
-            renderOpenRouterModelManagementUI();
             renderAiBubbleColorDropdown();
             renderUserBubbleColorDropdown();
             renderUiColorOptions();
@@ -4006,6 +4044,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
         const saveSettings = async () => {
             config.apiKeys.gemini = ALL_ELEMENTS.geminiApiKeyInput.value.trim();
+            // ▼▼▼ 需求 2 修正：儲存單一 OpenRouter 金鑰 ▼▼▼
+            config.apiKeys.openrouter = ALL_ELEMENTS.openrouterApiKeyInputAll.value.trim();
+            // ▲▲▲ 結束修正 ▲▲▲
             config.enableFollowUp = ALL_ELEMENTS.followUpToggleSwitch.checked;
             config.enableAutoWebSearch = ALL_ELEMENTS.autoWebSearchToggleSwitch.checked;
             config.aiBubbleColor = ALL_ELEMENTS.aiBubbleColorDropdown.querySelector('.color-dropdown-btn')?.dataset.color || 'default';
@@ -5073,75 +5114,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderModelSwitcher();
             showNotification(i18n[config.uiLanguage].modelOrderUpdated || '模型順序已更新');
         };
-        const renderOpenRouterModelManagementUI = () => {
-            const { openrouterModelSelect, openrouterApiKeyInput, saveOpenrouterKeyBtn, openrouterModelsList } = ALL_ELEMENTS;
-            openrouterModelSelect.innerHTML = `<option value="">${i18n[config.uiLanguage].selectModel || '選擇一個模型'}</option>`;
-            openrouterModelsList.innerHTML = '';
-            openrouterApiKeyInput.value = '';
-            saveOpenrouterKeyBtn.disabled = true;
-            const openrouterModels = MODELS.filter(m => m.provider === 'openrouter');
-            const savedModelIds = new Set(Object.keys(config.apiKeys.openrouter));
-            openrouterModels.forEach(model => {
-                if (!savedModelIds.has(model.id)) {
-                    const option = document.createElement('option');
-                    option.value = model.id;
-                    option.textContent = model.name;
-                    openrouterModelSelect.appendChild(option);
-                }
-            });
-            openrouterModels.forEach(model => {
-                if (savedModelIds.has(model.id)) {
-                    const item = document.createElement('div');
-                    item.className = 'flex items-center justify-between p-2 rounded-lg bg-[var(--hover-bg)]';
-                    item.innerHTML = `
-                        <span class="text-sm font-medium">${model.name}</span>
-                        <button data-id="${model.id}" class="delete-openrouter-key-btn p-1 text-xs rounded-md bg-red-100 text-red-800 hover:bg-red-200">
-                            ${i18n[config.uiLanguage].delete || '刪除'}
-                        </button>
-                    `;
-                    openrouterModelsList.appendChild(item);
-                }
-            });
-            openrouterModelSelect.addEventListener('change', () => {
-                updateOpenrouterInputState();
-            });
-            openrouterApiKeyInput.addEventListener('input', () => {
-                updateOpenrouterInputState();
-            });
-            saveOpenrouterKeyBtn.addEventListener('click', async () => {
-                const modelId = openrouterModelSelect.value;
-                const apiKey = openrouterApiKeyInput.value.trim();
-                if (modelId && apiKey) {
-                    config.apiKeys.openrouter[modelId] = apiKey;
-                    await saveConfig();
-                    showNotification(`${i18n[config.uiLanguage].apiKeySavedFor || '已為'} ${openrouterModelSelect.options[openrouterModelSelect.selectedIndex].text} ${i18n[config.uiLanguage].saved || '儲存金鑰。'}`);
-                    renderOpenRouterModelManagementUI();
-                    renderModelSwitcher();
-                    updateInputState();
-                }
-            });
-           
-            document.querySelectorAll('.delete-openrouter-key-btn').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    const modelId = e.currentTarget.dataset.id;
-                    if (modelId) {
-                        delete config.apiKeys.openrouter[modelId];
-                        await saveConfig();
-                        showNotification(i18n[config.uiLanguage].apiKeyDeleted || 'API 金鑰已刪除。');
-                        renderOpenRouterModelManagementUI();
-                        renderModelSwitcher();
-                        updateInputState();
-                    }
-                });
-            });
-        };
-
-        const updateOpenrouterInputState = () => {
-            const { openrouterModelSelect, openrouterApiKeyInput, saveOpenrouterKeyBtn } = ALL_ELEMENTS;
-            const modelSelected = !!openrouterModelSelect.value;
-            const keyEntered = !!openrouterApiKeyInput.value.trim();
-            saveOpenrouterKeyBtn.disabled = !(modelSelected && keyEntered);
-        };
 
         function toggleSidebar(show) {
             const { sidebar, sidebarOverlay } = ALL_ELEMENTS;
@@ -5316,7 +5288,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (modelInfo) {
                 if (modelInfo.provider === 'gemini' && !config.apiKeys.gemini) {
                     needsKey = true;
-                } else if (modelInfo.provider === 'openrouter' && !config.apiKeys.openrouter[modelInfo.id]) {
+                } else if (modelInfo.provider === 'openrouter' && !config.apiKeys.openrouter) { // ▼▼▼ 需求 2 修正：檢查單一金鑰 ▼▼▼
                     needsKey = true;
                 }
             }
