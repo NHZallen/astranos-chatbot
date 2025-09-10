@@ -14,7 +14,7 @@ window.i18n = {
         importRecords: '匯入紀錄',
         exploreModels: '探索我們的 AI 模型',
         exploreModelsDesc: '我們提供一系列為不同任務量身打造的頂尖模型，無論是創意寫作、程式設計還是商業分析，總有一款適合您。',
-        demoChatTitle: 'Astra-ultra 對話範例',
+        demoChatTitle: 'Astra-Pro 對話範例',
         copyright: 'ASTRA版權所有',
         currentLanguageName: '繁體中文',
 
@@ -25,7 +25,6 @@ window.i18n = {
         search: '搜尋',
         astras: 'Astras',
         addAstras: '新增 Astras',
-        astrasStore: 'Astras 商店',
         folders: '資料夾',
         addFolder: '新增資料夾',
         settings: '設定',
@@ -88,8 +87,10 @@ window.i18n = {
         geminiFollowUpNotice: '如需啟用後續追問功能必需填入 gemini api 才可啟用。',
         geminiApiKey: 'Gemini API 金鑰',
         geminiApiPlaceholder: '輸入您的 Google API 金鑰',
-        openRouterApiKey: 'OpenRouter API 金鑰',
-        openRouterApiDescAll: '輸入您的單一 OpenRouter 金鑰以啟用所有相關模型。',
+        openRouterApiKey: 'OpenRouter API 模型金鑰',
+        openRouterApiDesc: '新增模型金鑰後，該模型才能被選用。',
+        selectModel: '選擇一個模型',
+        enterApiKey: '輸入 API 金鑰',
         save: '儲存',
         modelListManagement: '模型清單管理',
         modelListManagementDesc: '點擊箭頭以排序、點擊眼睛以隱藏/顯示、點擊圓圈以設定預設模型。',
@@ -107,7 +108,7 @@ window.i18n = {
         termsOfUse: '使用條款',
         privacyPolicy: '隱私權益政策',
         version: '版本號',
-        versionNumber: 'Astra-nos-14.5.0',
+        versionNumber: 'Astra-nos-14.4.0',
         helpCenterDesc: '進階 AI 聊天機器人（下稱「本服務」或「ASTRA」）旨在提供穩定、可控且以使用者為本的智慧對話體驗。本服務採取瀏覽器端運作設計，主要資料儲存於使用者之本機環境，以降低不必要之傳輸與集中化風險。使用者得依個人需求於單一介面中切換多種模型、建立不留痕跡之臨時對話、運用 Astras 功能自訂行為準則、管理資料夾並封存對話，亦可透過匯出與匯入機制，自主完成備份與移轉。若使用者有即時資訊之需求，得選擇啟用聯網搜尋；對於長文處理或媒體分析之情境，亦可於訊息中附加文件或影像，便於模型綜合判讀。 本服務所涉之對話內容、外觀與模型偏好、資料夾與封存狀態、Astras 設定及其他應用層級資訊，均以使用者裝置之瀏覽器資料庫保存。使用者自行提供之 API 金鑰僅用以連線第三方模型供應商（例如 Google Gemini 或 OpenRouter），並保留於本機以完成必要請求。本服務不建置伺服器端資料庫以蒐集使用者個資或對話內容，亦不就使用者於本機保存之資訊進行另行處理或轉售。使用者得隨時選擇關閉聯網、移除金鑰、啟用臨時對話或清除瀏覽器資料，以符合自身之安全與合規要求。',
         termsOfUseDesc: '首次使用時，請先於登入介面建立或登入本機帳號，以便關聯個別設定與對話紀錄。密碼將以雜湊方式（SHA-256）保存於瀏覽器端，僅供日後登入時比對之目的，不以明文儲存。完成登入後，建議立即前往設定頁面依實際需求填入對應模型之 API 金鑰：若使用 Gemini，請於指定欄位提供金鑰；若使用 OpenRouter，請為計畫使用之各模型分別儲存金鑰。金鑰設定完成後，訊息輸入與檔案附加即會啟用；如需檢索最新公開資訊，可切換開啟聯網搜尋後再行提問；如欲延展同一脈絡之討論，可啟用後續追問提示功能，以取得與當前回覆相銜接之建議問題。 當對話數量增加時，使用者可視需要將對話重新命名、移入資料夾或進行封存，並可使用批次選取進行合併操作。若需於不同瀏覽器或裝置間遷移工作環境，建議以匯出功能產生備份檔（JSON），於新環境完成匯入後可快速復原對話、資料夾與應用程式偏好（不含敏感憑證）。為保障使用者自主性，本服務亦提供臨時對話模式，該模式下之輸入與回覆僅駐留於當次工作階段，離開即不留痕跡。需特別注意者，本服務回覆係由第三方模型依輸入內容產生，可能受限於資料新舊、語境解讀或訓練邊界而產生不確定性；在醫療、法律、投資或其他專業領域，使用者應自行審慎判斷，並於必要時諮詢合格專業人士。',
         privacyPolicyDesc: '本服務重視使用者之資料保護與隱私權，並以最小化蒐集、在地化儲存及使用者自主控制為設計原則。除依法令或使用者另有明確授權外，本服務不主動於伺服器端保存使用者之對話內容或個人識別資料。一般情況下，對話紀錄、Astras 設定、應用外觀與模型偏好、資料夾與封存狀態，以及使用者於設定頁面所選保存之 API 金鑰，均儲存於使用者瀏覽器之本機資料庫。登入密碼將以 SHA-256 雜湊方式保存於同一環境，僅供登入驗證之用；除密碼雜湊外，其他應用層級資料於瀏覽器端並未額外加密，使用者應自行妥適保護裝置與瀏覽器環境，避免於共用或不受信任之設備儲存敏感資訊。 當使用者啟用第三方模型或聯網搜尋時，相關提示文字、必要上下文及（在使用者附檔時可能包含之）檔案內容，將依使用者之操作指示送交該第三方供應商，以完成請求或檢索最新資訊。該等資料處理將受第三方之條款與隱私政策拘束，可能涉及資料跨境傳輸與合規評估；本服務不就第三方之作業程序負責，亦不進行另行蒐集或出售。使用者得隨時關閉連網功能、移除 API 金鑰或改用臨時對話模式，以降低持久化保存或外部傳輸之風險；亦可透過匯出與匯入機制自主管理資料。除非法令強制或為保護使用者及第三人合法權益所必要，本服務不會要求或保留可直接識別個人之伺服器端資料，故原則上亦無從代為提供伺服器端紀錄。 本服務不以追蹤廣告為目的，不進行跨站追蹤或販售個資。未成年人使用本服務時，應先取得法定監護人之同意並於其指導下進行。使用者就其資料享有存取、匯出與刪除之控制權；得於「資料管理」頁面匯出備份，或清除瀏覽器資料使之歸零。本政策將視功能、法規或營運需要不時更新，最新版本公布後即刻生效；重大變更將以合理方式提示。若使用者對資料保護有任何疑問、要求或建議，敬請循指定聯絡窗口與我們聯繫，我們將於合理期間內提供協助。',
@@ -167,8 +168,6 @@ window.i18n = {
         cropWallpaper: '裁切桌布',
         cropWallpaperDesc: '拖動選框以調整您想要的桌布區域，建議使用符合螢幕比例的裁切。',
         confirmAndApply: '確認並套用',
-        setAstrasAvatar: '設定 Astras 頭像',
-        cropAvatarDesc: '移動和縮放圖片以裁切您喜歡的圓形頭像。',
 
         // Popover Menus
         pin: '釘選',
@@ -178,12 +177,6 @@ window.i18n = {
         createNewFolder: '建立新資料夾',
         deleteFolder: '刪除資料夾',
         edit: '編輯',
-        editAvatar: '編輯頭像',
-
-        // Astras Store
-        subscribe: '訂閱',
-        unsubscribe: '取消訂閱',
-        manage: '管理',
 
         // Dashboard specific
         modelUsageCount: '模型使用次數',
@@ -239,6 +232,9 @@ window.i18n = {
         astrasDeleted: 'Astras 已刪除',
         defaultModelUpdated: '預設模型已更新',
         modelOrderUpdated: '模型順序已更新',
+        apiKeySavedFor: '已為',
+        saved: '儲存金鑰。',
+        apiKeyDeleted: 'API 金鑰已刪除。',
         settingsSaved: '設定已儲存！',
         wallpaperUpdated: '桌布已更新。',
         wallpaperError: '桌布處理失敗。',
@@ -264,9 +260,6 @@ window.i18n = {
         exportFailed: '匯出失敗',
         importSuccess: '資料匯入成功！',
         importFailed: '匯入失敗',
-        avatarUpdated: '頭像已更新',
-        subscribed: '訂閱成功！',
-        unsubscribed: '已取消訂閱',
 
         // Model Descriptions & Limits
         model_ultra_desc: '新版測試旗艦模型，適合大型研究與實驗探討；請注意!此模型對話內容將被模型提供方檢視。',
@@ -282,11 +275,7 @@ window.i18n = {
         model_nano_desc: '中文與技術領域專長，適合專業知識與程式開發。',
         model_nano_limits: '20次/分鐘、50次/天',
         model_pico_desc: '高速多語推理，適合即時運用與跨語言應用。',
-        model_pico_limits: '20次/分鐘、50次/天',
-
-        // Official Astras
-        astras_official_writer_01_name: '旅遊小編',
-        astras_official_writer_01_desc: '這是一款專為社群平台設計的Astras，能以優雅且富有感染力的語言撰寫旅遊景點與飯店介紹，透過細膩的文筆展現高級質感，同時結合城市歷史背景與熱門主題標籤，吸引目標客群並提升內容曝光度。'
+        model_pico_limits: '20次/分鐘、50次/天'
     },
     'en': {
         // Login Page
@@ -303,7 +292,7 @@ window.i18n = {
         importRecords: 'Import Records',
         exploreModels: 'Explore Our AI Models',
         exploreModelsDesc: 'We offer a range of top-tier models tailored for different tasks. Whether it\'s creative writing, programming, or business analysis, there\'s one for you.',
-        demoChatTitle: 'Astra-ultra Conversation Example',
+        demoChatTitle: 'Astra-Pro Conversation Example',
         copyright: 'Copyright © ASTRA',
         currentLanguageName: 'English',
 
@@ -314,7 +303,6 @@ window.i18n = {
         search: 'Search',
         astras: 'Astras',
         addAstras: 'New Astras',
-        astrasStore: 'Astras Store',
         folders: 'Folders',
         addFolder: 'New Folder',
         settings: 'Settings',
@@ -377,8 +365,10 @@ window.i18n = {
         geminiFollowUpNotice: 'The follow-up prompts feature requires a Gemini API key to be enabled.',
         geminiApiKey: 'Gemini API Key',
         geminiApiPlaceholder: 'Enter your Google API Key',
-        openRouterApiKey: 'OpenRouter API Key',
-        openRouterApiDescAll: 'Enter your single OpenRouter key to enable all related models.',
+        openRouterApiKey: 'OpenRouter API Model Key',
+        openRouterApiDesc: 'After adding a model key, that model can be selected.',
+        selectModel: 'Select a model',
+        enterApiKey: 'Enter API Key',
         save: 'Save',
         modelListManagement: 'Model List Management',
         modelListManagementDesc: 'Click arrows to sort, eye to hide/show, circle to set as default.',
@@ -396,7 +386,7 @@ window.i18n = {
         termsOfUse: 'Terms of Use',
         privacyPolicy: 'Privacy Policy',
         version: 'Version',
-        versionNumber: 'Astra-nos-14.5.0',
+        versionNumber: 'Astra-nos-14.4.0',
         helpCenterDesc: 'The Advanced AI Chatbot (hereinafter "this Service" or "ASTRA") aims to provide a stable, controllable, and user-centric intelligent conversation experience. This Service is designed to operate on the client-side, with primary data stored in the user\'s local environment to reduce unnecessary transmission and centralization risks. Users can switch between multiple models in a single interface, create ephemeral temporary chats that leave no trace, use the Astras feature to customize behavioral guidelines, manage folders, and archive conversations. They can also perform backups and transfers independently through export and import mechanisms. If users require real-time information, they can enable web search. For long-text processing or media analysis, files or images can be attached to messages for comprehensive interpretation by the model. All conversation content, appearance and model preferences, folder and archive states, Astras settings, and other application-level information related to this Service are stored in the browser database on the user\'s device. API keys provided by the user are used solely to connect to third-party model providers (e.g., Google Gemini or OpenRouter) and are kept locally to complete necessary requests. This Service does not build server-side databases to collect user personal data or conversation content, nor does it process or resell information stored locally by the user. Users may choose to disable web search, remove API keys, use temporary chats, or clear browser data at any time to meet their own security and compliance requirements.',
         termsOfUseDesc: 'Upon first use, please create or log into a local account via the login interface to associate individual settings and conversation records. The password will be stored client-side as a hash (SHA-256) for future login comparison purposes only and is not stored in plaintext. After logging in, it is recommended to immediately navigate to the settings page and enter the API keys for the desired models: for Gemini, provide the key in the specified field; for OpenRouter, save keys for each model you plan to use. Once keys are set, message input and file attachment will be enabled. To retrieve the latest public information, you can toggle on web search before asking a question. To extend a discussion within the same context, enable the follow-up prompts feature to receive suggested questions related to the current response. As the number of conversations grows, users can rename, move into folders, or archive them as needed, and can use batch selection for combined operations. To migrate the working environment between different browsers or devices, it is recommended to use the export function to generate a backup file (JSON), which can be imported into the new environment to quickly restore conversations, folders, and application preferences (excluding sensitive credentials). To protect user autonomy, this Service also offers a temporary chat mode where inputs and replies exist only for the current session and leave no trace upon closing. It is important to note that responses from this Service are generated by third-party models based on the input and may be subject to uncertainty due to data timeliness, context interpretation, or training boundaries. In medical, legal, financial, or other professional fields, users should exercise their own careful judgment and consult qualified professionals when necessary.',
         privacyPolicyDesc: 'This Service values user data protection and privacy, and is designed on the principles of data minimization, localized storage, and user control. Except where required by law or explicitly authorized by the user, this Service does not actively store user conversation content or personally identifiable information on the server-side. Typically, conversation history, Astras settings, application appearance and model preferences, folder and archive status, and API keys saved by the user in the settings page are all stored in the local database of the user\'s browser. The login password will be stored in the same environment as a SHA-256 hash for login verification purposes only. Other than the password hash, other application-level data is not additionally encrypted on the client-side; users should adequately protect their device and browser environment and avoid storing sensitive information on shared or untrusted devices. When a user enables a third-party model or web search, the relevant prompt text, necessary context, and (if attached by the user) file content will be sent to the third-party provider as directed by the user\'s action to complete the request or retrieve the latest information. Such data processing will be governed by the third party\'s terms and privacy policy and may involve cross-border data transfer and compliance assessments. This Service is not responsible for the operational procedures of third parties, nor does it collect or sell this data separately. Users may at any time disable the web search feature, remove API keys, or switch to temporary chat mode to reduce the risk of persistent storage or external transmission. They can also manage their data independently through the export and import mechanisms. Unless compelled by law or necessary to protect the legitimate rights and interests of the user and third parties, this Service will not request or retain server-side data that can directly identify an individual, and therefore, in principle, cannot provide server-side records on their behalf. This Service is not used for ad tracking purposes, does not engage in cross-site tracking, or sell personal data. Minors should obtain the consent of a legal guardian and use this Service under their guidance. Users have control over their data, including access, export, and deletion rights; they can export a backup from the "Data Management" page or clear browser data to reset it. This policy will be updated from time to time based on functional, regulatory, or operational needs, with the latest version taking effect immediately upon publication. Significant changes will be communicated in a reasonable manner. If users have any questions, requests, or suggestions regarding data protection, please contact us through the designated channels, and we will provide assistance within a reasonable timeframe.',
@@ -456,8 +446,6 @@ window.i18n = {
         cropWallpaper: 'Crop Wallpaper',
         cropWallpaperDesc: 'Drag the selection box to adjust your desired wallpaper area. Using an aspect ratio that matches your screen is recommended.',
         confirmAndApply: 'Confirm & Apply',
-        setAstrasAvatar: 'Set Astras Avatar',
-        cropAvatarDesc: 'Move and scale the image to crop your desired circular avatar.',
 
         // Popover Menus
         pin: 'Pin',
@@ -467,12 +455,6 @@ window.i18n = {
         createNewFolder: 'Create New Folder',
         deleteFolder: 'Delete Folder',
         edit: 'Edit',
-        editAvatar: 'Edit Avatar',
-
-        // Astras Store
-        subscribe: 'Subscribe',
-        unsubscribe: 'Unsubscribe',
-        manage: 'Manage',
 
         // Dashboard specific
         modelUsageCount: 'Model Usage Count',
@@ -528,6 +510,9 @@ window.i18n = {
         astrasDeleted: 'Astras deleted.',
         defaultModelUpdated: 'Default model updated.',
         modelOrderUpdated: 'Model order updated.',
+        apiKeySavedFor: 'API key saved for',
+        saved: '.',
+        apiKeyDeleted: 'API key deleted.',
         settingsSaved: 'Settings saved!',
         wallpaperUpdated: 'Wallpaper updated.',
         wallpaperError: 'Failed to process wallpaper.',
@@ -553,29 +538,22 @@ window.i18n = {
         exportFailed: 'Export failed',
         importSuccess: 'Data imported successfully!',
         importFailed: 'Import failed',
-        avatarUpdated: 'Avatar updated.',
-        subscribed: 'Subscribed successfully!',
-        unsubscribed: 'Unsubscribed.',
 
         // Model Descriptions & Limits
-        model_ultra_desc: 'New beta flagship model, suitable for large-scale research and experimental exploration; Please note! The content of conversations with this model will be reviewed by the model provider.',
-        model_ultra_limits: '20 reqs/minute, 50 reqs/day',
-        model_pro_desc: 'High-speed generation and medium-high accuracy, suitable for long-form content and comprehensive analysis.',
-        model_pro_limits: '10 reqs/min, 250 reqs/day',
-        model_plus_desc: 'High-speed generation with moderate accuracy, suitable for daily content and long-text processing.',
-        model_plus_limits: '15 reqs/min, 1000 reqs/day',
-        model_mini_desc: 'Powerful reasoning and long-text processing, suitable for multi-step reasoning and in-depth Q&A.',
-        model_mini_limits: '20 reqs/min, 50 reqs/day',
-        model_mill_desc: 'Efficient general-purpose reasoning, suitable for cross-domain medium-to-large tasks.',
-        model_mill_limits: '20 reqs/min, 50 reqs/day',
-        model_nano_desc: 'Expertise in Chinese and technical fields, suitable for professional knowledge and code development.',
-        model_nano_limits: '20 reqs/min, 50 reqs/day',
-        model_pico_desc: 'High-speed multilingual reasoning, suitable for real-time use and cross-lingual applications.',
-        model_pico_limits: '20 reqs/min, 50 reqs/day',
-
-        // Official Astras
-        astras_official_writer_01_name: 'Travel Blogger',
-        astras_official_writer_01_desc: 'This is an Astras designed for social media platforms, capable of writing elegant and engaging introductions for tourist attractions and hotels. It uses refined language to convey a high-end feel, incorporating the city\'s historical background and popular hashtags to attract the target audience and increase content visibility.'
+        model_ultra_desc: 'New flagship test model, suitable for large-scale research and experimental exploration; Please note! The contents of conversations with this model may be reviewed by the model provider.',
+        model_ultra_limits: '20 times/minute, 50 times/day',
+        model_pro_desc: 'High-speed generation with high accuracy, suitable for long content and comprehensive analysis.',
+        model_pro_limits: '10 req/min, 250 req/day',
+        model_plus_desc: 'High-speed generation with moderate accuracy, suitable for daily content and long text processing.',
+        model_plus_limits: '15 req/min, 1000 req/day',
+        model_mini_desc: 'Powerful reasoning and long text handling, ideal for multi-step inference and in-depth Q&A.',
+        model_mini_limits: '20 req/min, 50 req/day',
+        model_mill_desc: 'High-efficiency general-purpose reasoning, suitable for cross-domain medium to large tasks.',
+        model_mill_limits: '20 req/min, 50 req/day',
+        model_nano_desc: 'Specialized in Chinese and technical domains, suitable for professional knowledge and code development.',
+        model_nano_limits: '20 req/min, 50 req/day',
+        model_pico_desc: 'High-speed multilingual reasoning, suitable for real-time applications and cross-lingual use.',
+        model_pico_limits: '20 req/min, 50 req/day'
     },
     'fr': {
         // Login Page
@@ -592,7 +570,7 @@ window.i18n = {
         importRecords: 'Importer des Données',
         exploreModels: 'Découvrez Nos Modèles d\'IA',
         exploreModelsDesc: 'Nous proposons une gamme de modèles de pointe pour différentes tâches. Que ce soit pour l\'écriture créative, la programmation ou l\'analyse commerciale, il y en a un pour vous.',
-        demoChatTitle: 'Exemple de Conversation Astra-ultra',
+        demoChatTitle: 'Exemple de Conversation Astra-Pro',
         copyright: 'Copyright © ASTRA',
         currentLanguageName: 'Français',
 
@@ -603,7 +581,6 @@ window.i18n = {
         search: 'Rechercher',
         astras: 'Astras',
         addAstras: 'Nouvel Astras',
-        astrasStore: 'Boutique Astras',
         folders: 'Dossiers',
         addFolder: 'Nouveau Dossier',
         settings: 'Paramètres',
@@ -666,8 +643,10 @@ window.i18n = {
         geminiFollowUpNotice: 'La fonction de questions de suivi nécessite une clé API Gemini pour être activée.',
         geminiApiKey: 'Clé API Gemini',
         geminiApiPlaceholder: 'Entrez votre clé API Google',
-        openRouterApiKey: 'Clé API OpenRouter',
-        openRouterApiDescAll: 'Entrez votre clé OpenRouter unique pour activer tous les modèles associés.',
+        openRouterApiKey: 'Clé de Modèle API OpenRouter',
+        openRouterApiDesc: 'Après avoir ajouté une clé de modèle, ce modèle peut être sélectionné.',
+        selectModel: 'Sélectionner un modèle',
+        enterApiKey: 'Entrez la clé API',
         save: 'Enregistrer',
         modelListManagement: 'Gestion de la Liste des Modèles',
         modelListManagementDesc: 'Cliquez sur les flèches pour trier, l\'œil pour masquer/afficher, le cercle pour définir par défaut.',
@@ -685,7 +664,7 @@ window.i18n = {
         termsOfUse: 'Conditions d\'Utilisation',
         privacyPolicy: 'Politique de Confidentialité',
         version: 'Version',
-        versionNumber: 'Astra-nos-14.5.0',
+        versionNumber: 'Astra-nos-14.4.0',
         helpCenterDesc: 'Le Chatbot IA Avancé (ci-après "ce Service" ou "ASTRA") vise à fournir une expérience de conversation intelligente, stable, contrôlable et centrée sur l\'utilisateur. Ce Service est conçu pour fonctionner côté client, les données principales étant stockées dans l\'environnement local de l\'utilisateur afin de réduire les risques de transmission inutile et de centralisation. Les utilisateurs peuvent basculer entre plusieurs modèles dans une seule interface, créer des chats temporaires éphémères ne laissant aucune trace, utiliser la fonction Astras pour personnaliser les directives comportementales, gérer des dossiers et archiver des conversations. Ils peuvent également effectuer des sauvegardes et des transferts de manière autonome grâce aux mécanismes d\'exportation et d\'importation. Si les utilisateurs ont besoin d\'informations en temps réel, ils peuvent activer la recherche Web. Pour le traitement de textes longs ou l\'analyse de médias, des fichiers ou des images peuvent être joints aux messages pour une interprétation complète par le modèle. Tout le contenu des conversations, les préférences d\'apparence et de modèle, l\'état des dossiers et des archives, les paramètres d\'Astras et autres informations au niveau de l\'application relatives à ce Service sont stockés dans la base de données du navigateur sur l\'appareil de l\'utilisateur. Les clés API fournies par l\'utilisateur sont utilisées uniquement pour se connecter à des fournisseurs de modèles tiers (par exemple, Google Gemini ou OpenRouter) et sont conservées localement pour effectuer les requêtes nécessaires. Ce Service ne construit pas de bases de données côté serveur pour collecter les données personnelles des utilisateurs ou le contenu des conversations, et ne traite ni ne revend les informations stockées localement par l\'utilisateur. Les utilisateurs peuvent choisir de désactiver la recherche Web, de supprimer les clés API, d\'utiliser des chats temporaires ou d\'effacer les données du navigateur à tout moment pour répondre à leurs propres exigences de sécurité et de conformité.',
         termsOfUseDesc: 'Lors de la première utilisation, veuillez créer ou vous connecter à un compte local via l\'interface de connexion pour associer les paramètres individuels et l\'historique des conversations. Le mot de passe sera stocké côté client sous forme de hachage (SHA-256) uniquement à des fins de comparaison lors des connexions futures et n\'est pas stocké en clair. Après vous être connecté, il est recommandé de vous rendre immédiatement sur la page des paramètres et de saisir les clés API des modèles souhaités : pour Gemini, fournissez la clé dans le champ spécifié ; pour OpenRouter, enregistrez les clés pour chaque modèle que vous prévoyez d\'utiliser. Une fois les clés définies, la saisie de messages et la pièce jointe de fichiers seront activées. Pour récupérer les dernières informations publiques, vous pouvez activer la recherche Web avant de poser une question. Pour prolonger une discussion dans le même contexte, activez la fonction de suggestions de suivi pour recevoir des questions suggérées en rapport avec la réponse actuelle. À mesure que le nombre de conversations augmente, les utilisateurs peuvent les renommer, les déplacer dans des dossiers ou les archiver selon leurs besoins, et peuvent utiliser la sélection multiple pour des opérations groupées. Pour migrer l\'environnement de travail entre différents navigateurs ou appareils, il est recommandé d\'utiliser la fonction d\'exportation pour générer un fichier de sauvegarde (JSON), qui peut être importé dans le nouvel environnement pour restaurer rapidement les conversations, les dossiers et les préférences de l\'application (à l\'exclusion des informations d\'identification sensibles). Pour protéger l\'autonomie de l\'utilisateur, ce Service propose également un mode de chat temporaire où les entrées et les réponses n\'existent que pour la session en cours et ne laissent aucune trace à la fermeture. Il est important de noter que les réponses de ce Service sont générées par des modèles tiers en fonction de l\'entrée et peuvent être sujettes à des incertitudes en raison de l\'actualité des données, de l\'interprétation du contexte ou des limites de l\'entraînement. Dans les domaines médical, juridique, financier ou autres domaines professionnels, les utilisateurs doivent faire preuve de leur propre jugement et consulter des professionnels qualifiés si nécessaire.',
         privacyPolicyDesc: 'Ce Service attache de l\'importance à la protection des données et à la vie privée des utilisateurs, et est conçu sur les principes de minimisation des données, de stockage localisé et de contrôle par l\'utilisateur. Sauf si la loi l\'exige ou si l\'utilisateur l\'autorise explicitement, ce Service ne stocke pas activement le contenu des conversations des utilisateurs ou les informations personnellement identifiables côté serveur. En règle générale, l\'historique des conversations, les paramètres d\'Astras, les préférences d\'apparence et de modèle, l\'état des dossiers et des archives, ainsi que les clés API enregistrées par l\'utilisateur dans la page des paramètres sont tous stockés dans la base de données locale du navigateur de l\'utilisateur. Le mot de passe de connexion sera stocké dans le même environnement sous forme de hachage SHA-256 uniquement à des fins de vérification de la connexion. À l\'exception du hachage du mot de passe, les autres données au niveau de l\'application ne sont pas chiffrées de manière supplémentaire côté client ; les utilisateurs doivent protéger adéquatement leur appareil et leur environnement de navigateur et éviter de stocker des informations sensibles sur des appareils partagés ou non fiables. Lorsqu\'un utilisateur active un modèle tiers ou la recherche Web, le texte de la requête, le contexte nécessaire et (le cas échéant) le contenu des fichiers joints seront envoyés au fournisseur tiers conformément à l\'action de l\'utilisateur pour compléter la requête ou récupérer les dernières informations. Un tel traitement des données sera régi par les conditions et la politique de confidentialité du tiers et pourra impliquer un transfert de données transfrontalier et des évaluations de conformité. Ce Service n\'est pas responsable des procédures opérationnelles des tiers, et ne collecte ni ne vend ces données séparément. Les utilisateurs peuvent à tout moment désactiver la fonction de recherche Web, supprimer les clés API ou passer en mode de chat temporaire pour réduire le risque de stockage persistant ou de transmission externe. Ils peuvent également gérer leurs données de manière indépendante via les mécanismes d\'exportation et d\'importation. Sauf si la loi l\'exige ou si cela est nécessaire pour protéger les droits et intérêts légitimes de l\'utilisateur et de tiers, ce Service ne demandera ni ne conservera de données côté serveur pouvant identifier directement un individu et ne pourra donc, en principe, pas fournir de registres côté serveur en leur nom. Ce Service n\'est pas utilisé à des fins de suivi publicitaire, ne pratique pas le suivi intersites et ne vend pas de données personnelles. Les mineurs doivent obtenir le consentement d\'un tuteur légal et utiliser ce Service sous sa direction. Les utilisateurs ont le contrôle de leurs données, y compris les droits d\'accès, d\'exportation et de suppression ; ils peuvent exporter une sauvegarde depuis la page "Gestion des Données" ou effacer les données du navigateur pour les réinitialiser. Cette politique sera mise à jour de temps à autre en fonction des besoins fonctionnels, réglementaires ou opérationnels, la dernière version entrant en vigueur dès sa publication. Les changements importants seront communiqués de manière raisonnable. Si les utilisateurs ont des questions, des demandes ou des suggestions concernant la protection des données, veuillez nous contacter via les canaux désignés, et nous vous fournirons une assistance dans un délai raisonnable.',
@@ -745,8 +724,6 @@ window.i18n = {
         cropWallpaper: 'Recadrer le Fond d\'écran',
         cropWallpaperDesc: 'Faites glisser la zone de sélection pour ajuster. Il est recommandé d\'utiliser le format de votre écran.',
         confirmAndApply: 'Confirmer & Appliquer',
-        setAstrasAvatar: 'Définir l\'avatar de l\'Astras',
-        cropAvatarDesc: 'Déplacez et redimensionnez l\'image pour recadrer l\'avatar circulaire souhaité.',
 
         // Popover Menus
         pin: 'Épingler',
@@ -756,12 +733,6 @@ window.i18n = {
         createNewFolder: 'Créer un nouveau dossier',
         deleteFolder: 'Supprimer le dossier',
         edit: 'Modifier',
-        editAvatar: 'Modifier l\'avatar',
-
-        // Astras Store
-        subscribe: 'S\'abonner',
-        unsubscribe: 'Se désabonner',
-        manage: 'Gérer',
 
         // Dashboard specific
         modelUsageCount: 'Nombre d\'utilisations du modèle',
@@ -817,6 +788,9 @@ window.i18n = {
         astrasDeleted: 'Astras supprimé.',
         defaultModelUpdated: 'Modèle par défaut mis à jour.',
         modelOrderUpdated: 'Ordre des modèles mis à jour.',
+        apiKeySavedFor: 'Clé API enregistrée pour',
+        saved: '.',
+        apiKeyDeleted: 'Clé API supprimée.',
         settingsSaved: 'Paramètres enregistrés !',
         wallpaperUpdated: 'Fond d\'écran mis à jour.',
         wallpaperError: 'Échec du traitement du fond d\'écran.',
@@ -842,28 +816,21 @@ window.i18n = {
         exportFailed: 'L\'exportation a échoué',
         importSuccess: 'Données importées avec succès !',
         importFailed: 'L\'importation a échoué',
-        avatarUpdated: 'Avatar mis à jour.',
-        subscribed: 'Abonnement réussi !',
-        unsubscribed: 'Désabonné.',
 
         // Model Descriptions & Limits
-        model_ultra_desc: 'Nouveau modèle phare en bêta, adapté à la recherche à grande échelle et à l\'exploration expérimentale ; Attention ! Le contenu des conversations avec ce modèle sera examiné par le fournisseur du modèle.',
-        model_ultra_limits: '20 reqs/minute, 50 reqs/jour',
-        model_pro_desc: 'Génération à grande vitesse et précision moyenne-élevée, adaptée au contenu long et à l\'analyse complète.',
-        model_pro_limits: '10 reqs/min, 250 reqs/jour',
-        model_plus_desc: 'Génération à grande vitesse avec une précision modérée, adaptée au contenu quotidien et au traitement de textes longs.',
-        model_plus_limits: '15 reqs/min, 1000 reqs/jour',
-        model_mini_desc: 'Raisonnement puissant et traitement de textes longs, adapté au raisonnement en plusieurs étapes et aux questions-réponses approfondies.',
-        model_mini_limits: '20 reqs/min, 50 reqs/jour',
-        model_mill_desc: 'Raisonnement polyvalent efficace, adapté aux tâches inter-domaines de taille moyenne à grande.',
-        model_mill_limits: '20 reqs/min, 50 reqs/jour',
-        model_nano_desc: 'Expertise dans les domaines chinois et techniques, adaptée aux connaissances professionnelles et au développement de code.',
-        model_nano_limits: '20 reqs/min, 50 reqs/jour',
-        model_pico_desc: 'Raisonnement multilingue à grande vitesse, adapté à une utilisation en temps réel et à des applications multilingues.',
-        model_pico_limits: '20 reqs/min, 50 reqs/jour',
-
-        // Official Astras
-        astras_official_writer_01_name: 'Blogueur de Voyage',
-        astras_official_writer_01_desc: 'Ceci est un Astras conçu pour les plateformes de médias sociaux, capable de rédiger des introductions élégantes et engageantes pour les attractions touristiques et les hôtels. Il utilise un langage raffiné pour transmettre une sensation haut de gamme, en incorporant le contexte historique de la ville et des hashtags populaires pour attirer le public cible et augmenter la visibilité du contenu.'
+        model_ultra_desc: 'Nouveau modèle expérimental phare, adapté à la recherche et à l’exploration à grande échelle ; Attention ! Le contenu des conversations avec ce modèle pourra être examiné par le fournisseur du modèle.',
+        model_ultra_limits: '20 fois/minute, 50 fois/jour',
+        model_pro_desc: 'Génération rapide avec haute précision, pour contenu long et analyse complète.',
+        model_pro_limits: '10 req/min, 250 req/jour',
+        model_plus_desc: 'Génération rapide avec précision modérée, pour contenu quotidien et textes longs.',
+        model_plus_limits: '15 req/min, 1000 req/jour',
+        model_mini_desc: 'Raisonnement puissant, idéal pour inférence multi-étapes et Q&R approfondies.',
+        model_mini_limits: '20 req/min, 50 req/jour',
+        model_mill_desc: 'Raisonnement généraliste efficace, pour tâches moyennes à grandes inter-domaines.',
+        model_mill_limits: '20 req/min, 50 req/jour',
+        model_nano_desc: 'Spécialisé en chinois et domaines techniques, pour savoir expert et code.',
+        model_nano_limits: '20 req/min, 50 req/jour',
+        model_pico_desc: 'Raisonnement multilingue rapide, pour applications temps réel et inter-langues.',
+        model_pico_limits: '20 req/min, 50 req/jour'
     }
 };
