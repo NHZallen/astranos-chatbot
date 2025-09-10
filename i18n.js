@@ -297,7 +297,7 @@ window.i18n = {
         astras_official_writer_01_name: '旅遊小編',
         astras_official_writer_01_desc: '這是一款專為社群平台設計的Astras，能以優雅且富有感染力的語言撰寫旅遊景點與飯店介紹，透過細膩的文筆展現高級質感，同時結合城市歷史背景與熱門主題標籤，吸引目標客群並提升內容曝光度。',
         astras_official_editor_02_name: '社群編輯',
-        astras_official_editor_02_desc: '社群編輯是一個專注於社群帳號經營的智慧助手，不會迎合或編造，而是以真實與一致為原則，協助檢視方向、發掘創意並掌握受眾回應，幫助在策略、內容與互動之間保持平衡，讓社群經營更有條理與延展性。'
+        astras_official_editor_02_desc: '社群編輯是一個專注於社群帳號經營的智慧助手，不會迎合或編造，而是以真實與一致為原則，協助檢視方向、發掘創意並掌握受眾回應，幫助在策略、內容與互動之間保持平衡，讓社群經營更有條理與延展性。',
         astras_official_editor_03_name: '攝影之眼',
         astras_official_editor_03_desc: '攝影之眼是一個專注於攝影的智慧助手，能夠針對構圖、主題、拍攝環境與設備設定提供實用建議。無論你使用手機還是相機，它都能根據不同情境給出專業且易懂的指引，幫助你捕捉更具故事性與美感的影像。',
     },
@@ -599,7 +599,7 @@ window.i18n = {
         astras_official_writer_01_name: 'Travel Blogger',
         astras_official_writer_01_desc: 'This is an Astras designed for social media platforms, capable of writing elegant and engaging introductions for tourist attractions and hotels. It uses refined language to convey a high-end feel, incorporating the city\'s historical background and popular hashtags to attract the target audience and increase content visibility.',
         astras_official_editor_02_name: 'Social Media Editor',
-        astras_official_editor_02_desc: 'The Social Media Editor is an intelligent assistant focused on social media account management. It operates on principles of authenticity and consistency, rather than pandering or fabricating, to help review strategies, discover creative ideas, manage audience responses, and maintain a balance between strategy, content, and interaction, making social media management more organized and scalable.'
+        astras_official_editor_02_desc: 'The Social Media Editor is an intelligent assistant focused on social media account management. It operates on principles of authenticity and consistency, rather than pandering or fabricating, to help review strategies, discover creative ideas, manage audience responses, and maintain a balance between strategy, content, and interaction, making social media management more organized and scalable.',
         astras_official_editor_03_name: 'Eye of Photography',
         astras_official_editor_03_desc: 'Eye of Photography is an intelligent assistant focused on photography, capable of providing practical advice on composition, themes, shooting environments, and equipment settings. Whether you are using a smartphone or a camera, it offers clear, professional, and accessible guidance tailored to the situation, helping you capture images with stronger storytelling and aesthetic appeal.',
     },
@@ -901,7 +901,7 @@ window.i18n = {
         astras_official_writer_01_name: 'Blogueur de Voyage',
         astras_official_writer_01_desc: 'Ceci est un Astras conçu pour les plateformes de médias sociaux, capable de rédiger des introductions élégantes et engageantes pour les attractions touristiques et les hôtels. Il utilise un langage raffiné pour transmettre une sensation haut de gamme, en incorporant le contexte historique de la ville et des hashtags populaires pour attirer le public cible et augmenter la visibilité du contenu.',
         astras_official_editor_02_name: 'Éditeur de Médias Sociaux',
-        astras_official_editor_02_desc: 'L\'Éditeur de Médias Sociaux est un assistant intelligent axé sur la gestion de comptes de médias sociaux. Il fonctionne sur des principes d\'authenticité et de cohérence, plutôt que de complaisance ou d\'invention, pour aider à examiner les stratégies, découvrir des idées créatives, gérer les réponses du public et maintenir un équilibre entre la stratégie, le contenu et l\'interaction, rendant la gestion des médias sociaux plus organisée et évolutive.'
+        astras_official_editor_02_desc: 'L\'Éditeur de Médias Sociaux est un assistant intelligent axé sur la gestion de comptes de médias sociaux. Il fonctionne sur des principes d\'authenticité et de cohérence, plutôt que de complaisance ou d\'invention, pour aider à examiner les stratégies, découvrir des idées créatives, gérer les réponses du public et maintenir un équilibre entre la stratégie, le contenu et l\'interaction, rendant la gestion des médias sociaux plus organisée et évolutive.',
         astras_official_editor_03_name: 'Œil de la Photographie',
         astras_official_editor_03_desc: 'Œil de la Photographie est un assistant intelligent spécialisé dans la photographie, capable de fournir des conseils pratiques sur la composition, les thèmes, les environnements de prise de vue et les réglages de l’équipement. Que vous utilisiez un smartphone ou un appareil photo, il offre des recommandations claires, professionnelles et accessibles, adaptées à chaque situation, pour vous aider à capturer des images plus narratives et esthétiques.',
    }
