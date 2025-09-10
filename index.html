@@ -4079,6 +4079,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             
             await saveConfig();
             applyLanguage(config.uiLanguage); // 儲存後立即應用新語言
+            renderModelSwitcher();
+            renderChat();
+            renderStore();
             toggleModal(ALL_ELEMENTS.settingsModal, false);
             updateApiKeyWarningBadge();
             updateInputState();
@@ -5827,53 +5830,67 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
 
         const renderStore = () => {
-            const grid = ALL_ELEMENTS.storeGrid;
-            grid.innerHTML = '';
+    const grid = ALL_ELEMENTS.storeGrid;
+    grid.innerHTML = '';
+    
+    // 取得當前語言的翻譯
+    const translations = i18n[config.uiLanguage] || i18n['zh-TW'];
 
-            const allStoreAstras = [...OFFICIAL_ASTRAS, ...astras.filter(a => !a.officialId)];
-            
-            allStoreAstras.forEach(ast => {
-                const card = document.createElement('div');
-                card.className = 'astras-store-card';
-                
-                const isSubscribed = astras.some(userAstra => userAstra.officialId === ast.id);
-                const isUserCreated = !ast.officialId && astras.some(userAstra => userAstra.id === ast.id);
-
-                const avatarUrl = ast.avatarUrl;
-                const initials = ast.name.charAt(0);
-                const avatarElement = `
-                    <div class="astras-card-avatar">
-                        ${avatarUrl ? `<img src="${avatarUrl}" alt="${ast.name}">` : initials}
-                    </div>
-                `;
-
-                card.innerHTML = `
-                    ${avatarElement}
-                    <h3 class="astras-card-name">${ast.name}</h3>
-                    <p class="astras-card-desc">${ast.description}</p>
-                    <button class="subscribe-btn btn-primary" data-id="${ast.id}"></button>
-                `;
-
-                const btn = card.querySelector('.subscribe-btn');
-                if (isSubscribed) {
-                    btn.textContent = i18n[config.uiLanguage].unsubscribe || '取消訂閱';
-                    btn.classList.add('subscribed');
-                } else if (isUserCreated) {
-                    btn.textContent = i18n[config.uiLanguage].manage || '管理';
-                    btn.disabled = true;
-                    btn.classList.add('opacity-50', 'cursor-not-allowed');
-                } else {
-                    btn.textContent = i18n[config.uiLanguage].subscribe || '訂閱';
-                }
-
-                btn.addEventListener('click', () => {
-                    handleSubscription(ast.id);
-                });
-
-                grid.appendChild(card);
-            });
+    // 將官方 Astras 的資料轉換成使用翻譯鍵的版本
+    const translatedOfficialAstras = OFFICIAL_ASTRAS.map(ast => {
+        const keyBase = 'astras_' + ast.id.replace(/-/g, '_');
+        return {
+            ...ast,
+            name: translations[keyBase + '_name'] || ast.name, // 如果找不到翻譯，則使用原始名稱
+            description: translations[keyBase + '_desc'] || ast.description // 如果找不到翻譯，則使用原始描述
         };
+    });
 
+    const allStoreAstras = [...translatedOfficialAstras, ...astras.filter(a => !a.officialId)];
+    
+    allStoreAstras.forEach(ast => {
+        const card = document.createElement('div');
+        card.className = 'astras-store-card';
+        
+        // 判斷訂閱狀態時，要用原始的 officialId
+        const originalId = ast.officialId || ast.id;
+        const isSubscribed = astras.some(userAstra => userAstra.officialId === originalId);
+        const isUserCreated = !ast.officialId && astras.some(userAstra => userAstra.id === originalId);
+
+        const avatarUrl = ast.avatarUrl;
+        const initials = ast.name.charAt(0);
+        const avatarElement = `
+            <div class="astras-card-avatar">
+                ${avatarUrl ? `<img src="${avatarUrl}" alt="${ast.name}">` : initials}
+            </div>
+        `;
+
+        card.innerHTML = `
+            ${avatarElement}
+            <h3 class="astras-card-name">${ast.name}</h3>
+            <p class="astras-card-desc">${ast.description}</p>
+            <button class="subscribe-btn btn-primary" data-id="${originalId}"></button>
+        `;
+
+        const btn = card.querySelector('.subscribe-btn');
+        if (isSubscribed) {
+            btn.textContent = translations.unsubscribe || '取消訂閱';
+            btn.classList.add('subscribed');
+        } else if (isUserCreated) {
+            btn.textContent = translations.manage || '管理';
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+            btn.textContent = translations.subscribe || '訂閱';
+        }
+
+        btn.addEventListener('click', () => {
+            handleSubscription(originalId);
+        });
+
+        grid.appendChild(card);
+    });
+};
         const handleSubscription = (officialId) => {
             const isSubscribed = astras.some(a => a.officialId === officialId);
 
