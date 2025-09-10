@@ -18,6 +18,7 @@ window.i18n = {
         copyright: 'ASTRA版權所有',
         currentLanguageName: '繁體中文',
 
+
         // Main App UI
         newChat: '新對話',
         batchSelect: '批次選取',
@@ -50,6 +51,7 @@ window.i18n = {
         webSearch: '聯網搜尋',
         howCanIHelp: '有什麼可以為您服務的嗎？',
         viewingArchived: '正在檢視封存的對話，無法傳送訊息。',
+
 
         // Settings Modal
         personalization: '個人化',
@@ -110,10 +112,11 @@ window.i18n = {
         versionNumber: 'Astra-nos-14.5.0',
         helpCenterDesc: '進階 AI 聊天機器人（下稱「本服務」或「ASTRA」）旨在提供穩定、可控且以使用者為本的智慧對話體驗。本服務採取瀏覽器端運作設計，主要資料儲存於使用者之本機環境，以降低不必要之傳輸與集中化風險。使用者得依個人需求於單一介面中切換多種模型、建立不留痕跡之臨時對話、運用 Astras 功能自訂行為準則、管理資料夾並封存對話，亦可透過匯出與匯入機制，自主完成備份與移轉。若使用者有即時資訊之需求，得選擇啟用聯網搜尋；對於長文處理或媒體分析之情境，亦可於訊息中附加文件或影像，便於模型綜合判讀。 本服務所涉之對話內容、外觀與模型偏好、資料夾與封存狀態、Astras 設定及其他應用層級資訊，均以使用者裝置之瀏覽器資料庫保存。使用者自行提供之 API 金鑰僅用以連線第三方模型供應商（例如 Google Gemini 或 OpenRouter），並保留於本機以完成必要請求。本服務不建置伺服器端資料庫以蒐集使用者個資或對話內容，亦不就使用者於本機保存之資訊進行另行處理或轉售。使用者得隨時選擇關閉聯網、移除金鑰、啟用臨時對話或清除瀏覽器資料，以符合自身之安全與合規要求。',
         termsOfUseDesc: '首次使用時，請先於登入介面建立或登入本機帳號，以便關聯個別設定與對話紀錄。密碼將以雜湊方式（SHA-256）保存於瀏覽器端，僅供日後登入時比對之目的，不以明文儲存。完成登入後，建議立即前往設定頁面依實際需求填入對應模型之 API 金鑰：若使用 Gemini，請於指定欄位提供金鑰；若使用 OpenRouter，請為計畫使用之各模型分別儲存金鑰。金鑰設定完成後，訊息輸入與檔案附加即會啟用；如需檢索最新公開資訊，可切換開啟聯網搜尋後再行提問；如欲延展同一脈絡之討論，可啟用後續追問提示功能，以取得與當前回覆相銜接之建議問題。 當對話數量增加時，使用者可視需要將對話重新命名、移入資料夾或進行封存，並可使用批次選取進行合併操作。若需於不同瀏覽器或裝置間遷移工作環境，建議以匯出功能產生備份檔（JSON），於新環境完成匯入後可快速復原對話、資料夾與應用程式偏好（不含敏感憑證）。為保障使用者自主性，本服務亦提供臨時對話模式，該模式下之輸入與回覆僅駐留於當次工作階段，離開即不留痕跡。需特別注意者，本服務回覆係由第三方模型依輸入內容產生，可能受限於資料新舊、語境解讀或訓練邊界而產生不確定性；在醫療、法律、投資或其他專業領域，使用者應自行審慎判斷，並於必要時諮詢合格專業人士。',
-        privacyPolicyDesc: '本服務重視使用者之資料保護與隱私權，並以最小化蒐集、在地化儲存及使用者自主控制為設計原則。除依法令或使用者另有明確授權外，本服務不主動於伺服器端保存使用者之對話內容或個人識別資料。一般情況下，對話紀錄、Astras 設定、應用外觀與模型偏好、資料夾與封存狀態，以及使用者於設定頁面所選保存之 API 金鑰，均儲存於使用者瀏覽器之本機資料庫。登入密碼將以 SHA-256 雜湊方式保存於同一環境，僅供登入驗證之用；除密碼雜湊外，其他應用層級資料於瀏覽器端並未額外加密，使用者應自行妥適保護裝置與瀏覽器環境，避免於共用或不受信任之設備儲存敏感資訊。 當使用者啟用第三方模型或聯網搜尋時，相關提示文字、必要上下文及（在使用者附檔時可能包含之）檔案內容，將依使用者之操作指示送交該第三方供應商，以完成請求或檢索最新資訊。該等資料處理將受第三方之條款與隱私政策拘束，可能涉及資料跨境傳輸與合規評估；本服務不就第三方之作業程序負責，亦不進行另行蒐集或出售。使用者得隨時關閉連網功能、移除 API 金鑰或改用臨時對話模式，以降低持久化保存或外部傳輸之風險；亦可透過匯出與匯入機制自主管理資料。除非法令強制或為保護使用者及第三人合法權益所必要，本服務不會要求或保留可直接識別個人之伺服器端資料，故原則上亦無從代為提供伺服器端紀錄。 本服務不以追蹤廣告為目的，不進行跨站追蹤或販售個資。未成年人使用本服務時，應先取得法定監護人之同意並於其指導下進行。使用者就其資料享有存取、匯出與刪除之控制權；得於「資料管理」頁面匯出備份，或清除瀏覽器資料使之歸零。本政策將視功能、法規或營運需要不時更新，最新版本公布後即刻生效；重大變更將以合理方式提示。若使用者對資料保護有任何疑問、要求或建議，敬請循指定聯絡窗口與我們聯繫，我們將於合理期間內提供協助。',
+        privacyPolicyDesc: '本服務重視使用者之資料保護與隱私權，並以最小化蒐集、在地化儲存及使用者自主控制為設計原則。除依法令或使用者另有明確授權外，本服務不主動於伺服器端保存使用者之對話內容或個人識別資料。一般情況下，對話紀錄、Astras 設定、應用外觀與模型偏好、資料夾與封存狀態，以及使用者於設定頁面所選保存之 API 金鑰，均儲存於使用者瀏覽器之本機資料庫。登入密碼將以 SHA-256 雜湊方式保存於同一環境，僅供登入驗證之用；除密碼雜湊外，其他應用層級資料於瀏覽器端並未額外加密，使用者應自行妥適保護裝置與瀏覽器環境，避免於共用或不受信任之設備儲存敏感資訊。 當使用者啟用第三方模型或聯網搜尋時，相關提示文字、必要上下文及（在使用者附檔時可能包含之）檔案內容，將依使用者之操作指示送交該第三方供應商，以完成請求或檢索最新資訊。該等資料處理將受第三方之條款與隱私政策拘束，可能涉及資料跨境傳輸與合規評估；本服務不就第三方之作業程序負責，亦不進行另行蒐集或出售。使用者得隨時關閉連網功能、移除 API 金鑰或改用臨時對話模式，以降低持久化保存或外部傳輸之風險；亦可透過匯出與匯入機制自主管理資料。除非法令強制或為保護使用者及第三人合法權益所必要，本服務不會要求或保留可直接識別個人之伺服器端資料，故原則上亦無從代為提供伺服器端紀錄。 本服務不以追蹤廣告為目的，不進行跨站追蹤或販售個資。未成年人使用本服務時，應先取得法定監護人之同意並於其指導下進行。使用者就其資料享有存取、匯出與刪除之控制權；得於「資料管理」頁面匯出備份，或清除瀏覽器資料使之歸零。本政策將視功能、法規或營運需要不時更新，最新版本公布後即刻生效；重大變更將以合理方式提示。若使用者對資料保護有任何疑問、要求或建議，敬請循指定聯絡窗口與我們聯繫，我們將於合理期間内提供協助。',
         close: '關閉',
         show: '顯示',
         hide: '隱藏',
+
 
         // Other Modals & Dialogs
         selectDataToExport: '選擇您想要匯出的資料。',
@@ -170,6 +173,7 @@ window.i18n = {
         setAstrasAvatar: '設定 Astras 頭像',
         cropAvatarDesc: '移動和縮放圖片以裁切您喜歡的圓形頭像。',
 
+
         // Popover Menus
         pin: '釘選',
         unpin: '取消釘選',
@@ -180,10 +184,12 @@ window.i18n = {
         edit: '編輯',
         editAvatar: '編輯頭像',
 
+
         // Astras Store
         subscribe: '訂閱',
         unsubscribe: '取消訂閱',
         manage: '管理',
+
 
         // Dashboard specific
         modelUsageCount: '模型使用次數',
@@ -198,6 +204,7 @@ window.i18n = {
         monthSuffix: '月',
         daySuffix: '日',
         months: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+
 
         // Dialogs & Notifications
         usernamePasswordRequired: '使用者名稱和密碼皆為必填項目。',
@@ -268,6 +275,7 @@ window.i18n = {
         subscribed: '訂閱成功！',
         unsubscribed: '已取消訂閱',
 
+
         // Model Descriptions & Limits
         model_ultra_desc: '新版測試旗艦模型，適合大型研究與實驗探討；請注意!此模型對話內容將被模型提供方檢視。',
         model_ultra_limits: '20次/分鐘、50次/天',
@@ -284,11 +292,12 @@ window.i18n = {
         model_pico_desc: '高速多語推理，適合即時運用與跨語言應用。',
         model_pico_limits: '20次/分鐘、50次/天',
 
+
         // Official Astras
         astras_official_writer_01_name: '旅遊小編',
-        astras_official_writer_01_desc: '這是一款專為社群平台設計的Astras，能以優雅且富有感染力的語言撰寫旅遊景點與飯店介紹，透過細膩的文筆展現高級質感，同時結合城市歷史背景與熱門主題標籤，吸引目標客群並提升內容曝光度。'
+        astras_official_writer_01_desc: '這是一款專為社群平台設計的Astras，能以優雅且富有感染力的語言撰寫旅遊景點與飯店介紹，透過細膩的文筆展現高級質感，同時結合城市歷史背景與熱門主題標籤，吸引目標客群並提升內容曝光度。',
         astras_official_editor_02_name: '社群編輯',
-        astras_official_editor_02_desc: '社群編輯是一個專注於社群帳號經營的智慧助手，不會迎合或編造，而是以真實與一致為原則，協助檢視方向、發掘創意並掌握受眾回應，幫助在策略、內容與互動之間保持平衡，讓社群經營更有條理與延展性。',
+        astras_official_editor_02_desc: '社群編輯是一個專注於社群帳號經營的智慧助手，不會迎合或編造，而是以真實與一致為原則，協助檢視方向、發掘創意並掌握受眾回應，幫助在策略、內容與互動之間保持平衡，讓社群經營更有條理與延展性。'
     },
     'en': {
         // Login Page
@@ -308,6 +317,7 @@ window.i18n = {
         demoChatTitle: 'Astra-ultra Conversation Example',
         copyright: 'Copyright © ASTRA',
         currentLanguageName: 'English',
+
 
         // Main App UI
         newChat: 'New Chat',
@@ -341,6 +351,7 @@ window.i18n = {
         webSearch: 'Web Search',
         howCanIHelp: 'How can I help you?',
         viewingArchived: 'Viewing an archived chat. Cannot send messages.',
+
 
         // Settings Modal
         personalization: 'Personalization',
@@ -406,6 +417,7 @@ window.i18n = {
         show: 'Show',
         hide: 'Hide',
 
+
         // Other Modals & Dialogs
         selectDataToExport: 'Select the data you want to export.',
         exportHistory: 'Chat History (incl. archives & folders)',
@@ -461,6 +473,7 @@ window.i18n = {
         setAstrasAvatar: 'Set Astras Avatar',
         cropAvatarDesc: 'Move and scale the image to crop your desired circular avatar.',
 
+
         // Popover Menus
         pin: 'Pin',
         unpin: 'Unpin',
@@ -471,10 +484,12 @@ window.i18n = {
         edit: 'Edit',
         editAvatar: 'Edit Avatar',
 
+
         // Astras Store
         subscribe: 'Subscribe',
         unsubscribe: 'Unsubscribe',
         manage: 'Manage',
+
 
         // Dashboard specific
         modelUsageCount: 'Model Usage Count',
@@ -489,6 +504,7 @@ window.i18n = {
         monthSuffix: '',
         daySuffix: '',
         months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+
 
         // Dialogs & Notifications
         usernamePasswordRequired: 'Username and password are required.',
@@ -559,6 +575,7 @@ window.i18n = {
         subscribed: 'Subscribed successfully!',
         unsubscribed: 'Unsubscribed.',
 
+
         // Model Descriptions & Limits
         model_ultra_desc: 'New beta flagship model, suitable for large-scale research and experimental exploration; Please note! The content of conversations with this model will be reviewed by the model provider.',
         model_ultra_limits: '20 reqs/minute, 50 reqs/day',
@@ -575,12 +592,13 @@ window.i18n = {
         model_pico_desc: 'High-speed multilingual reasoning, suitable for real-time use and cross-lingual applications.',
         model_pico_limits: '20 reqs/min, 50 reqs/day',
 
+
         // Official Astras
         astras_official_writer_01_name: 'Travel Blogger',
-        astras_official_writer_01_desc: 'This is an Astras designed for social media platforms, capable of writing elegant and engaging introductions for tourist attractions and hotels. It uses refined language to convey a high-end feel, incorporating the city\'s historical background and popular hashtags to attract the target audience and increase content visibility.'
+        astras_official_writer_01_desc: 'This is an Astras designed for social media platforms, capable of writing elegant and engaging introductions for tourist attractions and hotels. It uses refined language to convey a high-end feel, incorporating the city\'s historical background and popular hashtags to attract the target audience and increase content visibility.',
         astras_official_editor_02_name: 'Social Media Editor',
-        astras_official_editor_02_desc: 'The Social Media Editor is an intelligent assistant focused on social media account management. It operates on principles of authenticity and consistency, avoiding pandering or fabrication. It helps review direction, discover creative ideas, and understand audience responses, balancing strategy, content, and interaction for a more organized and scalable social media presence.',
-   },
+        astras_official_editor_02_desc: 'The Social Media Editor is an intelligent assistant focused on social media account management. It operates on principles of authenticity and consistency, rather than pandering or fabricating, to help review strategies, discover creative ideas, manage audience responses, and maintain a balance between strategy, content, and interaction, making social media management more organized and scalable.'
+    },
     'fr': {
         // Login Page
         login: 'Connexion',
@@ -599,6 +617,7 @@ window.i18n = {
         demoChatTitle: 'Exemple de Conversation Astra-ultra',
         copyright: 'Copyright © ASTRA',
         currentLanguageName: 'Français',
+
 
         // Main App UI
         newChat: 'Nouveau Chat',
@@ -632,6 +651,7 @@ window.i18n = {
         webSearch: 'Recherche Web',
         howCanIHelp: 'Comment puis-je vous aider ?',
         viewingArchived: 'Consultation d\'un chat archivé. Impossible d\'envoyer des messages.',
+
 
         // Settings Modal
         personalization: 'Personnalisation',
@@ -697,6 +717,7 @@ window.i18n = {
         show: 'Afficher',
         hide: 'Masquer',
 
+
         // Other Modals & Dialogs
         selectDataToExport: 'Sélectionnez les données que vous souhaitez exporter.',
         exportHistory: 'Historique des Chats (incl. archives & dossiers)',
@@ -752,6 +773,7 @@ window.i18n = {
         setAstrasAvatar: 'Définir l\'avatar de l\'Astras',
         cropAvatarDesc: 'Déplacez et redimensionnez l\'image pour recadrer l\'avatar circulaire souhaité.',
 
+
         // Popover Menus
         pin: 'Épingler',
         unpin: 'Désépingler',
@@ -762,10 +784,12 @@ window.i18n = {
         edit: 'Modifier',
         editAvatar: 'Modifier l\'avatar',
 
+
         // Astras Store
         subscribe: 'S\'abonner',
         unsubscribe: 'Se désabonner',
         manage: 'Gérer',
+
 
         // Dashboard specific
         modelUsageCount: 'Nombre d\'utilisations du modèle',
@@ -780,6 +804,7 @@ window.i18n = {
         monthSuffix: '',
         daySuffix: '',
         months: ['Janv', 'Févr', 'Mars', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'],
+
 
         // Dialogs & Notifications
         usernamePasswordRequired: 'Le nom d\'utilisateur et le mot de passe sont requis.',
@@ -850,6 +875,7 @@ window.i18n = {
         subscribed: 'Abonnement réussi !',
         unsubscribed: 'Désabonné.',
 
+
         // Model Descriptions & Limits
         model_ultra_desc: 'Nouveau modèle phare en bêta, adapté à la recherche à grande échelle et à l\'exploration expérimentale ; Attention ! Le contenu des conversations avec ce modèle sera examiné par le fournisseur du modèle.',
         model_ultra_limits: '20 reqs/minute, 50 reqs/jour',
@@ -866,10 +892,11 @@ window.i18n = {
         model_pico_desc: 'Raisonnement multilingue à grande vitesse, adapté à une utilisation en temps réel et à des applications multilingues.',
         model_pico_limits: '20 reqs/min, 50 reqs/jour',
 
+
         // Official Astras
         astras_official_writer_01_name: 'Blogueur de Voyage',
-        astras_official_writer_01_desc: 'Ceci est un Astras conçu pour les plateformes de médias sociaux, capable de rédiger des introductions élégantes et engageantes pour les attractions touristiques et les hôtels. Il utilise un langage raffiné pour transmettre une sensation haut de gamme, en incorporant le contexte historique de la ville et des hashtags populaires pour attirer le public cible et augmenter la visibilité du contenu.'
+        astras_official_writer_01_desc: 'Ceci est un Astras conçu pour les plateformes de médias sociaux, capable de rédiger des introductions élégantes et engageantes pour les attractions touristiques et les hôtels. Il utilise un langage raffiné pour transmettre une sensation haut de gamme, en incorporant le contexte historique de la ville et des hashtags populaires pour attirer le public cible et augmenter la visibilité du contenu.',
         astras_official_editor_02_name: 'Éditeur de Médias Sociaux',
-        astras_official_editor_02_desc: "L'Éditeur de Médias Sociaux est un assistant intelligent dédié à la gestion de comptes de médias sociaux. Il fonctionne sur des principes d'authenticité et de cohérence, en évitant la complaisance ou l'invention. Il aide à examiner l'orientation, à découvrir des idées créatives et à comprendre les réactions de l'audience, équilibrant la stratégie, le contenu et l'interaction pour une présence sur les médias sociaux plus organisée et évolutive.",
-   }
+        astras_official_editor_02_desc: 'L\'Éditeur de Médias Sociaux est un assistant intelligent axé sur la gestion de comptes de médias sociaux. Il fonctionne sur des principes d\'authenticité et de cohérence, plutôt que de complaisance ou d\'invention, pour aider à examiner les stratégies, découvrir des idées créatives, gérer les réponses du public et maintenir un équilibre entre la stratégie, le contenu et l\'interaction, rendant la gestion des médias sociaux plus organisée et évolutive.'
+    }
 };
