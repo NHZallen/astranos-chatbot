@@ -5112,7 +5112,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     uiTheme: config.uiTheme, uiLanguage: config.uiLanguage, aiDefaultLanguage: config.aiDefaultLanguage
                 };
             }
-            if (ALL_ELEMENTS.exportApiCheck.checked) { dataToExport.apiKeys = config.apiKeys; }
+            if (document.getElementById('export-api-check').checked) { dataToExport.apiKeys = config.apiKeys; }
             if (ALL_ELEMENTS.exportMemoryCheck.checked) { dataToExport.personalMemories = personalMemories; }
 
             if (Object.keys(dataToExport).length <= 1) {
@@ -5120,13 +5120,19 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 return;
             }
            
-            const fileName = `chatbot_backup_${currentUser.username}_${new Date().toISOString().split('T')[0]}.json`;
-            const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
-            const file = new File([blob], fileName, { type: blob.type });
-
-            // 傳統下載函式，作為後備方案
-            const fallbackDownload = () => {
-                try {
+            try {
+                const fileName = `chatbot_backup_${currentUser.username}_${new Date().toISOString().split('T')[0]}.json`;
+                const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+                
+                // 檢查是否為行動裝置且支援 Web Share API
+                if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], fileName, {type: blob.type})] })) {
+                    await navigator.share({
+                        files: [new File([blob], fileName, {type: blob.type})],
+                        title: 'Chatbot Backup',
+                        text: 'Here is your chatbot data backup.',
+                    });
+                } else {
+                    // 傳統下載方式
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
@@ -5135,38 +5141,19 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     a.click();
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
-                    showNotification(i18n[config.uiLanguage].exportSuccess || '資料匯出成功！', 'success');
-                } catch (downloadError) {
-                    console.error('Fallback download failed:', downloadError);
-                    showNotification(`${i18n[config.uiLanguage].exportFailed || '匯出失敗'}: ${downloadError.message}`, 'error');
                 }
-            };
-
-            // 優先嘗試 Web Share API
-            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-                try {
-                    await navigator.share({
-                        files: [file],
-                        title: 'Chatbot Backup',
-                        text: '這是您的聊天機器人資料備份。',
-                    });
-                    // 如果使用者成功分享，這裡可以顯示成功訊息
-                    // 注意：如果使用者取消分享，也會觸發 catch，所以成功訊息最好放在這裡
-                } catch (error) {
-                    // 如果分享失敗 (例如使用者取消，或瀏覽器權限問題)，則執行後備下載
-                    if (error.name !== 'AbortError') {
-                        console.warn('Web Share API failed, falling back to download.', error);
-                        fallbackDownload();
-                    }
-                }
-            } else {
-                // 如果瀏覽器不支援分享，直接執行後備下載
-                fallbackDownload();
-            }
                
-            toggleModal(ALL_ELEMENTS.exportDataModal, false);
+                toggleModal(ALL_ELEMENTS.exportDataModal, false);
+                showNotification(i18n[config.uiLanguage].exportSuccess || '資料匯出成功！', 'success');
+            } catch (error) {
+                if (error.name !== 'AbortError') { // AbortError 是使用者取消分享，不應視為錯誤
+                    showNotification(`${i18n[config.uiLanguage].exportFailed || '匯出失敗'}: ${error.message}`, 'error');
+                }
+            }
         };
         // ▲▲▲ 結束修正 ▲▲▲
+
+
         const performImport = async (data) => {
             if (!currentUser) {
                 throw new Error("無法在沒有登入使用者的情況下匯入資料。");
