@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>進階 AI 聊天機器人 Astra-nos-14.7.0</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.6.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -1215,54 +1215,6 @@
             border-radius: 50%;
         }
         /* ▲▲▲ 結束：Astras 商店相關樣式 ▲▲▲ */
-
-        /* ▼▼▼ 新增：拖曳功能相關樣式 ▼▼▼ */
-        /* 被拖曳項目的樣式 (金屬偏光色) */
-        .dragging {
-            opacity: 0.6;
-            background: linear-gradient(135deg, #e0e0e0, #ffffff, #d1e0ff, #e0d1ff, #e0e0e0);
-            background-size: 400% 400%;
-            animation: polarized-shine 4s ease infinite;
-            transform: scale(1.05);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-        }
-        @keyframes polarized-shine {
-            0%{background-position:0% 50%}
-            50%{background-position:100% 50%}
-            100%{background-position:0% 50%}
-        }
-
-        /* 放置位置預覽的佔位符 (膨脹的空間) */
-        .drag-placeholder {
-            height: 50px;
-            margin: 4px 0;
-            border-radius: 0.5rem;
-            background: radial-gradient(circle, rgba(200,220,255,0.6) 0%, rgba(255,255,255,0) 70%);
-            animation: bulge-loop 1.5s infinite cubic-bezier(0.45, 0, 0.55, 1);
-            border: 1px dashed #3b82f6;
-            transition: height 0.2s ease;
-        }
-        @keyframes bulge-loop {
-            0%, 100% { transform: scaleY(1); opacity: 0.7; }
-            50% { transform: scaleY(1.05); opacity: 1; }
-        }
-
-        /* 拖曳對話到資料夾上時，資料夾的高亮樣式 */
-        .folder-drop-target > summary {
-            background-color: rgba(59, 130, 246, 0.2) !important;
-            box-shadow: 0 0 0 2px #3b82f6;
-            transition: background-color 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        /* 項目放置後的吸附動畫 */
-        @keyframes snap-in {
-            0% { transform: scale(1.1); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        .just-dropped {
-            animation: snap-in 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-        }
-        /* ▲▲▲ 結束：拖曳功能相關樣式 ▲▲▲ */
     </style>
 
 
@@ -2491,11 +2443,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let cropperInstance = null;
         let editingAstraForAvatarId = null;
         // ▲▲▲ 結束新增 ▲▲▲
-        // ▼▼▼ 新增：拖曳功能相關的全域變數 ▼▼▼
-        let draggedItem = null;
-        let placeholder = null;
-        let lastDragOverTarget = null;
-        // ▲▲▲ 結束新增 ▲▲▲
         // IndexedDB 配置
         const DB_NAME = 'ChatAppDB';
         const STORE_NAME = 'keyValue';
@@ -2779,7 +2726,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         };
         const getDefaultGenConfig = () => ({ temperature: 0.7, topP: 0.95, maxTokens: null });
-        const getDefaultFolder = () => ({ color: 'gray', icon: '📁' , isOpen: false, pinned: false });
+        const getDefaultFolder = () => ({ color: 'gray', icon: '📁' , isOpen: false});
         const createBaseConversation = (title) => {
             const defaultModelInfo = MODELS.find(m => m.id === config.lastUsedModel) || MODELS.find(m => m.id === config.defaultModel) || MODELS[0];
             return {
@@ -3003,15 +2950,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         };
 
-        const togglePinFolder = async (id, event) => {
-            event?.stopPropagation();
-            const folder = folders.find(f => f.id === id);
-            if (folder) {
-                folder.pinned = !folder.pinned;
-                await saveAppData();
-                renderAll();
-            }
-        };
+
 
 
         const showRenameModal = (id, type, event) => {
@@ -3126,16 +3065,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         // ▲▲▲ 結束修改 ▲▲▲
         const renderFolders = () => {
             ALL_ELEMENTS.folderList.innerHTML = '';
-            
-            // ▼▼▼ 修改：增加釘選排序邏輯 ▼▼▼
-            const sortedFolders = [...folders].sort((a, b) => {
-                if (a.pinned && !b.pinned) return -1;
-                if (!a.pinned && b.pinned) return 1;
-                return 0; // 保持原始順序 for non-pinned items
-            });
-
-            sortedFolders.forEach(folder => {
-            // ▲▲▲ 結束修改 ▲▲▲
+            folders.forEach(folder => {
                 const folderConvs = folder.conversationIds
                     .map(id => conversations.find(c => c.id === id))
                     .filter(c => c && !c.archived)
@@ -3150,28 +3080,22 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
                 const folderElement = document.createElement('details');
                 folderElement.className = 'folder-item text-sm';
-                folderElement.dataset.folderId = folder.id; // 新增：用於拖曳識別
-                folderElement.dataset.type = 'folder-container'; // 新增：用於拖曳識別
                 if (folder.isOpen) folderElement.open = true;
                 folderElement.addEventListener('toggle', () => {
                     folder.isOpen = folderElement.open;
                     saveAppData();
                 });
-
-                // ▼▼▼ 修改：為 summary 加上拖曳屬性 ▼▼▼
                 folderElement.innerHTML = `
-                    <summary class="sidebar-item p-3 rounded-lg flex items-center justify-between" draggable="true" data-folder-id="${folder.id}" data-type="folder">
-                        <div class="flex items-center gap-2 truncate pointer-events-none">
+                    <summary class="sidebar-item p-3 rounded-lg flex items-center justify-between">
+                        <div class="flex items-center gap-2 truncate">
                             <svg class="folder-arrow flex-shrink-0" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                            <span class="folder-icon mr-1">${folder.icon}${folder.pinned ? ' <span class="pinned-icon">📌</span>' : ''}</span>
+                            <span class="folder-icon mr-1">${folder.icon}</span>
                             <span class="font-medium truncate" style="color: ${FOLDER_COLORS[folder.color] || FOLDER_COLORS.gray};">${folder.name}</span>
                         </div>
                         <button data-id="${folder.id}" class="folder-options-btn flex-shrink-0 w-6 h-6 rounded-md hover:bg-[var(--active-bg)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>
                     </summary>
                     <div class="folder-content-container pl-4 mt-1 space-y-1"></div>
                 `;
-                // ▲▲▲ 結束修改 ▲▲▲
-
                 const contentContainer = folderElement.querySelector('.folder-content-container');
                 folderConvs.forEach(conv => {
                     contentContainer.appendChild(createConversationElement(conv));
@@ -3184,19 +3108,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 const folderOptionsBtn = folderElement.querySelector('.folder-options-btn');
                 if (folderOptionsBtn) {
                     folderOptionsBtn.addEventListener('click', (e) => {
-                        e.preventDefault();
                         e.stopPropagation();
                         createFolderMenu(folder.id, folderOptionsBtn);
                     });
                 }
-                
-                // 防止點擊 summary 觸發拖曳
-                const summary = folderElement.querySelector('summary');
-                summary.addEventListener('click', (e) => {
-                    if (e.target.closest('.folder-options-btn')) {
-                        e.preventDefault();
-                    }
-                });
 
 
 
@@ -3207,14 +3122,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         // ▼▼▼ 需求 4 修正：修改函式以加入模型後綴 ▼▼▼
         const createConversationElement = (conv) => {
             const item = document.createElement('div');
-            // ▼▼▼ 修改：增加 data attributes 並設定 draggable ▼▼▼
             item.className = `sidebar-item w-full text-left p-3 rounded-lg flex items-center justify-between cursor-pointer ${conv.id === activeConversationId && !isTemporaryChat && !isSelectionMode ? 'active' : ''}`;
-            item.dataset.convId = conv.id;
-            item.dataset.type = 'conversation';
-            if (conv.pinned) {
-                item.draggable = true;
-            }
-            // ▲▲▲ 結束修改 ▲▲▲
+            item.dataset.id = conv.id;
 
 
             const modelInfo = MODELS.find(m => m.id === conv.model);
@@ -3223,15 +3132,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
             const contentWrapper = document.createElement('div');
             contentWrapper.className = 'flex-1 flex items-center justify-between truncate';
-            // ▼▼▼ 修改：增加 pointer-events-none 避免干擾拖曳事件 ▼▼▼
             contentWrapper.innerHTML = `
-                <div class="flex-1 flex items-center gap-2 truncate pointer-events-none">
+                <div class="flex-1 flex items-center gap-2 truncate">
                     <span class="truncate">${conv.title}${conv.pinned ? ' <span class="pinned-icon">📌</span>' : ''}</span>
                     ${modelNameSuffix}
                 </div>
                 <button class="chat-options-btn flex-shrink-0 w-6 h-6 rounded-md hover:bg-[var(--hover-bg)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>
             `;
-            // ▲▲▲ 結束修改 ▲▲▲
 
 
 
@@ -4015,7 +3922,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 })));
                 payload = {
                     model: modelId,
-                    messages,stream: true,
+                    messages,
+                    stream: true,
                     ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
                     ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
                     ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
@@ -4895,26 +4803,18 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             popover.style.top = `${rect.bottom}px`;
             popover.style.left = `${rect.left}px`;
             
-            // ▼▼▼ 新增：釘選功能到選單 ▼▼▼
-            const folder = folders.find(f => f.id === folderId);
-            const pinText = folder.pinned ? (i18n[config.uiLanguage].unpinFolder || '取消釘選資料夾') : (i18n[config.uiLanguage].pinFolder || '釘選資料夾');
-
             popover.innerHTML = `
                 <button data-id="${folderId}" class="rename-folder-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].rename || '重新命名'}</button>
-                <button data-id="${folderId}" class="pin-folder-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${pinText}</button>
                 <button data-id="${folderId}" class="customize-folder-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].customize || '自訂'}</button>
                 <div class="border-t my-1 border-[var(--border-color)]"></div>
                 <button data-id="${folderId}" class="delete-folder-btn w-full text-left px-4 py-2 text-red-600 hover:bg-red-500/10 text-sm">${i18n[config.uiLanguage].deleteFolder || '刪除資料夾'}</button>
             `;
-            // ▲▲▲ 結束新增 ▲▲▲
-
             document.body.appendChild(popover);
 
 
             requestAnimationFrame(() => popover.classList.add('visible'));
             
             popover.querySelector('.rename-folder-btn').addEventListener('click', (e) => { showRenameModal(folderId, 'folder', e); popover.remove(); });
-            popover.querySelector('.pin-folder-btn').addEventListener('click', (e) => { togglePinFolder(folderId, e); popover.remove(); });
             popover.querySelector('.customize-folder-btn').addEventListener('click', (e) => { showFolderSettingsModal(folderId, e); popover.remove(); });
             popover.querySelector('.delete-folder-btn').addEventListener('click', (e) => { deleteFolder(folderId, e); popover.remove(); });
         };
@@ -6447,6 +6347,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         // ▲▲▲ 結束新增 ▲▲▲
 
 
+
+
         async function initChatApp() {
             await loadConfig();
             await loadAppData();
@@ -6458,7 +6360,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderAll();
             updateInputState();
             setupVoiceInput();
-            setupDragAndDrop(); // ▼▼▼ 新增：初始化拖曳功能 ▼▼▼
             ALL_ELEMENTS.menuToggleBtn.addEventListener('click', () => toggleSidebar());
             ALL_ELEMENTS.sidebarOverlay.addEventListener('click', () => toggleSidebar(false));
             document.addEventListener('click', (e) => {
@@ -6769,183 +6670,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         // ▲▲▲ 結束新增 ▲▲▲
         
-        // ▼▼▼ 新增：拖曳功能的核心邏輯 ▼▼▼
-        function setupDragAndDrop() {
-            const dragContainer = document.querySelector('.sidebar .scroll-area');
-            
-            dragContainer.addEventListener('dragstart', handleDragStart);
-            dragContainer.addEventListener('dragover', handleDragOver);
-            dragContainer.addEventListener('dragleave', handleDragLeave);
-            dragContainer.addEventListener('drop', handleDrop);
-            dragContainer.addEventListener('dragend', handleDragEnd);
-        }
-
-        function handleDragStart(e) {
-            // 確保只拖曳指定的元素
-            draggedItem = e.target.closest('[draggable="true"]');
-            if (!draggedItem) {
-                e.preventDefault();
-                return;
-            }
-
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', draggedItem.dataset.convId || draggedItem.dataset.folderId);
-
-            // 延遲添加樣式，避免影響拖曳圖像
-            setTimeout(() => {
-                draggedItem.classList.add('dragging');
-            }, 0);
-            
-            // 創建並插入佔位符
-            placeholder = document.createElement('div');
-            placeholder.className = 'drag-placeholder';
-            draggedItem.parentElement.insertBefore(placeholder, draggedItem.nextSibling);
-            placeholder.style.height = `${draggedItem.offsetHeight}px`;
-        }
-
-        function handleDragOver(e) {
-            e.preventDefault();
-            const target = e.target.closest('[data-type="conversation"], [data-type="folder"], [data-type="folder-container"]');
-            
-            // 清除舊的目標高亮
-            if (lastDragOverTarget && lastDragOverTarget !== target) {
-                lastDragOverTarget.classList.remove('folder-drop-target');
-            }
-
-            if (!target || target === draggedItem) return;
-
-            const rect = target.getBoundingClientRect();
-            const isAfter = e.clientY > rect.top + rect.height / 2;
-
-            if (target.dataset.type === 'conversation' || target.dataset.type === 'folder') {
-                const parent = target.parentElement;
-                if (isAfter) {
-                    parent.insertBefore(placeholder, target.nextSibling);
-                } else {
-                    parent.insertBefore(placeholder, target);
-                }
-            }
-            
-            // 處理拖入資料夾
-            if (draggedItem.dataset.type === 'conversation' && target.dataset.type === 'folder-container') {
-                target.classList.add('folder-drop-target');
-                lastDragOverTarget = target;
-            }
-        }
-
-        function handleDragLeave(e) {
-            const relatedTarget = e.relatedTarget;
-            // 移除資料夾高亮
-            if (lastDragOverTarget && (!relatedTarget || !lastDragOverTarget.contains(relatedTarget))) {
-                 lastDragOverTarget.classList.remove('folder-drop-target');
-                 lastDragOverTarget = null;
-            }
-        }
-
-        async function handleDrop(e) {
-            e.preventDefault();
-            if (!draggedItem) return;
-
-            const targetElement = e.target.closest('[data-type="conversation"], [data-type="folder"], [data-type="folder-container"]');
-            const dropTargetId = targetElement?.dataset.convId || targetElement?.dataset.folderId;
-            const dropTargetType = targetElement?.dataset.type;
-            
-            const draggedId = draggedItem.dataset.convId || draggedItem.dataset.folderId;
-            const draggedType = draggedItem.dataset.type;
-
-            // 處理拖入資料夾
-            if (draggedType === 'conversation' && dropTargetType === 'folder-container') {
-                const conv = conversations.find(c => c.id === draggedId);
-                const targetFolder = folders.find(f => f.id === dropTargetId);
-                if (conv && targetFolder && conv.folderId !== dropTargetId) {
-                    moveConversationToFolder(draggedId, dropTargetId);
-                }
-            } else { // 處理排序
-                const parentElement = placeholder.parentElement;
-                const newIndex = Array.from(parentElement.children).indexOf(placeholder);
-
-                // 重新排序對話
-                if (draggedType === 'conversation') {
-                    const convToMove = conversations.find(c => c.id === draggedId);
-                    if (!convToMove) return;
-
-                    const containerType = parentElement.id === 'history-list' ? 'root' : 'folder';
-                    const folderId = containerType === 'folder' ? parentElement.closest('[data-folder-id]').dataset.folderId : null;
-
-                    // 1. 從舊位置移除
-                    const oldFolder = folders.find(f => f.id === convToMove.folderId);
-                    if (oldFolder) {
-                        oldFolder.conversationIds = oldFolder.conversationIds.filter(id => id !== draggedId);
-                    }
-                    conversations = conversations.filter(c => c.id !== draggedId);
-
-                    // 2. 插入到新位置
-                    convToMove.folderId = folderId; // 更新 folderId
-                    const targetFolder = folders.find(f => f.id === folderId);
-                    const siblingElements = [...parentElement.querySelectorAll('[data-type="conversation"]')].filter(el => el !== draggedItem);
-                    const targetIndex = Array.from(parentElement.children).indexOf(placeholder);
-                    
-                    if (targetIndex === 0) { // 插入到最前面
-                         conversations.unshift(convToMove);
-                         if (targetFolder) targetFolder.conversationIds.unshift(draggedId);
-                    } else {
-                        const prevSiblingId = parentElement.children[targetIndex - 1].dataset.convId;
-                        const globalIndex = conversations.findIndex(c => c.id === prevSiblingId);
-                        conversations.splice(globalIndex + 1, 0, convToMove);
-
-                        if (targetFolder) {
-                            const folderIndex = targetFolder.conversationIds.indexOf(prevSiblingId);
-                            targetFolder.conversationIds.splice(folderIndex + 1, 0, draggedId);
-                        }
-                    }
-                }
-                // 重新排序資料夾
-                else if (draggedType === 'folder') {
-                    const folderIndex = folders.findIndex(f => f.id === draggedId);
-                    const [folderToMove] = folders.splice(folderIndex, 1);
-                    
-                    const siblingElements = [...parentElement.querySelectorAll('[data-type="folder-container"]')].filter(el => el.dataset.folderId !== draggedId);
-                    const targetIndex = Array.from(parentElement.children).indexOf(placeholder);
-
-                    if (targetIndex === 0) {
-                         folders.unshift(folderToMove);
-                    } else {
-                         const prevSiblingId = parentElement.children[targetIndex-1].dataset.folderId;
-                         const newGlobalIndex = folders.findIndex(f => f.id === prevSiblingId);
-                         folders.splice(newGlobalIndex + 1, 0, folderToMove);
-                    }
-                }
-            }
-            
-            await saveAppData();
-            renderAll();
-            
-            // 找到新位置的元素並觸發動畫
-            const newItem = document.querySelector(`[data-conv-id="${draggedId}"], [data-folder-id="${draggedId}"]`);
-            if (newItem) {
-                newItem.classList.add('just-dropped');
-                newItem.addEventListener('animationend', () => {
-                    newItem.classList.remove('just-dropped');
-                }, { once: true });
-            }
-        }
-
-        function handleDragEnd(e) {
-            if (draggedItem) {
-                draggedItem.classList.remove('dragging');
-            }
-            if (placeholder) {
-                placeholder.remove();
-            }
-            if(lastDragOverTarget){
-                lastDragOverTarget.classList.remove('folder-drop-target');
-            }
-            draggedItem = null;
-            placeholder = null;
-            lastDragOverTarget = null;
-        }
-        // ▲▲▲ 結束：拖曳功能的核心邏輯 ▲▲▲
-
         ALL_ELEMENTS.authForm.addEventListener('submit', handleLogin);
         
         const toggleAuthImportButton = () => {
@@ -6990,3 +6714,5 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     </script>
 </body>
 </html>
+
+
