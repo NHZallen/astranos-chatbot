@@ -1817,6 +1817,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     <input type="checkbox" id="export-memory-check" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                     <span data-lang-key="exportPersonalMemory">個人習慣記憶 (類型1)</span>
                 </label>
+                <!-- ▼▼▼ 新增：API 金鑰匯出選項 ▼▼▼ -->
+                <label class="flex items-center space-x-3 p-2 rounded-md bg-[var(--input-field-bg)]">
+                    <input type="checkbox" id="export-api-keys-check" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                    <span data-lang-key="exportApiKeys">API 金鑰 (請謹慎保管)</span>
+                </label>
+                <!-- ▲▲▲ 結束新增 ▲▲▲ -->
             </div>
             <div class="flex justify-end gap-3">
                 <button id="cancel-export-btn" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]" data-lang-key="cancel">取消</button>
@@ -1832,7 +1838,15 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 <label for="import-file-input" class="block text-sm font-medium mb-1" data-lang-key="selectFile">選擇檔案</label>
                 <input type="file" id="import-file-input" class="w-full text-sm text-[var(--text-secondary)] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" accept=".json" required>
             </div>
-            <div class="flex justify-end gap-3">
+             <!-- ▼▼▼ 新增：匯入選項容器 ▼▼▼ -->
+            <div id="import-options-container" class="hidden space-y-3 mt-4 border-t border-[var(--border-color)] pt-4">
+                <p class="text-sm font-medium text-[var(--text-secondary)] mb-2" data-lang-key="selectImportData">偵測到以下資料，請勾選要匯入的項目：</p>
+                <div id="import-options-list" class="space-y-2">
+                    <!-- 動態載入的核取方塊會顯示在這裡 -->
+                </div>
+            </div>
+            <!-- ▲▲▲ 結束新增 ▲▲▲ -->
+            <div class="flex justify-end gap-3 mt-6">
                 <button id="cancel-import-btn" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]" data-lang-key="cancel">取消</button>
                 <button id="confirm-import-btn" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700" data-lang-key="confirmAndImport">確認並匯入</button>
             </div>
@@ -2233,6 +2247,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             exportAstrasCheck: document.getElementById('export-astras-check'),
             exportSettingsCheck: document.getElementById('export-settings-check'),
             exportMemoryCheck: document.getElementById('export-memory-check'),
+            // ▼▼▼ 新增：匯出/匯入 API 金鑰相關元素 ▼▼▼
+            exportApiKeysCheck: document.getElementById('export-api-keys-check'),
+            importOptionsContainer: document.getElementById('import-options-container'),
+            importOptionsList: document.getElementById('import-options-list'),
+            // ▲▲▲ 結束新增 ▲▲▲
             cancelImportBtn: document.getElementById('cancel-import-btn'),
             confirmImportBtn: document.getElementById('confirm-import-btn'),
             importFileInput: document.getElementById('import-file-input'),
@@ -2438,6 +2457,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         // ▼▼▼ 新增：桌布與頭像裁切實例變數 ▼▼▼
         let cropperInstance = null;
         let editingAstraForAvatarId = null;
+        // ▲▲▲ 結束新增 ▲▲▲
+        // ▼▼▼ 新增：匯入資料暫存變數 ▼▼▼
+        let parsedImportData = null;
         // ▲▲▲ 結束新增 ▲▲▲
         // IndexedDB 配置
         const DB_NAME = 'ChatAppDB';
@@ -5076,10 +5098,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (ALL_ELEMENTS.exportHistoryCheck.checked) { dataToExport.conversations = conversations; dataToExport.folders = folders; }
             if (ALL_ELEMENTS.exportAstrasCheck.checked) { dataToExport.astras = astras; }
             
-            // ▼▼▼ 修改：移除 API 金鑰的匯出邏輯 ▼▼▼
+            // ▼▼▼ 修改：現在根據勾選狀態來決定是否匯出 API 金鑰 ▼▼▼
             if (ALL_ELEMENTS.exportSettingsCheck.checked) {
-                const { apiKeys, ...otherSettings } = config; // 解構並排除 apiKeys
-                dataToExport.settings = otherSettings; // 只儲存其他設定
+                const { apiKeys, ...otherSettings } = config; 
+                dataToExport.settings = otherSettings; 
+            }
+             if (ALL_ELEMENTS.exportApiKeysCheck.checked) {
+                // 如果 settings 物件還不存在，先建立它
+                if (!dataToExport.settings) {
+                    dataToExport.settings = {};
+                }
+                dataToExport.settings.apiKeys = config.apiKeys;
             }
             // ▲▲▲ 結束修改 ▲▲▲
 
@@ -5140,88 +5169,155 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         };
 
-        const performImport = async (data) => {
+        const performImport = async (data, selections) => {
             if (!currentUser) {
                 throw new Error("無法在沒有登入使用者的情況下匯入資料。");
             }
-
-
-            conversations = data.conversations || [];
-            folders = data.folders || [];
-            astras = data.astras || [];
-            personalMemories = data.personalMemories || [];
-            await saveAppData();
-
-
-            // ▼▼▼ 修改：確保匯入時不覆蓋現有的 API 金鑰 ▼▼▼
-            if (data.settings) {
-                const { apiKeys, ...otherSettings } = data.settings; // 讀取設定時，忽略 apiKeys
-                Object.assign(config, otherSettings);
+            
+            // 根據 selections 物件決定要匯入哪些資料
+            if (selections.history) {
+                conversations = data.conversations || [];
+                folders = data.folders || [];
             }
-            // ▲▲▲ 結束修改 ▲▲▲
+            if (selections.astras) {
+                astras = data.astras || [];
+            }
+            if (selections.memory) {
+                personalMemories = data.personalMemories || [];
+            }
+            if (selections.history || selections.astras || selections.memory) {
+                await saveAppData();
+            }
+
+            // 處理設定和 API 金鑰
+            if (data.settings) {
+                const { apiKeys, ...otherSettings } = data.settings;
+                if (selections.settings) {
+                    Object.assign(config, otherSettings);
+                }
+                if (selections.apiKeys && apiKeys) {
+                    config.apiKeys = { ...config.apiKeys, ...apiKeys };
+                }
+            }
             await saveConfig();
         };
 
-
-        const handleImport = async () => {
-            const file = ALL_ELEMENTS.importFileInput.files;
+        // ▼▼▼ 修改：重構匯入流程 ▼▼▼
+        const handleImportFileSelect = (event) => {
+            const file = event.target.files[0];
             if (!file) {
-                showNotification(i18n[config.uiLanguage].selectFileError || '請選擇檔案。', 'error');
                 return;
             }
-            
+
             const reader = new FileReader();
             reader.onload = async (e) => {
                 try {
-                    const data = JSON.parse(e.target.result);
-
-
-                    if (data.user_credentials && data.user_credentials.username !== currentUser.username) {
-                        const confirmed = await showCustomConfirm(
-                            i18n[config.uiLanguage].importUserMismatch.replace('{backupUser}', data.user_credentials.username).replace('{currentUser}', currentUser.username),
-                            i18n[config.uiLanguage].importUserMismatchTitle
-                        );
-                        if (!confirmed) return;
-                    } else {
-                         if (!(await showCustomConfirm(i18n[config.uiLanguage].importOverwriteWarning, i18n[config.uiLanguage].importConfirmation))) return;
-                    }
-                    
-                    await performImport(data);
-                    
-                    toggleModal(ALL_ELEMENTS.importDataModal, false);
-                    showNotification(i18n[config.uiLanguage].importSuccess, 'success');
-                    
-                    if (config.customWallpaper) {
-                        try {
-                            const brightness = await analyzeImageBrightness(config.customWallpaper);
-                            config.wallpaperBrightness = brightness;
-                             if (config.uiTheme.mode === 'adaptive') {
-                                const palette = await getDominantColorPalette(config.customWallpaper);
-                                config.uiTheme.adaptivePalette = palette;
-                                config.uiTheme.adaptiveColor = palette || '#3b82f6';
-                            }
-                            await saveConfig();
-                        } catch (err) { /* keep default */ }
-                    }
-                    applyCustomWallpaper();
-                    applyUiTheme();
-                    setAiBubbleColor();
-                    setUserBubbleColor();
-                    applyLanguage(config.uiLanguage);
-                    
-                    const firstConv = conversations.find(c => !c.archived);
-                    if (firstConv) {
-                        loadChat(firstConv.id);
-                    } else {
-                        startNewChat(false);
-                    }
+                    parsedImportData = JSON.parse(e.target.result);
+                    renderImportOptions(parsedImportData);
+                    ALL_ELEMENTS.importOptionsContainer.classList.remove('hidden');
                 } catch (error) {
-                    showNotification(`${i18n[config.uiLanguage].importFailed}: ${error.message}`, 'error');
-                    console.error(error);
+                    showNotification(`${i18n[config.uiLanguage].importParseError}: ${error.message}`, 'error');
+                    resetImportModal();
                 }
             };
             reader.readAsText(file);
         };
+
+        const renderImportOptions = (data) => {
+            const { importOptionsList } = ALL_ELEMENTS;
+            importOptionsList.innerHTML = '';
+            
+            const options = [
+                { key: 'history', check: () => data.conversations || data.folders, labelKey: 'exportHistory' },
+                { key: 'astras', check: () => data.astras, labelKey: 'astras' },
+                { key: 'settings', check: () => data.settings && Object.keys(data.settings).some(k => k !== 'apiKeys'), labelKey: 'appSettings' },
+                { key: 'memory', check: () => data.personalMemories, labelKey: 'exportPersonalMemory' },
+                { key: 'apiKeys', check: () => data.settings && data.settings.apiKeys, labelKey: 'exportApiKeys' },
+            ];
+
+            options.forEach(opt => {
+                if (opt.check()) {
+                    const label = document.createElement('label');
+                    label.className = 'flex items-center space-x-3 p-2 rounded-md bg-[var(--input-field-bg)]';
+                    label.innerHTML = `
+                        <input type="checkbox" data-import-key="${opt.key}" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" checked>
+                        <span data-lang-key="${opt.labelKey}">${i18n[config.uiLanguage][opt.labelKey]}</span>
+                    `;
+                    importOptionsList.appendChild(label);
+                }
+            });
+        };
+        
+        const handleConfirmImport = async () => {
+            if (!parsedImportData) {
+                showNotification(i18n[config.uiLanguage].selectFileError, 'error');
+                return;
+            }
+
+            try {
+                if (parsedImportData.user_credentials && parsedImportData.user_credentials.username !== currentUser.username) {
+                    const confirmed = await showCustomConfirm(
+                        i18n[config.uiLanguage].importUserMismatch.replace('{backupUser}', parsedImportData.user_credentials.username).replace('{currentUser}', currentUser.username),
+                        i18n[config.uiLanguage].importUserMismatchTitle
+                    );
+                    if (!confirmed) {
+                        resetImportModal();
+                        return;
+                    }
+                } else {
+                     if (!(await showCustomConfirm(i18n[config.uiLanguage].importOverwriteWarning, i18n[config.uiLanguage].importConfirmation))) {
+                        resetImportModal();
+                        return;
+                     }
+                }
+
+                const selections = {};
+                ALL_ELEMENTS.importOptionsList.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                    selections[cb.dataset.importKey] = cb.checked;
+                });
+                
+                await performImport(parsedImportData, selections);
+                
+                toggleModal(ALL_ELEMENTS.importDataModal, false);
+                showNotification(i18n[config.uiLanguage].importSuccess, 'success');
+                
+                // 匯入後重新整理 UI
+                 if (config.customWallpaper) {
+                    try {
+                        const brightness = await analyzeImageBrightness(config.customWallpaper);
+                        config.wallpaperBrightness = brightness;
+                         if (config.uiTheme.mode === 'adaptive') {
+                            const palette = await getDominantColorPalette(config.customWallpaper);
+                            config.uiTheme.adaptivePalette = palette;
+                            config.uiTheme.adaptiveColor = palette[0] || '#3b82f6';
+                        }
+                        await saveConfig();
+                    } catch (err) { /* keep default */ }
+                }
+                applyCustomWallpaper();
+                applyUiTheme();
+                setAiBubbleColor();
+                setUserBubbleColor();
+                applyLanguage(config.uiLanguage);
+                
+                const firstConv = conversations.find(c => !c.archived);
+                loadChat(firstConv ? firstConv.id : null) || startNewChat(false);
+
+            } catch (error) {
+                showNotification(`${i18n[config.uiLanguage].importFailed}: ${error.message}`, 'error');
+                console.error(error);
+            } finally {
+                resetImportModal();
+            }
+        };
+
+        const resetImportModal = () => {
+            ALL_ELEMENTS.importFileInput.value = '';
+            ALL_ELEMENTS.importOptionsContainer.classList.add('hidden');
+            ALL_ELEMENTS.importOptionsList.innerHTML = '';
+            parsedImportData = null;
+        };
+        // ▲▲▲ 結束修改 ▲▲▲
         
         const handleImportOnAuth = async () => {
             const username = ALL_ELEMENTS.usernameInput.value.trim();
@@ -5240,7 +5336,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
             fileInput.onchange = (e) => {
-                const file = e.target.files;
+                const file = e.target.files[0];
                 if (!file) { document.body.removeChild(fileInput); return; }
 
 
@@ -5269,8 +5365,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         currentUser = { username, passwordHash };
                         await setItem('chat_lastUser', username);
 
-
-                        await performImport(data);
+                        // ▼▼▼ 修改：匯入所有資料（因為這是初始設定） ▼▼▼
+                        const allSelections = { history: true, astras: true, settings: true, memory: true, apiKeys: true };
+                        await performImport(data, allSelections);
+                        // ▲▲▲ 結束修改 ▲▲▲
 
 
                         ALL_ELEMENTS.authContainer.classList.add('fade-out');
@@ -5318,7 +5416,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     <button class="toggle-visibility-btn p-1 rounded-full hover:bg-[var(--hover-bg)]" title="${setting.hidden ? (i18n[config.uiLanguage].show || '顯示') : (i18n[config.uiLanguage].hide || '隱藏')}">
                         ${setting.hidden
                             ? '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.243 4.243l-4.243-4.243" /></svg>'
-                            : '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.432 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>'
+                            : '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.432 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573 3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>'
                         }
                     </button>
                     <div class="flex gap-1 ml-2">
@@ -5781,7 +5879,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
         const hexToRgb = (hex) => {
             const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-            return result ? { r: parseInt(result, 16), g: parseInt(result, 16), b: parseInt(result, 16) } : null;
+            return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : null;
         };
 
 
@@ -5839,7 +5937,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             gradientSwatches.innerHTML = '';
             if(config.uiTheme.adaptivePalette && config.uiTheme.adaptivePalette.length > 1) {
                 const p = config.uiTheme.adaptivePalette;
-                const combinations = [`linear-gradient(to right, ${p}, ${p})`, `linear-gradient(to right, ${p}, ${p})`, `linear-gradient(to right, ${p}, ${p})`, `linear-gradient(135deg, ${p}, ${p}, ${p})`];
+                const combinations = [
+                    `linear-gradient(to right, ${p[0]}, ${p[1]})`, 
+                    `linear-gradient(to right, ${p[2]}, ${p[0]})`, 
+                    `linear-gradient(to right, ${p[1]}, ${p[3]})`, 
+                    `linear-gradient(135deg, ${p[0]}, ${p[2]}, ${p[4]})`
+                ];
                 combinations.forEach(grad => {
                     const swatch = document.createElement('div');
                     swatch.className = 'w-full h-10 rounded-md cursor-pointer border-2 border-transparent';
@@ -5909,7 +6012,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
         const handleWallpaperUpload = (event) => {
-            const file = event.target.files;
+            const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -5935,7 +6038,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 config.customWallpaper = imageDataUrl;
                 config.wallpaperBrightness = brightness;
                 config.uiTheme.adaptivePalette = palette;
-                config.uiTheme.adaptiveColor = palette || '#3b82f6';
+                config.uiTheme.adaptiveColor = palette[0] || '#3b82f6';
                 await saveConfig();
                 applyCustomWallpaper();
                 applyUiTheme();
@@ -6034,7 +6137,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
         const handleAvatarUpload = (event) => {
-            const file = event.target.files;
+            const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -6144,9 +6247,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.exportDataBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.exportDataModal, true));
             ALL_ELEMENTS.cancelExportBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.exportDataModal, false));
             ALL_ELEMENTS.confirmExportBtn.addEventListener('click', handleExport);
-            ALL_ELEMENTS.importDataBtn.addEventListener('click', () => { ALL_ELEMENTS.importFileInput.value=''; toggleModal(ALL_ELEMENTS.importDataModal, true); });
+            ALL_ELEMENTS.importDataBtn.addEventListener('click', () => { 
+                resetImportModal(); 
+                toggleModal(ALL_ELEMENTS.importDataModal, true); 
+            });
             ALL_ELEMENTS.cancelImportBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.importDataModal, false));
-            ALL_ELEMENTS.confirmImportBtn.addEventListener('click', handleImport);
+            ALL_ELEMENTS.confirmImportBtn.addEventListener('click', handleConfirmImport);
+            ALL_ELEMENTS.importFileInput.addEventListener('change', handleImportFileSelect);
             ALL_ELEMENTS.logoutBtn.addEventListener('click', handleLogout);
             ALL_ELEMENTS.userProfileBtn.addEventListener('click', openDashboard);
             ALL_ELEMENTS.closeDashboardBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.dataDashboardModal, false));
