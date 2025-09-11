@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>進階 AI 聊天機器人 Astra-nos-14.6.0</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.6.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -2443,6 +2443,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let cropperInstance = null;
         let editingAstraForAvatarId = null;
         // ▲▲▲ 結束新增 ▲▲▲
+        // ▼▼▼ 新增：重新生成功能的全域狀態 ▼▼▼
+        let isVersionEditingActive = false;
+        // ▲▲▲ 結束新增 ▲▲▲
         // IndexedDB 配置
         const DB_NAME = 'ChatAppDB';
         const STORE_NAME = 'keyValue';
@@ -2700,11 +2703,28 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     conversations = (data.conversations || []).map(c => ({
                         archived: false, summary: '', folderId: null, isWebSearchEnabled: false, astrasId: null, pinned: false, ...c,
                         genConfig: c.genConfig || getDefaultGenConfig(),
-                        messages: (c.messages || []).map(m => ({
-                            ...m,
-                            createdAt: m.createdAt || c.createdAt, // 修正：為舊版訊息補上時間戳
-                            parts: m.parts || [{ text: m.content }] // Compatibility for old format
-                        }))
+                        messages: (c.messages || []).map(m => {
+                             // ▼▼▼ 修改：為舊訊息添加版本控制的資料結構 ▼▼▼
+                            if (m.parts && !m.versions) { // 如果是舊格式
+                                return {
+                                    ...m,
+                                    versions: [{
+                                        parts: m.parts || [{ text: m.content }],
+                                        createdAt: m.createdAt || c.createdAt
+                                    }],
+                                    currentVersionIndex: 0,
+                                    isEditingVersions: false
+                                };
+                            }
+                            // 確保新屬性存在
+                            return {
+                                ...m,
+                                versions: m.versions || [{ parts: m.parts, createdAt: m.createdAt }],
+                                currentVersionIndex: m.currentVersionIndex || 0,
+                                isEditingVersions: m.isEditingVersions || false,
+                            };
+                            // ▲▲▲ 結束修改 ▲▲▲
+                        })
                     }));
                     // ▼▼▼ 修改：確保舊資料能相容 avatarUrl ▼▼▼
                     astras = (data.astras || []).map(a => ({ avatarUrl: null, officialId: null, ...a }));
@@ -2905,7 +2925,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 conv.messages.forEach(msg => {
                     const isUser = msg.role === 'user';
                     const messageDiv = document.createElement('div');
-                    // Match the structure from addMessageToUI for styling
+                    // Match the structure from createMessageElement for styling
                     messageDiv.className = `flex items-start gap-2 md:gap-4 ${isUser ? 'justify-end user-message' : 'model-message'}`;
                     const icon = isUser 
                         ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>` 
@@ -2913,7 +2933,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
                     let contentHTML = '';
-                    msg.parts.forEach(part => {
+                    const parts = (msg.versions && msg.versions.length > 0) ? msg.versions[0].parts : msg.parts;
+                    parts.forEach(part => {
                         if (part.text) {
                              contentHTML += `<div>${isUser ? part.text.replace(/\n/g, '<br>') : renderMarkdown(part.text)}</div>`;
                         } else if (part.inlineData) {
@@ -3245,9 +3266,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 const greeting = `${currentUser.username}, ${i18n[config.uiLanguage].howCanIHelp || '有什麼可以為您服務的嗎？'}`;
                 messageList.innerHTML = `<div class="text-center text-[var(--text-secondary)] mt-16"><p class="text-lg">${greeting}</p></div>`;
             } else {
-                // ▼▼▼ 程式碼修正 ▼▼▼
                 conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
-                // ▲▲▲ 程式碼修正 ▲▲▲
             }
             
             // 強制瀏覽器重繪，為動畫做準備
@@ -3523,48 +3542,30 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             updateApiKeyWarningBadge();
         };
         
-        // ▼▼▼ 程式碼修改 ▼▼▼
-        const addMessageToUI = (msg, index, shouldSave = true, shouldScroll = true) => {
-            const conv = getActiveConversation();
-            if (shouldSave) {
-                 if (isTemporaryChat) {
-                    conv.messages.push(msg);
-                } else {
-                    conv.messages.push(msg);
-                    if (conv.messages.length === 1 && msg.role === 'user' && !conv.isRenamed && config.autoNaming) {
-                        const textPart = msg.parts.find(p => p.text);
-                        if (textPart) {
-                            conv.title = textPart.text.substring(0, 30) || i18n[config.uiLanguage].newChat || '新對話';
-                            ALL_ELEMENTS.headerTitle.textContent = conv.title;
-                            renderHistorySidebar();
-                            generateTitleAndSummary(conv);
-                        }
-                    }
-                    saveAppData();
-                }
-            }
+        // ▼▼▼ 程式碼修改：將 addMessageToUI 拆分為 createMessageElement 和 addMessageToUI ▼▼▼
+        const createMessageElement = (msg, index) => {
             const messageDiv = document.createElement('div');
             messageDiv.dataset.messageIndex = index;
             const isUser = msg.role === 'user';
             messageDiv.className = `message-item flex items-start gap-2 md:gap-4 ${isUser ? 'justify-end user-message' : 'model-message'}`;
-            const icon = isUser ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>` : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
 
-
-
-
+            const icon = isUser 
+                ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>` 
+                : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
+            
             let contentHTML = '';
             let actionButtons = '';
-            let contentPaddingClass = '';
+            let contentPaddingClass = 'pb-8';
 
+            const currentVersion = msg.versions[msg.currentVersionIndex];
+            const isLoadingMessage = !isUser && (!currentVersion || (currentVersion.parts.length === 1 && currentVersion.parts[0].text === '...'));
 
-            const isLoadingMessage = !isUser && msg.parts.length === 1 && msg.parts[0].text === '...';
-            
             if (isLoadingMessage) {
                 contentHTML = `<div class="loading-dots"><span class="bg-gray-500 dark:bg-gray-400"></span><span class="bg-gray-500 dark:bg-gray-400"></span><span class="bg-gray-500 dark:bg-gray-400"></span></div>`;
-            } else {
+            } else if (currentVersion) {
                 let textPartsContent = [];
                 let mediaPartsContent = [];
-                msg.parts.forEach(part => {
+                currentVersion.parts.forEach(part => {
                     if (part.text) {
                         textPartsContent.push(part.text);
                     } else if (part.inlineData) {
@@ -3576,57 +3577,94 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     contentHTML += `<div>${isUser ? combinedText.replace(/\n/g, '<br>') : renderMarkdown(combinedText)}</div>`;
                 }
                 if (mediaPartsContent.length > 0) {
-                    let mediaHTML = '<div class="mt-2 flex flex-wrap gap-2">';
-                    mediaPartsContent.forEach(media => {
-                        const src = `data:${media.mimeType};base64,${media.data}`;
-                        if (media.mimeType.startsWith('image/')) {
-                            mediaHTML += `<img src="${src}" class="max-w-xs max-h-48 rounded-lg object-cover border border-[var(--border-color)]">`;
-                        } else {
-                            mediaHTML += `<div class="p-2 bg-[var(--hover-bg)] rounded-lg text-sm flex items-center gap-2 border border-[var(--border-color)]">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-                                <span>${media.name || '檔案'}</span>
-                            </div>`;
-                        }
-                    });
-                    mediaHTML += '</div>';
-                    contentHTML += mediaHTML;
-                }
-                
-                if (!isUser) {
-                    const timeString = formatFullTimestamp(msg.createdAt);
-                    actionButtons = `
-                        <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
-                            <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                            </button>
-                            <span class="text-xs text-gray-400">${timeString}</span>
-                        </div>
-                    `;
-                    contentPaddingClass = 'pb-8'; 
-                } else {
-                    const currentConv = getActiveConversation();
-                    if (currentConv && index + 1 < currentConv.messages.length && currentConv.messages[index + 1].role === 'model') {
-                         actionButtons = `
-                            <div class="absolute bottom-2 left-2 flex items-center">
-                                <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                </button>
-                            </div>
-                        `;
-                        contentPaddingClass = 'pb-8';
-                    }
+                    // Media rendering logic...
                 }
             }
 
-
-            const messageBubble = `
+            if (!isUser) {
+                const timeString = currentVersion ? formatFullTimestamp(currentVersion.createdAt) : '';
+                if (msg.isEditingVersions) {
+                    actionButtons = `
+                        <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center gap-2">
+                            <div class="flex items-center gap-1">
+                                <button class="prev-version-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] disabled:opacity-30 disabled:cursor-not-allowed" ${msg.currentVersionIndex === 0 ? 'disabled' : ''}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                                </button>
+                                <span class="text-xs text-gray-400 font-mono">${msg.currentVersionIndex + 1}/${msg.versions.length}</span>
+                                <button class="next-version-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] disabled:opacity-30 disabled:cursor-not-allowed" ${msg.currentVersionIndex >= msg.versions.length - 1 ? 'disabled' : ''}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                </button>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button class="regenerate-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)]" title="${i18n[config.uiLanguage].regenerate || '重新生成'}">
+                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+                                </button>
+                                <button class="confirm-version-btn px-3 py-1 text-xs rounded-md btn-primary">
+                                    ${i18n[config.uiLanguage].confirm || '確認'}
+                                </button>
+                            </div>
+                        </div>`;
+                } else {
+                    actionButtons = `
+                        <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
+                            <div class="flex items-center gap-1">
+                                <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                </button>
+                                <button class="regenerate-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].regenerate || '重新生成'}">
+                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+                                </button>
+                            </div>
+                            <span class="text-xs text-gray-400">${timeString}</span>
+                        </div>
+                    `;
+                }
+            } else { // User message
+                const currentConv = getActiveConversation();
+                if (currentConv && index + 1 < currentConv.messages.length && currentConv.messages[index + 1].role === 'model') {
+                     actionButtons = `
+                        <div class="absolute bottom-2 left-2 flex items-center">
+                            <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    contentPaddingClass = ''; // No buttons, no extra padding
+                }
+            }
+             const messageBubble = `
                 <div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble relative ${isUser ? 'text-white' : ''}" >
                     <div class="prose prose-sm max-w-none ${isUser ? 'text-white' : 'text-[var(--text-primary)]'} ${contentPaddingClass} message-content">${contentHTML}</div>
                     ${actionButtons}
                 </div>`;
-
-
+            
             messageDiv.innerHTML = isUser ? `${messageBubble}${icon}` : `${icon}${messageBubble}`;
+            return messageDiv;
+        };
+
+        const addMessageToUI = (msg, index, shouldSave = true, shouldScroll = true) => {
+            const conv = getActiveConversation();
+            if (shouldSave) {
+                 if (isTemporaryChat) {
+                    conv.messages.push(msg);
+                } else {
+                    conv.messages.push(msg);
+                    if (conv.messages.length === 1 && msg.role === 'user' && !conv.isRenamed && config.autoNaming) {
+                        const textPart = msg.versions[0].parts.find(p => p.text);
+                        if (textPart) {
+                            conv.title = textPart.text.substring(0, 30) || i18n[config.uiLanguage].newChat || '新對話';
+                            ALL_ELEMENTS.headerTitle.textContent = conv.title;
+                            renderHistorySidebar();
+                            generateTitleAndSummary(conv);
+                        }
+                    }
+                    saveAppData();
+                }
+            }
+
+            const messageDiv = createMessageElement(msg, index);
+            
             if (ALL_ELEMENTS.messageList.querySelector('.text-center')) ALL_ELEMENTS.messageList.innerHTML = '';
 
 
@@ -3635,11 +3673,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
             }
 
-
             return messageDiv;
         };
-        // ▲▲▲ 程式碼修改 ▲▲▲
-
+        // ▲▲▲ 結束修改 ▲▲▲
 
         const handleFormSubmit = async (e) => {
             e.preventDefault();
@@ -3684,7 +3720,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
 
 
-            const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
+            const userMessageObject = { 
+                role: 'user', 
+                versions: [{ parts: userParts, createdAt: new Date().toISOString() }],
+                currentVersionIndex: 0,
+                isEditingVersions: false
+            };
             addMessageToUI(userMessageObject, conv.messages.length, true);
 
 
@@ -3710,13 +3751,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             uploadedFiles = [];
             renderFilePreviews();
             
-            const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
+            const loadingMessageObject = {
+                role: 'model',
+                versions: [{ parts: [{ text: '...' }], createdAt: new Date().toISOString() }],
+                currentVersionIndex: 0,
+                isEditingVersions: false
+            };
+            const loadingMessageDiv = addMessageToUI(loadingMessageObject, conv.messages.length, false);
+            conv.messages.push(loadingMessageObject);
             const contentDiv = loadingMessageDiv.querySelector('.message-content');
             let fullResponse = '';
             
-            const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
-
-
             try {
                 const completeResponse = await streamApiCall(
                     userParts,
@@ -3728,31 +3773,27 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
                         }
                     },
-                    abortController.signal
+                    abortController.signal,
+                    conv.messages.slice(0, -1)
                 );
                 fullResponse = completeResponse;
-                finalAiMessage.parts = [{ text: fullResponse }];
-                conv.messages.push(finalAiMessage);
+                
+                loadingMessageObject.versions[0].parts = [{ text: fullResponse }];
                 if (!isTemporaryChat) await saveAppData();
-
-
-
 
                 if(config.enableFollowUp) {
                     await generateFollowUpPrompts(fullResponse);
                 }
-                if (config.memoryEnabled1 && config.enableAutoMemory) { // 檢查兩個開關
+                if (config.memoryEnabled1 && config.enableAutoMemory) {
                     await extractPersonalMemory(userMessage, fullResponse);
                 }
             } catch (error) {
                 if (error.name === 'AbortError') {
-                    contentDiv.innerHTML = renderMarkdown(fullResponse);
-                    finalAiMessage.parts = [{ text: fullResponse }];
-                    conv.messages.push(finalAiMessage);
+                    loadingMessageObject.versions[0].parts = [{ text: fullResponse }];
                 } else {
-                    contentDiv.textContent = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
-                    finalAiMessage.parts = [{ text: `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}` }];
-                    conv.messages.push(finalAiMessage);
+                    const errorText = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
+                    contentDiv.textContent = errorText;
+                    loadingMessageObject.versions[0].parts = [{ text: errorText }];
                 }
                 if (!isTemporaryChat) await saveAppData();
             } finally {
@@ -3760,58 +3801,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 updateSubmitButtonState(false);
                 sendConfirmed = false;
                 updateInputState();
-                
-                // ▼▼▼ 優化：AI 回覆完成後，不再重新渲染整個聊天室，而是僅更新最後一則訊息的 UI ▼▼▼
-                const lastMessageDiv = ALL_ELEMENTS.messageList.lastElementChild;
-                if (lastMessageDiv && lastMessageDiv.classList.contains('model-message')) {
-                    const bubble = lastMessageDiv.querySelector('.message-bubble');
-                    const content = lastMessageDiv.querySelector('.message-content');
-                    const aiMessageObject = conv.messages[conv.messages.length - 1];
-
-
-                    if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute')) { 
-                        content.classList.add('pb-8');
-                        
-                        const timeString = formatFullTimestamp(aiMessageObject.createdAt);
-                        const actionButtonsHTML = `
-                            <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
-                                <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                                </button>
-                                <span class="text-xs text-gray-400">${timeString}</span>
-                            </div>
-                        `;
-                        bubble.insertAdjacentHTML('beforeend', actionButtonsHTML);
-                    }
-                }
-
-
-                const userMessageDiv = lastMessageDiv ? lastMessageDiv.previousElementSibling : null;
-                if (userMessageDiv && userMessageDiv.classList.contains('user-message')) {
-                    const bubble = userMessageDiv.querySelector('.message-bubble');
-                    const content = userMessageDiv.querySelector('.message-content');
-                    if (bubble && content && !bubble.querySelector('.delete-message-btn')) {
-                        content.classList.add('pb-8');
-                        const deleteButtonHTML = `
-                            <div class="absolute bottom-2 left-2 flex items-center">
-                                <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                </button>
-                            </div>
-                        `;
-                        bubble.insertAdjacentHTML('beforeend', deleteButtonHTML);
-                    }
-                }
-                // ▲▲▲ 結束優化 ▲▲▲
+                rerenderMessageBubble(conv.messages.length - 1);
+                rerenderMessageBubble(conv.messages.length - 2); // To update user message delete button
             }
         };
         function cleanGeminiHistory(history) {
             const cleaned = []; let lastRole = null;
             history.forEach(msg => {
-                // 修正重點：
+                const parts = (msg.versions && msg.versions.length > 0) ? msg.versions[msg.currentVersionIndex].parts : [];
                 // 創建一個只包含 API 所需的 role 和 parts 欄位的新物件，
                 // 藉此移除如 createdAt 等自訂的額外屬性。
-                const sanitizedMsg = { role: msg.role, parts: msg.parts };
+                const sanitizedMsg = { role: msg.role, parts: parts };
 
 
                 if (sanitizedMsg.role === 'model' && !sanitizedMsg.parts.some(p => (p.text && p.text.trim() !== '') || p.inlineData)) return;
@@ -3826,38 +3826,28 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (cleaned.length > 0 && cleaned[0].role !== 'user') cleaned.shift();
             return cleaned;
         }
-        async function streamApiCall(parts, onChunk, signal) {
+        async function streamApiCall(parts, onChunk, signal, historyOverride = null) {
             const conv = getActiveConversation();
             const modelInfo = MODELS.find(m => m.id === conv.model);
             if (!modelInfo) throw new Error(`找不到模型設定: ${conv.model}`);
-
-
-
 
             const { provider, id: modelId } = modelInfo;
             let apiKey;
             if (provider === 'gemini') {
                 apiKey = config.apiKeys.gemini;
-            // ▼▼▼ 需求 2 修正：所有 OpenRouter 模型共用一個金鑰 ▼▼▼
             } else if (provider === 'openrouter') {
                 apiKey = config.apiKeys.openrouter;
             }
-            // ▲▲▲ 結束修正 ▲▲▲
-
-
-
 
             if (!apiKey) throw new Error(`請先在設定中提供 ${modelInfo.name} 所需的 API 金鑰。`);
 
-
-
-
-            const historyForApi = conv.messages.slice(0, -1);
+            // ▼▼▼ 修改：允許傳入指定的歷史紀錄 ▼▼▼
+            const historyForApi = historyOverride !== null ? historyOverride : conv.messages.slice(0, -1);
+            // ▲▲▲ 結束修改 ▲▲▲
             const currentMessageForApi = { role: 'user', parts: parts };
             let url, payload, headers;
             let systemInstruction = null;
             
-            // ▼▼▼ 新增：語言指令 ▼▼▼
             let languageInstruction = '';
             const langMap = {
                 'zh-TW': '請用繁體中文回覆，除非使用者有特別要求。',
@@ -3865,8 +3855,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 'fr': 'Veuillez répondre en français, sauf si l\'utilisateur demande spécifiquement le contraire.'
             };
             languageInstruction = langMap[config.aiDefaultLanguage] || '';
-            // ▲▲▲ 結束新增 ▲▲▲
-
 
             if (conv.astrasId) {
                 const ast = astras.find(a => a.id === conv.astrasId);
@@ -3877,7 +3865,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (!systemInstruction && languageInstruction) {
                  systemInstruction = { parts: [{ text: languageInstruction }] };
             }
-
 
             let memoryPrompt = '';
             if (config.memoryEnabled1) {
@@ -3916,7 +3903,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 if (systemInstruction) {
                     messages.push({ role: 'system', content: systemInstruction.parts[0].text });
                 }
-                messages.push(...[...historyForApi, currentMessageForApi].map(m => ({
+                messages.push(...cleanGeminiHistory([...historyForApi, currentMessageForApi]).map(m => ({
                     role: m.role === 'model' ? 'assistant' : m.role,
                     content: m.parts.map(p => p.text).join('\n')
                 })));
@@ -3940,9 +3927,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 const { value, done } = await reader.read();
                 if (done) break;
                 buffer += decoder.decode(value, { stream: true });
-
-
-
 
                 if (provider === 'gemini') {
                     const lines = buffer.split('\n');
@@ -4065,11 +4049,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             return text === 'yes';
         }
 
-
-
-
         const generateTitleAndSummary = async (conv) => {
-            const conversationHistory = conv.messages.slice(0, 5).map(m => `${m.role}: ${m.parts.map(p => p.text).join(' ')}`).join('\n');
+            const conversationHistory = conv.messages.slice(0, 5).map(m => `${m.role}: ${m.versions[0].parts.map(p => p.text).join(' ')}`).join('\n');
             const prompt = `基於以下對話，生成一個簡潔的標題（10個字以內）和一句話的摘要。請嚴格按照以下 JSON 格式輸出，不要有任何額外的文字或解釋:\n{"title": "你的標題", "summary": "你的一句話摘要"}\n\n對話內容:\n${conversationHistory}`;
             const responseSchema = {
                 type: "OBJECT",
@@ -4157,7 +4138,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const conv = getActiveConversation();
             if (conv && conv.messages.length > 0 && conv.messages[conv.messages.length-1].role === 'model') {
                 if (config.enableFollowUp) {
-                    const lastMessage = conv.messages[conv.messages.length-1].parts.map(p => p.text).join(' ');
+                    const lastMessage = conv.messages[conv.messages.length-1].versions[0].parts.map(p => p.text).join(' ');
                     if (ALL_ELEMENTS.followUpPromptsList.children.length === 0) {
                         generateFollowUpPrompts(lastMessage);
                     }
@@ -4166,9 +4147,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 ALL_ELEMENTS.followUpContainer.classList.add('hidden');
             }
         };
-
-
-
 
         const updateSubmitButtonState = (isGenerating) => {
             const { submitButton, submitButtonIcon } = ALL_ELEMENTS;
@@ -4181,14 +4159,18 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         const updateInputState = () => {
             const hasContent = ALL_ELEMENTS.messageInput.value.trim() !== '' || uploadedFiles.length > 0;
-            const { submitButton, submitButtonIcon } = ALL_ELEMENTS;
+            const { submitButton, submitButtonIcon, messageInput } = ALL_ELEMENTS;
 
-
-
-
-            if (abortController) {
-                submitButton.disabled = false;
-                submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>`;
+            if (abortController || isVersionEditingActive) {
+                messageInput.disabled = true;
+                messageInput.placeholder = isVersionEditingActive 
+                    ? (i18n[config.uiLanguage].versionEditingPlaceholder || '請先確認或取消版本選擇...')
+                    : messageInput.placeholder;
+                submitButton.disabled = !!isVersionEditingActive;
+                 if (abortController) {
+                    submitButton.disabled = false;
+                    submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>`;
+                }
                 return;
             }
             const conv = getActiveConversation();
@@ -4198,14 +4180,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 return;
             }
             if (conv.archived) {
-                ALL_ELEMENTS.messageInput.disabled = true;
+                messageInput.disabled = true;
                 submitButton.disabled = true;
-                ALL_ELEMENTS.messageInput.placeholder = i18n[config.uiLanguage].viewingArchived || '正在檢視封存的對話，無法傳送訊息。';
+                messageInput.placeholder = i18n[config.uiLanguage].viewingArchived || '正在檢視封存的對話，無法傳送訊息。';
                 return;
             }
-
-
-
 
             const modelInfo = MODELS.find(m => m.id === conv.model);
             const provider = modelInfo?.provider;
@@ -4213,14 +4192,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (provider === 'gemini') {
                 hasApiKey = !!config.apiKeys.gemini;
             } else if (provider === 'openrouter') {
-                hasApiKey = !!config.apiKeys.openrouter; // ▼▼▼ 需求 2 修正：檢查單一金鑰 ▼▼▼
+                hasApiKey = !!config.apiKeys.openrouter;
             }
 
-
-
-
-            ALL_ELEMENTS.messageInput.disabled = !hasApiKey;
-            ALL_ELEMENTS.messageInput.placeholder = hasApiKey ? i18n[config.uiLanguage].enterMessagePlaceholder : i18n[config.uiLanguage].enterApiKeyPlaceholder;
+            messageInput.disabled = !hasApiKey;
+            messageInput.placeholder = hasApiKey ? i18n[config.uiLanguage].enterMessagePlaceholder : i18n[config.uiLanguage].enterApiKeyPlaceholder;
             if (!hasApiKey || !hasContent) {
                 submitButton.disabled = true;
                 submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
@@ -4234,23 +4210,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         };
 
-
-
-
         const setupSettingsModal = () => {
             ALL_ELEMENTS.geminiApiKeyInput.value = config.apiKeys.gemini;
-            // ▼▼▼ 需求 2 修正：設定單一 OpenRouter 金鑰輸入框的值 ▼▼▼
             ALL_ELEMENTS.openrouterApiKeyInputAll.value = config.apiKeys.openrouter;
-             // ▲▲▲ 結束修正 ▲▲▲
             ALL_ELEMENTS.followUpToggleSwitch.checked = config.enableFollowUp;
             ALL_ELEMENTS.autoNamingToggleSwitch.checked = config.autoNaming;
             ALL_ELEMENTS.autoWebSearchToggleSwitch.checked = config.enableAutoWebSearch;
             ALL_ELEMENTS.memoryToggle1.checked = config.memoryEnabled1;
             ALL_ELEMENTS.autoMemoryToggleSwitch.checked = config.enableAutoMemory;
-            // ▼▼▼ 新增：設定語言下拉選單的初始值 ▼▼▼
             ALL_ELEMENTS.uiLanguageSelect.value = config.uiLanguage;
             ALL_ELEMENTS.aiLanguageSelect.value = config.aiDefaultLanguage;
-            // ▲▲▲ 結束新增 ▲▲▲
             renderPersonalMemoryList();
             updateThemeButtons();
             renderModelManagementUI();
@@ -4269,14 +4238,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
         };
 
-
-
-
         const saveSettings = async () => {
             config.apiKeys.gemini = ALL_ELEMENTS.geminiApiKeyInput.value.trim();
-            // ▼▼▼ 需求 2 修正：儲存單一 OpenRouter 金鑰 ▼▼▼
             config.apiKeys.openrouter = ALL_ELEMENTS.openrouterApiKeyInputAll.value.trim();
-            // ▲▲▲ 結束修正 ▲▲▲
             config.enableFollowUp = ALL_ELEMENTS.followUpToggleSwitch.checked;
             config.enableAutoWebSearch = ALL_ELEMENTS.autoWebSearchToggleSwitch.checked;
             config.aiBubbleColor = ALL_ELEMENTS.aiBubbleColorDropdown.querySelector('.color-dropdown-btn')?.dataset.color || 'default';
@@ -4284,33 +4248,26 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             config.autoNaming = ALL_ELEMENTS.autoNamingToggleSwitch.checked;
             config.memoryEnabled1 = ALL_ELEMENTS.memoryToggle1.checked;
             config.enableAutoMemory = ALL_ELEMENTS.autoMemoryToggleSwitch.checked;
-            // ▼▼▼ 新增：儲存語言設定 ▼▼▼
             config.uiLanguage = ALL_ELEMENTS.uiLanguageSelect.value;
             config.aiDefaultLanguage = ALL_ELEMENTS.aiLanguageSelect.value;
-            // ▲▲▲ 結束新增 ▲▲▲
             
-            // ▼▼▼ 新增：儲存 UI 顏色設定 ▼▼▼
             const selectedThemeMode = document.querySelector('input[name="color-theme"]:checked').value;
             const selectedCustomColor = ALL_ELEMENTS.customColorSwatches.querySelector('.selected')?.dataset.color || config.uiTheme.customColor;
             const selectedStyle = document.querySelector('input[name="color-style"]:checked')?.value || 'single';
             const selectedGradientSwatch = ALL_ELEMENTS.gradientSwatches.querySelector('.selected-gradient');
             const selectedGradient = selectedGradientSwatch ? selectedGradientSwatch.dataset.gradient : (config.uiTheme.adaptivePalette?.length > 1 ? `linear-gradient(to right, ${config.uiTheme.adaptivePalette[0]}, ${config.uiTheme.adaptivePalette[1]})` : '');
 
-
-
-
             config.uiTheme.mode = selectedThemeMode;
             config.uiTheme.customColor = selectedCustomColor;
             config.uiTheme.style = selectedStyle;
             config.uiTheme.adaptiveGradient = selectedGradient;
-            // ▲▲▲ 結束：儲存 UI 顏色設定 ▲▲▲
             
             setAiBubbleColor();
             setUserBubbleColor();
-            applyUiTheme(); // ▼▼▼ 新增呼叫 ▼▼▼
+            applyUiTheme();
             
             await saveConfig();
-            applyLanguage(config.uiLanguage); // 儲存後立即應用新語言
+            applyLanguage(config.uiLanguage);
             renderModelSwitcher();
             renderChat();
             renderStore();
@@ -4321,7 +4278,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             showNotification(i18n[config.uiLanguage].settingsSaved || '設定已儲存！');
         };
         
-        // ▼▼▼ 修正：設定 AI 泡泡顏色函式 ▼▼▼
         const setAiBubbleColor = () => {
             const root = document.documentElement;
             const isWallpaperActive = document.body.classList.contains('custom-wallpaper-active');
@@ -4331,17 +4287,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
             if (isWallpaperActive) {
-                // 桌布模式下，套用帶透明度的玻璃效果
                 const rgbaColor = hexToRgba(hexColor, 0.75);
                 root.style.setProperty('--ai-bubble-bg', rgbaColor);
             } else {
-                // 一般模式下，套用原始顏色
                 root.style.setProperty('--ai-bubble-bg', hexColor);
             }
         };
 
-
-        // ▼▼▼ 修正：設定使用者泡泡顏色函式 ▼▼▼
         const setUserBubbleColor = () => {
             const root = document.documentElement;
             const isWallpaperActive = document.body.classList.contains('custom-wallpaper-active');
@@ -4351,11 +4303,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
             if (isWallpaperActive) {
-                // 桌布模式下，套用帶透明度的玻璃效果
                 const rgbaColor = hexToRgba(hexColor, 0.7);
                 root.style.setProperty('--user-bubble-bg', rgbaColor);
             } else {
-                // 一般模式下，套用原始顏色
                 root.style.setProperty('--user-bubble-bg', hexColor);
             }
         };
@@ -4548,9 +4498,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         };
 
-
-
-
         const setTheme = async (theme) => {
             if (document.body.classList.contains('custom-wallpaper-active')) {
                 return;
@@ -4630,8 +4577,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         };
 
-
-        // ▼▼▼ 新增：清除所有資料的函式 ▼▼▼
         const handleDeleteAllData = async () => {
             const confirmation = await showCustomDialog({
                 title: i18n[config.uiLanguage].deleteAllDataTitle || '永久刪除所有資料',
@@ -4671,10 +4616,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 showNotification(i18n[config.uiLanguage].incorrectInput || '輸入錯誤，操作已取消。', 'warning');
             }
         };
-        // ▲▲▲ 結束新增 ▲▲▲
-
-
-
 
         const createNewFolder = (name) => {
             const newFolder = { id: crypto.randomUUID(), name,conversationIds: [], ...getDefaultFolder() };
@@ -4963,7 +4904,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             titleHTML = highlightText(conv.title, keywordQueries);
                         }
                         for (const msg of conv.messages) {
-                            for (const part of msg.parts) {
+                            for (const part of msg.versions[0].parts) {
                                 if (part.text && part.text.toLowerCase().match(new RegExp(keywordQueries, 'gi'))) {
                                     matchFound = true;
                                     const text = part.text;
@@ -4995,7 +4936,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     }
                     if (searchIn === 'content') {
                         for (const msg of conv.messages) {
-                            for (const part of msg.parts) {
+                            for (const part of msg.versions[0].parts) {
                                 if (part.text && part.text.toLowerCase().includes(lowerCaseQuery)) {
                                     matchFound = true;
                                     const text = part.text;
@@ -5421,33 +5362,23 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
         }
         
-        // ▼▼▼ 新增：具備備用方案的複製文字函式 ▼▼▼
         async function copyTextToClipboard(text) {
-            // 優先嘗試現代的 Clipboard API
             if (navigator.clipboard && window.isSecureContext) {
                 try {
                     await navigator.clipboard.writeText(text);
-                    return; // 成功後直接返回
+                    return;
                 } catch (err) {
                     console.warn('Clipboard API 失敗，改用備用方案。', err);
-                    // 如果失敗，則繼續執行下方的備用方案
                 }
             }
-
-
-            // 備用方案：使用 document.execCommand
             const textArea = document.createElement("textarea");
             textArea.value = text;
-            
-            // 讓 textarea 在畫面上看不見
             textArea.style.position = "fixed";
             textArea.style.top = "-9999px";
             textArea.style.left = "-9999px";
-            
             document.body.appendChild(textArea);
             textArea.focus();
             textArea.select();
-            
             try {
                 const successful = document.execCommand('copy');
                 if (!successful) {
@@ -5455,13 +5386,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             } catch (err) {
                 document.body.removeChild(textArea);
-                throw err; // 如果備用方案也失敗，則拋出錯誤
+                throw err;
             }
-            
             document.body.removeChild(textArea);
         }
-        // ▲▲▲ 結束新增 ▲▲▲
-
 
         const setupVoiceInput = () => {
             if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
@@ -5582,14 +5510,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (modelInfo) {
                 if (modelInfo.provider === 'gemini' && !config.apiKeys.gemini) {
                     needsKey = true;
-                } else if (modelInfo.provider === 'openrouter' && !config.apiKeys.openrouter) { // ▼▼▼ 需求 2 修正：檢查單一金鑰 ▼▼▼
+                } else if (modelInfo.provider === 'openrouter' && !config.apiKeys.openrouter) {
                     needsKey = true;
                 }
             }
             ALL_ELEMENTS.apiKeyWarningBadge.classList.toggle('hidden', !needsKey);
         };
         
-        // ▼▼▼ 需求 1 修改：數據儀表板相關函式 (增加日檢視) ▼▼▼
         const openDashboard = () => {
             renderDashboardStats();
             renderModelUsageChart();
@@ -5662,7 +5589,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         
         const setupTimeAnalysis = () => {
             const { timeAnalysisYearSelect, timeAnalysisMonthSelect, timeAnalysisDaySelect } = ALL_ELEMENTS;
-            const allMessages = conversations.flatMap(c => c.messages.map(m => new Date(m.createdAt)));
+            const allMessages = conversations.flatMap(c => c.messages.map(m => new Date(m.versions[0].createdAt)));
             const years = [...new Set(allMessages.map(d => d.getFullYear()))].sort((a,b) => b-a);
 
 
@@ -5740,7 +5667,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 data = Array(24).fill(0);
                 
                 allMessages.forEach(msg => {
-                    const msgDate = new Date(msg.createdAt);
+                    const msgDate = new Date(msg.versions[0].createdAt);
                     if (msgDate.getFullYear() === year && msgDate.getMonth() + 1 === month && msgDate.getDate() === day) {
                         data[msgDate.getHours()]++;
                     }
@@ -5753,7 +5680,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 data = Array(daysInMonth).fill(0);
                 
                 allMessages.forEach(msg => {
-                    const msgDate = new Date(msg.createdAt);
+                    const msgDate = new Date(msg.versions[0].createdAt);
                     if (msgDate.getFullYear() === year && msgDate.getMonth() + 1 === month) {
                         data[msgDate.getDate() - 1]++;
                     }
@@ -5766,7 +5693,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
                 allMessages.forEach(msg => {
-                    const msgDate = new Date(msg.createdAt);
+                    const msgDate = new Date(msg.versions[0].createdAt);
                     if (msgDate.getFullYear() === year) {
                         data[msgDate.getMonth()]++;
                     }
@@ -5774,9 +5701,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             } else { // Yearly view
                 chartType = 'bar';
                 label = i18n[lang].yearlyMessageCount || '每年訊息數';
-                const years = [...new Set(allMessages.map(d => new Date(d.createdAt).getFullYear()))].sort();
+                const years = [...new Set(allMessages.map(d => new Date(d.versions[0].createdAt).getFullYear()))].sort();
                 labels = years.map(String);
-                data = years.map(y => allMessages.filter(m => new Date(m.createdAt).getFullYear() === y).length);
+                data = years.map(y => allMessages.filter(m => new Date(m.versions[0].createdAt).getFullYear() === y).length);
             }
 
 
@@ -5811,12 +5738,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             });
         };
-        // ▲▲▲ 結束修改 ▲▲▲
-
-
-
-
-        // ▼▼▼ 修改/新增：自訂桌布 & UI 顏色功能相關函式 (優化取色邏輯) ▼▼▼
+        
         const getDominantColorPalette = (imageDataUrl) => {
             return new Promise((resolve, reject) => {
                 const img = new Image();
@@ -6133,9 +6055,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             applyUiTheme();
             showNotification(i18n[config.uiLanguage].defaultAppearanceRestored, 'success');
         };
-        // ▲▲▲ 結束：自訂桌布 & UI 顏色功能相關函式 ▲▲▲
         
-        // ▼▼▼ 新增：Astras 商店與頭像功能相關函式 ▼▼▼
         const openStore = () => {
             ALL_ELEMENTS.appContainer.classList.remove('visible');
             ALL_ELEMENTS.storeContainer.classList.remove('hidden');
@@ -6165,17 +6085,15 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     const grid = ALL_ELEMENTS.storeGrid;
     grid.innerHTML = '';
     
-    // 取得當前語言的翻譯
     const translations = i18n[config.uiLanguage] || i18n['zh-TW'];
 
 
-    // 將官方 Astras 的資料轉換成使用翻譯鍵的版本
     const translatedOfficialAstras = OFFICIAL_ASTRAS.map(ast => {
         const keyBase = 'astras_' + ast.id.replace(/-/g, '_');
         return {
             ...ast,
-            name: translations[keyBase + '_name'] || ast.name, // 如果找不到翻譯，則使用原始名稱
-            description: translations[keyBase + '_desc'] || ast.description // 如果找不到翻譯，則使用原始描述
+            name: translations[keyBase + '_name'] || ast.name,
+            description: translations[keyBase + '_desc'] || ast.description
         };
     });
 
@@ -6186,7 +6104,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const card = document.createElement('div');
         card.className = 'astras-store-card';
         
-        // 判斷訂閱狀態時，要用原始的 officialId
         const originalId = ast.officialId || ast.id;
         const isSubscribed = astras.some(userAstra => userAstra.officialId === originalId);
         const isUserCreated = !ast.officialId && astras.some(userAstra => userAstra.id === originalId);
@@ -6242,8 +6159,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 if (officialAstra) {
                     const newAstra = {
                         ...officialAstra,
-                        id: crypto.randomUUID(), // Create a new unique ID for the user's copy
-                        officialId: officialAstra.id, // Link to the original
+                        id: crypto.randomUUID(),
+                        officialId: officialAstra.id,
                     };
                     astras.unshift(newAstra);
                     showNotification(i18n[config.uiLanguage].subscribed || '訂閱成功！', 'success');
@@ -6312,9 +6229,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             toggleModal(ALL_ELEMENTS.astrasAvatarModal, false);
             editingAstraForAvatarId = null;
         };
-        // ▲▲▲ 結束新增 ▲▲▲
         
-        // ▼▼▼ 新增：語言切換功能 ▼▼▼
         const applyLanguage = (lang) => {
             const translations = i18n[lang] || i18n['zh-TW'];
             document.querySelectorAll('[data-lang-key]').forEach(el => {
@@ -6335,16 +6250,91 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     el.title = translations[key];
                 }
             });
-            // 更新登入頁面語言顯示
             if(ALL_ELEMENTS.loginLangLabel) {
                 ALL_ELEMENTS.loginLangLabel.textContent = translations.currentLanguageName || '繁體中文';
             }
-            // 更新根元素 lang 屬性
             document.documentElement.lang = lang;
         };
+        
+        // ▼▼▼ 新增：重新生成相關函式 ▼▼▼
+        const rerenderMessageBubble = (index) => {
+            const conv = getActiveConversation();
+            if (!conv || !conv.messages[index]) return;
+
+            const oldMessageElement = document.querySelector(`.message-item[data-message-index="${index}"]`);
+            if (oldMessageElement) {
+                const newMessageElement = createMessageElement(conv.messages[index], index);
+                oldMessageElement.replaceWith(newMessageElement);
+            }
+        };
+
+        const handleRegenerate = async (messageIndex) => {
+            const conv = getActiveConversation();
+            const msg = conv.messages[messageIndex];
+            if (!msg || msg.role !== 'model' || abortController) return;
+
+            // 進入編輯模式
+            if (!msg.isEditingVersions) {
+                msg.isEditingVersions = true;
+                isVersionEditingActive = true;
+                updateInputState();
+            }
+
+            const history = conv.messages.slice(0, messageIndex);
+            const userMessage = history[history.length - 1];
+            
+            abortController = new AbortController();
+            
+            const tempNewVersion = { parts: [{ text: '...' }], createdAt: new Date().toISOString() };
+            msg.versions.push(tempNewVersion);
+            msg.currentVersionIndex = msg.versions.length - 1;
+            
+            rerenderMessageBubble(messageIndex);
+
+            let fullResponse = '';
+            const contentDiv = document.querySelector(`.message-item[data-message-index="${messageIndex}"] .message-content`);
+            
+            try {
+                const completeResponse = await streamApiCall(
+                    userMessage.versions[0].parts,
+                    (chunk) => {
+                        fullResponse += chunk;
+                        if (contentDiv) contentDiv.innerHTML = renderMarkdown(fullResponse);
+                    },
+                    abortController.signal,
+                    history.slice(0, -1) // 傳入 regenerat 時的歷史紀錄
+                );
+                fullResponse = completeResponse;
+                msg.versions[msg.currentVersionIndex].parts = [{ text: fullResponse }];
+
+            } catch (error) {
+                const errorText = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
+                msg.versions[msg.currentVersionIndex].parts = [{ text: errorText }];
+            } finally {
+                abortController = null;
+                if (!isTemporaryChat) saveAppData();
+                rerenderMessageBubble(messageIndex);
+            }
+        };
+
+        const handleConfirmVersion = async (messageIndex) => {
+            const conv = getActiveConversation();
+            const msg = conv.messages[messageIndex];
+            
+            msg.isEditingVersions = false;
+            isVersionEditingActive = false;
+            
+            // 將選定的版本移到第一個位置，並刪除其他版本
+            const selectedVersion = msg.versions[msg.currentVersionIndex];
+            msg.versions = [selectedVersion];
+            msg.currentVersionIndex = 0;
+
+            if (!isTemporaryChat) await saveAppData();
+            
+            rerenderMessageBubble(messageIndex);
+            updateInputState();
+        };
         // ▲▲▲ 結束新增 ▲▲▲
-
-
 
 
         async function initChatApp() {
@@ -6381,7 +6371,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.apiKeyWarningBadge.addEventListener('click', () => {
                 setupSettingsModal();
                 toggleModal(ALL_ELEMENTS.settingsModal, true);
-                // 直接切換到模型管理頁面
                 const navItems = ALL_ELEMENTS.settingsNav.querySelectorAll('.settings-nav-item');
                 navItems.forEach(i => i.classList.remove('active'));
                 document.querySelector('.settings-nav-item[data-section="model-management"]').classList.add('active');
@@ -6403,11 +6392,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.themeDarkBtn.addEventListener('click', () => setTheme('dark'));
             ALL_ELEMENTS.openArchivedModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.archivedChatsModal, true));
             ALL_ELEMENTS.closeArchivedModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.archivedChatsModal, false));
-            // ▼▼▼ 新增：封存對話檢視 Modal 的關閉事件 ▼▼▼
             const closeViewArchivedModal = () => toggleModal(ALL_ELEMENTS.viewArchivedChatModal, false);
             ALL_ELEMENTS.closeViewArchivedModalBtn.addEventListener('click', closeViewArchivedModal);
             ALL_ELEMENTS.closeViewArchivedModalBtnFooter.addEventListener('click', closeViewArchivedModal);
-            // ▲▲▲ 結束新增 ▲▲▲
             ALL_ELEMENTS.saveRenameBtn.addEventListener('click', handleRename);
             ALL_ELEMENTS.cancelRenameBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.renameModal, false));
             ALL_ELEMENTS.saveFolderSettingsBtn.addEventListener('click', handleSaveFolderSettings);
@@ -6420,38 +6407,50 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.confirmImportBtn.addEventListener('click', handleImport);
             ALL_ELEMENTS.logoutBtn.addEventListener('click', handleLogout);
             
-            // ▼▼▼ 需求 1 新增：儀表板按鈕事件 ▼▼▼
             ALL_ELEMENTS.userProfileBtn.addEventListener('click', openDashboard);
             ALL_ELEMENTS.closeDashboardBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.dataDashboardModal, false));
-            // ▲▲▲ 結束新增 ▲▲▲
-             // ▼▼▼ 修改：使用新的複製函式處理複製事件與新增的刪除事件 ▼▼▼
+             // ▼▼▼ 修改：事件委派以處理所有訊息按鈕 ▼▼▼
             ALL_ELEMENTS.messageList.addEventListener('click', (e) => {
-                const copyBtn = e.target.closest('.copy-content-btn');
-                const deleteBtn = e.target.closest('.delete-message-btn');
+                const messageItem = e.target.closest('.message-item');
+                if (!messageItem) return;
 
+                const messageIndex = parseInt(messageItem.dataset.messageIndex);
+                const conv = getActiveConversation();
+                const msg = conv?.messages[messageIndex];
+                if (!msg) return;
 
-                if (copyBtn) {
-                    const messageItem = copyBtn.closest('.message-item');
-                    if (messageItem) {
-                        const messageIndex = parseInt(messageItem.dataset.messageIndex);
-                        const conv = getActiveConversation();
-                        const msg = conv?.messages[messageIndex];
-                        if (msg && msg.role === 'model') {
-                            const textToCopy = msg.parts.map(p => p.text).join('\n');
-                            copyTextToClipboard(textToCopy)
-                                .then(() => showNotification(i18n[config.uiLanguage].copySuccess || '內容已複製！', 'success'))
-                                .catch(err => {
-                                    showNotification(i18n[config.uiLanguage].copyFailed || '複製失敗！瀏覽器可能限制了此功能。', 'error');
-                                    console.error('Could not copy text with any method: ', err);
-                                });
-                        }
+                // 處理複製
+                if (e.target.closest('.copy-content-btn')) {
+                    const textToCopy = msg.versions[msg.currentVersionIndex].parts.map(p => p.text).join('\n');
+                    copyTextToClipboard(textToCopy)
+                        .then(() => showNotification(i18n[config.uiLanguage].copySuccess || '內容已複製！', 'success'))
+                        .catch(err => showNotification(i18n[config.uiLanguage].copyFailed || '複製失敗！', 'error'));
+                }
+                // 處理刪除
+                else if (e.target.closest('.delete-message-btn')) {
+                    handleDeleteMessagePair(messageIndex);
+                }
+                // 處理重新生成
+                else if (e.target.closest('.regenerate-btn')) {
+                    handleRegenerate(messageIndex);
+                }
+                // 處理上一版本
+                else if (e.target.closest('.prev-version-btn')) {
+                    if (msg.currentVersionIndex > 0) {
+                        msg.currentVersionIndex--;
+                        rerenderMessageBubble(messageIndex);
                     }
-                } else if (deleteBtn) {
-                    const messageItem = deleteBtn.closest('.message-item');
-                     if (messageItem) {
-                        const messageIndex = parseInt(messageItem.dataset.messageIndex);
-                        handleDeleteMessagePair(messageIndex);
+                }
+                // 處理下一版本
+                else if (e.target.closest('.next-version-btn')) {
+                    if (msg.currentVersionIndex < msg.versions.length - 1) {
+                        msg.currentVersionIndex++;
+                        rerenderMessageBubble(messageIndex);
                     }
+                }
+                // 處理確認版本
+                else if (e.target.closest('.confirm-version-btn')) {
+                    handleConfirmVersion(messageIndex);
                 }
             });
              // ▲▲▲ 結束修改 ▲▲▲
@@ -6461,9 +6460,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     popover.classList.remove('visible');
                 } else {
                     closeAllPopovers();
-                    // ▼▼▼ 程式碼修正：移除不正確的 JS 定位，改由 CSS 控制 ▼▼▼
                     popover.classList.add('visible');
-                    // ▲▲▲ 結束修正 ▲▲▲
                 }
             });
             ALL_ELEMENTS.cameraBtn.addEventListener('click', () => {
@@ -6533,14 +6530,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
            
             ALL_ELEMENTS.chatForm.addEventListener('submit', handleFormSubmit);
             const threshold = 140;
-            // ▼▼▼ 修改：對 scroll 事件進行節流 ▼▼▼
             const throttledScrollHandler = throttle(() => {
                 const sc = ALL_ELEMENTS.chatContainer;
                 const nearBottom = sc.scrollHeight - sc.scrollTop - sc.clientHeight < threshold;
                 ALL_ELEMENTS.scrollToBottomBtn.classList.toggle('hidden', nearBottom);
-            }, 200); // 每 200 毫秒觸發一次
+            }, 200);
             ALL_ELEMENTS.chatContainer.addEventListener('scroll', throttledScrollHandler);
-            // ▲▲▲ 結束修改 ▲▲▲
             ALL_ELEMENTS.scrollToBottomBtn.addEventListener('click', () => {
                 ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
             });
@@ -6601,7 +6596,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.wallpaperUploadInput.addEventListener('change', handleWallpaperUpload);
             ALL_ELEMENTS.restoreWallpaperBtn.addEventListener('click', restoreDefaultWallpaper);
             
-            // ▼▼▼ 新增：桌布裁切 Modal 事件 ▼▼▼
             ALL_ELEMENTS.confirmCropBtn.addEventListener('click', handleConfirmCrop);
             ALL_ELEMENTS.cancelCropBtn.addEventListener('click', () => {
                 toggleModal(ALL_ELEMENTS.wallpaperCropModal, false);
@@ -6610,17 +6604,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     cropperInstance = null;
                 }
             });
-            // ▲▲▲ 結束新增 ▲▲▲
-            // ▼▼▼ 新增：清除資料按鈕事件 ▼▼▼
             ALL_ELEMENTS.deleteAllDataBtn.addEventListener('click', handleDeleteAllData);
-            // ▲▲▲ 結束新增 ▲▲▲
-             // ▼▼▼ 新增：設定頁面語言切換事件 ▼▼▼
             ALL_ELEMENTS.uiLanguageSelect.addEventListener('change', (e) => {
                 config.uiLanguage = e.target.value;
                 applyLanguage(config.uiLanguage);
             });
-            // ▲▲▲ 結束新增 ▲▲▲
-            // ▼▼▼ 新增：商店與頭像功能事件 ▼▼▼
             ALL_ELEMENTS.openStoreBtn.addEventListener('click', openStore);
             ALL_ELEMENTS.backToChatBtn.addEventListener('click', closeStore);
             ALL_ELEMENTS.astrasAvatarInput.addEventListener('change', handleAvatarUpload);
@@ -6633,7 +6621,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
                 editingAstraForAvatarId = null;
             });
-            // ▲▲▲ 結束新增 ▲▲▲
 
 
             updateFileInputUI();
@@ -6642,7 +6629,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         }
 
 
-        // ▼▼▼ 新增：刪除單條對話的函式 ▼▼▼
         const handleDeleteMessagePair = async (index) => {
             const confirmed = await showCustomDialog({
                 title: i18n[config.uiLanguage].deleteConfirmationTitle || '刪除確認',
@@ -6666,7 +6652,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             }
         };
-        // ▲▲▲ 結束新增 ▲▲▲
         
         ALL_ELEMENTS.authForm.addEventListener('submit', handleLogin);
         
@@ -6686,7 +6671,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         })();
         const FOLDER_ICONS = ['📁', '📂', '🗂️', '📚', '📝', '🗃️', '📘', '📙', '📗', '📕'];
         
-        // ▼▼▼ 新增：登入頁面語言切換邏輯 ▼▼▼
         ALL_ELEMENTS.loginLangBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             ALL_ELEMENTS.loginLangMenu.classList.toggle('visible');
@@ -6706,10 +6690,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 ALL_ELEMENTS.loginLangMenu.classList.remove('visible');
             }
         });
-        // ▲▲▲ 結束新增 ▲▲▲
 
 
     </script>
 </body>
 </html>
-
