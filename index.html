@@ -5079,19 +5079,29 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
             if (ALL_ELEMENTS.exportHistoryCheck.checked) { dataToExport.conversations = conversations; dataToExport.folders = folders; }
             if (ALL_ELEMENTS.exportAstrasCheck.checked) { dataToExport.astras = astras; }
-            if (ALL_ELEMENTS.exportSettingsCheck.checked) {
-                dataToExport.settings = {
-                    defaultModel: config.defaultModel, theme: config.theme, modelSettings: config.modelSettings,
-                    enableFollowUp: config.enableFollowUp, aiBubbleColor: config.aiBubbleColor, userBubbleColor: config.userBubbleColor,
-                    autoNaming: config.autoNaming, enableAutoWebSearch: config.enableAutoWebSearch, memoryEnabled1: config.memoryEnabled1,
-                    enableAutoMemory: config.enableAutoMemory, customWallpaper: config.customWallpaper, wallpaperBrightness: config.wallpaperBrightness,
-                    uiTheme: config.uiTheme, uiLanguage: config.uiLanguage, aiDefaultLanguage: config.aiDefaultLanguage
-                };
-            }
-            if (document.getElementById('export-api-check').checked) { 
-                dataToExport.settings = dataToExport.settings || {};
-                dataToExport.settings.apiKeys = config.apiKeys; 
-            }
+            const exportSettingsCheck = ALL_ELEMENTS.exportSettingsCheck.checked;
+const exportApiCheck = document.getElementById('export-api-check').checked;
+
+// 只要兩個選項中有任何一個被勾選，就建立 settings 物件
+if (exportSettingsCheck || exportApiCheck) {
+    dataToExport.settings = {}; 
+
+    // 如果勾選了應用程式設定，就加入相關設定
+    if (exportSettingsCheck) {
+        Object.assign(dataToExport.settings, {
+            defaultModel: config.defaultModel, theme: config.theme, modelSettings: config.modelSettings,
+            enableFollowUp: config.enableFollowUp, aiBubbleColor: config.aiBubbleColor, userBubbleColor: config.userBubbleColor,
+            autoNaming: config.autoNaming, enableAutoWebSearch: config.enableAutoWebSearch, memoryEnabled1: config.memoryEnabled1,
+            enableAutoMemory: config.enableAutoMemory, customWallpaper: config.customWallpaper, wallpaperBrightness: config.wallpaperBrightness,
+            uiTheme: config.uiTheme, uiLanguage: config.uiLanguage, aiDefaultLanguage: config.aiDefaultLanguage
+        });
+    }
+
+    // 如果勾選了 API 金鑰，就加入 API 金鑰
+    if (exportApiCheck) {
+        dataToExport.settings.apiKeys = config.apiKeys;
+    }
+}
             if (ALL_ELEMENTS.exportMemoryCheck.checked) { dataToExport.personalMemories = personalMemories; }
 
             if (Object.keys(dataToExport).length <= 1 && !dataToExport.settings) {
