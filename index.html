@@ -1,12 +1,15 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>進階 AI 聊天機器人 Astra-nos-14.5.1</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.6.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- ▼▼▼ 新增：引入 DOMPurify 函式庫以進行 XSS 防護 ▼▼▼ -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+    <!-- ▲▲▲ 結束新增 ▲▲▲ -->
     <!-- 新增：引入 Chart.js 函式庫以繪製圖表 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- ▼▼▼ 新增：引入 Cropper.js 函式庫以進行圖片裁切 ▼▼▼ -->
@@ -2597,12 +2600,29 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const showCustomPrompt = (message, title = '請輸入', inputType = 'text') => showCustomDialog({ title, message, input: { type: inputType, placeholder: '請在此輸入...' }, buttons: [{ text: '取消', class: 'bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]', value: () => null }, { text: '確定', class: 'px-4 py-2 rounded-md btn-primary', value: (val) => val }] });
 
 
-
-
-        // 新增：使用 marked.js 進行 Markdown 渲染
-        const renderMarkdown = (text) => {
-            return marked.parse(text);
+        // ▼▼▼ 新增：滾動事件節流函式 ▼▼▼
+        const throttle = (func, limit) => {
+            let inThrottle;
+            return function() {
+                const args = arguments;
+                const context = this;
+                if (!inThrottle) {
+                    func.apply(context, args);
+                    inThrottle = true;
+                    setTimeout(() => inThrottle = false, limit);
+                }
+            };
         };
+        // ▲▲▲ 結束新增 ▲▲▲
+
+
+        // ▼▼▼ 修改：使用 marked.js 解析後，再用 DOMPurify 消毒以防止 XSS ▼▼▼
+        const renderMarkdown = (text) => {
+            const dirty = marked.parse(text);
+            const clean = DOMPurify.sanitize(dirty);
+            return clean;
+        };
+        // ▲▲▲ 結束修改 ▲▲▲
         const saveConfig = async () => { if (currentUser) await setItem(getConfigKey(), JSON.stringify(config)); };
         const loadConfig = async () => {
             if (!currentUser) return;
@@ -6513,11 +6533,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
            
             ALL_ELEMENTS.chatForm.addEventListener('submit', handleFormSubmit);
             const threshold = 140;
-            ALL_ELEMENTS.chatContainer.addEventListener('scroll', () => {
+            // ▼▼▼ 修改：對 scroll 事件進行節流 ▼▼▼
+            const throttledScrollHandler = throttle(() => {
                 const sc = ALL_ELEMENTS.chatContainer;
                 const nearBottom = sc.scrollHeight - sc.scrollTop - sc.clientHeight < threshold;
                 ALL_ELEMENTS.scrollToBottomBtn.classList.toggle('hidden', nearBottom);
-            });
+            }, 200); // 每 200 毫秒觸發一次
+            ALL_ELEMENTS.chatContainer.addEventListener('scroll', throttledScrollHandler);
+            // ▲▲▲ 結束修改 ▲▲▲
             ALL_ELEMENTS.scrollToBottomBtn.addEventListener('click', () => {
                 ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
             });
