@@ -1814,10 +1814,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     <span data-lang-key="appSettings">應用程式設定</span>
                 </label>
                 <label class="flex items-center space-x-3 p-2 rounded-md bg-[var(--input-field-bg)]">
-                    <input type="checkbox" id="export-api-check" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                    <span data-lang-key="exportApiKeys">API 金鑰 (Gemini 和 OpenRouter)</span>
-                </label>
-                <label class="flex items-center space-x-3 p-2 rounded-md bg-[var(--input-field-bg)]">
                     <input type="checkbox" id="export-memory-check" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                     <span data-lang-key="exportPersonalMemory">個人習慣記憶 (類型1)</span>
                 </label>
@@ -5079,29 +5075,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
             if (ALL_ELEMENTS.exportHistoryCheck.checked) { dataToExport.conversations = conversations; dataToExport.folders = folders; }
             if (ALL_ELEMENTS.exportAstrasCheck.checked) { dataToExport.astras = astras; }
-            const exportSettingsCheck = ALL_ELEMENTS.exportSettingsCheck.checked;
-const exportApiCheck = document.getElementById('export-api-check').checked;
+            
+            // ▼▼▼ 修改：移除 API 金鑰的匯出邏輯 ▼▼▼
+            if (ALL_ELEMENTS.exportSettingsCheck.checked) {
+                const { apiKeys, ...otherSettings } = config; // 解構並排除 apiKeys
+                dataToExport.settings = otherSettings; // 只儲存其他設定
+            }
+            // ▲▲▲ 結束修改 ▲▲▲
 
-// 只要兩個選項中有任何一個被勾選，就建立 settings 物件
-if (exportSettingsCheck || exportApiCheck) {
-    dataToExport.settings = {}; 
-
-    // 如果勾選了應用程式設定，就加入相關設定
-    if (exportSettingsCheck) {
-        Object.assign(dataToExport.settings, {
-            defaultModel: config.defaultModel, theme: config.theme, modelSettings: config.modelSettings,
-            enableFollowUp: config.enableFollowUp, aiBubbleColor: config.aiBubbleColor, userBubbleColor: config.userBubbleColor,
-            autoNaming: config.autoNaming, enableAutoWebSearch: config.enableAutoWebSearch, memoryEnabled1: config.memoryEnabled1,
-            enableAutoMemory: config.enableAutoMemory, customWallpaper: config.customWallpaper, wallpaperBrightness: config.wallpaperBrightness,
-            uiTheme: config.uiTheme, uiLanguage: config.uiLanguage, aiDefaultLanguage: config.aiDefaultLanguage
-        });
-    }
-
-    // 如果勾選了 API 金鑰，就加入 API 金鑰
-    if (exportApiCheck) {
-        dataToExport.settings.apiKeys = config.apiKeys;
-    }
-}
             if (ALL_ELEMENTS.exportMemoryCheck.checked) { dataToExport.personalMemories = personalMemories; }
 
             if (Object.keys(dataToExport).length <= 1 && !dataToExport.settings) {
@@ -5172,19 +5153,18 @@ if (exportSettingsCheck || exportApiCheck) {
             await saveAppData();
 
 
+            // ▼▼▼ 修改：確保匯入時不覆蓋現有的 API 金鑰 ▼▼▼
             if (data.settings) {
-                const { apiKeys, ...otherSettings } = data.settings;
+                const { apiKeys, ...otherSettings } = data.settings; // 讀取設定時，忽略 apiKeys
                 Object.assign(config, otherSettings);
-                if (apiKeys) {
-                    config.apiKeys = { ...config.apiKeys, ...apiKeys };
-                }
             }
+            // ▲▲▲ 結束修改 ▲▲▲
             await saveConfig();
         };
 
 
         const handleImport = async () => {
-            const file = ALL_ELEMENTS.importFileInput.files[0];
+            const file = ALL_ELEMENTS.importFileInput.files;
             if (!file) {
                 showNotification(i18n[config.uiLanguage].selectFileError || '請選擇檔案。', 'error');
                 return;
@@ -5218,7 +5198,7 @@ if (exportSettingsCheck || exportApiCheck) {
                              if (config.uiTheme.mode === 'adaptive') {
                                 const palette = await getDominantColorPalette(config.customWallpaper);
                                 config.uiTheme.adaptivePalette = palette;
-                                config.uiTheme.adaptiveColor = palette[0] || '#3b82f6';
+                                config.uiTheme.adaptiveColor = palette || '#3b82f6';
                             }
                             await saveConfig();
                         } catch (err) { /* keep default */ }
@@ -5260,7 +5240,7 @@ if (exportSettingsCheck || exportApiCheck) {
 
 
             fileInput.onchange = (e) => {
-                const file = e.target.files[0];
+                const file = e.target.files;
                 if (!file) { document.body.removeChild(fileInput); return; }
 
 
@@ -5462,7 +5442,7 @@ if (exportSettingsCheck || exportApiCheck) {
             currentSpeechRecognition.onresult = (event) => {
                 let transcript = '';
                 for (let i = event.resultIndex; i < event.results.length; i++) {
-                    transcript += event.results[i][0].transcript;
+                    transcript += event.results[i].transcript;
                 }
                 const inputEl = target === 'message' ? ALL_ELEMENTS.messageInput : ALL_ELEMENTS.modalSearchInput;
                 inputEl.value = transcript;
@@ -5801,7 +5781,7 @@ if (exportSettingsCheck || exportApiCheck) {
 
         const hexToRgb = (hex) => {
             const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-            return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : null;
+            return result ? { r: parseInt(result, 16), g: parseInt(result, 16), b: parseInt(result, 16) } : null;
         };
 
 
@@ -5859,7 +5839,7 @@ if (exportSettingsCheck || exportApiCheck) {
             gradientSwatches.innerHTML = '';
             if(config.uiTheme.adaptivePalette && config.uiTheme.adaptivePalette.length > 1) {
                 const p = config.uiTheme.adaptivePalette;
-                const combinations = [`linear-gradient(to right, ${p[0]}, ${p[1]})`, `linear-gradient(to right, ${p[0]}, ${p[2]})`, `linear-gradient(to right, ${p[1]}, ${p[2]})`, `linear-gradient(135deg, ${p[0]}, ${p[1]}, ${p[2]})`];
+                const combinations = [`linear-gradient(to right, ${p}, ${p})`, `linear-gradient(to right, ${p}, ${p})`, `linear-gradient(to right, ${p}, ${p})`, `linear-gradient(135deg, ${p}, ${p}, ${p})`];
                 combinations.forEach(grad => {
                     const swatch = document.createElement('div');
                     swatch.className = 'w-full h-10 rounded-md cursor-pointer border-2 border-transparent';
@@ -5929,7 +5909,7 @@ if (exportSettingsCheck || exportApiCheck) {
 
 
         const handleWallpaperUpload = (event) => {
-            const file = event.target.files[0];
+            const file = event.target.files;
             if (!file) return;
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -5955,7 +5935,7 @@ if (exportSettingsCheck || exportApiCheck) {
                 config.customWallpaper = imageDataUrl;
                 config.wallpaperBrightness = brightness;
                 config.uiTheme.adaptivePalette = palette;
-                config.uiTheme.adaptiveColor = palette[0] || '#3b82f6';
+                config.uiTheme.adaptiveColor = palette || '#3b82f6';
                 await saveConfig();
                 applyCustomWallpaper();
                 applyUiTheme();
@@ -6054,7 +6034,7 @@ if (exportSettingsCheck || exportApiCheck) {
 
 
         const handleAvatarUpload = (event) => {
-            const file = event.target.files[0];
+            const file = event.target.files;
             if (!file) return;
             const reader = new FileReader();
             reader.onload = (e) => {
