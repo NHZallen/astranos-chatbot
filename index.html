@@ -5112,10 +5112,15 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     uiTheme: config.uiTheme, uiLanguage: config.uiLanguage, aiDefaultLanguage: config.aiDefaultLanguage
                 };
             }
-            if (document.getElementById('export-api-check').checked) { dataToExport.apiKeys = config.apiKeys; }
+            // ▼▼▼ 程式碼修正 ▼▼▼
+            if (document.getElementById('export-api-check').checked) { 
+                dataToExport.settings = dataToExport.settings || {}; // 確保 settings 物件存在
+                dataToExport.settings.apiKeys = config.apiKeys; 
+            }
+            // ▲▲▲ 程式碼修正 ▲▲▲
             if (ALL_ELEMENTS.exportMemoryCheck.checked) { dataToExport.personalMemories = personalMemories; }
 
-            if (Object.keys(dataToExport).length <= 1) {
+            if (Object.keys(dataToExport).length <= 1 && !dataToExport.settings) { // 修正條件
                 showNotification(i18n[config.uiLanguage].selectDataToExportNotice || '請至少選擇一項要匯出的資料。', 'warning');
                 return;
             }
@@ -5168,10 +5173,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
             if (data.settings) {
-                Object.assign(config, data.settings);
-            }
-            if (data.apiKeys) {
-                config.apiKeys = { ...config.apiKeys, ...data.apiKeys };
+                // ▼▼▼ 程式碼修正 ▼▼▼
+                // 分開處理 API 金鑰和其餘設定，確保正確合併
+                const { apiKeys, ...otherSettings } = data.settings;
+                Object.assign(config, otherSettings);
+                if (apiKeys) {
+                    config.apiKeys = { ...config.apiKeys, ...apiKeys };
+                }
+                // ▲▲▲ 程式碼修正 ▲▲▲
             }
             await saveConfig();
         };
@@ -5206,8 +5215,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     showNotification(i18n[config.uiLanguage].importSuccess, 'success');
 
 
-                    await loadConfig();
-                    await loadAppData();
+                    // ▼▼▼ 程式碼修正：移除此處多餘的 loadConfig 和 loadAppData ▼▼▼
+                    // await loadConfig();
+                    // await loadAppData();
+                    // ▲▲▲ 程式碼修正 ▲▲▲
                     
                     if (config.customWallpaper) {
                         try {
@@ -6712,4 +6723,3 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     </script>
 </body>
 </html>
-
