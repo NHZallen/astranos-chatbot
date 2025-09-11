@@ -5189,19 +5189,26 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 await saveAppData();
             }
 
+            // ▼▼▼ 程式碼修正 ▼▼▼
             // 處理設定和 API 金鑰
             if (data.settings) {
-                const { apiKeys, ...otherSettings } = data.settings;
+                // 1. 優先處理一般設定 (排除 API 金鑰)
                 if (selections.settings) {
-                    Object.assign(config, otherSettings);
+                    const settingsToImport = { ...data.settings };
+                    delete settingsToImport.apiKeys; // 從要匯入的設定中明確移除 apiKeys，避免覆蓋
+                    Object.assign(config, settingsToImport);
                 }
-                if (selections.apiKeys && apiKeys) {
-                    config.apiKeys = { ...config.apiKeys, ...apiKeys };
+
+                // 2. 獨立處理 API 金鑰
+                if (selections.apiKeys && data.settings.apiKeys) {
+                    // 將匯入的金鑰合併到現有的金鑰設定中
+                    config.apiKeys = { ...config.apiKeys, ...data.settings.apiKeys };
                 }
             }
+            // ▲▲▲ 結束修正 ▲▲▲
+
             await saveConfig();
         };
-
         // ▼▼▼ 修改：重構匯入流程 ▼▼▼
         const handleImportFileSelect = (event) => {
             const file = event.target.files[0];
