@@ -4064,10 +4064,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const text = result?.candidates?.[0]?.content?.parts?.[0]?.text?.trim().toLowerCase();
             return text === 'yes';
         }
-
-
-
-
         const generateTitleAndSummary = async (conv) => {
             const conversationHistory = conv.messages.slice(0, 5).map(m => `${m.role}: ${m.parts.map(p => p.text).join(' ')}`).join('\n');
             const prompt = `基於以下對話，生成一個簡潔的標題（10個字以內）和一句話的摘要。請嚴格按照以下 JSON 格式輸出，不要有任何額外的文字或解釋:\n{"title": "你的標題", "summary": "你的一句話摘要"}\n\n對話內容:\n${conversationHistory}`;
@@ -4213,7 +4209,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (provider === 'gemini') {
                 hasApiKey = !!config.apiKeys.gemini;
             } else if (provider === 'openrouter') {
-                hasApiKey = !!config.apiKeys.openrouter; // ▼▼▼ 需求 2 修正：檢查單一金鑰 ▼▼▼
+                hasApiKey = !!config.apiKeys.openrouter;
             }
 
 
@@ -4239,18 +4235,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
         const setupSettingsModal = () => {
             ALL_ELEMENTS.geminiApiKeyInput.value = config.apiKeys.gemini;
-            // ▼▼▼ 需求 2 修正：設定單一 OpenRouter 金鑰輸入框的值 ▼▼▼
             ALL_ELEMENTS.openrouterApiKeyInputAll.value = config.apiKeys.openrouter;
-             // ▲▲▲ 結束修正 ▲▲▲
             ALL_ELEMENTS.followUpToggleSwitch.checked = config.enableFollowUp;
             ALL_ELEMENTS.autoNamingToggleSwitch.checked = config.autoNaming;
             ALL_ELEMENTS.autoWebSearchToggleSwitch.checked = config.enableAutoWebSearch;
             ALL_ELEMENTS.memoryToggle1.checked = config.memoryEnabled1;
             ALL_ELEMENTS.autoMemoryToggleSwitch.checked = config.enableAutoMemory;
-            // ▼▼▼ 新增：設定語言下拉選單的初始值 ▼▼▼
             ALL_ELEMENTS.uiLanguageSelect.value = config.uiLanguage;
             ALL_ELEMENTS.aiLanguageSelect.value = config.aiDefaultLanguage;
-            // ▲▲▲ 結束新增 ▲▲▲
             renderPersonalMemoryList();
             updateThemeButtons();
             renderModelManagementUI();
@@ -4274,9 +4266,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
         const saveSettings = async () => {
             config.apiKeys.gemini = ALL_ELEMENTS.geminiApiKeyInput.value.trim();
-            // ▼▼▼ 需求 2 修正：儲存單一 OpenRouter 金鑰 ▼▼▼
             config.apiKeys.openrouter = ALL_ELEMENTS.openrouterApiKeyInputAll.value.trim();
-            // ▲▲▲ 結束修正 ▲▲▲
             config.enableFollowUp = ALL_ELEMENTS.followUpToggleSwitch.checked;
             config.enableAutoWebSearch = ALL_ELEMENTS.autoWebSearchToggleSwitch.checked;
             config.aiBubbleColor = ALL_ELEMENTS.aiBubbleColorDropdown.querySelector('.color-dropdown-btn')?.dataset.color || 'default';
@@ -4284,12 +4274,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             config.autoNaming = ALL_ELEMENTS.autoNamingToggleSwitch.checked;
             config.memoryEnabled1 = ALL_ELEMENTS.memoryToggle1.checked;
             config.enableAutoMemory = ALL_ELEMENTS.autoMemoryToggleSwitch.checked;
-            // ▼▼▼ 新增：儲存語言設定 ▼▼▼
             config.uiLanguage = ALL_ELEMENTS.uiLanguageSelect.value;
             config.aiDefaultLanguage = ALL_ELEMENTS.aiLanguageSelect.value;
-            // ▲▲▲ 結束新增 ▲▲▲
             
-            // ▼▼▼ 新增：儲存 UI 顏色設定 ▼▼▼
             const selectedThemeMode = document.querySelector('input[name="color-theme"]:checked').value;
             const selectedCustomColor = ALL_ELEMENTS.customColorSwatches.querySelector('.selected')?.dataset.color || config.uiTheme.customColor;
             const selectedStyle = document.querySelector('input[name="color-style"]:checked')?.value || 'single';
@@ -4303,14 +4290,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             config.uiTheme.customColor = selectedCustomColor;
             config.uiTheme.style = selectedStyle;
             config.uiTheme.adaptiveGradient = selectedGradient;
-            // ▲▲▲ 結束：儲存 UI 顏色設定 ▲▲▲
             
             setAiBubbleColor();
             setUserBubbleColor();
-            applyUiTheme(); // ▼▼▼ 新增呼叫 ▼▼▼
+            applyUiTheme();
             
             await saveConfig();
-            applyLanguage(config.uiLanguage); // 儲存後立即應用新語言
+            applyLanguage(config.uiLanguage);
             renderModelSwitcher();
             renderChat();
             renderStore();
@@ -4321,7 +4307,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             showNotification(i18n[config.uiLanguage].settingsSaved || '設定已儲存！');
         };
         
-        // ▼▼▼ 修正：設定 AI 泡泡顏色函式 ▼▼▼
         const setAiBubbleColor = () => {
             const root = document.documentElement;
             const isWallpaperActive = document.body.classList.contains('custom-wallpaper-active');
@@ -4331,17 +4316,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
             if (isWallpaperActive) {
-                // 桌布模式下，套用帶透明度的玻璃效果
                 const rgbaColor = hexToRgba(hexColor, 0.75);
                 root.style.setProperty('--ai-bubble-bg', rgbaColor);
             } else {
-                // 一般模式下，套用原始顏色
                 root.style.setProperty('--ai-bubble-bg', hexColor);
             }
         };
 
 
-        // ▼▼▼ 修正：設定使用者泡泡顏色函式 ▼▼▼
         const setUserBubbleColor = () => {
             const root = document.documentElement;
             const isWallpaperActive = document.body.classList.contains('custom-wallpaper-active');
@@ -4351,11 +4333,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
             if (isWallpaperActive) {
-                // 桌布模式下，套用帶透明度的玻璃效果
                 const rgbaColor = hexToRgba(hexColor, 0.7);
                 root.style.setProperty('--user-bubble-bg', rgbaColor);
             } else {
-                // 一般模式下，套用原始顏色
                 root.style.setProperty('--user-bubble-bg', hexColor);
             }
         };
@@ -4463,7 +4443,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const existingPopover = document.getElementById('history-popover');
             if (existingPopover) {
                 existingPopover.remove();
-                 // 如果點擊同一個按鈕，則僅關閉，不重新打開
                 if (existingPopover.dataset.targetId === targetButton.id) return;
             }
 
@@ -4604,18 +4583,15 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             await setItem('chat_lastUser', username);
 
 
-            // 觸發登出動畫
             ALL_ELEMENTS.authContainer.classList.add('fade-out');
             ALL_ELEMENTS.appContainer.classList.remove('hidden');
 
 
-            // 確保瀏覽器在添加下一個 class 前有時間反應
             requestAnimationFrame(() => {
                 ALL_ELEMENTS.appContainer.classList.add('visible');
             });
 
 
-            // 動畫結束後徹底隱藏登入畫面
             ALL_ELEMENTS.authContainer.addEventListener('transitionend', () => {
                 ALL_ELEMENTS.authContainer.style.display = 'none';
             }, { once: true });
@@ -4631,7 +4607,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
 
 
-        // ▼▼▼ 新增：清除所有資料的函式 ▼▼▼
         const handleDeleteAllData = async () => {
             const confirmation = await showCustomDialog({
                 title: i18n[config.uiLanguage].deleteAllDataTitle || '永久刪除所有資料',
@@ -4671,7 +4646,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 showNotification(i18n[config.uiLanguage].incorrectInput || '輸入錯誤，操作已取消。', 'warning');
             }
         };
-        // ▲▲▲ 結束新增 ▲▲▲
 
 
 
@@ -4982,7 +4956,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     });
                 }
             } else {
-                // 原有關鍵字搜索邏輯
                 const lowerCaseQuery = query.toLowerCase();
                 const searchIn = scope === 'keyword-title' ? 'title' : 'content';
                 conversations.forEach(conv => {
@@ -5033,7 +5006,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 container.appendChild(item);
             });
         };
-        // 新增: 使用AI生成自然語言搜索的關鍵字
         const generateSearchKeywords = async (naturalQuery) => {
             const prompt = `從以下自然語言查詢中，提取 10-15 個最相關的關鍵字，用於搜索對話記錄。請嚴格以 JSON 陣列格式輸出，不要有任何額外的文字或解釋。例如：["關鍵字1", "關鍵字2", "關鍵字3"]。查詢內容：${naturalQuery}`;
             const responseSchema = {
@@ -5092,7 +5064,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderFilePreviews();
         };
         
-        // ▼▼▼ 程式碼修正：處理行動裝置檔案匯出 ▼▼▼
+        const showManualExportModal = (jsonData) => {
+            ALL_ELEMENTS.manualExportText.value = jsonData;
+            toggleModal(ALL_ELEMENTS.manualExportModal, true);
+        };
+        
         const handleExport = async () => {
             const dataToExport = {
                 user_credentials: {
@@ -5112,52 +5088,66 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     uiTheme: config.uiTheme, uiLanguage: config.uiLanguage, aiDefaultLanguage: config.aiDefaultLanguage
                 };
             }
-            // ▼▼▼ 程式碼修正 ▼▼▼
             if (document.getElementById('export-api-check').checked) { 
-                dataToExport.settings = dataToExport.settings || {}; // 確保 settings 物件存在
+                dataToExport.settings = dataToExport.settings || {};
                 dataToExport.settings.apiKeys = config.apiKeys; 
             }
-            // ▲▲▲ 程式碼修正 ▲▲▲
             if (ALL_ELEMENTS.exportMemoryCheck.checked) { dataToExport.personalMemories = personalMemories; }
 
-            if (Object.keys(dataToExport).length <= 1 && !dataToExport.settings) { // 修正條件
+            if (Object.keys(dataToExport).length <= 1 && !dataToExport.settings) {
                 showNotification(i18n[config.uiLanguage].selectDataToExportNotice || '請至少選擇一項要匯出的資料。', 'warning');
                 return;
             }
            
-            try {
-                const fileName = `chatbot_backup_${currentUser.username}_${new Date().toISOString().split('T')[0]}.json`;
-                const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
-                
-                // 檢查是否為行動裝置且支援 Web Share API
-                if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], fileName, {type: blob.type})] })) {
+            const jsonData = JSON.stringify(dataToExport, null, 2);
+            const fileName = `chatbot_backup_${currentUser.username}_${new Date().toISOString().split('T')[0]}.json`;
+            const blob = new Blob([jsonData], { type: 'application/json' });
+            const file = new File([blob], fileName, { type: blob.type });
+
+            let exportSuccess = false;
+
+            // 1. 嘗試 Web Share API
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
                     await navigator.share({
-                        files: [new File([blob], fileName, {type: blob.type})],
+                        files: [file],
                         title: 'Chatbot Backup',
-                        text: 'Here is your chatbot data backup.',
+                        text: '這是您的聊天機器人資料備份。',
                     });
-                } else {
-                    // 傳統下載方式
-                    const url = URL.createObjectURL(blob);
+                    exportSuccess = true;
+                } catch (error) {
+                    if (error.name !== 'AbortError') {
+                        console.warn('Web Share API failed:', error);
+                    }
+                }
+            }
+
+            // 2. 如果 Web Share 失敗或不可用，嘗試傳統下載
+            if (!exportSuccess) {
+                try {
                     const a = document.createElement('a');
-                    a.href = url;
+                    a.href = URL.createObjectURL(blob);
                     a.download = fileName;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                }
-               
-                toggleModal(ALL_ELEMENTS.exportDataModal, false);
-                showNotification(i18n[config.uiLanguage].exportSuccess || '資料匯出成功！', 'success');
-            } catch (error) {
-                if (error.name !== 'AbortError') { // AbortError 是使用者取消分享，不應視為錯誤
-                    showNotification(`${i18n[config.uiLanguage].exportFailed || '匯出失敗'}: ${error.message}`, 'error');
+                    URL.revokeObjectURL(a.href);
+                    exportSuccess = true;
+                } catch (error) {
+                    console.warn('Traditional download failed:', error);
                 }
             }
-        };
-        // ▲▲▲ 結束修正 ▲▲▲
+            
+            toggleModal(ALL_ELEMENTS.exportDataModal, false);
 
+            if (exportSuccess) {
+                showNotification(i18n[config.uiLanguage].exportSuccess || '資料匯出成功！', 'success');
+            } else {
+                // 3. 如果所有方法都失敗，顯示手動複製視窗
+                showNotification(i18n[config.uiLanguage].exportFailedAuto || '自動匯出失敗，請手動複製資料。', 'warning');
+                showManualExportModal(jsonData);
+            }
+        };
 
         const performImport = async (data) => {
             if (!currentUser) {
@@ -5173,14 +5163,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
             if (data.settings) {
-                // ▼▼▼ 程式碼修正 ▼▼▼
-                // 分開處理 API 金鑰和其餘設定，確保正確合併
                 const { apiKeys, ...otherSettings } = data.settings;
                 Object.assign(config, otherSettings);
                 if (apiKeys) {
                     config.apiKeys = { ...config.apiKeys, ...apiKeys };
                 }
-                // ▲▲▲ 程式碼修正 ▲▲▲
             }
             await saveConfig();
         };
@@ -5213,12 +5200,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     
                     toggleModal(ALL_ELEMENTS.importDataModal, false);
                     showNotification(i18n[config.uiLanguage].importSuccess, 'success');
-
-
-                    // ▼▼▼ 程式碼修正：移除此處多餘的 loadConfig 和 loadAppData ▼▼▼
-                    // await loadConfig();
-                    // await loadAppData();
-                    // ▲▲▲ 程式碼修正 ▲▲▲
                     
                     if (config.customWallpaper) {
                         try {
@@ -5236,7 +5217,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     applyUiTheme();
                     setAiBubbleColor();
                     setUserBubbleColor();
-                    applyLanguage(config.uiLanguage); // 匯入後應用語言
+                    applyLanguage(config.uiLanguage);
                     
                     const firstConv = conversations.find(c => !c.archived);
                     if (firstConv) {
@@ -5292,7 +5273,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         // 驗證通過
                         const userKey = getUserKey(username);
                         const savedUser = await getItem(userKey);
-                        if (!savedUser) { // 如果使用者在此裝置上不存在，則建立
+                        if (!savedUser) {
                            await setItem(userKey, JSON.stringify({ username, passwordHash }));
                         }
                         currentUser = { username, passwordHash };
@@ -5302,7 +5283,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         await performImport(data);
 
 
-                        // 轉場到主應用
                         ALL_ELEMENTS.authContainer.classList.add('fade-out');
                         ALL_ELEMENTS.appContainer.classList.remove('hidden');
                         requestAnimationFrame(() => {
@@ -5332,7 +5312,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
 
 
-        // --- Model Management UI ---
         const renderModelManagementUI = () => {
             const container = ALL_ELEMENTS.modelManagementList;
             container.innerHTML = '';
@@ -5345,7 +5324,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 item.dataset.modelId = modelInfo.id;
                 item.innerHTML = `
                     <span class="flex-1 font-medium">${modelInfo.name}</span>
-                    <input type="radio" name="default-model-radio" class="w-4 h-4 mr-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" ${config.defaultModel === modelInfo.id ? 'checked' : ''}>
+                    <input type="radio" name="default-model-radio" class="w-4 h-4 mr-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500" ${config.defaultModel === modelInfo.id ? 'checked' : ''}>
                     <button class="toggle-visibility-btn p-1 rounded-full hover:bg-[var(--hover-bg)]" title="${setting.hidden ? (i18n[config.uiLanguage].show || '顯示') : (i18n[config.uiLanguage].hide || '隱藏')}">
                         ${setting.hidden
                             ? '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.243 4.243l-4.243-4.243" /></svg>'
@@ -5353,8 +5332,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         }
                     </button>
                     <div class="flex gap-1 ml-2">
-                        <button class="move-up-btn p-1 rounded hover:bg-[var(--hover-bg)]disabled:opacity-50" ${index === 0 ? 'disabled' : ''}>↑</button>
-                        <button class="move-down-btn p-1 rounded hover:bg-[var(--hover-bg)] disabled:opacity-50" ${index === sortedModels.length - 1 ? 'disabled' : ''}>↓</button>
+                        <button class="move-up-btn p-1 rounded hover:bg-[var(--hover-bg)]" ${index === 0 ? 'disabled' : ''}>↑</button>
+                        <button class="move-down-btn p-1 rounded hover:bg-[var(--hover-bg)]" ${index === sortedModels.length - 1 ? 'disabled' : ''}>↓</button>
                     </div>
                 `;
                 container.appendChild(item);
@@ -5381,20 +5360,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     showNotification(i18n[config.uiLanguage].defaultModelUpdated || '預設模型已更新');
                 });
             });
-            container.querySelectorAll('.move-up-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const item = e.currentTarget.closest('.model-management-item');
-                    const modelId = item.dataset.modelId;
-                    moveModelOrder(modelId, 'up');
-                });
-            });
-            container.querySelectorAll('.move-down-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const item = e.currentTarget.closest('.model-management-item');
-                    const modelId = item.dataset.modelId;
-                    moveModelOrder(modelId, 'down');
-                });
-            });
+            container.querySelectorAll('.move-up-btn').forEach(btn => btn.addEventListener('click', (e) => moveModelOrder(e.currentTarget.closest('.model-management-item').dataset.modelId, 'up')));
+            container.querySelectorAll('.move-down-btn').forEach(btn => btn.addEventListener('click', (e) => moveModelOrder(e.currentTarget.closest('.model-management-item').dataset.modelId, 'down')));
         };
        
         const moveModelOrder = (modelId, direction) => {
@@ -5432,46 +5399,31 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
         }
         
-        // ▼▼▼ 新增：具備備用方案的複製文字函式 ▼▼▼
         async function copyTextToClipboard(text) {
-            // 優先嘗試現代的 Clipboard API
             if (navigator.clipboard && window.isSecureContext) {
                 try {
                     await navigator.clipboard.writeText(text);
-                    return; // 成功後直接返回
+                    return;
                 } catch (err) {
-                    console.warn('Clipboard API 失敗，改用備用方案。', err);
-                    // 如果失敗，則繼續執行下方的備用方案
+                    console.warn('Clipboard API failed, falling back.', err);
                 }
             }
-
-
-            // 備用方案：使用 document.execCommand
             const textArea = document.createElement("textarea");
             textArea.value = text;
-            
-            // 讓 textarea 在畫面上看不見
             textArea.style.position = "fixed";
             textArea.style.top = "-9999px";
             textArea.style.left = "-9999px";
-            
             document.body.appendChild(textArea);
             textArea.focus();
             textArea.select();
-            
             try {
-                const successful = document.execCommand('copy');
-                if (!successful) {
-                    throw new Error('備用複製指令失敗。');
+                if (!document.execCommand('copy')) {
+                    throw new Error('Fallback copy command failed.');
                 }
-            } catch (err) {
+            } finally {
                 document.body.removeChild(textArea);
-                throw err; // 如果備用方案也失敗，則拋出錯誤
             }
-            
-            document.body.removeChild(textArea);
         }
-        // ▲▲▲ 結束新增 ▲▲▲
 
 
         const setupVoiceInput = () => {
@@ -5593,14 +5545,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (modelInfo) {
                 if (modelInfo.provider === 'gemini' && !config.apiKeys.gemini) {
                     needsKey = true;
-                } else if (modelInfo.provider === 'openrouter' && !config.apiKeys.openrouter) { // ▼▼▼ 需求 2 修正：檢查單一金鑰 ▼▼▼
+                } else if (modelInfo.provider === 'openrouter' && !config.apiKeys.openrouter) {
                     needsKey = true;
                 }
             }
             ALL_ELEMENTS.apiKeyWarningBadge.classList.toggle('hidden', !needsKey);
         };
         
-        // ▼▼▼ 需求 1 修改：數據儀表板相關函式 (增加日檢視) ▼▼▼
         const openDashboard = () => {
             renderDashboardStats();
             renderModelUsageChart();
@@ -5648,26 +5599,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         label: i18n[config.uiLanguage].modelUsageCount || '模型使用次數',
                         data: data,
                         backgroundColor: [
-                            'rgba(255, 99, 132, 0.7)',
-                            'rgba(54, 162, 235, 0.7)',
-                            'rgba(255, 206, 86, 0.7)',
-                            'rgba(75, 192, 192, 0.7)',
-                            'rgba(153, 102, 255, 0.7)',
-                            'rgba(255, 159, 64, 0.7)'
+                            'rgba(255, 99, 132, 0.7)', 'rgba(54, 162, 235, 0.7)', 'rgba(255, 206, 86, 0.7)',
+                            'rgba(75, 192, 192, 0.7)', 'rgba(153, 102, 255, 0.7)', 'rgba(255, 159, 64, 0.7)'
                         ],
                         borderColor: 'rgba(255, 255, 255, 0.8)',
                         borderWidth: 1
                     }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                        }
-                    }
-                }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
             });
         };
         
@@ -5744,7 +5683,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const lang = config.uiLanguage;
 
 
-            if (year && month && day) { // Hourly view
+            if (year && month && day) {
                 chartType = 'line';
                 label = `${year}${i18n[lang].yearSuffix || '年'}${month}${i18n[lang].monthSuffix || '月'}${day}${i18n[lang].daySuffix || '日'} ${i18n[lang].hourlyMessageCount || '每小時訊息數'}`;
                 labels = Array.from({length: 24}, (_, i) => `${i}:00`);
@@ -5756,7 +5695,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         data[msgDate.getHours()]++;
                     }
                 });
-            } else if (year && month) { // Daily view
+            } else if (year && month) {
                 chartType = 'bar';
                 label = `${year}${i18n[lang].yearSuffix || '年'}${month}${i18n[lang].monthSuffix || '月'} ${i18n[lang].dailyMessageCount || '每日訊息數'}`;
                 const daysInMonth = new Date(year, month, 0).getDate();
@@ -5769,7 +5708,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         data[msgDate.getDate() - 1]++;
                     }
                 });
-            } else if (year) { // Monthly view
+            } else if (year) {
                 chartType = 'line';
                 label = `${year}${i18n[lang].yearSuffix || '年'} ${i18n[lang].monthlyMessageCount || '每月訊息數'}`;
                 labels = i18n[lang].months || ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
@@ -5782,7 +5721,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         data[msgDate.getMonth()]++;
                     }
                 });
-            } else { // Yearly view
+            } else {
                 chartType = 'bar';
                 label = i18n[lang].yearlyMessageCount || '每年訊息數';
                 const years = [...new Set(allMessages.map(d => new Date(d.createdAt).getFullYear()))].sort();
@@ -5809,25 +5748,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     }]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 1
-                            }
-                        }
-                    }
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
                 }
             });
         };
-        // ▲▲▲ 結束修改 ▲▲▲
-
-
-
-
-        // ▼▼▼ 修改/新增：自訂桌布 & UI 顏色功能相關函式 (優化取色邏輯) ▼▼▼
+        
         const getDominantColorPalette = (imageDataUrl) => {
             return new Promise((resolve, reject) => {
                 const img = new Image();
@@ -5843,37 +5769,20 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     const colorCount = {};
 
 
-                    for (let i = 0; i < imageData.length; i += 4 * 5) { // Sample every 5th pixel
-                        const r = imageData[i];
-                        const g = imageData[i + 1];
-                        const b = imageData[i + 2];
-                        const a = imageData[i + 3];
-
-
-                        if (a < 125) continue; // Skip transparent pixels
-
-
-                        // Filter out grayscale colors
-                        const max = Math.max(r, g, b);
-                        const min = Math.min(r, g, b);
-                        if (max - min < 20) continue; 
-                        
-                        // Round colors to reduce the number of unique colors
-                        const r_round = Math.round(r / 10) * 10;
-                        const g_round = Math.round(g / 10) * 10;
-                        const b_round = Math.round(b / 10) * 10;
-                        
-                        const rgb = `${r_round},${g_round},${b_round}`;
+                    for (let i = 0; i < imageData.length; i += 4 * 5) {
+                        const r = imageData[i], g = imageData[i + 1], b = imageData[i + 2], a = imageData[i + 3];
+                        if (a < 125 || (Math.max(r, g, b) - Math.min(r, g, b) < 20)) continue; 
+                        const rgb = `${Math.round(r/10)*10},${Math.round(g/10)*10},${Math.round(b/10)*10}`;
                         colorCount[rgb] = (colorCount[rgb] || 0) + 1;
                     }
 
 
                     const sortedColors = Object.keys(colorCount)
                         .sort((a, b) => colorCount[b] - colorCount[a])
-                        .slice(0, 5) // Get top 5 colors
+                        .slice(0, 5)
                         .map(rgbStr => `#${rgbStr.split(',').map(c => parseInt(c).toString(16).padStart(2, '0')).join('')}`);
                     
-                    resolve(sortedColors.length > 0 ? sortedColors : ['#3b82f6']); // Fallback
+                    resolve(sortedColors.length > 0 ? sortedColors : ['#3b82f6']);
                 };
                 img.onerror = reject;
             });
@@ -5882,19 +5791,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
         const hexToRgb = (hex) => {
             const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-            return result ? {
-                r: parseInt(result[1], 16),
-                g: parseInt(result[2], 16),
-                b: parseInt(result[3], 16)
-            } : null;
+            return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : null;
         };
 
 
         const getTextColorForBackground = (hexColor) => {
             const rgb = hexToRgb(hexColor);
             if (!rgb) return '#000000';
-            const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
-            return luminance > 0.5 ? '#000000' : '#ffffff';
+            return ((0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255) > 0.5 ? '#000000' : '#ffffff';
         };
         
         const applyUiTheme = () => {
@@ -5904,54 +5808,36 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
             switch(config.uiTheme.mode) {
                 case 'adaptive':
-                    if (config.uiTheme.style === 'gradient') {
-                        primaryBg = config.uiTheme.adaptiveGradient || `linear-gradient(to right, ${config.uiTheme.adaptiveColor}, #3b82f6)`;
-                    } else {
-                        primaryBg = config.uiTheme.adaptiveColor;
-                    }
+                    primaryBg = config.uiTheme.style === 'gradient'
+                        ? config.uiTheme.adaptiveGradient || `linear-gradient(to right, ${config.uiTheme.adaptiveColor}, #3b82f6)`
+                        : config.uiTheme.adaptiveColor;
                     break;
-                case 'custom':
-                    primaryBg = config.uiTheme.customColor;
-                    break;
-                case 'default':
-                default:
-                    primaryBg = '#3b82f6';
-                    break;
+                case 'custom': primaryBg = config.uiTheme.customColor; break;
+                default: primaryBg = '#3b82f6'; break;
             }
             
-            // For single color, determine text color, for gradient, default to white
             const textColor = config.uiTheme.style === 'gradient' ? '#ffffff' : getTextColorForBackground(primaryBg);
 
 
             root.style.setProperty('--button-primary-bg', primaryBg);
             root.style.setProperty('--button-primary-text', textColor);
-            updateThemeButtons(); // Re-apply active styles for theme buttons
+            updateThemeButtons();
         };
         
         const renderUiColorOptions = () => {
             const { uiColorOptions, customColorPickerContainer, customColorSwatches, buttonStyleContainer, gradientPickerContainer, gradientSwatches } = ALL_ELEMENTS;
             
-            const currentMode = config.uiTheme.mode;
-            const currentStyle = config.uiTheme.style;
+            uiColorOptions.querySelector(`input[value="${config.uiTheme.mode}"]`).checked = true;
+            buttonStyleContainer.querySelector(`input[value="${config.uiTheme.style}"]`).checked = true;
 
 
-            // Set radio button state
-            uiColorOptions.querySelector(`input[value="${currentMode}"]`).checked = true;
-            buttonStyleContainer.querySelector(`input[value="${currentStyle}"]`).checked = true;
-
-
-
-
-            // Render custom color swatches
             customColorSwatches.innerHTML = '';
             Object.entries(UI_THEME_COLORS).forEach(([name, hex]) => {
                 const swatch = document.createElement('div');
                 swatch.className = `color-swatch w-8 h-8 rounded-full cursor-pointer`;
                 swatch.style.backgroundColor = hex;
                 swatch.dataset.color = hex;
-                if (config.uiTheme.customColor === hex) {
-                    swatch.classList.add('selected');
-                }
+                if (config.uiTheme.customColor === hex) swatch.classList.add('selected');
                 swatch.addEventListener('click', () => {
                     customColorSwatches.querySelector('.selected')?.classList.remove('selected');
                     swatch.classList.add('selected');
@@ -5960,24 +5846,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
 
 
-            // Render gradient swatches
             gradientSwatches.innerHTML = '';
             if(config.uiTheme.adaptivePalette && config.uiTheme.adaptivePalette.length > 1) {
-                const palette = config.uiTheme.adaptivePalette;
-                const combinations = [
-                    `linear-gradient(to right, ${palette[0]}, ${palette[1]})`,
-                    `linear-gradient(to right, ${palette[0]}, ${palette[2]})`,
-                    `linear-gradient(to right, ${palette[1]}, ${palette[2]})`,
-                    `linear-gradient(135deg, ${palette[0]}, ${palette[1]}, ${palette[2]})`
-                ];
+                const p = config.uiTheme.adaptivePalette;
+                const combinations = [`linear-gradient(to right, ${p[0]}, ${p[1]})`, `linear-gradient(to right, ${p[0]}, ${p[2]})`, `linear-gradient(to right, ${p[1]}, ${p[2]})`, `linear-gradient(135deg, ${p[0]}, ${p[1]}, ${p[2]})`];
                 combinations.forEach(grad => {
                     const swatch = document.createElement('div');
                     swatch.className = 'w-full h-10 rounded-md cursor-pointer border-2 border-transparent';
                     swatch.style.background = grad;
                     swatch.dataset.gradient = grad;
-                    if(config.uiTheme.adaptiveGradient === grad) {
-                        swatch.classList.add('selected-gradient', 'border-blue-500');
-                    }
+                    if(config.uiTheme.adaptiveGradient === grad) swatch.classList.add('selected-gradient', 'border-blue-500');
                     swatch.addEventListener('click', () => {
                         gradientSwatches.querySelector('.selected-gradient')?.classList.remove('selected-gradient', 'border-blue-500');
                         swatch.classList.add('selected-gradient', 'border-blue-500');
@@ -5989,28 +5867,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
 
 
-
-
-            // Toggle visibility of sections
             const updateVisibility = () => {
                 const mode = document.querySelector('input[name="color-theme"]:checked').value;
                 const style = document.querySelector('input[name="color-style"]:checked').value;
-
-
                 buttonStyleContainer.classList.toggle('hidden', mode !== 'adaptive');
                 customColorPickerContainer.classList.toggle('hidden', mode !== 'custom');
                 gradientPickerContainer.classList.toggle('hidden', !(mode === 'adaptive' && style === 'gradient'));
             };
             
-            // Add event listeners
-            uiColorOptions.querySelectorAll('input[name="color-theme"]').forEach(radio => {
-                radio.addEventListener('change', updateVisibility);
-            });
-             buttonStyleContainer.querySelectorAll('input[name="color-style"]').forEach(radio => {
-                radio.addEventListener('change', updateVisibility);
-            });
-
-
+            uiColorOptions.querySelectorAll('input[name="color-theme"]').forEach(r => r.addEventListener('change', updateVisibility));
+            buttonStyleContainer.querySelectorAll('input[name="color-style"]').forEach(r => r.addEventListener('change', updateVisibility));
             updateVisibility();
         };
         
@@ -6024,25 +5890,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     canvas.width = img.width;
                     canvas.height = img.height;
                     ctx.drawImage(img, 0, 0);
-                    
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const data = imageData.data;
-                    let r, g, b, avg;
+                    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
                     let colorSum = 0;
-
-
                     for(let x = 0, len = data.length; x < len; x+=4) {
-                        r = data[x];
-                        g = data[x+1];
-                        b = data[x+2];
-                        avg = Math.floor((r+g+b)/3);
-                        colorSum += avg;
+                        colorSum += Math.floor((data[x] + data[x+1] + data[x+2])/3);
                     }
-                    
-                    const brightness = Math.floor(colorSum / (canvas.width * canvas.height));
-                    resolve(brightness < 128 ? 'dark' : 'light');
+                    resolve(Math.floor(colorSum / (canvas.width * canvas.height)) < 128 ? 'dark' : 'light');
                 };
-                img.onerror = (err) => reject(err);
+                img.onerror = reject;
             });
         };
 
@@ -6058,7 +5913,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 document.body.classList.remove('custom-wallpaper-active', 'wallpaper-is-dark');
                 setTheme(config.theme);
             }
-            // 無論是否啟用桌布，都需要重新計算泡泡顏色
             setAiBubbleColor();
             setUserBubbleColor();
         };
@@ -6067,65 +5921,37 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const handleWallpaperUpload = (event) => {
             const file = event.target.files[0];
             if (!file) return;
-
-
             const reader = new FileReader();
             reader.onload = (e) => {
-                const imageUrl = e.target.result;
-                ALL_ELEMENTS.wallpaperCropImage.src = imageUrl;
-
-
+                ALL_ELEMENTS.wallpaperCropImage.src = e.target.result;
                 toggleModal(ALL_ELEMENTS.wallpaperCropModal, true);
-                
-                if (cropperInstance) {
-                    cropperInstance.destroy();
-                }
-
-
+                if (cropperInstance) cropperInstance.destroy();
                 cropperInstance = new Cropper(ALL_ELEMENTS.wallpaperCropImage, {
                     aspectRatio: window.innerWidth / window.innerHeight,
-                    viewMode: 1,
-                    background: false,
-                    autoCropArea: 1,
+                    viewMode: 1, background: false, autoCropArea: 1,
                 });
             };
             reader.readAsDataURL(file);
-             // 清空 input 的值，以便下次可以選擇同一個檔案
             event.target.value = '';
         };
         
         const handleConfirmCrop = async () => {
             if (!cropperInstance) return;
-
-
-            const canvas = cropperInstance.getCroppedCanvas({
-                // 為了效能，設定一個最大寬度，避免產生過大的圖片
-                maxWidth: 1920, 
-                imageSmoothingEnabled: true,
-                imageSmoothingQuality: 'high',
-            });
-            
-            const imageDataUrl = canvas.toDataURL('image/jpeg', 0.9); // 轉換為高質量的 JPEG
-
-
+            const canvas = cropperInstance.getCroppedCanvas({ maxWidth: 1920, imageSmoothingEnabled: true, imageSmoothingQuality: 'high' });
+            const imageDataUrl = canvas.toDataURL('image/jpeg', 0.9);
             try {
                 const brightness = await analyzeImageBrightness(imageDataUrl);
                 const palette = await getDominantColorPalette(imageDataUrl);
-
-
                 config.customWallpaper = imageDataUrl;
                 config.wallpaperBrightness = brightness;
                 config.uiTheme.adaptivePalette = palette;
                 config.uiTheme.adaptiveColor = palette[0] || '#3b82f6';
-                
                 await saveConfig();
                 applyCustomWallpaper();
                 applyUiTheme();
-                
                 toggleModal(ALL_ELEMENTS.wallpaperCropModal, false);
                 showNotification(i18n[config.uiLanguage].wallpaperUpdated, 'success');
             } catch (error) {
-                console.error("桌布處理失敗:", error);
                 showNotification(i18n[config.uiLanguage].wallpaperError, 'error');
             }
         };
@@ -6144,18 +5970,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             applyUiTheme();
             showNotification(i18n[config.uiLanguage].defaultAppearanceRestored, 'success');
         };
-        // ▲▲▲ 結束：自訂桌布 & UI 顏色功能相關函式 ▲▲▲
         
-        // ▼▼▼ 新增：Astras 商店與頭像功能相關函式 ▼▼▼
         const openStore = () => {
             ALL_ELEMENTS.appContainer.classList.remove('visible');
             ALL_ELEMENTS.storeContainer.classList.remove('hidden');
-            requestAnimationFrame(() => {
-                ALL_ELEMENTS.storeContainer.classList.add('visible');
-            });
-            ALL_ELEMENTS.appContainer.addEventListener('transitionend', () => {
-                ALL_ELEMENTS.appContainer.classList.add('hidden');
-            }, { once: true });
+            requestAnimationFrame(() => ALL_ELEMENTS.storeContainer.classList.add('visible'));
+            ALL_ELEMENTS.appContainer.addEventListener('transitionend', () => ALL_ELEMENTS.appContainer.classList.add('hidden'), { once: true });
             renderStore();
         };
 
@@ -6163,100 +5983,52 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const closeStore = () => {
             ALL_ELEMENTS.storeContainer.classList.remove('visible');
             ALL_ELEMENTS.appContainer.classList.remove('hidden');
-            requestAnimationFrame(() => {
-                ALL_ELEMENTS.appContainer.classList.add('visible');
-            });
-            ALL_ELEMENTS.storeContainer.addEventListener('transitionend', () => {
-                ALL_ELEMENTS.storeContainer.classList.add('hidden');
-            }, { once: true });
+            requestAnimationFrame(() => ALL_ELEMENTS.appContainer.classList.add('visible'));
+            ALL_ELEMENTS.storeContainer.addEventListener('transitionend', () => ALL_ELEMENTS.storeContainer.classList.add('hidden'), { once: true });
         };
 
 
         const renderStore = () => {
-    const grid = ALL_ELEMENTS.storeGrid;
-    grid.innerHTML = '';
-    
-    // 取得當前語言的翻譯
-    const translations = i18n[config.uiLanguage] || i18n['zh-TW'];
-
-
-    // 將官方 Astras 的資料轉換成使用翻譯鍵的版本
-    const translatedOfficialAstras = OFFICIAL_ASTRAS.map(ast => {
-        const keyBase = 'astras_' + ast.id.replace(/-/g, '_');
-        return {
-            ...ast,
-            name: translations[keyBase + '_name'] || ast.name, // 如果找不到翻譯，則使用原始名稱
-            description: translations[keyBase + '_desc'] || ast.description // 如果找不到翻譯，則使用原始描述
+            const grid = ALL_ELEMENTS.storeGrid;
+            grid.innerHTML = '';
+            const translations = i18n[config.uiLanguage] || i18n['zh-TW'];
+            const translatedOfficialAstras = OFFICIAL_ASTRAS.map(ast => {
+                const keyBase = 'astras_' + ast.id.replace(/-/g, '_');
+                return { ...ast, name: translations[keyBase + '_name'] || ast.name, description: translations[keyBase + '_desc'] || ast.description };
+            });
+            const allStoreAstras = [...translatedOfficialAstras, ...astras.filter(a => !a.officialId)];
+            allStoreAstras.forEach(ast => {
+                const card = document.createElement('div');
+                card.className = 'astras-store-card';
+                const originalId = ast.officialId || ast.id;
+                const isSubscribed = astras.some(userAstra => userAstra.officialId === originalId);
+                const isUserCreated = !ast.officialId && astras.some(userAstra => userAstra.id === originalId);
+                const avatarElement = `<div class="astras-card-avatar">${ast.avatarUrl ? `<img src="${ast.avatarUrl}" alt="${ast.name}">` : ast.name.charAt(0)}</div>`;
+                card.innerHTML = `${avatarElement}<h3 class="astras-card-name">${ast.name}</h3><p class="astras-card-desc">${ast.description}</p><button class="subscribe-btn btn-primary" data-id="${originalId}"></button>`;
+                const btn = card.querySelector('.subscribe-btn');
+                if (isSubscribed) {
+                    btn.textContent = translations.unsubscribe || '取消訂閱';
+                    btn.classList.add('subscribed');
+                } else if (isUserCreated) {
+                    btn.textContent = translations.manage || '管理';
+                    btn.disabled = true;
+                    btn.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    btn.textContent = translations.subscribe || '訂閱';
+                }
+                btn.addEventListener('click', () => handleSubscription(originalId));
+                grid.appendChild(card);
+            });
         };
-    });
-
-
-    const allStoreAstras = [...translatedOfficialAstras, ...astras.filter(a => !a.officialId)];
-    
-    allStoreAstras.forEach(ast => {
-        const card = document.createElement('div');
-        card.className = 'astras-store-card';
-        
-        // 判斷訂閱狀態時，要用原始的 officialId
-        const originalId = ast.officialId || ast.id;
-        const isSubscribed = astras.some(userAstra => userAstra.officialId === originalId);
-        const isUserCreated = !ast.officialId && astras.some(userAstra => userAstra.id === originalId);
-
-
-        const avatarUrl = ast.avatarUrl;
-        const initials = ast.name.charAt(0);
-        const avatarElement = `
-            <div class="astras-card-avatar">
-                ${avatarUrl ? `<img src="${avatarUrl}" alt="${ast.name}">` : initials}
-            </div>
-        `;
-
-
-        card.innerHTML = `
-            ${avatarElement}
-            <h3 class="astras-card-name">${ast.name}</h3>
-            <p class="astras-card-desc">${ast.description}</p>
-            <button class="subscribe-btn btn-primary" data-id="${originalId}"></button>
-        `;
-
-
-        const btn = card.querySelector('.subscribe-btn');
-        if (isSubscribed) {
-            btn.textContent = translations.unsubscribe || '取消訂閱';
-            btn.classList.add('subscribed');
-        } else if (isUserCreated) {
-            btn.textContent = translations.manage || '管理';
-            btn.disabled = true;
-            btn.classList.add('opacity-50', 'cursor-not-allowed');
-        } else {
-            btn.textContent = translations.subscribe || '訂閱';
-        }
-
-
-        btn.addEventListener('click', () => {
-            handleSubscription(originalId);
-        });
-
-
-        grid.appendChild(card);
-    });
-};
         const handleSubscription = (officialId) => {
             const isSubscribed = astras.some(a => a.officialId === officialId);
-
-
             if (isSubscribed) {
                 astras = astras.filter(a => a.officialId !== officialId);
                 showNotification(i18n[config.uiLanguage].unsubscribed || '已取消訂閱', 'success');
             } else {
                 const officialAstra = OFFICIAL_ASTRAS.find(a => a.id === officialId);
                 if (officialAstra) {
-                    const newAstra = {
-                        ...officialAstra,
-                        id: crypto.randomUUID(), // Create a new unique ID for the user's copy
-                        officialId: officialAstra.id, // Link to the original
-                    };
-                    astras.unshift(newAstra);
+                    astras.unshift({ ...officialAstra, id: crypto.randomUUID(), officialId: officialAstra.id });
                     showNotification(i18n[config.uiLanguage].subscribed || '訂閱成功！', 'success');
                 }
             }
@@ -6274,26 +6046,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const handleAvatarUpload = (event) => {
             const file = event.target.files[0];
             if (!file) return;
-
-
             const reader = new FileReader();
             reader.onload = (e) => {
-                const imageUrl = e.target.result;
-                ALL_ELEMENTS.avatarCropImage.src = imageUrl;
+                ALL_ELEMENTS.avatarCropImage.src = e.target.result;
                 toggleModal(ALL_ELEMENTS.astrasAvatarModal, true);
-
-
-                if (cropperInstance) {
-                    cropperInstance.destroy();
-                }
-
-
-                cropperInstance = new Cropper(ALL_ELEMENTS.avatarCropImage, {
-                    aspectRatio: 1,
-                    viewMode: 1,
-                    background: false,
-                    autoCropArea: 1,
-                });
+                if (cropperInstance) cropperInstance.destroy();
+                cropperInstance = new Cropper(ALL_ELEMENTS.avatarCropImage, { aspectRatio: 1, viewMode: 1, background: false, autoCropArea: 1 });
             };
             reader.readAsDataURL(file);
             event.target.value = '';
@@ -6301,16 +6059,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         
         const handleConfirmAvatarCrop = async () => {
             if (!cropperInstance || !editingAstraForAvatarId) return;
-
-
-            const canvas = cropperInstance.getCroppedCanvas({
-                width: 128,
-                height: 128,
-                imageSmoothingEnabled: true,
-                imageSmoothingQuality: 'high',
-            });
+            const canvas = cropperInstance.getCroppedCanvas({ width: 128, height: 128, imageSmoothingEnabled: true, imageSmoothingQuality: 'high' });
             const imageDataUrl = canvas.toDataURL('image/png');
-            
             const astra = astras.find(a => a.id === editingAstraForAvatarId);
             if (astra) {
                 astra.avatarUrl = imageDataUrl;
@@ -6318,42 +6068,27 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 renderAstras();
                 showNotification(i18n[config.uiLanguage].avatarUpdated || '頭像已更新', 'success');
             }
-
-
             toggleModal(ALL_ELEMENTS.astrasAvatarModal, false);
             editingAstraForAvatarId = null;
         };
-        // ▲▲▲ 結束新增 ▲▲▲
         
-        // ▼▼▼ 新增：語言切換功能 ▼▼▼
         const applyLanguage = (lang) => {
             const translations = i18n[lang] || i18n['zh-TW'];
             document.querySelectorAll('[data-lang-key]').forEach(el => {
                 const key = el.dataset.langKey;
-                if (translations[key]) {
-                    el.textContent = translations[key];
-                }
+                if (translations[key]) el.textContent = translations[key];
             });
             document.querySelectorAll('[data-lang-key-placeholder]').forEach(el => {
                 const key = el.dataset.langKeyPlaceholder;
-                if (translations[key]) {
-                    el.placeholder = translations[key];
-                }
+                if (translations[key]) el.placeholder = translations[key];
             });
             document.querySelectorAll('[data-lang-key-title]').forEach(el => {
                 const key = el.dataset.langKeyTitle;
-                if (translations[key]) {
-                    el.title = translations[key];
-                }
+                if (translations[key]) el.title = translations[key];
             });
-            // 更新登入頁面語言顯示
-            if(ALL_ELEMENTS.loginLangLabel) {
-                ALL_ELEMENTS.loginLangLabel.textContent = translations.currentLanguageName || '繁體中文';
-            }
-            // 更新根元素 lang 屬性
+            if(ALL_ELEMENTS.loginLangLabel) ALL_ELEMENTS.loginLangLabel.textContent = translations.currentLanguageName || '繁體中文';
             document.documentElement.lang = lang;
         };
-        // ▲▲▲ 結束新增 ▲▲▲
 
 
 
@@ -6392,7 +6127,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.apiKeyWarningBadge.addEventListener('click', () => {
                 setupSettingsModal();
                 toggleModal(ALL_ELEMENTS.settingsModal, true);
-                // 直接切換到模型管理頁面
                 const navItems = ALL_ELEMENTS.settingsNav.querySelectorAll('.settings-nav-item');
                 navItems.forEach(i => i.classList.remove('active'));
                 document.querySelector('.settings-nav-item[data-section="model-management"]').classList.add('active');
@@ -6401,11 +6135,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
             ALL_ELEMENTS.closeSearchModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.searchModal, false));
             ALL_ELEMENTS.performSearchBtn.addEventListener('click', performSearchAndRenderResults);
-            ALL_ELEMENTS.modalSearchInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    performSearchAndRenderResults();
-                }
-            });
+            ALL_ELEMENTS.modalSearchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') performSearchAndRenderResults(); });
             ALL_ELEMENTS.modalSearchScopeSelect.addEventListener('change', performSearchAndRenderResults);
             ALL_ELEMENTS.settingsBtn.addEventListener('click', () => { setupSettingsModal(); toggleModal(ALL_ELEMENTS.settingsModal, true); });
             ALL_ELEMENTS.closeSettingsBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.settingsModal, false));
@@ -6414,11 +6144,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.themeDarkBtn.addEventListener('click', () => setTheme('dark'));
             ALL_ELEMENTS.openArchivedModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.archivedChatsModal, true));
             ALL_ELEMENTS.closeArchivedModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.archivedChatsModal, false));
-            // ▼▼▼ 新增：封存對話檢視 Modal 的關閉事件 ▼▼▼
             const closeViewArchivedModal = () => toggleModal(ALL_ELEMENTS.viewArchivedChatModal, false);
             ALL_ELEMENTS.closeViewArchivedModalBtn.addEventListener('click', closeViewArchivedModal);
             ALL_ELEMENTS.closeViewArchivedModalBtnFooter.addEventListener('click', closeViewArchivedModal);
-            // ▲▲▲ 結束新增 ▲▲▲
             ALL_ELEMENTS.saveRenameBtn.addEventListener('click', handleRename);
             ALL_ELEMENTS.cancelRenameBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.renameModal, false));
             ALL_ELEMENTS.saveFolderSettingsBtn.addEventListener('click', handleSaveFolderSettings);
@@ -6430,12 +6158,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.cancelImportBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.importDataModal, false));
             ALL_ELEMENTS.confirmImportBtn.addEventListener('click', handleImport);
             ALL_ELEMENTS.logoutBtn.addEventListener('click', handleLogout);
-            
-            // ▼▼▼ 需求 1 新增：儀表板按鈕事件 ▼▼▼
             ALL_ELEMENTS.userProfileBtn.addEventListener('click', openDashboard);
             ALL_ELEMENTS.closeDashboardBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.dataDashboardModal, false));
-            // ▲▲▲ 結束新增 ▲▲▲
-             // ▼▼▼ 修改：使用新的複製函式處理複製事件與新增的刪除事件 ▼▼▼
             ALL_ELEMENTS.messageList.addEventListener('click', (e) => {
                 const copyBtn = e.target.closest('.copy-content-btn');
                 const deleteBtn = e.target.closest('.delete-message-btn');
@@ -6453,7 +6177,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                 .then(() => showNotification(i18n[config.uiLanguage].copySuccess || '內容已複製！', 'success'))
                                 .catch(err => {
                                     showNotification(i18n[config.uiLanguage].copyFailed || '複製失敗！瀏覽器可能限制了此功能。', 'error');
-                                    console.error('Could not copy text with any method: ', err);
                                 });
                         }
                     }
@@ -6465,16 +6188,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     }
                 }
             });
-             // ▲▲▲ 結束修改 ▲▲▲
             ALL_ELEMENTS.addFileBtn.addEventListener('click', (e) => {
                 const popover = ALL_ELEMENTS.fileOptionsPopover;
                 if (popover.classList.contains('visible')) {
                     popover.classList.remove('visible');
                 } else {
                     closeAllPopovers();
-                    // ▼▼▼ 程式碼修正：移除不正確的 JS 定位，改由 CSS 控制 ▼▼▼
                     popover.classList.add('visible');
-                    // ▲▲▲ 結束修正 ▲▲▲
                 }
             });
             ALL_ELEMENTS.cameraBtn.addEventListener('click', () => {
@@ -6499,7 +6219,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.batchArchiveBtn.addEventListener('click', handleBatchArchive);
             ALL_ELEMENTS.batchMoveBtn.addEventListener('click', handleBatchMove);
             ALL_ELEMENTS.batchMoveCancelBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.batchMoveModal, false));
-            ALL_ELEMENTS.batchMoveConfirmBtn.addEventListener('click', () => { /* Logic moved to option clicks */ });
             ALL_ELEMENTS.webSearchBtn.addEventListener('click', async () => {
                 const conv = getActiveConversation();
                 if (!conv || conv.provider !== 'gemini' || conv.archived) return;
@@ -6512,7 +6231,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.messageInput.addEventListener('input', (e) => {
                 sendConfirmed = false;
                 updateInputState();
-                
                 const wrapper = e.target.closest('.input-wrapper');
                 if (wrapper) {
                     wrapper.classList.remove('pulse-glow');
@@ -6522,12 +6240,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
 
 
-            ALL_ELEMENTS.messageInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    ALL_ELEMENTS.submitButton.click();
-                }
-            });
+            ALL_ELEMENTS.messageInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ALL_ELEMENTS.submitButton.click(); } });
             ALL_ELEMENTS.submitButton.addEventListener('click', (e) => {
                 e.preventDefault();
                 if (abortController) {
@@ -6543,47 +6256,20 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
            
             ALL_ELEMENTS.chatForm.addEventListener('submit', handleFormSubmit);
-            const threshold = 140;
-            // ▼▼▼ 修改：對 scroll 事件進行節流 ▼▼▼
             const throttledScrollHandler = throttle(() => {
                 const sc = ALL_ELEMENTS.chatContainer;
-                const nearBottom = sc.scrollHeight - sc.scrollTop - sc.clientHeight < threshold;
-                ALL_ELEMENTS.scrollToBottomBtn.classList.toggle('hidden', nearBottom);
-            }, 200); // 每 200 毫秒觸發一次
+                ALL_ELEMENTS.scrollToBottomBtn.classList.toggle('hidden', sc.scrollHeight - sc.scrollTop - sc.clientHeight < 140);
+            }, 200);
             ALL_ELEMENTS.chatContainer.addEventListener('scroll', throttledScrollHandler);
-            // ▲▲▲ 結束修改 ▲▲▲
-            ALL_ELEMENTS.scrollToBottomBtn.addEventListener('click', () => {
-                ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
-            });
+            ALL_ELEMENTS.scrollToBottomBtn.addEventListener('click', () => ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' }));
             document.addEventListener('click', (e) => {
-                const targets = [
-                    ALL_ELEMENTS.modelSwitcherContainer,
-                    ALL_ELEMENTS.fileInputContainer
-                ];
-                let clickedInsidePopover = false;
-                document.querySelectorAll('.popover.visible').forEach(popover => {
-                    if (popover.contains(e.target)) clickedInsidePopover = true;
-                });
+                const clickedOnPopoverTrigger = e.target.closest('#model-switcher-container, #file-input-container, .chat-options-btn, .astras-options-btn, .folder-options-btn');
+                const clickedInsidePopover = e.target.closest('.popover.visible');
+                if (!clickedInsidePopover && !clickedOnPopoverTrigger) closeAllPopovers();
 
 
-                const clickedOnPopoverTrigger = 
-                    ALL_ELEMENTS.modelSwitcherContainer.contains(e.target) || 
-                    ALL_ELEMENTS.fileInputContainer.contains(e.target) ||
-                    e.target.closest('.chat-options-btn') || 
-                    e.target.closest('.astras-options-btn') ||
-                    e.target.closest('.folder-options-btn');
-
-
-                if (!clickedInsidePopover && !clickedOnPopoverTrigger) {
-                    closeAllPopovers();
-                }
-
-
-                const colorMenus = document.querySelectorAll('.color-dropdown-menu.show');
-                colorMenus.forEach(menu => {
-                    if (!menu.parentElement.contains(e.target)) {
-                        menu.classList.remove('show');
-                    }
+                document.querySelectorAll('.color-dropdown-menu.show').forEach(menu => {
+                    if (!menu.parentElement.contains(e.target)) menu.classList.remove('show');
                 });
             });
             ALL_ELEMENTS.newFolderBtn.addEventListener('click', async () => {
@@ -6612,48 +6298,28 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.wallpaperUploadInput.addEventListener('change', handleWallpaperUpload);
             ALL_ELEMENTS.restoreWallpaperBtn.addEventListener('click', restoreDefaultWallpaper);
             
-            // ▼▼▼ 新增：桌布裁切 Modal 事件 ▼▼▼
             ALL_ELEMENTS.confirmCropBtn.addEventListener('click', handleConfirmCrop);
             ALL_ELEMENTS.cancelCropBtn.addEventListener('click', () => {
                 toggleModal(ALL_ELEMENTS.wallpaperCropModal, false);
-                if(cropperInstance) {
-                    cropperInstance.destroy();
-                    cropperInstance = null;
-                }
+                if(cropperInstance) { cropperInstance.destroy(); cropperInstance = null; }
             });
-            // ▲▲▲ 結束新增 ▲▲▲
-            // ▼▼▼ 新增：清除資料按鈕事件 ▼▼▼
             ALL_ELEMENTS.deleteAllDataBtn.addEventListener('click', handleDeleteAllData);
-            // ▲▲▲ 結束新增 ▲▲▲
-             // ▼▼▼ 新增：設定頁面語言切換事件 ▼▼▼
-            ALL_ELEMENTS.uiLanguageSelect.addEventListener('change', (e) => {
-                config.uiLanguage = e.target.value;
-                applyLanguage(config.uiLanguage);
-            });
-            // ▲▲▲ 結束新增 ▲▲▲
-            // ▼▼▼ 新增：商店與頭像功能事件 ▼▼▼
+            ALL_ELEMENTS.uiLanguageSelect.addEventListener('change', (e) => { config.uiLanguage = e.target.value; applyLanguage(config.uiLanguage); });
             ALL_ELEMENTS.openStoreBtn.addEventListener('click', openStore);
             ALL_ELEMENTS.backToChatBtn.addEventListener('click', closeStore);
             ALL_ELEMENTS.astrasAvatarInput.addEventListener('change', handleAvatarUpload);
             ALL_ELEMENTS.confirmAvatarCropBtn.addEventListener('click', handleConfirmAvatarCrop);
             ALL_ELEMENTS.cancelAvatarCropBtn.addEventListener('click', () => {
                  toggleModal(ALL_ELEMENTS.astrasAvatarModal, false);
-                if(cropperInstance) {
-                    cropperInstance.destroy();
-                    cropperInstance = null;
-                }
+                if(cropperInstance) { cropperInstance.destroy(); cropperInstance = null; }
                 editingAstraForAvatarId = null;
             });
-            // ▲▲▲ 結束新增 ▲▲▲
-
 
             updateFileInputUI();
-            
             startNewChat(false);
         }
 
 
-        // ▼▼▼ 新增：刪除單條對話的函式 ▼▼▼
         const handleDeleteMessagePair = async (index) => {
             const confirmed = await showCustomDialog({
                 title: i18n[config.uiLanguage].deleteConfirmationTitle || '刪除確認',
@@ -6667,24 +6333,18 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (confirmed) {
                 const conv = getActiveConversation();
                 if (conv && conv.messages[index] && conv.messages[index + 1]) {
-                    // 刪除使用者訊息和後續的 AI 回覆
                     conv.messages.splice(index, 2);
-                    if (!isTemporaryChat) {
-                        await saveAppData();
-                    }
-                    renderChat(); // 重新渲染聊天視窗
+                    if (!isTemporaryChat) await saveAppData();
+                    renderChat();
                     showNotification(i18n[config.uiLanguage].messageDeleted || '對話已刪除。', 'success');
                 }
             }
         };
-        // ▲▲▲ 結束新增 ▲▲▲
         
         ALL_ELEMENTS.authForm.addEventListener('submit', handleLogin);
         
         const toggleAuthImportButton = () => {
-            const username = ALL_ELEMENTS.usernameInput.value.trim();
-            const password = ALL_ELEMENTS.passwordInput.value;
-            ALL_ELEMENTS.importBtnAuth.disabled = !(username && password);
+            ALL_ELEMENTS.importBtnAuth.disabled = !(ALL_ELEMENTS.usernameInput.value.trim() && ALL_ELEMENTS.passwordInput.value);
         };
         ALL_ELEMENTS.usernameInput.addEventListener('input', toggleAuthImportButton);
         ALL_ELEMENTS.passwordInput.addEventListener('input', toggleAuthImportButton);
@@ -6693,11 +6353,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         (async function prefillLastUser() {
             const last = await getItem('chat_lastUser');
             if (last) ALL_ELEMENTS.usernameInput.value = last;
-            applyLanguage('zh-TW'); // 預設載入繁體中文
+            applyLanguage('zh-TW');
         })();
         const FOLDER_ICONS = ['📁', '📂', '🗂️', '📚', '📝', '🗃️', '📘', '📙', '📗', '📕'];
         
-        // ▼▼▼ 新增：登入頁面語言切換邏輯 ▼▼▼
         ALL_ELEMENTS.loginLangBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             ALL_ELEMENTS.loginLangMenu.classList.toggle('visible');
@@ -6712,14 +6371,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const lang = e.target.dataset.lang;
             if (lang) {
                 config.uiLanguage = lang;
-                config.aiDefaultLanguage = lang; // 同步更新AI語言
+                config.aiDefaultLanguage = lang;
                 applyLanguage(lang);
                 ALL_ELEMENTS.loginLangMenu.classList.remove('visible');
             }
         });
-        // ▲▲▲ 結束新增 ▲▲▲
-
-
     </script>
 </body>
 </html>
