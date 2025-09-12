@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>進階 AI 聊天機器人 Astra-nos-14.6.7</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.6.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -1218,97 +1218,6 @@
             border-radius: 50%;
         }
         /* ▲▲▲ 結束：Astras 商店相關樣式 ▲▲▲ */
-
-        /* ▼▼▼ 新增：需求 1 的檔案上傳進度圈樣式 ▼▼▼ */
-        .progress-overlay {
-            position: absolute;
-            inset: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 0.5rem; /* rounded-lg */
-        }
-        .spinner {
-            width: 2rem; /* w-8 */
-            height: 2rem; /* h-8 */
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top-color: #ffffff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-        /* ▲▲▲ 結束：需求 1 的檔案上傳進度圈樣式 ▲▲▲ */
-
-        /* ▼▼▼ 新增：需求 2 的重新生成 UI 樣式 ▼▼▼ */
-        .version-controls {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem; /* gap-2 */
-            margin-left: auto; /* Push to the right */
-        }
-        .version-arrow {
-            color: var(--text-secondary);
-        }
-        .version-arrow:hover:not(:disabled) {
-            color: var(--text-primary);
-        }
-        .version-arrow:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-        .version-indicator {
-            font-size: 0.75rem; /* text-xs */
-            font-weight: 500;
-            color: var(--text-secondary);
-            min-width: 3rem; /* min-w-12 */
-            text-align: center;
-        }
-        .confirm-version-bar {
-            max-width: 44rem; /* max-w-4xl */
-            margin-left: 3rem; /* ml-12, to align with bubble */
-            margin-top: -1rem; /* -mt-4 */
-            padding-bottom: 2rem; /* pb-8, to maintain spacing */
-            display: flex;
-            justify-content: center;
-        }
-        .confirm-version-btn {
-            padding: 0.25rem 0.75rem; /* px-3 py-1 */
-            font-size: 0.875rem; /* text-sm */
-            font-weight: 600;
-            border-radius: 9999px; /* rounded-full */
-        }
-        .action-buttons-container {
-            position: absolute;
-            bottom: 0.5rem; /* bottom-2 */
-            right: 0.5rem; /* right-2 */
-            left: 0.5rem; /* left-2 */
-            display: flex;
-            align-items: center;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-        .message-bubble:hover .action-buttons-container {
-            opacity: 1;
-        }
-        .action-buttons-container > .copy-content-btn,
-        .action-buttons-container > .regenerate-btn {
-            color: var(--text-secondary);
-        }
-        .action-buttons-container > .copy-content-btn:hover,
-        .action-buttons-container > .regenerate-btn:hover {
-            background-color: rgba(0,0,0,0.1);
-            color: var(--text-primary);
-        }
-        .dark .action-buttons-container > .copy-content-btn:hover,
-        .dark .action-buttons-container > .regenerate-btn:hover {
-             background-color: rgba(255,255,255,0.1);
-        }
-        /* ▲▲▲ 結束：需求 2 的重新生成 UI 樣式 ▲▲▲ */
     </style>
 
 
@@ -2537,10 +2446,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let cropperInstance = null;
         let editingAstraForAvatarId = null;
         // ▲▲▲ 結束新增 ▲▲▲
-        // ▼▼▼ 新增：需求 2 的全域狀態 ▼▼▼
-        let isAwaitingVersionConfirmation = false;
-        let regeneratingMessageIndex = null;
-        // ▲▲▲ 結束新增 ▲▲▲
         // IndexedDB 配置
         const DB_NAME = 'ChatAppDB';
         const STORE_NAME = 'keyValue';
@@ -2798,27 +2703,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     conversations = (data.conversations || []).map(c => ({
                         archived: false, summary: '', folderId: null, isWebSearchEnabled: false, astrasId: null, pinned: false, ...c,
                         genConfig: c.genConfig || getDefaultGenConfig(),
-                        messages: (c.messages || []).map(m => {
-                            // ▼▼▼ 修改：相容需求 2 的新舊資料結構 ▼▼▼
-                            if (m.role === 'model' && !m.versions) {
-                                // 舊資料，將其轉換為新的 versions 結構
-                                return {
-                                    ...m,
-                                    parts: undefined, // 移除舊的 parts
-                                    content: undefined, // 移除更舊的 content
-                                    versions: [{ parts: m.parts || [{ text: m.content }] }],
-                                    activeVersionIndex: 0,
-                                    createdAt: m.createdAt || c.createdAt
-                                };
-                            }
-                            return {
-                                ...m,
-                                // 新資料，確保 parts 存在
-                                parts: m.parts || [{ text: m.content }], 
-                                createdAt: m.createdAt || c.createdAt
-                            };
-                             // ▲▲▲ 結束修改 ▲▲▲
-                        })
+                        messages: (c.messages || []).map(m => ({
+                            ...m,
+                            createdAt: m.createdAt || c.createdAt, // 修正：為舊版訊息補上時間戳
+                            parts: m.parts || [{ text: m.content }] // Compatibility for old format
+                        }))
                     }));
                     // ▼▼▼ 修改：確保舊資料能相容 avatarUrl ▼▼▼
                     astras = (data.astras || []).map(a => ({ avatarUrl: null, officialId: null, ...a }));
@@ -3027,12 +2916,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
                     let contentHTML = '';
-                    let partsToRender = msg.parts;
-                    if (msg.role === 'model' && msg.versions) {
-                        partsToRender = msg.versions[msg.activeVersionIndex].parts;
-                    }
-
-                    partsToRender.forEach(part => {
+                    msg.parts.forEach(part => {
                         if (part.text) {
                              contentHTML += `<div>${isUser ? part.text.replace(/\n/g, '<br>') : renderMarkdown(part.text)}</div>`;
                         } else if (part.inlineData) {
@@ -3364,7 +3248,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 const greeting = `${currentUser.username}, ${i18n[config.uiLanguage].howCanIHelp || '有什麼可以為您服務的嗎？'}`;
                 messageList.innerHTML = `<div class="text-center text-[var(--text-secondary)] mt-16"><p class="text-lg">${greeting}</p></div>`;
             } else {
+                // ▼▼▼ 程式碼修正 ▼▼▼
                 conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
+                // ▲▲▲ 程式碼修正 ▲▲▲
             }
             
             // 強制瀏覽器重繪，為動畫做準備
@@ -3640,138 +3526,123 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             updateApiKeyWarningBadge();
         };
         
-        // ▼▼▼ 新增：需求 2 的核心函式 ▼▼▼
+        // ▼▼▼ 程式碼修改 ▼▼▼
         const addMessageToUI = (msg, index, shouldSave = true, shouldScroll = true) => {
             const conv = getActiveConversation();
-            if (!conv) return;
-
             if (shouldSave) {
-                if (isTemporaryChat) {
+                 if (isTemporaryChat) {
                     conv.messages.push(msg);
                 } else {
                     conv.messages.push(msg);
                     if (conv.messages.length === 1 && msg.role === 'user' && !conv.isRenamed && config.autoNaming) {
                         const textPart = msg.parts.find(p => p.text);
                         if (textPart) {
+                            conv.title = textPart.text.substring(0, 30) || i18n[config.uiLanguage].newChat || '新對話';
+                            ALL_ELEMENTS.headerTitle.textContent = conv.title;
+                            renderHistorySidebar();
                             generateTitleAndSummary(conv);
                         }
                     }
                     saveAppData();
                 }
             }
-
-            const messageItem = document.createElement('div');
-            messageItem.className = 'message-item-wrapper'; // Wrapper for bubble and confirm bar
-            
             const messageDiv = document.createElement('div');
             messageDiv.dataset.messageIndex = index;
             const isUser = msg.role === 'user';
-            messageDiv.className = `flex items-start gap-2 md:gap-4 ${isUser ? 'justify-end user-message' : 'model-message'}`;
+            messageDiv.className = `message-item flex items-start gap-2 md:gap-4 ${isUser ? 'justify-end user-message' : 'model-message'}`;
+            const icon = isUser ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>` : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
 
-            const icon = isUser 
-                ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>` 
-                : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
-            
+
+
+
             let contentHTML = '';
-            let actionButtonsHTML = '';
-            let confirmButtonHTML = '';
+            let actionButtons = '';
             let contentPaddingClass = '';
-            let partsToRender = [];
 
-            if (isUser) {
-                partsToRender = msg.parts;
-            } else { // Model message
-                const isLoadingMessage = !msg.versions || msg.versions[0].parts[0].text === '...';
-                if (isLoadingMessage) {
-                    contentHTML = `<div class="loading-dots"><span class="bg-gray-500 dark:bg-gray-400"></span><span class="bg-gray-500 dark:bg-gray-400"></span><span class="bg-gray-500 dark:bg-gray-400"></span></div>`;
-                } else {
-                    partsToRender = msg.versions[msg.activeVersionIndex].parts;
-                    contentPaddingClass = 'pb-8'; // Add padding for action buttons
-                    
-                    const isMultiVersion = msg.versions.length > 1;
-                    const isRegenerating = regeneratingMessageIndex === index;
 
-                    actionButtonsHTML = `
-                        <div class="action-buttons-container">
-                            <button class="copy-content-btn p-1.5 rounded-md" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
+            const isLoadingMessage = !isUser && msg.parts.length === 1 && msg.parts[0].text === '...';
+            
+            if (isLoadingMessage) {
+                contentHTML = `<div class="loading-dots"><span class="bg-gray-500 dark:bg-gray-400"></span><span class="bg-gray-500 dark:bg-gray-400"></span><span class="bg-gray-500 dark:bg-gray-400"></span></div>`;
+            } else {
+                let textPartsContent = [];
+                let mediaPartsContent = [];
+                msg.parts.forEach(part => {
+                    if (part.text) {
+                        textPartsContent.push(part.text);
+                    } else if (part.inlineData) {
+                        mediaPartsContent.push(part.inlineData);
+                    }
+                });
+                if (textPartsContent.length > 0) {
+                    const combinedText = textPartsContent.join('\n');
+                    contentHTML += `<div>${isUser ? combinedText.replace(/\n/g, '<br>') : renderMarkdown(combinedText)}</div>`;
+                }
+                if (mediaPartsContent.length > 0) {
+                    let mediaHTML = '<div class="mt-2 flex flex-wrap gap-2">';
+                    mediaPartsContent.forEach(media => {
+                        const src = `data:${media.mimeType};base64,${media.data}`;
+                        if (media.mimeType.startsWith('image/')) {
+                            mediaHTML += `<img src="${src}" class="max-w-xs max-h-48 rounded-lg object-cover border border-[var(--border-color)]">`;
+                        } else {
+                            mediaHTML += `<div class="p-2 bg-[var(--hover-bg)] rounded-lg text-sm flex items-center gap-2 border border-[var(--border-color)]">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                                <span>${media.name || '檔案'}</span>
+                            </div>`;
+                        }
+                    });
+                    mediaHTML += '</div>';
+                    contentHTML += mediaHTML;
+                }
+                
+                if (!isUser) {
+                    const timeString = formatFullTimestamp(msg.createdAt);
+                    actionButtons = `
+                        <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
+                            <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                             </button>
-                            <button class="regenerate-btn p-1.5 rounded-md" data-message-index="${index}" title="${i18n[config.uiLanguage].regenerate || '重新生成'}" ${isAwaitingVersionConfirmation ? 'disabled' : ''}>
-                                ${isRegenerating ? '<div class="spinner !w-4 !h-4"></div>' : '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>'}
-                            </button>
-                            ${isMultiVersion ? `
-                                <div class="version-controls">
-                                    <button class="version-arrow" data-direction="left" data-message-index="${index}" ${msg.activeVersionIndex === 0 ? 'disabled' : ''}>
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                                    </button>
-                                    <span class="version-indicator">${msg.activeVersionIndex + 1} / ${msg.versions.length}</span>
-                                    <button class="version-arrow" data-direction="right" data-message-index="${index}" ${msg.activeVersionIndex === msg.versions.length - 1 ? 'disabled' : ''}>
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                                    </button>
-                                </div>
-                            ` : ''}
+                            <span class="text-xs text-gray-400">${timeString}</span>
                         </div>
                     `;
-
-                    if (isMultiVersion) {
-                        confirmButtonHTML = `
-                            <div class="confirm-version-bar">
-                                <button class="confirm-version-btn btn-primary" data-message-index="${index}">
-                                    ${i18n[config.uiLanguage].confirmVersion || '確認此版本'}
+                    contentPaddingClass = 'pb-8'; 
+                } else {
+                    const currentConv = getActiveConversation();
+                    if (currentConv && index + 1 < currentConv.messages.length && currentConv.messages[index + 1].role === 'model') {
+                         actionButtons = `
+                            <div class="absolute bottom-2 left-2 flex items-center">
+                                <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                                 </button>
                             </div>
                         `;
+                        contentPaddingClass = 'pb-8';
                     }
                 }
             }
-            
-            let textPartsContent = [];
-            let mediaPartsContent = [];
-            partsToRender.forEach(part => {
-                if (part.text) { textPartsContent.push(part.text); } 
-                else if (part.inlineData) { mediaPartsContent.push(part.inlineData); }
-            });
 
-            if (textPartsContent.length > 0) {
-                const combinedText = textPartsContent.join('\n');
-                contentHTML += `<div>${isUser ? combinedText.replace(/\n/g, '<br>') : renderMarkdown(combinedText)}</div>`;
-            }
-
-            if (mediaPartsContent.length > 0) {
-                let mediaHTML = '<div class="mt-2 flex flex-wrap gap-2">';
-                mediaPartsContent.forEach(media => {
-                    const src = `data:${media.mimeType};base64,${media.data}`;
-                    mediaHTML += `<img src="${src}" class="max-w-xs max-h-48 rounded-lg object-cover border border-[var(--border-color)]">`;
-                });
-                mediaHTML += '</div>';
-                contentHTML += mediaHTML;
-            }
 
             const messageBubble = `
-                <div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble">
-                    <div class="prose prose-sm max-w-none message-content ${isUser ? 'text-white' : 'text-[var(--text-primary)]'} ${contentPaddingClass}">${contentHTML}</div>
-                    ${actionButtonsHTML}
+                <div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble relative ${isUser ? 'text-white' : ''}" >
+                    <div class="prose prose-sm max-w-none ${isUser ? 'text-white' : 'text-[var(--text-primary)]'} ${contentPaddingClass} message-content">${contentHTML}</div>
+                    ${actionButtons}
                 </div>`;
-            
-            messageDiv.innerHTML = isUser ? `${messageBubble}${icon}` : `${icon}${messageBubble}`;
 
-            if (ALL_ELEMENTS.messageList.querySelector('.text-center')) {
-                ALL_ELEMENTS.messageList.innerHTML = '';
-            }
-            
-            messageItem.appendChild(messageDiv);
-            if (confirmButtonHTML) {
-                messageItem.innerHTML += confirmButtonHTML;
-            }
-            
-            ALL_ELEMENTS.messageList.appendChild(messageItem);
-            
+
+            messageDiv.innerHTML = isUser ? `${messageBubble}${icon}` : `${icon}${messageBubble}`;
+            if (ALL_ELEMENTS.messageList.querySelector('.text-center')) ALL_ELEMENTS.messageList.innerHTML = '';
+
+
+            ALL_ELEMENTS.messageList.appendChild(messageDiv);
             if (shouldScroll) {
                 ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
             }
 
+
             return messageDiv;
         };
+        // ▲▲▲ 程式碼修改 ▲▲▲
+
 
         const handleFormSubmit = async (e) => {
             e.preventDefault();
@@ -3786,6 +3657,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const conv = getActiveConversation();
             if (conv.archived) return;
 
+
+
+
             abortController = new AbortController();
             updateSubmitButtonState(true);
 
@@ -3795,6 +3669,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 updateInputState();
                 return;
             }
+
+
+
 
             const userParts = [];
             if (userMessage) {
@@ -3813,6 +3690,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
             addMessageToUI(userMessageObject, conv.messages.length, true);
 
+
+
+
             if (config.enableAutoWebSearch && conv.provider === 'gemini' && !conv.isWebSearchEnabled) {
                 try {
                     const needsSearch = await shouldPerformWebSearch(userMessage);
@@ -3826,29 +3706,19 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             }
 
+
+
+
             ALL_ELEMENTS.messageInput.value = '';
             uploadedFiles = [];
             renderFilePreviews();
             
-            // ▼▼▼ 修改：為 AI 訊息建立初始 versions 結構 ▼▼▼
-            const loadingMessageObject = {
-                role: 'model',
-                versions: [{ parts: [{ text: '...' }] }],
-                activeVersionIndex: 0,
-                createdAt: new Date().toISOString()
-            };
-
-            const loadingMessageDiv = addMessageToUI(loadingMessageObject, conv.messages.length, false);
+            const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
             const contentDiv = loadingMessageDiv.querySelector('.message-content');
             let fullResponse = '';
             
-            const finalAiMessage = {
-                role: 'model',
-                versions: [],
-                activeVersionIndex: 0,
-                createdAt: new Date().toISOString()
-            };
-            // ▲▲▲ 結束修改 ▲▲▲
+            const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
+
 
             try {
                 const completeResponse = await streamApiCall(
@@ -3864,56 +3734,88 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     abortController.signal
                 );
                 fullResponse = completeResponse;
-
-                // ▼▼▼ 修改：將最終回覆存入 versions 陣列 ▼▼▼
-                finalAiMessage.versions.push({ parts: [{ text: fullResponse }] });
+                finalAiMessage.parts = [{ text: fullResponse }];
                 conv.messages.push(finalAiMessage);
                 if (!isTemporaryChat) await saveAppData();
-                
-                // 重新渲染最後一則訊息以顯示最終內容和按鈕
-                const lastMessageWrapper = ALL_ELEMENTS.messageList.lastElementChild;
-                lastMessageWrapper.innerHTML = ''; // 清空
-                addMessageToUI(finalAiMessage, conv.messages.length - 1, false, false);
-                // ▲▲▲ 結束修改 ▲▲▲
+
+
+
 
                 if(config.enableFollowUp) {
                     await generateFollowUpPrompts(fullResponse);
                 }
-                if (config.memoryEnabled1 && config.enableAutoMemory) {
+                if (config.memoryEnabled1 && config.enableAutoMemory) { // 檢查兩個開關
                     await extractPersonalMemory(userMessage, fullResponse);
                 }
             } catch (error) {
                 if (error.name === 'AbortError') {
-                    finalAiMessage.versions.push({ parts: [{ text: fullResponse }] });
+                    contentDiv.innerHTML = renderMarkdown(fullResponse);
+                    finalAiMessage.parts = [{ text: fullResponse }];
                     conv.messages.push(finalAiMessage);
                 } else {
-                    const errorMessage = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
-                    finalAiMessage.versions.push({ parts: [{ text: errorMessage }] });
+                    contentDiv.textContent = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
+                    finalAiMessage.parts = [{ text: `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}` }];
                     conv.messages.push(finalAiMessage);
                 }
                 if (!isTemporaryChat) await saveAppData();
-                renderChat(); // 發生錯誤時重新渲染整個聊天室
             } finally {
                 abortController = null;
                 updateSubmitButtonState(false);
                 sendConfirmed = false;
                 updateInputState();
+                
+                // ▼▼▼ 優化：AI 回覆完成後，不再重新渲染整個聊天室，而是僅更新最後一則訊息的 UI ▼▼▼
+                const lastMessageDiv = ALL_ELEMENTS.messageList.lastElementChild;
+                if (lastMessageDiv && lastMessageDiv.classList.contains('model-message')) {
+                    const bubble = lastMessageDiv.querySelector('.message-bubble');
+                    const content = lastMessageDiv.querySelector('.message-content');
+                    const aiMessageObject = conv.messages[conv.messages.length - 1];
+
+
+                    if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute')) { 
+                        content.classList.add('pb-8');
+                        
+                        const timeString = formatFullTimestamp(aiMessageObject.createdAt);
+                        const actionButtonsHTML = `
+                            <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
+                                <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                </button>
+                                <span class="text-xs text-gray-400">${timeString}</span>
+                            </div>
+                        `;
+                        bubble.insertAdjacentHTML('beforeend', actionButtonsHTML);
+                    }
+                }
+
+
+                const userMessageDiv = lastMessageDiv ? lastMessageDiv.previousElementSibling : null;
+                if (userMessageDiv && userMessageDiv.classList.contains('user-message')) {
+                    const bubble = userMessageDiv.querySelector('.message-bubble');
+                    const content = userMessageDiv.querySelector('.message-content');
+                    if (bubble && content && !bubble.querySelector('.delete-message-btn')) {
+                        content.classList.add('pb-8');
+                        const deleteButtonHTML = `
+                            <div class="absolute bottom-2 left-2 flex items-center">
+                                <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                </button>
+                            </div>
+                        `;
+                        bubble.insertAdjacentHTML('beforeend', deleteButtonHTML);
+                    }
+                }
+                // ▲▲▲ 結束優化 ▲▲▲
             }
         };
-        // ▲▲▲ 結束核心函式修改 ▲▲▲
-
         function cleanGeminiHistory(history) {
             const cleaned = []; let lastRole = null;
             history.forEach(msg => {
-                let partsToClean = [];
-                // ▼▼▼ 修改：處理 regeneration 時的 parts/versions 結構 ▼▼▼
-                if (msg.role === 'model' && msg.versions) {
-                    partsToClean = msg.versions[msg.activeVersionIndex].parts;
-                } else {
-                    partsToClean = msg.parts;
-                }
-                const sanitizedMsg = { role: msg.role, parts: partsToClean };
-                // ▲▲▲ 結束修改 ▲▲▲
+                // 修正重點：
+                // 創建一個只包含 API 所需的 role 和 parts 欄位的新物件，
+                // 藉此移除如 createdAt 等自訂的額外屬性。
+                const sanitizedMsg = { role: msg.role, parts: msg.parts };
+
 
                 if (sanitizedMsg.role === 'model' && !sanitizedMsg.parts.some(p => (p.text && p.text.trim() !== '') || p.inlineData)) return;
                 
@@ -3927,27 +3829,38 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (cleaned.length > 0 && cleaned[0].role !== 'user') cleaned.shift();
             return cleaned;
         }
-        async function streamApiCall(parts, onChunk, signal, historyOverride = null) {
+        async function streamApiCall(parts, onChunk, signal) {
             const conv = getActiveConversation();
             const modelInfo = MODELS.find(m => m.id === conv.model);
             if (!modelInfo) throw new Error(`找不到模型設定: ${conv.model}`);
+
+
+
 
             const { provider, id: modelId } = modelInfo;
             let apiKey;
             if (provider === 'gemini') {
                 apiKey = config.apiKeys.gemini;
+            // ▼▼▼ 需求 2 修正：所有 OpenRouter 模型共用一個金鑰 ▼▼▼
             } else if (provider === 'openrouter') {
                 apiKey = config.apiKeys.openrouter;
             }
+            // ▲▲▲ 結束修正 ▲▲▲
+
+
+
 
             if (!apiKey) throw new Error(`請先在設定中提供 ${modelInfo.name} 所需的 API 金鑰。`);
 
-            // Use historyOverride if provided (for regeneration), otherwise use conversation history
-            const historyForApi = historyOverride !== null ? historyOverride : conv.messages.slice(0, -1);
+
+
+
+            const historyForApi = conv.messages.slice(0, -1);
             const currentMessageForApi = { role: 'user', parts: parts };
             let url, payload, headers;
             let systemInstruction = null;
             
+            // ▼▼▼ 新增：語言指令 ▼▼▼
             let languageInstruction = '';
             const langMap = {
                 'zh-TW': '請用繁體中文回覆，除非使用者有特別要求。',
@@ -3955,6 +3868,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 'fr': 'Veuillez répondre en français, sauf si l\'utilisateur demande spécifiquement le contraire.'
             };
             languageInstruction = langMap[config.aiDefaultLanguage] || '';
+            // ▲▲▲ 結束新增 ▲▲▲
+
 
             if (conv.astrasId) {
                 const ast = astras.find(a => a.id === conv.astrasId);
@@ -3965,6 +3880,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (!systemInstruction && languageInstruction) {
                  systemInstruction = { parts: [{ text: languageInstruction }] };
             }
+
 
             let memoryPrompt = '';
             if (config.memoryEnabled1) {
@@ -4003,18 +3919,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 if (systemInstruction) {
                     messages.push({ role: 'system', content: systemInstruction.parts[0].text });
                 }
-                messages.push(...[...historyForApi, currentMessageForApi].map(m => {
-                    let contentParts = [];
-                    if (m.role === 'model' && m.versions) {
-                         contentParts = m.versions[m.activeVersionIndex].parts;
-                    } else {
-                         contentParts = m.parts;
-                    }
-                    return {
-                        role: m.role === 'model' ? 'assistant' : m.role,
-                        content: contentParts.map(p => p.text).join('\n')
-                    };
-                }));
+                messages.push(...[...historyForApi, currentMessageForApi].map(m => ({
+                    role: m.role === 'model' ? 'assistant' : m.role,
+                    content: m.parts.map(p => p.text).join('\n')
+                })));
                 payload = {
                     model: modelId,
                     messages,
@@ -4035,6 +3943,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 const { value, done } = await reader.read();
                 if (done) break;
                 buffer += decoder.decode(value, { stream: true });
+
+
+
 
                 if (provider === 'gemini') {
                     const lines = buffer.split('\n');
@@ -4157,14 +4068,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             return text === 'yes';
         }
 
+
+
+
         const generateTitleAndSummary = async (conv) => {
-            const conversationHistory = conv.messages.slice(0, 5).map(m => {
-                let partsToSummarize = m.parts;
-                if (m.role === 'model' && m.versions) {
-                    partsToSummarize = m.versions[m.activeVersionIndex].parts;
-                }
-                return `${m.role}: ${partsToSummarize.map(p => p.text).join(' ')}`;
-            }).join('\n');
+            const conversationHistory = conv.messages.slice(0, 5).map(m => `${m.role}: ${m.parts.map(p => p.text).join(' ')}`).join('\n');
             const prompt = `為以下對話生成一個簡潔且能代表核心主題的標題。標題應直接反映使用者詢問的主要內容，而不是以你的視角描述AI的行為，（例如，好的標題是「法國首都」，而不是「回答地理問題」）。標題限制在10個字以內。請嚴格按照以下 JSON 格式輸出，不要有任何額外的文字或解釋:\n{"title": "你的標題", "summary": "你的一句話摘要"}\n\n對話內容:\n${conversationHistory}`;
             const responseSchema = {
                 type: "OBJECT",
@@ -4175,6 +4083,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 propertyOrdering: ["title", "summary"]
             };
             const data = await callApiWithSchema(prompt, responseSchema);
+
+
+
 
             if (data && data.title && data.summary) {
                 conv.title = data.title;
@@ -4198,6 +4109,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 maxItems: 4
             };
             const followUpPrompts = await callApiWithSchema(prompt, responseSchema);
+
+
+
 
             if (followUpPrompts && followUpPrompts.length > 0) {
                 renderFollowUpPrompts(followUpPrompts);
@@ -4240,10 +4154,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.followUpPromptsList.classList.toggle('collapsed', !isFollowUpExpanded);
             ALL_ELEMENTS.followUpToggleBtn.classList.toggle('rotate-180', !isFollowUpExpanded);
 
+
+
+
             const conv = getActiveConversation();
             if (conv && conv.messages.length > 0 && conv.messages[conv.messages.length-1].role === 'model') {
                 if (config.enableFollowUp) {
-                    const lastMessage = conv.messages[conv.messages.length-1].versions[0].parts.map(p => p.text).join(' ');
+                    const lastMessage = conv.messages[conv.messages.length-1].parts.map(p => p.text).join(' ');
                     if (ALL_ELEMENTS.followUpPromptsList.children.length === 0) {
                         generateFollowUpPrompts(lastMessage);
                     }
@@ -4252,6 +4169,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 ALL_ELEMENTS.followUpContainer.classList.add('hidden');
             }
         };
+
+
+
 
         const updateSubmitButtonState = (isGenerating) => {
             const { submitButton, submitButtonIcon } = ALL_ELEMENTS;
@@ -4264,14 +4184,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         const updateInputState = () => {
             const hasContent = ALL_ELEMENTS.messageInput.value.trim() !== '' || uploadedFiles.length > 0;
-            const { submitButton, submitButtonIcon, messageInput } = ALL_ELEMENTS;
+            const { submitButton, submitButtonIcon } = ALL_ELEMENTS;
 
-            if (isAwaitingVersionConfirmation) {
-                messageInput.disabled = true;
-                messageInput.placeholder = i18n[config.uiLanguage].confirmVersionPlaceholder || '請先確認一個回覆版本才能繼續...';
-                submitButton.disabled = true;
-                return;
-            }
+
+
 
             if (abortController) {
                 submitButton.disabled = false;
@@ -4285,11 +4201,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 return;
             }
             if (conv.archived) {
-                messageInput.disabled = true;
+                ALL_ELEMENTS.messageInput.disabled = true;
                 submitButton.disabled = true;
-                messageInput.placeholder = i18n[config.uiLanguage].viewingArchived || '正在檢視封存的對話，無法傳送訊息。';
+                ALL_ELEMENTS.messageInput.placeholder = i18n[config.uiLanguage].viewingArchived || '正在檢視封存的對話，無法傳送訊息。';
                 return;
             }
+
+
+
 
             const modelInfo = MODELS.find(m => m.id === conv.model);
             const provider = modelInfo?.provider;
@@ -4297,11 +4216,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (provider === 'gemini') {
                 hasApiKey = !!config.apiKeys.gemini;
             } else if (provider === 'openrouter') {
-                hasApiKey = !!config.apiKeys.openrouter;
+                hasApiKey = !!config.apiKeys.openrouter; // ▼▼▼ 需求 2 修正：檢查單一金鑰 ▼▼▼
             }
 
-            messageInput.disabled = !hasApiKey;
-            messageInput.placeholder = hasApiKey ? i18n[config.uiLanguage].enterMessagePlaceholder : i18n[config.uiLanguage].enterApiKeyPlaceholder;
+
+
+
+            ALL_ELEMENTS.messageInput.disabled = !hasApiKey;
+            ALL_ELEMENTS.messageInput.placeholder = hasApiKey ? i18n[config.uiLanguage].enterMessagePlaceholder : i18n[config.uiLanguage].enterApiKeyPlaceholder;
             if (!hasApiKey || !hasContent) {
                 submitButton.disabled = true;
                 submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
@@ -4315,16 +4237,23 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         };
 
+
+
+
         const setupSettingsModal = () => {
             ALL_ELEMENTS.geminiApiKeyInput.value = config.apiKeys.gemini;
+            // ▼▼▼ 需求 2 修正：設定單一 OpenRouter 金鑰輸入框的值 ▼▼▼
             ALL_ELEMENTS.openrouterApiKeyInputAll.value = config.apiKeys.openrouter;
+             // ▲▲▲ 結束修正 ▲▲▲
             ALL_ELEMENTS.followUpToggleSwitch.checked = config.enableFollowUp;
             ALL_ELEMENTS.autoNamingToggleSwitch.checked = config.autoNaming;
             ALL_ELEMENTS.autoWebSearchToggleSwitch.checked = config.enableAutoWebSearch;
             ALL_ELEMENTS.memoryToggle1.checked = config.memoryEnabled1;
             ALL_ELEMENTS.autoMemoryToggleSwitch.checked = config.enableAutoMemory;
+            // ▼▼▼ 新增：設定語言下拉選單的初始值 ▼▼▼
             ALL_ELEMENTS.uiLanguageSelect.value = config.uiLanguage;
             ALL_ELEMENTS.aiLanguageSelect.value = config.aiDefaultLanguage;
+            // ▲▲▲ 結束新增 ▲▲▲
             renderPersonalMemoryList();
             updateThemeButtons();
             renderModelManagementUI();
@@ -4343,9 +4272,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
         };
 
+
+
+
         const saveSettings = async () => {
             config.apiKeys.gemini = ALL_ELEMENTS.geminiApiKeyInput.value.trim();
+            // ▼▼▼ 需求 2 修正：儲存單一 OpenRouter 金鑰 ▼▼▼
             config.apiKeys.openrouter = ALL_ELEMENTS.openrouterApiKeyInputAll.value.trim();
+            // ▲▲▲ 結束修正 ▲▲▲
             config.enableFollowUp = ALL_ELEMENTS.followUpToggleSwitch.checked;
             config.enableAutoWebSearch = ALL_ELEMENTS.autoWebSearchToggleSwitch.checked;
             config.aiBubbleColor = ALL_ELEMENTS.aiBubbleColorDropdown.querySelector('.color-dropdown-btn')?.dataset.color || 'default';
@@ -4353,26 +4287,33 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             config.autoNaming = ALL_ELEMENTS.autoNamingToggleSwitch.checked;
             config.memoryEnabled1 = ALL_ELEMENTS.memoryToggle1.checked;
             config.enableAutoMemory = ALL_ELEMENTS.autoMemoryToggleSwitch.checked;
+            // ▼▼▼ 新增：儲存語言設定 ▼▼▼
             config.uiLanguage = ALL_ELEMENTS.uiLanguageSelect.value;
             config.aiDefaultLanguage = ALL_ELEMENTS.aiLanguageSelect.value;
+            // ▲▲▲ 結束新增 ▲▲▲
             
+            // ▼▼▼ 新增：儲存 UI 顏色設定 ▼▼▼
             const selectedThemeMode = document.querySelector('input[name="color-theme"]:checked').value;
             const selectedCustomColor = ALL_ELEMENTS.customColorSwatches.querySelector('.selected')?.dataset.color || config.uiTheme.customColor;
             const selectedStyle = document.querySelector('input[name="color-style"]:checked')?.value || 'single';
             const selectedGradientSwatch = ALL_ELEMENTS.gradientSwatches.querySelector('.selected-gradient');
             const selectedGradient = selectedGradientSwatch ? selectedGradientSwatch.dataset.gradient : (config.uiTheme.adaptivePalette?.length > 1 ? `linear-gradient(to right, ${config.uiTheme.adaptivePalette[0]}, ${config.uiTheme.adaptivePalette[1]})` : '');
 
+
+
+
             config.uiTheme.mode = selectedThemeMode;
             config.uiTheme.customColor = selectedCustomColor;
             config.uiTheme.style = selectedStyle;
             config.uiTheme.adaptiveGradient = selectedGradient;
+            // ▲▲▲ 結束：儲存 UI 顏色設定 ▲▲▲
             
             setAiBubbleColor();
             setUserBubbleColor();
-            applyUiTheme();
+            applyUiTheme(); // ▼▼▼ 新增呼叫 ▼▼▼
             
             await saveConfig();
-            applyLanguage(config.uiLanguage);
+            applyLanguage(config.uiLanguage); // 儲存後立即應用新語言
             renderModelSwitcher();
             renderChat();
             renderStore();
@@ -4383,6 +4324,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             showNotification(i18n[config.uiLanguage].settingsSaved || '設定已儲存！');
         };
         
+        // ▼▼▼ 修正：設定 AI 泡泡顏色函式 ▼▼▼
         const setAiBubbleColor = () => {
             const root = document.documentElement;
             const isWallpaperActive = document.body.classList.contains('custom-wallpaper-active');
@@ -4392,13 +4334,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
             if (isWallpaperActive) {
+                // 桌布模式下，套用帶透明度的玻璃效果
                 const rgbaColor = hexToRgba(hexColor, 0.75);
                 root.style.setProperty('--ai-bubble-bg', rgbaColor);
             } else {
+                // 一般模式下，套用原始顏色
                 root.style.setProperty('--ai-bubble-bg', hexColor);
             }
         };
 
+
+        // ▼▼▼ 修正：設定使用者泡泡顏色函式 ▼▼▼
         const setUserBubbleColor = () => {
             const root = document.documentElement;
             const isWallpaperActive = document.body.classList.contains('custom-wallpaper-active');
@@ -4406,13 +4352,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const colors = USER_BUBBLE_COLORS[config.userBubbleColor] || USER_BUBBLE_COLORS.default;
             const hexColor = colors[mode];
 
+
             if (isWallpaperActive) {
+                // 桌布模式下，套用帶透明度的玻璃效果
                 const rgbaColor = hexToRgba(hexColor, 0.7);
                 root.style.setProperty('--user-bubble-bg', rgbaColor);
             } else {
+                // 一般模式下，套用原始顏色
                 root.style.setProperty('--user-bubble-bg', hexColor);
             }
         };
+
 
         const renderAiBubbleColorDropdown = () => {
             const container = ALL_ELEMENTS.aiBubbleColorDropdown;
@@ -4516,14 +4466,19 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const existingPopover = document.getElementById('history-popover');
             if (existingPopover) {
                 existingPopover.remove();
+                 // 如果點擊同一個按鈕，則僅關閉，不重新打開
                 if (existingPopover.dataset.targetId === targetButton.id) return;
             }
+
 
             const rect = targetButton.getBoundingClientRect();
             const popover = document.createElement('div');
             popover.id = 'history-popover';
             popover.className = 'popover absolute w-48 rounded-lg border border-[var(--border-color)] z-50';
             popover.dataset.targetId = targetButton.id;
+
+
+
 
             const spaceBelow = window.innerHeight - rect.bottom;
             if (spaceBelow < 250) { 
@@ -4534,7 +4489,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 popover.style.transformOrigin = 'top';
             }
 
+
             popover.style.left = `${rect.left}px`;
+
+
+
 
             const conv = conversations.find(c => c.id === convId);
             const pinText = conv.pinned ? (i18n[config.uiLanguage].unpin || '取消釘選') : (i18n[config.uiLanguage].pin || '釘選');
@@ -4565,10 +4524,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             
             requestAnimationFrame(() => popover.classList.add('visible'));
 
+
             popover.querySelector('.rename-conv-btn').addEventListener('click', (e) => { showRenameModal(convId, 'conversation', e); popover.remove(); });
             popover.querySelector('.pin-btn').addEventListener('click', (e) => { togglePinChat(convId, e); popover.remove(); });
             popover.querySelector('.archive-btn').addEventListener('click', (e) => { archiveChat(convId, e); popover.remove(); });
             popover.querySelector('.delete-btn').addEventListener('click', (e) => { deleteChat(convId, e); popover.remove(); });
+
+
+
 
             popover.querySelectorAll('.move-to-folder-btn').forEach(btn => btn.addEventListener('click', () => { moveConversationToFolder(convId, btn.dataset.folderId); popover.remove(); }));
             const newFolderBtn = popover.querySelector('.new-folder-from-menu-btn');
@@ -4587,6 +4550,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 moveOutBtn.addEventListener('click', () => { moveConversationToFolder(convId, null); popover.remove(); });
             }
         };
+
+
+
 
         const setTheme = async (theme) => {
             if (document.body.classList.contains('custom-wallpaper-active')) {
@@ -4635,18 +4601,28 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 await setItem(userKey, JSON.stringify(currentUser));
             }
 
+
+
+
             await setItem('chat_lastUser', username);
 
+
+            // 觸發登出動畫
             ALL_ELEMENTS.authContainer.classList.add('fade-out');
             ALL_ELEMENTS.appContainer.classList.remove('hidden');
 
+
+            // 確保瀏覽器在添加下一個 class 前有時間反應
             requestAnimationFrame(() => {
                 ALL_ELEMENTS.appContainer.classList.add('visible');
             });
 
+
+            // 動畫結束後徹底隱藏登入畫面
             ALL_ELEMENTS.authContainer.addEventListener('transitionend', () => {
                 ALL_ELEMENTS.authContainer.style.display = 'none';
             }, { once: true });
+
 
             initChatApp();
         };
@@ -4657,6 +4633,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         };
 
+
+        // ▼▼▼ 新增：清除所有資料的函式 ▼▼▼
         const handleDeleteAllData = async () => {
             const confirmation = await showCustomDialog({
                 title: i18n[config.uiLanguage].deleteAllDataTitle || '永久刪除所有資料',
@@ -4668,6 +4646,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     { text: i18n[config.uiLanguage].confirmDelete || '確認刪除', class: 'bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700', value: (val) => val }
                 ]
             });
+
 
             if (confirmation === 'DELETE') {
                 try {
@@ -4686,6 +4665,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         window.location.reload();
                     }, 2000);
 
+
                 } catch (error) {
                     console.error('刪除資料時發生錯誤:', error);
                     showNotification(i18n[config.uiLanguage].deleteAllDataError || '刪除資料失敗。', 'error');
@@ -4694,6 +4674,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 showNotification(i18n[config.uiLanguage].incorrectInput || '輸入錯誤，操作已取消。', 'warning');
             }
         };
+        // ▲▲▲ 結束新增 ▲▲▲
+
+
+
 
         const createNewFolder = (name) => {
             const newFolder = { id: crypto.randomUUID(), name,conversationIds: [], ...getDefaultFolder() };
@@ -4712,6 +4696,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             }
 
+
+
+
             conv.folderId = folderId;
             if (folderId) {
                 const newFolder = folders.find(f => f.id === folderId);
@@ -4719,6 +4706,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     newFolder.conversationIds.push(convId);
                 }
             }
+
+
+
 
             if (!isTemporaryChat) await saveAppData();
             renderAll();
@@ -4730,6 +4720,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const confirmMsg = folder.conversationIds.length > 0
                 ? i18n[config.uiLanguage].confirmDeleteFolderWithChats
                 : i18n[config.uiLanguage].confirmDeleteEmptyFolder;
+
+
+
 
             if (!(await showCustomConfirm(confirmMsg, i18n[config.uiLanguage].deleteFolderTitle))) return;
             conversations.forEach(c => {
@@ -4783,6 +4776,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const folder = folders.find(f => f.id === folderToCustomize);
             if (!folder) return;
 
+
+
+
             const selectedColor = ALL_ELEMENTS.colorSwatchesContainer.querySelector('.selected')?.dataset.color;
             const selectedIcon = ALL_ELEMENTS.iconOptionsContainer.querySelector('.selected')?.dataset.icon;
             if (selectedColor) folder.color = selectedColor;
@@ -4799,11 +4795,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 if (existingPopover.dataset.targetId === targetButton.id) return;
             }
 
+
             const rect = targetButton.getBoundingClientRect();
             const popover = document.createElement('div');
             popover.id = 'history-popover';
             popover.className = 'popover absolute w-48 rounded-lg border border-[var(--border-color)] z-50';
             popover.dataset.targetId = targetButton.id;
+
 
             popover.style.top = `${rect.bottom}px`;
             popover.style.left = `${rect.left}px`;
@@ -4815,6 +4813,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 <button data-id="${folderId}" class="delete-folder-btn w-full text-left px-4 py-2 text-red-600 hover:bg-red-500/10 text-sm">${i18n[config.uiLanguage].deleteFolder || '刪除資料夾'}</button>
             `;
             document.body.appendChild(popover);
+
 
             requestAnimationFrame(() => popover.classList.add('visible'));
             
@@ -4905,6 +4904,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 btn.textContent = folder.name;
                 container.appendChild(btn);
             });
+            // 新增資料夾選項
             const newFolderOption = document.createElement('button');
             newFolderOption.className = 'w-full text-left p-2 rounded-md hover:bg-[var(--hover-bg)] flex items-center gap-2 border-t border-[var(--border-color)] mt-2';
             newFolderOption.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path><line x1="12" y1="10" x2="12" y2="16"></line><line x1="9" y1="13" x2="15" y2="13"></line></svg>${i18n[config.uiLanguage].createNewFolder || '建立新資料夾'}`;
@@ -4917,6 +4917,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             });
             container.appendChild(newFolderOption);
+            // 綁定點擊事件
             container.querySelectorAll('button[data-folder-id]').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const folderId = btn.dataset.folderId === 'none' ? null : btn.dataset.folderId;
@@ -4965,11 +4966,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             titleHTML = highlightText(conv.title, keywordQueries);
                         }
                         for (const msg of conv.messages) {
-                            let partsToSearch = msg.parts;
-                            if (msg.role === 'model' && msg.versions) {
-                                partsToSearch = msg.versions[msg.activeVersionIndex].parts;
-                            }
-                            for (const part of partsToSearch) {
+                            for (const part of msg.parts) {
                                 if (part.text && part.text.toLowerCase().match(new RegExp(keywordQueries, 'gi'))) {
                                     matchFound = true;
                                     const text = part.text;
@@ -4988,6 +4985,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     });
                 }
             } else {
+                // 原有關鍵字搜索邏輯
                 const lowerCaseQuery = query.toLowerCase();
                 const searchIn = scope === 'keyword-title' ? 'title' : 'content';
                 conversations.forEach(conv => {
@@ -5000,11 +4998,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     }
                     if (searchIn === 'content') {
                         for (const msg of conv.messages) {
-                             let partsToSearch = msg.parts;
-                            if (msg.role === 'model' && msg.versions) {
-                                partsToSearch = msg.versions[msg.activeVersionIndex].parts;
-                            }
-                            for (const part of partsToSearch) {
+                            for (const part of msg.parts) {
                                 if (part.text && part.text.toLowerCase().includes(lowerCaseQuery)) {
                                     matchFound = true;
                                     const text = part.text;
@@ -5042,6 +5036,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 container.appendChild(item);
             });
         };
+        // 新增: 使用AI生成自然語言搜索的關鍵字
         const generateSearchKeywords = async (naturalQuery) => {
             const prompt = `從以下自然語言查詢中，提取 10-15 個最相關的關鍵字，用於搜索對話記錄。請嚴格以 JSON 陣列格式輸出，不要有任何額外的文字或解釋。例如：["關鍵字1", "關鍵字2", "關鍵字3"]。查詢內容：${naturalQuery}`;
             const responseSchema = {
@@ -5059,7 +5054,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 const previewEl = document.createElement('div');
                 previewEl.className = 'relative w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden file-preview-item';
                
-                if (file.type && file.type.startsWith('image/')) {
+                if (file.type.startsWith('image/')) {
                     previewEl.innerHTML = `<img src="${file.base64}" class="w-full h-full object-cover">`;
                 } else {
                     previewEl.innerHTML = `<div class="w-full h-full flex items-center justify-center">
@@ -5073,14 +5068,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 removeBtn.onclick = () => removeFile(file.id);
                
                 previewEl.appendChild(removeBtn);
-
-                if (file.isLoading) {
-                    const progressOverlay = document.createElement('div');
-                    progressOverlay.className = 'progress-overlay';
-                    progressOverlay.innerHTML = '<div class="spinner"></div>';
-                    previewEl.appendChild(progressOverlay);
-                }
-
                 filePreviewContainer.appendChild(previewEl);
             });
             updateInputState();
@@ -5089,25 +5076,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const files = event.target.files;
             if (!files) return;
             Array.from(files).forEach(file => {
-                const fileId = crypto.randomUUID();
-                // Immediately add a placeholder with loading state
-                uploadedFiles.push({
-                    id: fileId,
-                    name: file.name,
-                    type: file.type,
-                    base64: null,
-                    isLoading: true,
-                });
-                renderFilePreviews();
-
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    const fileIndex = uploadedFiles.findIndex(f => f.id === fileId);
-                    if (fileIndex > -1) {
-                        uploadedFiles[fileIndex].base64 = e.target.result;
-                        uploadedFiles[fileIndex].isLoading = false;
-                        renderFilePreviews(); // Re-render to remove spinner
-                    }
+                    uploadedFiles.push({
+                        id: crypto.randomUUID(),
+                        name: file.name,type: file.type,
+                        base64: e.target.result,
+                    });
+                    renderFilePreviews();
                 };
                 reader.readAsDataURL(file);
             });
@@ -5119,6 +5095,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderFilePreviews();
         };
         
+        // ▼▼▼ 程式碼修正：處理行動裝置檔案匯出 ▼▼▼
         const handleExport = async () => {
             const dataToExport = {
                 user_credentials: {
@@ -5150,6 +5127,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 const fileName = `chatbot_backup_${currentUser.username}_${new Date().toISOString().split('T')[0]}.json`;
                 const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
                 
+                // 檢查是否為行動裝置且支援 Web Share API
                 if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], fileName, {type: blob.type})] })) {
                     await navigator.share({
                         files: [new File([blob], fileName, {type: blob.type})],
@@ -5157,6 +5135,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         text: 'Here is your chatbot data backup.',
                     });
                 } else {
+                    // 傳統下載方式
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
@@ -5170,22 +5149,26 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 toggleModal(ALL_ELEMENTS.exportDataModal, false);
                 showNotification(i18n[config.uiLanguage].exportSuccess || '資料匯出成功！', 'success');
             } catch (error) {
-                if (error.name !== 'AbortError') {
+                if (error.name !== 'AbortError') { // AbortError 是使用者取消分享，不應視為錯誤
                     showNotification(`${i18n[config.uiLanguage].exportFailed || '匯出失敗'}: ${error.message}`, 'error');
                 }
             }
         };
+        // ▲▲▲ 結束修正 ▲▲▲
+
 
         const performImport = async (data) => {
             if (!currentUser) {
                 throw new Error("無法在沒有登入使用者的情況下匯入資料。");
             }
 
+
             conversations = data.conversations || [];
             folders = data.folders || [];
             astras = data.astras || [];
             personalMemories = data.personalMemories || [];
             await saveAppData();
+
 
             if (data.settings) {
                 Object.assign(config, data.settings);
@@ -5195,6 +5178,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
             await saveConfig();
         };
+
 
         const handleImport = async () => {
             const file = ALL_ELEMENTS.importFileInput.files[0];
@@ -5207,6 +5191,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             reader.onload = async (e) => {
                 try {
                     const data = JSON.parse(e.target.result);
+
 
                     if (data.user_credentials && data.user_credentials.username !== currentUser.username) {
                         const confirmed = await showCustomConfirm(
@@ -5222,6 +5207,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     
                     toggleModal(ALL_ELEMENTS.importDataModal, false);
                     showNotification(i18n[config.uiLanguage].importSuccess, 'success');
+
+                    // ▼▼▼ 修正：移除此處不必要的重新載入，保留匯入的設定 ▼▼▼
+                    // await loadConfig(); 
+                    // await loadAppData();
+                    // ▲▲▲ 結束修正 ▲▲▲
                     
                     if (config.customWallpaper) {
                         try {
@@ -5239,8 +5229,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     applyUiTheme();
                     setAiBubbleColor();
                     setUserBubbleColor();
-                    applyLanguage(config.uiLanguage);
-                    setupSettingsModal();
+                    applyLanguage(config.uiLanguage); // 匯入後應用語言
+                    setupSettingsModal(); // 重新整理設定頁面以顯示新值
                     
                     const firstConv = conversations.find(c => !c.archived);
                     if (firstConv) {
@@ -5265,38 +5255,48 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
             const passwordHash = await hashString(password);
 
+
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
             fileInput.accept = '.json';
             fileInput.style.display = 'none';
 
+
             fileInput.onchange = (e) => {
                 const file = e.target.files[0];
                 if (!file) { document.body.removeChild(fileInput); return; }
+
 
                 const reader = new FileReader();
                 reader.onload = async (event) => {
                     try {
                         const data = JSON.parse(event.target.result);
 
+
                         if (!data.user_credentials || !data.user_credentials.username || !data.user_credentials.passwordHash) {
                            throw new Error(i18n[config.uiLanguage].importInvalidFile);
                         }
+
 
                         if (data.user_credentials.username !== username || data.user_credentials.passwordHash !== passwordHash) {
                             throw new Error(i18n[config.uiLanguage].importAuthMismatch);
                         }
 
+
+                        // 驗證通過
                         const userKey = getUserKey(username);
                         const savedUser = await getItem(userKey);
-                        if (!savedUser) {
+                        if (!savedUser) { // 如果使用者在此裝置上不存在，則建立
                            await setItem(userKey, JSON.stringify({ username, passwordHash }));
                         }
                         currentUser = { username, passwordHash };
                         await setItem('chat_lastUser', username);
 
+
                         await performImport(data);
 
+
+                        // 轉場到主應用
                         ALL_ELEMENTS.authContainer.classList.add('fade-out');
                         ALL_ELEMENTS.appContainer.classList.remove('hidden');
                         requestAnimationFrame(() => {
@@ -5309,6 +5309,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         initChatApp();
                         showNotification(i18n[config.uiLanguage].importSuccess, 'success');
 
+
                     } catch (error) {
                         showNotification(`${i18n[config.uiLanguage].importFailed}: ${error.message}`, 'error');
                         console.error(error);
@@ -5319,10 +5320,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 reader.readAsText(file);
             };
 
+
             document.body.appendChild(fileInput);
             fileInput.click();
         };
 
+
+        // --- Model Management UI ---
         const renderModelManagementUI = () => {
             const container = ALL_ELEMENTS.modelManagementList;
             container.innerHTML = '';
@@ -5402,6 +5406,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             showNotification(i18n[config.uiLanguage].modelOrderUpdated || '模型順序已更新');
         };
 
+
         function toggleSidebar(show) {
             const { sidebar, sidebarOverlay } = ALL_ELEMENTS;
             sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
@@ -5414,24 +5419,32 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         }
 
+
         function closeAllPopovers() {
             document.querySelectorAll('.popover.visible').forEach(popover => {
                 popover.classList.remove('visible');
             });
         }
         
+        // ▼▼▼ 新增：具備備用方案的複製文字函式 ▼▼▼
         async function copyTextToClipboard(text) {
+            // 優先嘗試現代的 Clipboard API
             if (navigator.clipboard && window.isSecureContext) {
                 try {
                     await navigator.clipboard.writeText(text);
-                    return;
+                    return; // 成功後直接返回
                 } catch (err) {
                     console.warn('Clipboard API 失敗，改用備用方案。', err);
+                    // 如果失敗，則繼續執行下方的備用方案
                 }
             }
 
+
+            // 備用方案：使用 document.execCommand
             const textArea = document.createElement("textarea");
             textArea.value = text;
+            
+            // 讓 textarea 在畫面上看不見
             textArea.style.position = "fixed";
             textArea.style.top = "-9999px";
             textArea.style.left = "-9999px";
@@ -5447,11 +5460,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             } catch (err) {
                 document.body.removeChild(textArea);
-                throw err;
+                throw err; // 如果備用方案也失敗，則拋出錯誤
             }
             
             document.body.removeChild(textArea);
         }
+        // ▲▲▲ 結束新增 ▲▲▲
+
 
         const setupVoiceInput = () => {
             if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
@@ -5463,6 +5478,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 showNotification(i18n[config.uiLanguage].voiceNotSupported || '您的瀏覽器不支援語音輸入功能。', 'warning');
             }
         };
+
 
         const toggleVoiceInput = (target) => {
             if (currentSpeechRecognition) {
@@ -5500,6 +5516,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             currentSpeechRecognition.start();
             ALL_ELEMENTS[`voiceInputBtn${target.charAt(0).toUpperCase() + target.slice(1)}`].classList.add('active');
         };
+
 
         const renderPersonalMemoryList = () => {
             const container = ALL_ELEMENTS.personalMemoryList;
@@ -5556,6 +5573,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         };
 
+
         const updateApiKeyWarningBadge = () => {
             const conv = getActiveConversation();
             if (!conv) {
@@ -5563,18 +5581,20 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 return;
             }
 
+
             const modelInfo = MODELS.find(m => m.id === conv.model);
             let needsKey = false;
             if (modelInfo) {
                 if (modelInfo.provider === 'gemini' && !config.apiKeys.gemini) {
                     needsKey = true;
-                } else if (modelInfo.provider === 'openrouter' && !config.apiKeys.openrouter) {
+                } else if (modelInfo.provider === 'openrouter' && !config.apiKeys.openrouter) { // ▼▼▼ 需求 2 修正：檢查單一金鑰 ▼▼▼
                     needsKey = true;
                 }
             }
             ALL_ELEMENTS.apiKeyWarningBadge.classList.toggle('hidden', !needsKey);
         };
         
+        // ▼▼▼ 需求 1 修改：數據儀表板相關函式 (增加日檢視) ▼▼▼
         const openDashboard = () => {
             renderDashboardStats();
             renderModelUsageChart();
@@ -5592,9 +5612,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 return acc;
             }, {});
 
+
             const mostUsedModel = Object.keys(modelCounts).reduce((a, b) => modelCounts[a] > modelCounts[b] ? a : b, 'N/A');
             ALL_ELEMENTS.mostUsedModelStat.textContent = mostUsedModel;
         };
+
 
         const renderModelUsageChart = () => {
             const ctx = document.getElementById('model-usage-pie-chart').getContext('2d');
@@ -5610,6 +5632,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if(modelPieChart) {
                 modelPieChart.destroy();
             }
+
 
             modelPieChart = new Chart(ctx, {
                 type: 'pie',
@@ -5647,6 +5670,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const allMessages = conversations.flatMap(c => c.messages.map(m => new Date(m.createdAt)));
             const years = [...new Set(allMessages.map(d => d.getFullYear()))].sort((a,b) => b-a);
 
+
             timeAnalysisYearSelect.innerHTML = `<option value="">${i18n[config.uiLanguage].all || '全部'}</option>`;
             years.forEach(year => {
                 const option = document.createElement('option');
@@ -5675,6 +5699,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 updateTimeDistributionChart();
             });
 
+
             timeAnalysisMonthSelect.addEventListener('change', () => {
                 const year = parseInt(timeAnalysisYearSelect.value);
                 const month = parseInt(timeAnalysisMonthSelect.value);
@@ -5695,6 +5720,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 updateTimeDistributionChart();
             });
 
+
             timeAnalysisDaySelect.addEventListener('change', updateTimeDistributionChart);
             
             updateTimeDistributionChart();
@@ -5705,10 +5731,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const month = ALL_ELEMENTS.timeAnalysisMonthSelect.value ? parseInt(ALL_ELEMENTS.timeAnalysisMonthSelect.value) : null;
             const day = ALL_ELEMENTS.timeAnalysisDaySelect.value ? parseInt(ALL_ELEMENTS.timeAnalysisDaySelect.value) : null;
 
+
             let labels, data, chartType, label;
             
             const allMessages = conversations.flatMap(c => c.messages);
             const lang = config.uiLanguage;
+
 
             if (year && month && day) { // Hourly view
                 chartType = 'line';
@@ -5741,6 +5769,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 labels = i18n[lang].months || ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
                 data = Array(12).fill(0);
 
+
                 allMessages.forEach(msg => {
                     const msgDate = new Date(msg.createdAt);
                     if (msgDate.getFullYear() === year) {
@@ -5754,6 +5783,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 labels = years.map(String);
                 data = years.map(y => allMessages.filter(m => new Date(m.createdAt).getFullYear() === y).length);
             }
+
 
             const ctx = document.getElementById('time-distribution-chart').getContext('2d');
             if (timeDistChart) {
@@ -5786,7 +5816,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             });
         };
-        
+        // ▲▲▲ 結束修改 ▲▲▲
+
+
+
+
+        // ▼▼▼ 修改/新增：自訂桌布 & UI 顏色功能相關函式 (優化取色邏輯) ▼▼▼
         const getDominantColorPalette = (imageDataUrl) => {
             return new Promise((resolve, reject) => {
                 const img = new Image();
@@ -5801,18 +5836,23 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
                     const colorCount = {};
 
+
                     for (let i = 0; i < imageData.length; i += 4 * 5) { // Sample every 5th pixel
                         const r = imageData[i];
                         const g = imageData[i + 1];
                         const b = imageData[i + 2];
                         const a = imageData[i + 3];
 
-                        if (a < 125) continue;
 
+                        if (a < 125) continue; // Skip transparent pixels
+
+
+                        // Filter out grayscale colors
                         const max = Math.max(r, g, b);
                         const min = Math.min(r, g, b);
                         if (max - min < 20) continue; 
                         
+                        // Round colors to reduce the number of unique colors
                         const r_round = Math.round(r / 10) * 10;
                         const g_round = Math.round(g / 10) * 10;
                         const b_round = Math.round(b / 10) * 10;
@@ -5821,9 +5861,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         colorCount[rgb] = (colorCount[rgb] || 0) + 1;
                     }
 
+
                     const sortedColors = Object.keys(colorCount)
                         .sort((a, b) => colorCount[b] - colorCount[a])
-                        .slice(0, 5)
+                        .slice(0, 5) // Get top 5 colors
                         .map(rgbStr => `#${rgbStr.split(',').map(c => parseInt(c).toString(16).padStart(2, '0')).join('')}`);
                     
                     resolve(sortedColors.length > 0 ? sortedColors : ['#3b82f6']); // Fallback
@@ -5831,6 +5872,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 img.onerror = reject;
             });
         };
+
 
         const hexToRgb = (hex) => {
             const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -5840,6 +5882,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 b: parseInt(result[3], 16)
             } : null;
         };
+
 
         const getTextColorForBackground = (hexColor) => {
             const rgb = hexToRgb(hexColor);
@@ -5851,6 +5894,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const applyUiTheme = () => {
             const root = document.documentElement;
             let primaryBg;
+
 
             switch(config.uiTheme.mode) {
                 case 'adaptive':
@@ -5869,11 +5913,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     break;
             }
             
+            // For single color, determine text color, for gradient, default to white
             const textColor = config.uiTheme.style === 'gradient' ? '#ffffff' : getTextColorForBackground(primaryBg);
+
 
             root.style.setProperty('--button-primary-bg', primaryBg);
             root.style.setProperty('--button-primary-text', textColor);
-            updateThemeButtons();
+            updateThemeButtons(); // Re-apply active styles for theme buttons
         };
         
         const renderUiColorOptions = () => {
@@ -5882,9 +5928,15 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const currentMode = config.uiTheme.mode;
             const currentStyle = config.uiTheme.style;
 
+
+            // Set radio button state
             uiColorOptions.querySelector(`input[value="${currentMode}"]`).checked = true;
             buttonStyleContainer.querySelector(`input[value="${currentStyle}"]`).checked = true;
 
+
+
+
+            // Render custom color swatches
             customColorSwatches.innerHTML = '';
             Object.entries(UI_THEME_COLORS).forEach(([name, hex]) => {
                 const swatch = document.createElement('div');
@@ -5901,6 +5953,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 customColorSwatches.appendChild(swatch);
             });
 
+
+            // Render gradient swatches
             gradientSwatches.innerHTML = '';
             if(config.uiTheme.adaptivePalette && config.uiTheme.adaptivePalette.length > 1) {
                 const palette = config.uiTheme.adaptivePalette;
@@ -5928,21 +5982,28 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                  gradientSwatches.innerHTML = `<p class="text-xs col-span-4 text-[var(--text-secondary)]">${i18n[config.uiLanguage].notEnoughColors || '沒有足夠的顏色來生成漸變。請上傳顏色豐富的桌布。'}</p>`
             }
 
+
+
+
+            // Toggle visibility of sections
             const updateVisibility = () => {
                 const mode = document.querySelector('input[name="color-theme"]:checked').value;
                 const style = document.querySelector('input[name="color-style"]:checked').value;
+
 
                 buttonStyleContainer.classList.toggle('hidden', mode !== 'adaptive');
                 customColorPickerContainer.classList.toggle('hidden', mode !== 'custom');
                 gradientPickerContainer.classList.toggle('hidden', !(mode === 'adaptive' && style === 'gradient'));
             };
             
+            // Add event listeners
             uiColorOptions.querySelectorAll('input[name="color-theme"]').forEach(radio => {
                 radio.addEventListener('change', updateVisibility);
             });
              buttonStyleContainer.querySelectorAll('input[name="color-style"]').forEach(radio => {
                 radio.addEventListener('change', updateVisibility);
             });
+
 
             updateVisibility();
         };
@@ -5963,6 +6024,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     let r, g, b, avg;
                     let colorSum = 0;
 
+
                     for(let x = 0, len = data.length; x < len; x+=4) {
                         r = data[x];
                         g = data[x+1];
@@ -5978,6 +6040,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
         };
 
+
         const applyCustomWallpaper = () => {
             if (config.customWallpaper) {
                 ALL_ELEMENTS.wallpaperContainer.style.backgroundImage = `url(${config.customWallpaper})`;
@@ -5989,24 +6052,29 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 document.body.classList.remove('custom-wallpaper-active', 'wallpaper-is-dark');
                 setTheme(config.theme);
             }
+            // 無論是否啟用桌布，都需要重新計算泡泡顏色
             setAiBubbleColor();
             setUserBubbleColor();
         };
 
+
         const handleWallpaperUpload = (event) => {
             const file = event.target.files[0];
             if (!file) return;
+
 
             const reader = new FileReader();
             reader.onload = (e) => {
                 const imageUrl = e.target.result;
                 ALL_ELEMENTS.wallpaperCropImage.src = imageUrl;
 
+
                 toggleModal(ALL_ELEMENTS.wallpaperCropModal, true);
                 
                 if (cropperInstance) {
                     cropperInstance.destroy();
                 }
+
 
                 cropperInstance = new Cropper(ALL_ELEMENTS.wallpaperCropImage, {
                     aspectRatio: window.innerWidth / window.innerHeight,
@@ -6016,23 +6084,28 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 });
             };
             reader.readAsDataURL(file);
+             // 清空 input 的值，以便下次可以選擇同一個檔案
             event.target.value = '';
         };
         
         const handleConfirmCrop = async () => {
             if (!cropperInstance) return;
 
+
             const canvas = cropperInstance.getCroppedCanvas({
+                // 為了效能，設定一個最大寬度，避免產生過大的圖片
                 maxWidth: 1920, 
                 imageSmoothingEnabled: true,
                 imageSmoothingQuality: 'high',
             });
             
-            const imageDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+            const imageDataUrl = canvas.toDataURL('image/jpeg', 0.9); // 轉換為高質量的 JPEG
+
 
             try {
                 const brightness = await analyzeImageBrightness(imageDataUrl);
                 const palette = await getDominantColorPalette(imageDataUrl);
+
 
                 config.customWallpaper = imageDataUrl;
                 config.wallpaperBrightness = brightness;
@@ -6051,6 +6124,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         };
 
+
+
+
         const restoreDefaultWallpaper = async () => {
             config.customWallpaper = null;
             config.wallpaperBrightness = 'light';
@@ -6062,7 +6138,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             applyUiTheme();
             showNotification(i18n[config.uiLanguage].defaultAppearanceRestored, 'success');
         };
+        // ▲▲▲ 結束：自訂桌布 & UI 顏色功能相關函式 ▲▲▲
         
+        // ▼▼▼ 新增：Astras 商店與頭像功能相關函式 ▼▼▼
         const openStore = () => {
             ALL_ELEMENTS.appContainer.classList.remove('visible');
             ALL_ELEMENTS.storeContainer.classList.remove('hidden');
@@ -6075,6 +6153,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderStore();
         };
 
+
         const closeStore = () => {
             ALL_ELEMENTS.storeContainer.classList.remove('visible');
             ALL_ELEMENTS.appContainer.classList.remove('hidden');
@@ -6086,67 +6165,79 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }, { once: true });
         };
 
+
         const renderStore = () => {
-            const grid = ALL_ELEMENTS.storeGrid;
-            grid.innerHTML = '';
-            
-            const translations = i18n[config.uiLanguage] || i18n['zh-TW'];
+    const grid = ALL_ELEMENTS.storeGrid;
+    grid.innerHTML = '';
+    
+    // 取得當前語言的翻譯
+    const translations = i18n[config.uiLanguage] || i18n['zh-TW'];
 
-            const translatedOfficialAstras = OFFICIAL_ASTRAS.map(ast => {
-                const keyBase = 'astras_' + ast.id.replace(/-/g, '_');
-                return {
-                    ...ast,
-                    name: translations[keyBase + '_name'] || ast.name,
-                    description: translations[keyBase + '_desc'] || ast.description
-                };
-            });
 
-            const allStoreAstras = [...translatedOfficialAstras, ...astras.filter(a => !a.officialId)];
-            
-            allStoreAstras.forEach(ast => {
-                const card = document.createElement('div');
-                card.className = 'astras-store-card';
-                
-                const originalId = ast.officialId || ast.id;
-                const isSubscribed = astras.some(userAstra => userAstra.officialId === originalId);
-                const isUserCreated = !ast.officialId && astras.some(userAstra => userAstra.id === originalId);
-
-                const avatarUrl = ast.avatarUrl;
-                const initials = ast.name.charAt(0);
-                const avatarElement = `
-                    <div class="astras-card-avatar">
-                        ${avatarUrl ? `<img src="${avatarUrl}" alt="${ast.name}">` : initials}
-                    </div>
-                `;
-
-                card.innerHTML = `
-                    ${avatarElement}
-                    <h3 class="astras-card-name">${ast.name}</h3>
-                    <p class="astras-card-desc">${ast.description}</p>
-                    <button class="subscribe-btn btn-primary" data-id="${originalId}"></button>
-                `;
-
-                const btn = card.querySelector('.subscribe-btn');
-                if (isSubscribed) {
-                    btn.textContent = translations.unsubscribe || '取消訂閱';
-                    btn.classList.add('subscribed');
-                } else if (isUserCreated) {
-                    btn.textContent = translations.manage || '管理';
-                    btn.disabled = true;
-                    btn.classList.add('opacity-50', 'cursor-not-allowed');
-                } else {
-                    btn.textContent = translations.subscribe || '訂閱';
-                }
-
-                btn.addEventListener('click', () => {
-                    handleSubscription(originalId);
-                });
-
-                grid.appendChild(card);
-            });
+    // 將官方 Astras 的資料轉換成使用翻譯鍵的版本
+    const translatedOfficialAstras = OFFICIAL_ASTRAS.map(ast => {
+        const keyBase = 'astras_' + ast.id.replace(/-/g, '_');
+        return {
+            ...ast,
+            name: translations[keyBase + '_name'] || ast.name, // 如果找不到翻譯，則使用原始名稱
+            description: translations[keyBase + '_desc'] || ast.description // 如果找不到翻譯，則使用原始描述
         };
+    });
+
+
+    const allStoreAstras = [...translatedOfficialAstras, ...astras.filter(a => !a.officialId)];
+    
+    allStoreAstras.forEach(ast => {
+        const card = document.createElement('div');
+        card.className = 'astras-store-card';
+        
+        // 判斷訂閱狀態時，要用原始的 officialId
+        const originalId = ast.officialId || ast.id;
+        const isSubscribed = astras.some(userAstra => userAstra.officialId === originalId);
+        const isUserCreated = !ast.officialId && astras.some(userAstra => userAstra.id === originalId);
+
+
+        const avatarUrl = ast.avatarUrl;
+        const initials = ast.name.charAt(0);
+        const avatarElement = `
+            <div class="astras-card-avatar">
+                ${avatarUrl ? `<img src="${avatarUrl}" alt="${ast.name}">` : initials}
+            </div>
+        `;
+
+
+        card.innerHTML = `
+            ${avatarElement}
+            <h3 class="astras-card-name">${ast.name}</h3>
+            <p class="astras-card-desc">${ast.description}</p>
+            <button class="subscribe-btn btn-primary" data-id="${originalId}"></button>
+        `;
+
+
+        const btn = card.querySelector('.subscribe-btn');
+        if (isSubscribed) {
+            btn.textContent = translations.unsubscribe || '取消訂閱';
+            btn.classList.add('subscribed');
+        } else if (isUserCreated) {
+            btn.textContent = translations.manage || '管理';
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+            btn.textContent = translations.subscribe || '訂閱';
+        }
+
+
+        btn.addEventListener('click', () => {
+            handleSubscription(originalId);
+        });
+
+
+        grid.appendChild(card);
+    });
+};
         const handleSubscription = (officialId) => {
             const isSubscribed = astras.some(a => a.officialId === officialId);
+
 
             if (isSubscribed) {
                 astras = astras.filter(a => a.officialId !== officialId);
@@ -6156,8 +6247,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 if (officialAstra) {
                     const newAstra = {
                         ...officialAstra,
-                        id: crypto.randomUUID(),
-                        officialId: officialAstra.id,
+                        id: crypto.randomUUID(), // Create a new unique ID for the user's copy
+                        officialId: officialAstra.id, // Link to the original
                     };
                     astras.unshift(newAstra);
                     showNotification(i18n[config.uiLanguage].subscribed || '訂閱成功！', 'success');
@@ -6173,9 +6264,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.astrasAvatarInput.click();
         };
 
+
         const handleAvatarUpload = (event) => {
             const file = event.target.files[0];
             if (!file) return;
+
 
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -6183,9 +6276,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 ALL_ELEMENTS.avatarCropImage.src = imageUrl;
                 toggleModal(ALL_ELEMENTS.astrasAvatarModal, true);
 
+
                 if (cropperInstance) {
                     cropperInstance.destroy();
                 }
+
 
                 cropperInstance = new Cropper(ALL_ELEMENTS.avatarCropImage, {
                     aspectRatio: 1,
@@ -6200,6 +6295,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         
         const handleConfirmAvatarCrop = async () => {
             if (!cropperInstance || !editingAstraForAvatarId) return;
+
 
             const canvas = cropperInstance.getCroppedCanvas({
                 width: 128,
@@ -6217,10 +6313,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 showNotification(i18n[config.uiLanguage].avatarUpdated || '頭像已更新', 'success');
             }
 
+
             toggleModal(ALL_ELEMENTS.astrasAvatarModal, false);
             editingAstraForAvatarId = null;
         };
+        // ▲▲▲ 結束新增 ▲▲▲
         
+        // ▼▼▼ 新增：語言切換功能 ▼▼▼
         const applyLanguage = (lang) => {
             const translations = i18n[lang] || i18n['zh-TW'];
             document.querySelectorAll('[data-lang-key]').forEach(el => {
@@ -6241,11 +6340,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     el.title = translations[key];
                 }
             });
+            // 更新登入頁面語言顯示
             if(ALL_ELEMENTS.loginLangLabel) {
                 ALL_ELEMENTS.loginLangLabel.textContent = translations.currentLanguageName || '繁體中文';
             }
+            // 更新根元素 lang 屬性
             document.documentElement.lang = lang;
         };
+        // ▲▲▲ 結束新增 ▲▲▲
+
+
+
 
         async function initChatApp() {
             await loadConfig();
@@ -6281,6 +6386,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.apiKeyWarningBadge.addEventListener('click', () => {
                 setupSettingsModal();
                 toggleModal(ALL_ELEMENTS.settingsModal, true);
+                // 直接切換到模型管理頁面
                 const navItems = ALL_ELEMENTS.settingsNav.querySelectorAll('.settings-nav-item');
                 navItems.forEach(i => i.classList.remove('active'));
                 document.querySelector('.settings-nav-item[data-section="model-management"]').classList.add('active');
@@ -6302,9 +6408,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.themeDarkBtn.addEventListener('click', () => setTheme('dark'));
             ALL_ELEMENTS.openArchivedModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.archivedChatsModal, true));
             ALL_ELEMENTS.closeArchivedModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.archivedChatsModal, false));
+            // ▼▼▼ 新增：封存對話檢視 Modal 的關閉事件 ▼▼▼
             const closeViewArchivedModal = () => toggleModal(ALL_ELEMENTS.viewArchivedChatModal, false);
             ALL_ELEMENTS.closeViewArchivedModalBtn.addEventListener('click', closeViewArchivedModal);
             ALL_ELEMENTS.closeViewArchivedModalBtnFooter.addEventListener('click', closeViewArchivedModal);
+            // ▲▲▲ 結束新增 ▲▲▲
             ALL_ELEMENTS.saveRenameBtn.addEventListener('click', handleRename);
             ALL_ELEMENTS.cancelRenameBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.renameModal, false));
             ALL_ELEMENTS.saveFolderSettingsBtn.addEventListener('click', handleSaveFolderSettings);
@@ -6317,14 +6425,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.confirmImportBtn.addEventListener('click', handleImport);
             ALL_ELEMENTS.logoutBtn.addEventListener('click', handleLogout);
             
+            // ▼▼▼ 需求 1 新增：儀表板按鈕事件 ▼▼▼
             ALL_ELEMENTS.userProfileBtn.addEventListener('click', openDashboard);
             ALL_ELEMENTS.closeDashboardBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.dataDashboardModal, false));
-            
+            // ▲▲▲ 結束新增 ▲▲▲
+             // ▼▼▼ 修改：使用新的複製函式處理複製事件與新增的刪除事件 ▼▼▼
             ALL_ELEMENTS.messageList.addEventListener('click', (e) => {
                 const copyBtn = e.target.closest('.copy-content-btn');
-                const regenerateBtn = e.target.closest('.regenerate-btn');
-                const versionArrowBtn = e.target.closest('.version-arrow');
-                const confirmVersionBtn = e.target.closest('.confirm-version-btn');
                 const deleteBtn = e.target.closest('.delete-message-btn');
 
 
@@ -6335,7 +6442,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         const conv = getActiveConversation();
                         const msg = conv?.messages[messageIndex];
                         if (msg && msg.role === 'model') {
-                            const textToCopy = msg.versions[msg.activeVersionIndex].parts.map(p => p.text).join('\n');
+                            const textToCopy = msg.parts.map(p => p.text).join('\n');
                             copyTextToClipboard(textToCopy)
                                 .then(() => showNotification(i18n[config.uiLanguage].copySuccess || '內容已複製！', 'success'))
                                 .catch(err => {
@@ -6344,12 +6451,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                 });
                         }
                     }
-                } else if (regenerateBtn && !regenerateBtn.disabled) {
-                    handleRegenerate(parseInt(regenerateBtn.dataset.messageIndex));
-                } else if (versionArrowBtn && !versionArrowBtn.disabled) {
-                    handleVersionSwitch(parseInt(versionArrowBtn.dataset.messageIndex), versionArrowBtn.dataset.direction);
-                } else if (confirmVersionBtn) {
-                    handleConfirmVersion(parseInt(confirmVersionBtn.dataset.messageIndex));
                 } else if (deleteBtn) {
                     const messageItem = deleteBtn.closest('.message-item');
                      if (messageItem) {
@@ -6358,13 +6459,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     }
                 }
             });
+             // ▲▲▲ 結束修改 ▲▲▲
             ALL_ELEMENTS.addFileBtn.addEventListener('click', (e) => {
                 const popover = ALL_ELEMENTS.fileOptionsPopover;
                 if (popover.classList.contains('visible')) {
                     popover.classList.remove('visible');
                 } else {
                     closeAllPopovers();
+                    // ▼▼▼ 程式碼修正：移除不正確的 JS 定位，改由 CSS 控制 ▼▼▼
                     popover.classList.add('visible');
+                    // ▲▲▲ 結束修正 ▲▲▲
                 }
             });
             ALL_ELEMENTS.cameraBtn.addEventListener('click', () => {
@@ -6411,6 +6515,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             });
 
+
             ALL_ELEMENTS.messageInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -6433,12 +6538,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
            
             ALL_ELEMENTS.chatForm.addEventListener('submit', handleFormSubmit);
             const threshold = 140;
+            // ▼▼▼ 修改：對 scroll 事件進行節流 ▼▼▼
             const throttledScrollHandler = throttle(() => {
                 const sc = ALL_ELEMENTS.chatContainer;
                 const nearBottom = sc.scrollHeight - sc.scrollTop - sc.clientHeight < threshold;
                 ALL_ELEMENTS.scrollToBottomBtn.classList.toggle('hidden', nearBottom);
-            }, 200);
+            }, 200); // 每 200 毫秒觸發一次
             ALL_ELEMENTS.chatContainer.addEventListener('scroll', throttledScrollHandler);
+            // ▲▲▲ 結束修改 ▲▲▲
             ALL_ELEMENTS.scrollToBottomBtn.addEventListener('click', () => {
                 ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
             });
@@ -6452,6 +6559,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     if (popover.contains(e.target)) clickedInsidePopover = true;
                 });
 
+
                 const clickedOnPopoverTrigger = 
                     ALL_ELEMENTS.modelSwitcherContainer.contains(e.target) || 
                     ALL_ELEMENTS.fileInputContainer.contains(e.target) ||
@@ -6459,9 +6567,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     e.target.closest('.astras-options-btn') ||
                     e.target.closest('.folder-options-btn');
 
+
                 if (!clickedInsidePopover && !clickedOnPopoverTrigger) {
                     closeAllPopovers();
                 }
+
 
                 const colorMenus = document.querySelectorAll('.color-dropdown-menu.show');
                 colorMenus.forEach(menu => {
@@ -6491,10 +6601,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             });
 
+
             ALL_ELEMENTS.uploadWallpaperBtn.addEventListener('click', () => ALL_ELEMENTS.wallpaperUploadInput.click());
             ALL_ELEMENTS.wallpaperUploadInput.addEventListener('change', handleWallpaperUpload);
             ALL_ELEMENTS.restoreWallpaperBtn.addEventListener('click', restoreDefaultWallpaper);
             
+            // ▼▼▼ 新增：桌布裁切 Modal 事件 ▼▼▼
             ALL_ELEMENTS.confirmCropBtn.addEventListener('click', handleConfirmCrop);
             ALL_ELEMENTS.cancelCropBtn.addEventListener('click', () => {
                 toggleModal(ALL_ELEMENTS.wallpaperCropModal, false);
@@ -6503,11 +6615,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     cropperInstance = null;
                 }
             });
+            // ▲▲▲ 結束新增 ▲▲▲
+            // ▼▼▼ 新增：清除資料按鈕事件 ▼▼▼
             ALL_ELEMENTS.deleteAllDataBtn.addEventListener('click', handleDeleteAllData);
+            // ▲▲▲ 結束新增 ▲▲▲
+             // ▼▼▼ 新增：設定頁面語言切換事件 ▼▼▼
             ALL_ELEMENTS.uiLanguageSelect.addEventListener('change', (e) => {
                 config.uiLanguage = e.target.value;
                 applyLanguage(config.uiLanguage);
             });
+            // ▲▲▲ 結束新增 ▲▲▲
+            // ▼▼▼ 新增：商店與頭像功能事件 ▼▼▼
             ALL_ELEMENTS.openStoreBtn.addEventListener('click', openStore);
             ALL_ELEMENTS.backToChatBtn.addEventListener('click', closeStore);
             ALL_ELEMENTS.astrasAvatarInput.addEventListener('change', handleAvatarUpload);
@@ -6520,12 +6638,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
                 editingAstraForAvatarId = null;
             });
+            // ▲▲▲ 結束新增 ▲▲▲
+
 
             updateFileInputUI();
             
             startNewChat(false);
         }
 
+
+        // ▼▼▼ 新增：刪除單條對話的函式 ▼▼▼
         const handleDeleteMessagePair = async (index) => {
             const confirmed = await showCustomDialog({
                 title: i18n[config.uiLanguage].deleteConfirmationTitle || '刪除確認',
@@ -6539,95 +6661,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (confirmed) {
                 const conv = getActiveConversation();
                 if (conv && conv.messages[index] && conv.messages[index + 1]) {
+                    // 刪除使用者訊息和後續的 AI 回覆
                     conv.messages.splice(index, 2);
                     if (!isTemporaryChat) {
                         await saveAppData();
                     }
-                    renderChat();
+                    renderChat(); // 重新渲染聊天視窗
                     showNotification(i18n[config.uiLanguage].messageDeleted || '對話已刪除。', 'success');
                 }
             }
         };
-
-        const handleRegenerate = async (messageIndex) => {
-            if (isAwaitingVersionConfirmation) {
-                 showNotification(i18n[config.uiLanguage].confirmVersionPrompt || '請先確認或取消目前的版本選擇。', 'warning');
-                 return;
-            }
-            const conv = getActiveConversation();
-            if (!conv || !conv.messages[messageIndex]) return;
-
-            isAwaitingVersionConfirmation = true;
-            regeneratingMessageIndex = messageIndex;
-            updateInputState();
-            renderChat(); // Re-render to show loading spinner on button
-
-            const historyUntilThatPoint = conv.messages.slice(0, messageIndex);
-            const userPromptParts = historyUntilThatPoint[historyUntilThatPoint.length - 1].parts;
-            const historyForApi = historyUntilThatPoint.slice(0, -1);
-            
-            try {
-                let fullResponse = '';
-                const newVersionContentDiv = document.querySelector(`.message-item[data-message-index="${messageIndex}"] .message-content`);
-                
-                const completeResponse = await streamApiCall(
-                    userPromptParts,
-                    (chunk) => {
-                        fullResponse += chunk;
-                        if(newVersionContentDiv) newVersionContentDiv.innerHTML = renderMarkdown(fullResponse);
-                    },
-                    null,
-                    historyForApi
-                );
-
-                const msgToUpdate = conv.messages[messageIndex];
-                msgToUpdate.versions.push({ parts: [{ text: completeResponse }] });
-                msgToUpdate.activeVersionIndex = msgToUpdate.versions.length - 1;
-                
-                if (!isTemporaryChat) await saveAppData();
-
-            } catch (error) {
-                showNotification(`${i18n[config.uiLanguage].regenerateFailed || '重新生成失敗'}: ${error.message}`, 'error');
-            } finally {
-                regeneratingMessageIndex = null;
-                renderChat();
-                // Keep input locked until user confirms
-            }
-        };
-
-        const handleVersionSwitch = (messageIndex, direction) => {
-            const conv = getActiveConversation();
-            const msg = conv?.messages[messageIndex];
-            if (!msg) return;
-
-            if (direction === 'left' && msg.activeVersionIndex > 0) {
-                msg.activeVersionIndex--;
-            } else if (direction === 'right' && msg.activeVersionIndex < msg.versions.length - 1) {
-                msg.activeVersionIndex++;
-            }
-            
-            // Just re-render the chat to show the change
-            renderChat();
-        };
-
-        const handleConfirmVersion = async (messageIndex) => {
-            const conv = getActiveConversation();
-            const msg = conv?.messages[messageIndex];
-            if (!msg) return;
-
-            // Keep only the active version
-            const finalVersion = msg.versions[msg.activeVersionIndex];
-            msg.versions = [finalVersion];
-            msg.activeVersionIndex = 0;
-
-            isAwaitingVersionConfirmation = false;
-            
-            if (!isTemporaryChat) await saveAppData();
-            
-            renderChat();
-            updateInputState();
-            showNotification(i18n[config.uiLanguage].versionConfirmed || '版本已確認！', 'success');
-        };
+        // ▲▲▲ 結束新增 ▲▲▲
         
         ALL_ELEMENTS.authForm.addEventListener('submit', handleLogin);
         
@@ -6643,10 +6687,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         (async function prefillLastUser() {
             const last = await getItem('chat_lastUser');
             if (last) ALL_ELEMENTS.usernameInput.value = last;
-            applyLanguage('zh-TW');
+            applyLanguage('zh-TW'); // 預設載入繁體中文
         })();
         const FOLDER_ICONS = ['📁', '📂', '🗂️', '📚', '📝', '🗃️', '📘', '📙', '📗', '📕'];
         
+        // ▼▼▼ 新增：登入頁面語言切換邏輯 ▼▼▼
         ALL_ELEMENTS.loginLangBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             ALL_ELEMENTS.loginLangMenu.classList.toggle('visible');
@@ -6661,12 +6706,15 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const lang = e.target.dataset.lang;
             if (lang) {
                 config.uiLanguage = lang;
-                config.aiDefaultLanguage = lang;
+                config.aiDefaultLanguage = lang; // 同步更新AI語言
                 applyLanguage(lang);
                 ALL_ELEMENTS.loginLangMenu.classList.remove('visible');
             }
         });
+        // ▲▲▲ 結束新增 ▲▲▲
+
 
     </script>
 </body>
 </html>
+
