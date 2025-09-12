@@ -3612,7 +3612,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const messageDiv = document.createElement('div');
             messageDiv.dataset.messageIndex = index;
             const isUser = msg.role === 'user';
-            messageDiv.className = `message-item flex items-start gap-2 md:gap-4 ${isUser ? 'justify-end user-message' : 'model-message'}`;
+            // ▼▼▼ 【問題修正】為 message-item 添加 'group' class 以啟用 group-hover ▼▼▼
+            messageDiv.className = `message-item group flex items-start gap-2 md:gap-4 ${isUser ? 'justify-end user-message' : 'model-message'}`;
             const icon = isUser ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>` : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
             const bubbleHTML = createMessageBubbleHTML(msg);
             messageDiv.innerHTML = isUser ? `${bubbleHTML}${icon}` : `${icon}${bubbleHTML}`;
@@ -3624,12 +3625,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             return messageDiv;
         };
 
-        // ▼▼▼【UI/UX 修正】針對您的需求，重構此函式 ▼▼▼
         const createMessageBubbleHTML = (msg) => {
             const isUser = msg.role === 'user';
             let contentHTML = '';
             let actionButtons = '';
-            let contentPaddingClass = 'pb-8'; // 預設為按鈕留出空間
+            let contentPaddingClass = 'pb-8';
 
             let partsToRender = [];
             if (isUser) {
@@ -3640,14 +3640,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 partsToRender = versions[currentVersionIndex].parts || [];
             }
 
-            // 檢查是否為「載入中」的訊息
             const isLoadingMessage = !isUser && partsToRender.length === 1 && partsToRender[0].text === '...';
 
             if (isLoadingMessage) {
                 contentHTML = `<div class="loading-dots"><span class="bg-gray-500 dark:bg-gray-400"></span><span class="bg-gray-500 dark:bg-gray-400"></span><span class="bg-gray-500 dark:bg-gray-400"></span></div>`;
-                contentPaddingClass = ''; // 載入中動畫不需要為按鈕留白
+                contentPaddingClass = ''; 
             } else {
-                // 正常渲染內容
                 let textPartsContent = [];
                 let mediaPartsContent = [];
                 partsToRender.forEach(part => {
@@ -3672,10 +3670,18 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             }
 
-            // --- 操作按鈕邏輯 ---
-            if (isUser) {
-                contentPaddingClass = ''; // 使用者訊息預設沒有操作按鈕
-            } else if (!isLoadingMessage) { // 只有非載入中的 AI 訊息才顯示按鈕
+            if (isUser && !isLoadingMessage) {
+                // ▼▼▼ 【問題修正】恢復使用者訊息的刪除按鈕 ▼▼▼
+                contentPaddingClass = 'pb-8';
+                actionButtons = `
+                    <div class="message-actions absolute bottom-2 right-2 flex justify-end items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button class="delete-user-message-btn p-1 rounded-md hover:bg-white/20 text-white" title="${i18n[config.uiLanguage].delete || '刪除'}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                        </button>
+                    </div>
+                `;
+                 // ▲▲▲ 結束修正 ▲▲▲
+            } else if (!isUser && !isLoadingMessage) {
                 const isGenerating = !!abortController;
                 const timeString = formatFullTimestamp(msg.initialCreatedAt || msg.createdAt);
                 const versions = msg.versions || [];
@@ -3684,7 +3690,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
                 actionButtons = `
                     <div class="message-actions absolute bottom-2 left-2 right-2 flex justify-between items-center">
-                        <!-- 預設顯示的按鈕 (非編輯模式) -->
                         <div class="default-actions flex items-center gap-1 ${isEditing ? 'hidden' : ''}">
                             <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
@@ -3694,8 +3699,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             </button>
                         </div>
                         <span class="time-display text-xs text-gray-400 ${isEditing ? 'hidden' : ''}">${timeString}</span>
-
-                        <!-- 版本切換器 (編輯模式) -->
                         <div class="version-switcher w-full flex justify-end items-center gap-2 ${!isEditing ? 'hidden' : ''}">
                              <button class="version-prev-btn p-1 rounded-full hover:bg-gray-500/20 disabled:opacity-50" ${currentVersionIndex === 0 ? 'disabled' : ''} title="${i18n[config.uiLanguage].previousVersion || '上一版本'}">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/></svg>
@@ -3712,7 +3715,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     </div>
                 `;
             } else {
-                contentPaddingClass = ''; // 如果是載入中，則隱藏 padding
+                contentPaddingClass = ''; 
             }
             
             return `
@@ -3721,7 +3724,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     ${actionButtons}
                 </div>`;
         };
-        // ▲▲▲【UI/UX 修正】▲▲▲
 
         const handleFormSubmit = async (e) => {
             e.preventDefault();
@@ -6494,7 +6496,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.closeDashboardBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.dataDashboardModal, false));
             // ▲▲▲ 結束新增 ▲▲▲
             
-            // ▼▼▼ 【UI/UX 修正】: 重構訊息泡泡的點擊事件監聽器 ▼▼▼
             ALL_ELEMENTS.messageList.addEventListener('click', (e) => {
                 const messageItem = e.target.closest('.message-item');
                 if (!messageItem) return;
@@ -6505,30 +6506,28 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 const msg = conv?.messages[messageIndex];
                 if (!msg) return;
 
-                // 複製按鈕
                 if (e.target.closest('.copy-content-btn')) {
                     handleCopyMessage(messageIndex);
                 }
-                // 重新生成按鈕
                 else if (e.target.closest('.regenerate-btn')) {
                     handleRegenerate(messageIndex);
                 }
-                // 版本切換 - 上一版
                 else if (e.target.closest('.version-prev-btn')) {
                     switchVersion(messageIndex, 'prev');
                 }
-                // 版本切換 - 下一版
                 else if (e.target.closest('.version-next-btn')) {
                     switchVersion(messageIndex, 'next');
                 }
-                // 確認版本按鈕
                 else if (e.target.closest('.confirm-version-btn')) {
                     confirmVersion(messageIndex);
                 }
-                // 點擊泡泡本身 (非按鈕)
+                // ▼▼▼ 【問題修正】新增刪除使用者訊息的邏輯 ▼▼▼
+                else if (e.target.closest('.delete-user-message-btn')) {
+                    handleDeleteUserMessage(messageIndex);
+                }
+                // ▲▲▲ 結束修正 ▲▲▲
                 else if (e.target.closest('.message-bubble') && msg.role === 'model' && msg.versions.length > 1) {
                     const isLoading = messageItem.querySelector('.loading-dots');
-                    // 只有在非編輯模式、非讀取中且版本大於1時才觸發
                     if (!msg.isEditing && !isLoading) {
                         msg.isEditing = true;
                         rerenderMessageBubble(messageIndex);
@@ -6536,7 +6535,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     }
                 }
             });
-            // ▲▲▲ 【UI/UX 修正】 ▲▲▲
 
             ALL_ELEMENTS.addFileBtn.addEventListener('click', (e) => {
                 const popover = ALL_ELEMENTS.fileOptionsPopover;
@@ -6724,7 +6722,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             startNewChat(false);
         }
 
-        // ▼▼▼【UI/UX 修正】: 新增或修改相關函式 ▼▼▼
         const rerenderMessageBubble = (messageIndex) => {
             const messageDiv = document.querySelector(`.message-item[data-message-index="${messageIndex}"]`);
             if (!messageDiv) return;
@@ -6733,26 +6730,28 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const msg = conv.messages[messageIndex];
             if (!msg) return;
 
-            // ▼▼▼ 優化：版本切換時維持滾動位置 ▼▼▼
+            // ▼▼▼ 【問題 1 修正】: 計算高度以防止跳動 ▼▼▼
             const chatContainer = ALL_ELEMENTS.chatContainer;
             const scrollPos = chatContainer.scrollTop;
             const oldBubbleHeight = messageDiv.offsetHeight;
-            // ▲▲▲ 優化 ▲▲▲
+            // ▲▲▲ 結束修正 ▲▲▲
 
             const newBubbleHTML = createMessageBubbleHTML(msg);
             const isUser = msg.role === 'user';
             
-            // 找到圖示並保留它
             const iconElement = messageDiv.querySelector('.rounded-full.flex-shrink-0');
             const iconHTML = iconElement ? iconElement.outerHTML : '';
 
             messageDiv.innerHTML = isUser ? `${newBubbleHTML}${iconHTML}` : `${iconHTML}${newBubbleHTML}`;
 
-            // ▼▼▼ 優化：版本切換時維持滾動位置 ▼▼▼
+            // ▼▼▼ 【問題 1 修正】: 應用高度差以維持滾動位置 ▼▼▼
             const newBubbleHeight = messageDiv.offsetHeight;
             const heightDifference = newBubbleHeight - oldBubbleHeight;
-            chatContainer.scrollTop = scrollPos + heightDifference;
-            // ▲▲▲ 優化 ▲▲▲
+            // 只有當元素在可視區域上方時才調整滾動位置
+            if (messageDiv.offsetTop < scrollPos + chatContainer.clientHeight) {
+                chatContainer.scrollTop = scrollPos + heightDifference;
+            }
+            // ▲▲▲ 結束修正 ▲▲▲
         };
 
         const handleCopyMessage = (messageIndex) => {
@@ -6778,12 +6777,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (!aiMsg || !userMsg || aiMsg.role !== 'model' || userMsg.role !== 'user') return;
 
             abortController = new AbortController();
-            aiMsg.isEditing = true; // 進入編輯模式以顯示版本切換器
+            aiMsg.isEditing = true; 
             
             const messageItemDiv = document.querySelector(`.message-item[data-message-index="${messageIndex}"]`);
             const contentDiv = messageItemDiv.querySelector('.message-content');
             
-            // ▼▼▼ 【問題 1 修正】: 重新生成時先顯示讀取動畫並隱藏按鈕 ▼▼▼
+            // ▼▼▼ 【問題 2 修正】: 移除 padding-bottom 以隱藏空白行 ▼▼▼
+            contentDiv.classList.remove('pb-8');
             contentDiv.innerHTML = `<div class="loading-dots"><span></span><span></span><span></span></div>`;
             const actionsDiv = messageItemDiv.querySelector('.message-actions');
             if (actionsDiv) actionsDiv.classList.add('hidden');
@@ -6837,7 +6837,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (!isTemporaryChat) saveAppData();
         };
 
-        // ▼▼▼ 【問題 2 修正】: 確認版本選擇，並刪除其他版本 ▼▼▼
         const confirmVersion = (messageIndex) => {
             const conv = getActiveConversation();
             const msg = conv.messages[messageIndex];
@@ -6845,15 +6844,38 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
             const chosenVersion = msg.versions[msg.currentVersionIndex];
             
-            // 將選定的版本設為唯一版本
             msg.versions = [chosenVersion]; 
             msg.currentVersionIndex = 0;
-            msg.isEditing = false; // 退出編輯模式
+            msg.isEditing = false; 
 
-            rerenderMessageBubble(messageIndex); // 重新渲染泡泡，此時不會再有版本切換器
+            rerenderMessageBubble(messageIndex); 
             updateInputState();
             if (!isTemporaryChat) saveAppData();
             showNotification(i18n[config.uiLanguage].versionConfirmed || '版本已確認', 'success');
+        };
+
+        // ▼▼▼ 【問題 3 修正】: 新增刪除使用者訊息的函式 ▼▼▼
+        const handleDeleteUserMessage = async (messageIndex) => {
+            const conv = getActiveConversation();
+            if (!conv) return;
+
+            if (await showCustomConfirm(i18n[config.uiLanguage].confirmDeleteMessage || '您確定要刪除此訊息嗎？')) {
+                // 如果刪除的是最後一則訊息，且後面跟著 AI 回覆，則一併刪除
+                const nextMessage = conv.messages[messageIndex + 1];
+                if (nextMessage && nextMessage.role === 'model') {
+                    conv.messages.splice(messageIndex, 2);
+                } else {
+                    conv.messages.splice(messageIndex, 1);
+                }
+
+                if (!isTemporaryChat) {
+                    await saveAppData();
+                }
+                
+                // 重新渲染整個聊天畫面
+                renderChat();
+                showNotification(i18n[config.uiLanguage].messageDeleted || '訊息已刪除', 'success');
+            }
         };
         // ▲▲▲ 結束修正 ▲▲▲
         
