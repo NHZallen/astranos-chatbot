@@ -3624,28 +3624,29 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             return messageDiv;
         };
 
-
-        // ▼▼▼ 【問題修正】修正 createMessageBubbleHTML 函式 ▼▼▼
+        // ▼▼▼【UI/UX 修正】▼▼▼
         const createMessageBubbleHTML = (msg) => {
             const isUser = msg.role === 'user';
             let contentHTML = '';
             let actionButtons = '';
-            let contentPaddingClass = 'pb-8'; // 預留底部空間給操作按鈕
+            let contentPaddingClass = 'pb-8';
 
-            let partsToRender = msg.parts;
-            if (!isUser) {
-                const versions = msg.versions || [{ parts: msg.parts }];
+            let partsToRender = [];
+            if (isUser) {
+                partsToRender = msg.parts || [];
+            } else {
+                const versions = msg.versions || [{ parts: msg.parts || [] }];
                 const currentVersionIndex = msg.currentVersionIndex || 0;
-                partsToRender = versions[currentVersionIndex].parts;
+                partsToRender = versions[currentVersionIndex].parts || [];
             }
 
             const isLoadingMessage = !isUser && partsToRender.length === 1 && partsToRender[0].text === '...';
 
             if (isLoadingMessage) {
                 contentHTML = `<div class="loading-dots"><span class="bg-gray-500 dark:bg-gray-400"></span><span class="bg-gray-500 dark:bg-gray-400"></span><span class="bg-gray-500 dark:bg-gray-400"></span></div>`;
-                contentPaddingClass = ''; // 載入中不需要底部空間
+                contentPaddingClass = ''; // Loading dots don't need padding for buttons
             } else {
-                 let textPartsContent = [];
+                let textPartsContent = [];
                 let mediaPartsContent = [];
                 partsToRender.forEach(part => {
                     if (part.text) textPartsContent.push(part.text);
@@ -3669,22 +3670,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             }
 
-            // 建立操作按鈕
+            // --- Action Buttons Logic ---
             if (isUser) {
-                contentPaddingClass = ''; // 使用者訊息預設不需要底部空間
-                const currentConv = getActiveConversation();
-                const msgIndex = currentConv ? currentConv.messages.indexOf(msg) : -1;
-                if (currentConv && msgIndex > -1 && msgIndex + 1 < currentConv.messages.length && currentConv.messages[msgIndex + 1].role === 'model') {
-                    contentPaddingClass = 'pb-8'; // 如果後面有 AI 回覆，則新增空間
-                    actionButtons = `
-                        <div class="absolute bottom-2 left-2 flex items-center">
-                            <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                            </button>
-                        </div>
-                    `;
-                }
-            } else if (!isLoadingMessage) { // AI 訊息，且不是載入中
+                contentPaddingClass = ''; // User messages don't have actions by default
+            } else if (!isLoadingMessage) { // Only show buttons for AI messages that are NOT loading
+                const isGenerating = !!abortController; // Is any stream currently active?
                 const timeString = formatFullTimestamp(msg.initialCreatedAt || msg.createdAt);
                 const versions = msg.versions || [];
                 const currentVersionIndex = msg.currentVersionIndex || 0;
@@ -3696,7 +3686,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                             </button>
-                            <button class="regenerate-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].regenerate || '重新生成'}">
+                            <button class="regenerate-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity ${isGenerating ? 'hidden' : ''}" title="${i18n[config.uiLanguage].regenerate || '重新生成'}">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
                             </button>
                         </div>
@@ -3710,31 +3700,30 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             <button class="version-next-btn p-1 rounded-full hover:bg-gray-500/20 disabled:opacity-50" ${currentVersionIndex >= versions.length - 1 ? 'disabled' : ''} title="${i18n[config.uiLanguage].nextVersion || '下一版本'}">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg>
                             </button>
-                            <button class="regenerate-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)]" title="${i18n[config.uiLanguage].regenerate || '重新生成'}">
+                            <button class="regenerate-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] ${isGenerating ? 'hidden' : ''}" title="${i18n[config.uiLanguage].regenerate || '重新生成'}">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
                             </button>
                             <button class="confirm-version-btn px-2 py-1 text-xs rounded-md btn-primary ml-auto">${i18n[config.uiLanguage].confirm || '確認'}</button>
                         </div>
                     </div>
                 `;
+            } else {
+                contentPaddingClass = ''; // Hide padding if it is loading
             }
-
+            
             return `
-                <div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble relative ${isUser ? 'text-white' : ''}" >
+                <div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble relative ${isUser ? 'text-white' : ''}">
                     <div class="prose prose-sm max-w-none ${isUser ? 'text-white' : 'text-[var(--text-primary)]'} ${contentPaddingClass} message-content">${contentHTML}</div>
                     ${actionButtons}
                 </div>`;
         };
-        // ▲▲▲ 結束修正 ▲▲▲
+        // ▲▲▲【UI/UX 修正】▲▲▲
 
         const handleFormSubmit = async (e) => {
             e.preventDefault();
             if (abortController) return;
             const userMessage = ALL_ELEMENTS.messageInput.value.trim();
-            if (!userMessage && uploadedFiles.length === 0) return;
-
-
-            renderFollowUpPrompts([]);
+            if (!userMessage && uploadedFiles.length === 0) return;renderFollowUpPrompts([]);
 
 
             const conv = getActiveConversation();
@@ -3951,7 +3940,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
             if (memoryPrompt) {
                 if (systemInstruction) {
-                    systemInstruction.parts.text += `\n\n${memoryPrompt}`;
+                    systemInstruction.parts[0].text += `\n\n${memoryPrompt}`;
                 } else {
                     systemInstruction = { parts: [{ text: memoryPrompt }] };
                 }
@@ -3977,7 +3966,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 url = 'https://openrouter.ai/api/v1/chat/completions';
                 const messages = [];
                 if (systemInstruction) {
-                    messages.push({ role: 'system', content: systemInstruction.parts.text });
+                    messages.push({ role: 'system', content: systemInstruction.parts[0].text });
                 }
                 messages.push(...[...historyForApi, currentMessageForApi].map(m => {
                     const contentParts = (m.role === 'model' && m.versions) ? m.versions[m.currentVersionIndex].parts : m.parts;
@@ -4035,7 +4024,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             if (data.trim() === '[DONE]') break;
                             try {
                                 const parsed = JSON.parse(data);
-                                const textChunk = parsed.choices?.delta?.content || '';
+                                const textChunk = parsed.choices[0]?.delta?.content || '';
                                 if (textChunk) {
                                     fullText += textChunk;
                                     onChunk(textChunk);
@@ -4078,7 +4067,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
                 const result = await response.json();
                 
-                const jsonString = result?.candidates?.?.content?.parts?.?.text;
+                const jsonString = result?.candidates?.[0]?.content?.parts?.[0]?.text;
 
 
                 if (jsonString) {
@@ -4127,7 +4116,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 return false;
             }
             const result = await response.json();
-            const text = result?.candidates?.?.content?.parts?.?.text?.trim().toLowerCase();
+            const text = result?.candidates?.[0]?.content?.parts?.[0]?.text?.trim().toLowerCase();
             return text === 'yes';
         }
 
@@ -5252,7 +5241,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
         const handleImport = async () => {
-            const file = ALL_ELEMENTS.importFileInput.files;
+            const file = ALL_ELEMENTS.importFileInput.files[0];
             if (!file) {
                 showNotification(i18n[config.uiLanguage].selectFileError || '請選擇檔案。', 'error');
                 return;
@@ -5291,7 +5280,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                              if (config.uiTheme.mode === 'adaptive') {
                                 const palette = await getDominantColorPalette(config.customWallpaper);
                                 config.uiTheme.adaptivePalette = palette;
-                                config.uiTheme.adaptiveColor = palette || '#3b82f6';
+                                config.uiTheme.adaptiveColor = palette[0] || '#3b82f6';
                             }
                             await saveConfig();
                         } catch (err) { /* keep default */ }
@@ -5334,7 +5323,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
             fileInput.onchange = (e) => {
-                const file = e.target.files;
+                const file = e.target.files[0];
                 if (!file) { document.body.removeChild(fileInput); return; }
 
 
@@ -5565,7 +5554,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             currentSpeechRecognition.onresult = (event) => {
                 let transcript = '';
                 for (let i = event.resultIndex; i < event.results.length; i++) {
-                    transcript += event.results[i].transcript;
+                    transcript += event.results[i][0].transcript;
                 }
                 const inputEl = target === 'message' ? ALL_ELEMENTS.messageInput : ALL_ELEMENTS.modalSearchInput;
                 inputEl.value = transcript;
@@ -5948,9 +5937,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const hexToRgb = (hex) => {
             const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
             return result ? {
-                r: parseInt(result, 16),
-                g: parseInt(result, 16),
-                b: parseInt(result, 16)
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
             } : null;
         };
 
@@ -6030,10 +6019,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if(config.uiTheme.adaptivePalette && config.uiTheme.adaptivePalette.length > 1) {
                 const palette = config.uiTheme.adaptivePalette;
                 const combinations = [
-                    `linear-gradient(to right, ${palette}, ${palette})`,
-                    `linear-gradient(to right, ${palette}, ${palette})`,
-                    `linear-gradient(to right, ${palette}, ${palette})`,
-                    `linear-gradient(135deg, ${palette}, ${palette}, ${palette})`
+                    `linear-gradient(to right, ${palette[0]}, ${palette[1]})`,
+                    `linear-gradient(to right, ${palette[0]}, ${palette[2]})`,
+                    `linear-gradient(to right, ${palette[1]}, ${palette[2]})`,
+                    `linear-gradient(135deg, ${palette[0]}, ${palette[1]}, ${palette[2]})`
                 ];
                 combinations.forEach(grad => {
                     const swatch = document.createElement('div');
@@ -6130,7 +6119,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
         const handleWallpaperUpload = (event) => {
-            const file = event.target.files;
+            const file = event.target.files[0];
             if (!file) return;
 
 
@@ -6181,7 +6170,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 config.customWallpaper = imageDataUrl;
                 config.wallpaperBrightness = brightness;
                 config.uiTheme.adaptivePalette = palette;
-                config.uiTheme.adaptiveColor = palette || '#3b82f6';
+                config.uiTheme.adaptiveColor = palette[0] || '#3b82f6';
                 
                 await saveConfig();
                 applyCustomWallpaper();
@@ -6337,7 +6326,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
         const handleAvatarUpload = (event) => {
-            const file = event.target.files;
+            const file = event.target.files[0];
             if (!file) return;
 
 
@@ -6500,43 +6489,58 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.userProfileBtn.addEventListener('click', openDashboard);
             ALL_ELEMENTS.closeDashboardBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.dataDashboardModal, false));
             // ▲▲▲ 結束新增 ▲▲▲
-             // ▼▼▼ 【問題修正】修正點擊事件監聽器 ▼▼▼
+            // ▼▼▼ 【UI/UX 修正】: 重構訊息泡泡的點擊事件監聽器 ▼▼▼
             ALL_ELEMENTS.messageList.addEventListener('click', (e) => {
                 const messageItem = e.target.closest('.message-item');
                 if (!messageItem) return;
                 const messageIndex = parseInt(messageItem.dataset.messageIndex);
                 if (isNaN(messageIndex)) return;
 
+                const conv = getActiveConversation();
+                const msg = conv?.messages[messageIndex];
+                if (!msg) return;
+
+                // 複製按鈕
                 if (e.target.closest('.copy-content-btn')) {
                     handleCopyMessage(messageIndex);
                 }
-                else if (e.target.closest('.delete-message-btn')) {
-                    handleDeleteMessagePair(messageIndex);
-                }
+                // 重新生成按鈕
                 else if (e.target.closest('.regenerate-btn')) {
-                    // 【問題修正】當AI還在思考時，重新生成的圖標點擊後沒有等到輸出完成後才顯示的問題
-                    const regenerateBtn = e.target.closest('.regenerate-btn');
-                    if (regenerateBtn.disabled) return;
                     handleRegenerate(messageIndex);
                 }
+                // 版本切換 - 上一版
                 else if (e.target.closest('.version-prev-btn')) {
                     switchVersion(messageIndex, 'prev');
                 }
+                // 版本切換 - 下一版
                 else if (e.target.closest('.version-next-btn')) {
                     switchVersion(messageIndex, 'next');
                 }
+                // 確認版本按鈕
                 else if (e.target.closest('.confirm-version-btn')) {
                     confirmVersion(messageIndex);
                 }
+                // 點擊泡泡本身 (非按鈕)
+                else if (e.target.closest('.message-bubble') && msg.role === 'model' && msg.versions.length > 1) {
+                     // 只有在非讀取中且版本大於1時才觸發
+                    const isLoading = messageItem.querySelector('.loading-dots');
+                    if (!isLoading) {
+                        msg.isEditing = !msg.isEditing;
+                        rerenderMessageBubble(messageIndex);
+                        updateInputState();
+                    }
+                }
             });
-             // ▲▲▲ 【問題修正】結束 ▲▲▲
+            // ▲▲▲ 【UI/UX 修正】 ▲▲▲
             ALL_ELEMENTS.addFileBtn.addEventListener('click', (e) => {
                 const popover = ALL_ELEMENTS.fileOptionsPopover;
                 if (popover.classList.contains('visible')) {
                     popover.classList.remove('visible');
                 } else {
                     closeAllPopovers();
+                    // ▼▼▼ 程式碼修正：移除不正確的 JS 定位，改由 CSS 控制 ▼▼▼
                     popover.classList.add('visible');
+                    // ▲▲▲ 結束修正 ▲▲▲
                 }
             });
             ALL_ELEMENTS.cameraBtn.addEventListener('click', () => {
@@ -6606,12 +6610,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
            
             ALL_ELEMENTS.chatForm.addEventListener('submit', handleFormSubmit);
             const threshold = 140;
+            // ▼▼▼ 修改：對 scroll 事件進行節流 ▼▼▼
             const throttledScrollHandler = throttle(() => {
                 const sc = ALL_ELEMENTS.chatContainer;
                 const nearBottom = sc.scrollHeight - sc.scrollTop - sc.clientHeight < threshold;
                 ALL_ELEMENTS.scrollToBottomBtn.classList.toggle('hidden', nearBottom);
-            }, 200);
+            }, 200); // 每 200 毫秒觸發一次
             ALL_ELEMENTS.chatContainer.addEventListener('scroll', throttledScrollHandler);
+            // ▲▲▲ 結束修改 ▲▲▲
             ALL_ELEMENTS.scrollToBottomBtn.addEventListener('click', () => {
                 ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
             });
@@ -6672,6 +6678,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.wallpaperUploadInput.addEventListener('change', handleWallpaperUpload);
             ALL_ELEMENTS.restoreWallpaperBtn.addEventListener('click', restoreDefaultWallpaper);
             
+            // ▼▼▼ 新增：桌布裁切 Modal 事件 ▼▼▼
             ALL_ELEMENTS.confirmCropBtn.addEventListener('click', handleConfirmCrop);
             ALL_ELEMENTS.cancelCropBtn.addEventListener('click', () => {
                 toggleModal(ALL_ELEMENTS.wallpaperCropModal, false);
@@ -6680,11 +6687,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     cropperInstance = null;
                 }
             });
+            // ▲▲▲ 結束新增 ▲▲▲
+            // ▼▼▼ 新增：清除資料按鈕事件 ▼▼▼
             ALL_ELEMENTS.deleteAllDataBtn.addEventListener('click', handleDeleteAllData);
+            // ▲▲▲ 結束新增 ▲▲▲
+             // ▼▼▼ 新增：設定頁面語言切換事件 ▼▼▼
             ALL_ELEMENTS.uiLanguageSelect.addEventListener('change', (e) => {
                 config.uiLanguage = e.target.value;
                 applyLanguage(config.uiLanguage);
             });
+            // ▲▲▲ 結束新增 ▲▲▲
+            // ▼▼▼ 新增：商店與頭像功能事件 ▼▼▼
             ALL_ELEMENTS.openStoreBtn.addEventListener('click', openStore);
             ALL_ELEMENTS.backToChatBtn.addEventListener('click', closeStore);
             ALL_ELEMENTS.astrasAvatarInput.addEventListener('change', handleAvatarUpload);
@@ -6697,6 +6710,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
                 editingAstraForAvatarId = null;
             });
+            // ▲▲▲ 結束新增 ▲▲▲
 
 
             updateFileInputUI();
@@ -6704,8 +6718,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             startNewChat(false);
         }
 
-
-        // ▼▼▼ 【問題修正】修正相關函式 ▼▼▼
+        // ▼▼▼【UI/UX 修正】: 新增或修改相關函式 ▼▼▼
         const rerenderMessageBubble = (messageIndex) => {
             const messageDiv = document.querySelector(`.message-item[data-message-index="${messageIndex}"]`);
             if (!messageDiv) return;
@@ -6714,12 +6727,26 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const msg = conv.messages[messageIndex];
             if (!msg) return;
 
+            // ▼▼▼ 優化：版本切換時維持滾動位置 ▼▼▼
+            const chatContainer = ALL_ELEMENTS.chatContainer;
+            const scrollPos = chatContainer.scrollTop;
+            const oldBubbleHeight = messageDiv.offsetHeight;
+            // ▲▲▲ 優化 ▲▲▲
+
             const newBubbleHTML = createMessageBubbleHTML(msg);
             const isUser = msg.role === 'user';
-            const iconElement = messageDiv.querySelector('div.rounded-full');
+            
+            // 找到圖示並保留它
+            const iconElement = messageDiv.querySelector('.rounded-full.flex-shrink-0');
             const iconHTML = iconElement ? iconElement.outerHTML : '';
 
             messageDiv.innerHTML = isUser ? `${newBubbleHTML}${iconHTML}` : `${iconHTML}${newBubbleHTML}`;
+
+            // ▼▼▼ 優化：版本切換時維持滾動位置 ▼▼▼
+            const newBubbleHeight = messageDiv.offsetHeight;
+            const heightDifference = newBubbleHeight - oldBubbleHeight;
+            chatContainer.scrollTop = scrollPos + heightDifference;
+            // ▲▲▲ 優化 ▲▲▲
         };
 
         const handleCopyMessage = (messageIndex) => {
@@ -6745,20 +6772,19 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (!aiMsg || !userMsg || aiMsg.role !== 'model' || userMsg.role !== 'user') return;
 
             abortController = new AbortController();
-            aiMsg.isEditing = true; // Enter editing mode
-
-            // 【問題修正】在開始重新生成時，隱藏操作按鈕
-            const messageItemDiv = document.querySelector(`.message-item[data-message-index="${messageIndex}"]`);
-            const actionsDiv = messageItemDiv.querySelector('.message-actions');
-            if(actionsDiv) actionsDiv.style.display = 'none';
-
-            const contentDiv = messageItemDiv.querySelector('.message-content');
-            contentDiv.innerHTML = `<div class="loading-dots"><span></span><span></span><span></span></div>`;
-
-            // 禁用按鈕
-            const regenerateBtns = document.querySelectorAll('.regenerate-btn');
-            regenerateBtns.forEach(btn => btn.disabled = true);
+            aiMsg.isEditing = true; // 進入編輯模式以顯示版本切換器
             
+            const messageItemDiv = document.querySelector(`.message-item[data-message-index="${messageIndex}"]`);
+            const contentDiv = messageItemDiv.querySelector('.message-content');
+            
+            // ▼▼▼ 修正：在重新生成時，先顯示讀取動畫 ▼▼▼
+            contentDiv.innerHTML = `<div class="loading-dots"><span></span><span></span><span></span></div>`;
+            const actionsDiv = messageItemDiv.querySelector('.message-actions');
+            if (actionsDiv) actionsDiv.classList.add('hidden'); // 隱藏所有按鈕
+            // ▲▲▲ 結束修正 ▲▲▲
+            
+            updateInputState();
+
             let fullResponse = '';
             try {
                 const completeResponse = await streamApiCall(
@@ -6784,10 +6810,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             } finally {
                 abortController = null;
-                // 不論成功或失敗，都重新渲染泡泡，這將會恢復按鈕的顯示
+                // 不論成功或失敗，都重新渲染泡泡以顯示正確的內容和按鈕
                 rerenderMessageBubble(messageIndex);
-                // 恢復按鈕功能
-                regenerateBtns.forEach(btn => btn.disabled = false);
+                updateInputState();
                 if (!isTemporaryChat) saveAppData();
             }
         };
@@ -6797,33 +6822,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const msg = conv.messages[messageIndex];
             if (!msg || !msg.isEditing) return;
 
-            // 【問題修正】優化版本切換時的滾動體驗
-            const chatContainer = ALL_ELEMENTS.chatContainer;
-            const messageDiv = document.querySelector(`.message-item[data-message-index="${messageIndex}"]`);
-            if (!messageDiv) return;
-
-            const oldScrollTop = chatContainer.scrollTop;
-            const oldHeight = messageDiv.offsetHeight;
-
             if (direction === 'prev' && msg.currentVersionIndex > 0) {
                 msg.currentVersionIndex--;
             } else if (direction === 'next' && msg.currentVersionIndex < msg.versions.length - 1) {
                 msg.currentVersionIndex++;
-            } else {
-                return; // 沒有版本變化，直接返回
             }
 
             rerenderMessageBubble(messageIndex);
-
-            // 使用 requestAnimationFrame 確保 DOM 更新後再計算新高度
-            requestAnimationFrame(() => {
-                const newMessageDiv = document.querySelector(`.message-item[data-message-index="${messageIndex}"]`);
-                if (!newMessageDiv) return;
-                const newHeight = newMessageDiv.offsetHeight;
-                const heightDifference = newHeight - oldHeight;
-                chatContainer.scrollTop = oldScrollTop + heightDifference;
-            });
-
             if (!isTemporaryChat) saveAppData();
         };
 
@@ -6833,39 +6838,21 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (!msg || !msg.isEditing) return;
 
             const chosenVersion = msg.versions[msg.currentVersionIndex];
-            msg.versions = [chosenVersion];
-            msg.currentVersionIndex = 0;
+            // 保留所有版本，僅退出編輯模式
+            // msg.versions = [chosenVersion]; 
+            // msg.currentVersionIndex = 0;
             msg.isEditing = false;
 
             rerenderMessageBubble(messageIndex);
             updateInputState();
             if (!isTemporaryChat) saveAppData();
         };
-        // ▲▲▲ 【問題修正】結束 ▲▲▲
 
         const handleDeleteMessagePair = async (index) => {
-            const confirmed = await showCustomDialog({
-                title: i18n[config.uiLanguage].deleteConfirmationTitle || '刪除確認',
-                message: i18n[config.uiLanguage].deleteConfirmationMessage || '確定刪除此條對話？',
-                dialogClass: 'dialog-warning-border',
-                buttons: [
-                    { text: i18n[config.uiLanguage].cancel || '取消', class: 'bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]', value: () => false },
-                    { text: i18n[config.uiLanguage].confirmDelete || '確定', class: 'bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600', value: () => true }
-                ]
-            });
-            if (confirmed) {
-                const conv = getActiveConversation();
-                if (conv && conv.messages[index] && conv.messages[index + 1]) {
-                    // 刪除使用者訊息和後續的 AI 回覆
-                    conv.messages.splice(index, 2);
-                    if (!isTemporaryChat) {
-                        await saveAppData();
-                    }
-                    renderChat(); // 重新渲染聊天視窗
-                    showNotification(i18n[config.uiLanguage].messageDeleted || '對話已刪除。', 'success');
-                }
-            }
+             // 此功能暫時移除，因其與重新生成邏輯有衝突，待未來重構
         };
+        // ▲▲▲【UI/UX 修正】▲▲▲
+
         
         ALL_ELEMENTS.authForm.addEventListener('submit', handleLogin);
         
