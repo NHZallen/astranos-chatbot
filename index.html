@@ -1238,17 +1238,6 @@
             color: #000000 !important; /* 強制所有文字為純黑色 */
         }
         /* ▲▲▲ 結束：Astras 商店相關樣式 ▲▲▲ */
-        
-        /* ▼▼▼ 新增：生成圖片編輯 Modal 相關樣式 ▼▼▼ */
-        #generated-image-crop-container {
-            width: 100%;
-            max-height: 60vh;
-            margin-bottom: 1rem;
-        }
-        #generated-image-crop-container img {
-            max-width: 100%;
-        }
-        /* ▲▲▲ 結束新增 ▲▲▲ */
     </style>
 
 
@@ -2096,25 +2085,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         </div>
     </div>
     <!-- ▲▲▲ 結束新增 ▲▲▲ -->
-    
-    <!-- ▼▼▼ 新增：生成圖片編輯 Modal ▼▼▼ -->
-    <div id="image-edit-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[52]">
-        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-4xl p-6">
-            <h2 class="text-2xl font-bold mb-4" data-lang-key="editImage">編輯圖片</h2>
-            <p class="text-sm text-[var(--text-secondary)] mb-4" data-lang-key="editImageDesc">
-                調整裁切框以編輯圖片，完成後點擊「確認並取代」。
-            </p>
-            <div id="generated-image-crop-container" class="w-full max-h-[60vh] mb-4 bg-gray-200 dark:bg-gray-700 rounded-md">
-                <img id="image-to-edit" src="" alt="Image for editing">
-            </div>
-            <div class="flex justify-end gap-3 mt-4">
-                <button id="cancel-image-edit-btn" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]" data-lang-key="cancel">取消</button>
-                <button id="confirm-image-edit-btn" class="px-4 py-2 rounded-md btn-primary" data-lang-key="confirmAndReplace">確認並取代</button>
-            </div>
-        </div>
-    </div>
-    <!-- ▲▲▲ 結束新增 ▲▲▲ -->
-
     <!-- Hidden File Inputs -->
     <input type="file" id="image-video-input" class="hidden" accept="image/*,video/*" multiple>
     <input type="file" id="file-upload-input" class="hidden" multiple>
@@ -2383,12 +2353,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             cancelAvatarCropBtn: document.getElementById('cancel-avatar-crop-btn'),
             astrasAvatarInput: document.getElementById('astras-avatar-input'),
             // ▲▲▲ 結束新增 ▲▲▲
-            // ▼▼▼ 新增：圖片編輯 Modal 相關元素 ▼▼▼
-            imageEditModal: document.getElementById('image-edit-modal'),
-            imageToEdit: document.getElementById('image-to-edit'),
-            cancelImageEditBtn: document.getElementById('cancel-image-edit-btn'),
-            confirmImageEditBtn: document.getElementById('confirm-image-edit-btn'),
-            // ▲▲▲ 結束新增 ▲▲▲
         };
         // 修正: 模型ID更新為最新的公開版本
         const MODELS = [
@@ -2399,9 +2363,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             { id: 'openai/gpt-oss-120b:free', name: 'astra-mill (Gpt-120B)', provider: 'openrouter', descriptionKey: 'model_mill_desc', limitsKey: 'model_mill_limits' },
             { id: 'Qwen/Qwen3-235B-A22B:free', name: 'astra-nano (Qwen3)', provider: 'openrouter', descriptionKey: 'model_nano_desc', limitsKey: 'model_nano_limits' },
             { id: 'z-ai/glm-4.5-air:free', name: 'astra-pico (Glm-4.5-air)', provider: 'openrouter', descriptionKey: 'model_pico_desc', limitsKey: 'model_pico_limits' },
-            // ▼▼▼ 新增：圖片生成模型 ▼▼▼
-            { id: 'gemini-2.0-flash-preview-image-generation', name: 'astra-flash-img (預覽版)', provider: 'gemini', isImageGenerator: true, descriptionKey: 'model_flash_img_desc', limitsKey: 'model_flash_img_limits' },
-            // ▲▲▲ 結束新增 ▲▲▲
         ];
         // 修正: 使用 gemini-2.5-flash-lite 作為生成標題和後續追問的低成本模型
         const CHEAP_MODEL_ID = 'gemini-2.5-flash-lite';
@@ -2503,13 +2464,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         // ▼▼▼ 新增：桌布與頭像裁切實例變數 ▼▼▼
         let cropperInstance = null;
         let editingAstraForAvatarId = null;
-        // ▲▲▲ 結束新增 ▲▲▲
-        // ▼▼▼ 新增：圖片編輯資訊變數 ▼▼▼
-        let editingImageInfo = {
-            messageDiv: null,
-            convId: null,
-            messageIndex: -1
-        };
         // ▲▲▲ 結束新增 ▲▲▲
         // IndexedDB 配置
         const DB_NAME = 'ChatAppDB';
@@ -3595,10 +3549,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             updateApiKeyWarningBadge();
         };
         
+        // ▼▼▼ 程式碼修改 ▼▼▼
         const addMessageToUI = (msg, index, shouldSave = true, shouldScroll = true) => {
             const conv = getActiveConversation();
             if (shouldSave) {
-                if (isTemporaryChat) {
+                 if (isTemporaryChat) {
                     conv.messages.push(msg);
                 } else {
                     conv.messages.push(msg);
@@ -3608,11 +3563,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             conv.title = textPart.text.substring(0, 30) || i18n[config.uiLanguage].newChat || '新對話';
                             ALL_ELEMENTS.headerTitle.textContent = conv.title;
                             renderHistorySidebar();
-                            // 圖片生成模型不自動命名
-                            const modelInfo = MODELS.find(m => m.id === conv.model);
-                            if (!modelInfo || !modelInfo.isImageGenerator) {
-                                generateTitleAndSummary(conv);
-                            }
+                            generateTitleAndSummary(conv);
                         }
                     }
                     saveAppData();
@@ -3620,14 +3571,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
             const messageDiv = document.createElement('div');
             messageDiv.dataset.messageIndex = index;
-            messageDiv.dataset.convId = conv.id;
             const isUser = msg.role === 'user';
             messageDiv.className = `message-item flex items-start gap-2 md:gap-4 ${isUser ? 'justify-end user-message' : 'model-message'}`;
             const icon = isUser ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>` : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
-            
-            // --- 內容渲染邏輯 ---
+
+
+
+
             let contentHTML = '';
-            let hasGeneratedImage = false;
+            let actionButtons = '';
+            let contentPaddingClass = '';
+
 
             const isLoadingMessage = !isUser && msg.parts.length === 1 && msg.parts[0].text === '...';
             
@@ -3636,129 +3590,82 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             } else {
                 let textPartsContent = [];
                 let mediaPartsContent = [];
-                
                 msg.parts.forEach(part => {
                     if (part.text) {
                         textPartsContent.push(part.text);
                     } else if (part.inlineData) {
                         mediaPartsContent.push(part.inlineData);
-                        // 檢查是否為 AI 生成的圖片
-                        if (msg.role === 'model') {
-                            hasGeneratedImage = true;
-                        }
                     }
                 });
-
+                if (textPartsContent.length > 0) {
+                    const combinedText = textPartsContent.join('\n');
+                    contentHTML += `<div>${isUser ? combinedText.replace(/\n/g, '<br>') : renderMarkdown(combinedText)}</div>`;
+                }
                 if (mediaPartsContent.length > 0) {
-                    let mediaHTML = `<div class="mt-2 flex flex-wrap gap-2">`;
+                    let mediaHTML = '<div class="mt-2 flex flex-wrap gap-2">';
                     mediaPartsContent.forEach(media => {
                         const src = `data:${media.mimeType};base64,${media.data}`;
-                        const imageClass = "max-w-xs md:max-w-md max-h-96 rounded-lg object-contain border border-[var(--border-color)]";
-                        
-                        if (hasGeneratedImage) {
-                            // 為生成的圖片加上容器和按鈕
-                            mediaHTML += `
-                                <div class="generated-image-container relative group">
-                                    <img src="${src}" class="${imageClass}">
-                                    <div class="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                        <button class="edit-image-btn p-2 rounded-full bg-black/50 text-white hover:bg-black/75" title="${i18n[config.uiLanguage].edit || '編輯'}">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="16 3 21 8 8 21 3 21 3 16 16 3"></polygon></svg>
-                                        </button>
-                                        <button class="download-image-btn p-2 rounded-full bg-black/50 text-white hover:bg-black/75" title="${i18n[config.uiLanguage].download || '下載'}">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                        </button>
-                                    </div>
-                                </div>
-                            `;
+                        if (media.mimeType.startsWith('image/')) {
+                            mediaHTML += `<img src="${src}" class="max-w-xs max-h-48 rounded-lg object-cover border border-[var(--border-color)]">`;
                         } else {
-                             mediaHTML += `<img src="${src}" class="${imageClass}">`;
+                            mediaHTML += `<div class="p-2 bg-[var(--hover-bg)] rounded-lg text-sm flex items-center gap-2 border border-[var(--border-color)]">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                                <span>${media.name || '檔案'}</span>
+                            </div>`;
                         }
                     });
                     mediaHTML += '</div>';
                     contentHTML += mediaHTML;
                 }
-
-                if (textPartsContent.length > 0) {
-                    const combinedText = textPartsContent.join('\n');
-                    contentHTML += `<div class="prose prose-sm max-w-none message-content ${isUser ? 'text-white' : 'text-[var(--text-primary)]'}">${isUser ? combinedText.replace(/\n/g, '<br>') : renderMarkdown(combinedText)}</div>`;
+                
+                if (!isUser) {
+                    const timeString = formatFullTimestamp(msg.createdAt);
+                    actionButtons = `
+                        <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
+                            <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                            </button>
+                            <span class="text-xs text-gray-400">${timeString}</span>
+                        </div>
+                    `;
+                    contentPaddingClass = 'pb-8'; 
+                } else {
+                    const currentConv = getActiveConversation();
+                    if (currentConv && index + 1 < currentConv.messages.length && currentConv.messages[index + 1].role === 'model') {
+                         actionButtons = `
+                            <div class="absolute bottom-2 left-2 flex items-center">
+                                <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                </button>
+                            </div>
+                        `;
+                        contentPaddingClass = 'pb-8';
+                    }
                 }
             }
 
+
             const messageBubble = `
-                <div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full message-bubble relative ${isUser ? 'text-white' : ''}">
-                    ${contentHTML}
+                <div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble relative ${isUser ? 'text-white' : ''}" >
+                    <div class="prose prose-sm max-w-none ${isUser ? 'text-white' : 'text-[var(--text-primary)]'} ${contentPaddingClass} message-content">${contentHTML}</div>
+                    ${actionButtons}
                 </div>`;
+
 
             messageDiv.innerHTML = isUser ? `${messageBubble}${icon}` : `${icon}${messageBubble}`;
             if (ALL_ELEMENTS.messageList.querySelector('.text-center')) ALL_ELEMENTS.messageList.innerHTML = '';
-            
+
+
             ALL_ELEMENTS.messageList.appendChild(messageDiv);
-            
-            // 獨立處理操作按鈕的附加，避免重複
-            if (!isLoadingMessage) {
-                updateMessageActionButtons(messageDiv);
-            }
-            
             if (shouldScroll) {
                 ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
             }
 
+
             return messageDiv;
         };
-        
-        function updateMessageActionButtons(messageDiv) {
-            if (!messageDiv) return;
-            
-            const index = parseInt(messageDiv.dataset.messageIndex);
-            const conv = getActiveConversation();
-            if (!conv || index < 0) return;
+        // ▲▲▲ 程式碼修改 ▲▲▲
 
-            const msg = conv.messages[index];
-            const isUser = msg.role === 'user';
-            const bubble = messageDiv.querySelector('.message-bubble');
-            if (!bubble) return;
-
-            // 清除舊按鈕，以防重複渲染
-            bubble.querySelector('.message-actions-container')?.remove();
-
-            let actionButtonsHTML = '';
-            let contentNeedsPadding = false;
-
-            // --- 為 AI 文字訊息加上複製按鈕和時間戳 ---
-            if (!isUser && msg.parts.some(p => p.text)) {
-                contentNeedsPadding = true;
-                const timeString = formatFullTimestamp(msg.createdAt);
-                actionButtonsHTML += `
-                    <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                    </button>
-                    <span class="text-xs text-gray-400">${timeString}</span>
-                `;
-            }
-            
-            // --- 為使用者訊息加上刪除按鈕 ---
-            if (isUser && index + 1 < conv.messages.length && conv.messages[index + 1].role === 'model') {
-                contentNeedsPadding = true;
-                actionButtonsHTML = `
-                    <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                    </button>
-                `;
-            }
-
-            if (actionButtonsHTML) {
-                const actionsContainer = document.createElement('div');
-                actionsContainer.className = 'message-actions-container absolute bottom-2 left-2 right-2 flex justify-between items-center';
-                actionsContainer.innerHTML = actionButtonsHTML;
-                bubble.appendChild(actionsContainer);
-            }
-            
-            // 處理 padding
-            const textContentDiv = bubble.querySelector('.message-content');
-            if (textContentDiv) {
-                 textContentDiv.classList.toggle('pb-8', contentNeedsPadding);
-            }
-        }
 
         const handleFormSubmit = async (e) => {
             e.preventDefault();
@@ -3766,21 +3673,28 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const userMessage = ALL_ELEMENTS.messageInput.value.trim();
             if (!userMessage && uploadedFiles.length === 0) return;
 
-            renderFollowUpPrompts([]); // 清除後續追問
+
+            renderFollowUpPrompts([]);
+
 
             const conv = getActiveConversation();
             if (conv.archived) return;
 
-            const modelInfo = MODELS.find(m => m.id === conv.model); // 取得當前模型資訊
+
+
 
             abortController = new AbortController();
             updateSubmitButtonState(true);
+
 
             if (!sendConfirmed) {
                 sendConfirmed = true;
                 updateInputState();
                 return;
             }
+
+
+
 
             const userParts = [];
             if (userMessage) {
@@ -3795,47 +3709,41 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 });
             });
 
+
             const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
             addMessageToUI(userMessageObject, conv.messages.length, true);
+
+
+
+
+            if (config.enableAutoWebSearch && conv.provider === 'gemini' && !conv.isWebSearchEnabled) {
+                try {
+                    const needsSearch = await shouldPerformWebSearch(userMessage);
+                    if (needsSearch) {
+                        conv.isWebSearchEnabled = true;
+                        showNotification(i18n[config.uiLanguage].autoWebSearchNotice || '偵測到問題需要連網搜尋，已自動開啟。', 'warning');
+                    }
+                    updateWebSearchUI();
+                } catch(err) {
+                    console.error("Auto web search check failed:", err);
+                }
+            }
+
+
+
 
             ALL_ELEMENTS.messageInput.value = '';
             uploadedFiles = [];
             renderFilePreviews();
             
-            // ▼▼▼ 【核心修改】根據模型類型呼叫不同的處理函式 ▼▼▼
-            if (modelInfo && modelInfo.isImageGenerator) {
-                await handleImageGeneration(userParts); // 呼叫新的圖片生成處理函式
-            } else {
-                await handleTextGeneration(userParts); // 呼叫原有的文字生成處理函式
-            }
-            // ▲▲▲ 結束修改 ▲▲▲
-        };
-        
-        /**
-         * 處理文字生成模型的邏輯
-         */
-        async function handleTextGeneration(userParts) {
-            const conv = getActiveConversation();
             const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
             const contentDiv = loadingMessageDiv.querySelector('.message-content');
             let fullResponse = '';
             
             const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
 
-            try {
-                // 自動連網檢查
-                if (config.enableAutoWebSearch && conv.provider === 'gemini' && !conv.isWebSearchEnabled) {
-                    const userText = userParts.map(p => p.text).join(' ');
-                    if (userText) {
-                         const needsSearch = await shouldPerformWebSearch(userText);
-                        if (needsSearch) {
-                            conv.isWebSearchEnabled = true;
-                            showNotification(i18n[config.uiLanguage].autoWebSearchNotice || '偵測到問題需要連網搜尋，已自動開啟。', 'warning');
-                        }
-                        updateWebSearchUI();
-                    }
-                }
 
+            try {
                 const completeResponse = await streamApiCall(
                     userParts,
                     (chunk) => {
@@ -3853,18 +3761,20 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 conv.messages.push(finalAiMessage);
                 if (!isTemporaryChat) await saveAppData();
 
+
+
+
                 if(config.enableFollowUp) {
                     await generateFollowUpPrompts(fullResponse);
                 }
-                if (config.memoryEnabled1 && config.enableAutoMemory) {
-                    await extractPersonalMemory(userParts.map(p => p.text).join(' '), fullResponse);
+                if (config.memoryEnabled1 && config.enableAutoMemory) { // 檢查兩個開關
+                    await extractPersonalMemory(userMessage, fullResponse);
                 }
             } catch (error) {
                 if (error.name === 'AbortError') {
                     contentDiv.innerHTML = renderMarkdown(fullResponse);
                     finalAiMessage.parts = [{ text: fullResponse }];
-                    if (fullResponse) conv.messages.push(finalAiMessage);
-                    else loadingMessageDiv.remove();
+                    conv.messages.push(finalAiMessage);
                 } else {
                     contentDiv.textContent = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
                     finalAiMessage.parts = [{ text: `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}` }];
@@ -3876,91 +3786,51 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 updateSubmitButtonState(false);
                 sendConfirmed = false;
                 updateInputState();
-                updateMessageActionButtons(ALL_ELEMENTS.messageList.lastElementChild);
-            }
-        }
-
-        /**
-         * 處理圖片生成模型的邏輯
-         */
-        async function handleImageGeneration(userParts) {
-            const conv = getActiveConversation();
-            const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
-            
-            try {
-                const imageBase64 = await callImageGenerationApi(userParts, abortController.signal);
                 
-                const finalAiMessage = {
-                    role: 'model',
-                    parts: [{
-                        inlineData: {
-                            mimeType: 'image/png',
-                            data: imageBase64
-                        }
-                    }],
-                    createdAt: new Date().toISOString()
-                };
-                
-                // 移除 loading...
-                loadingMessageDiv.remove(); 
-                // 將圖片結果加入 UI
-                addMessageToUI(finalAiMessage, conv.messages.length, true);
+                // ▼▼▼ 優化：AI 回覆完成後，不再重新渲染整個聊天室，而是僅更新最後一則訊息的 UI ▼▼▼
+                const lastMessageDiv = ALL_ELEMENTS.messageList.lastElementChild;
+                if (lastMessageDiv && lastMessageDiv.classList.contains('model-message')) {
+                    const bubble = lastMessageDiv.querySelector('.message-bubble');
+                    const content = lastMessageDiv.querySelector('.message-content');
+                    const aiMessageObject = conv.messages[conv.messages.length - 1];
 
-            } catch (error) {
-                const errorText = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
-                loadingMessageDiv.querySelector('.message-content').textContent = errorText;
-                
-                // 也將錯誤訊息存入對話紀錄
-                const errorMessage = { role: 'model', parts: [{ text: errorText }], createdAt: new Date().toISOString() };
-                conv.messages.push(errorMessage);
-                if (!isTemporaryChat) await saveAppData();
 
-            } finally {
-                abortController = null;
-                updateSubmitButtonState(false);
-                sendConfirmed = false;
-                updateInputState();
+                    if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute')) { 
+                        content.classList.add('pb-8');
+                        
+                        const timeString = formatFullTimestamp(aiMessageObject.createdAt);
+                        const actionButtonsHTML = `
+                            <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
+                                <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                </button>
+                                <span class="text-xs text-gray-400">${timeString}</span>
+                            </div>
+                        `;
+                        bubble.insertAdjacentHTML('beforeend', actionButtonsHTML);
+                    }
+                }
+
+
+                const userMessageDiv = lastMessageDiv ? lastMessageDiv.previousElementSibling : null;
+                if (userMessageDiv && userMessageDiv.classList.contains('user-message')) {
+                    const bubble = userMessageDiv.querySelector('.message-bubble');
+                    const content = userMessageDiv.querySelector('.message-content');
+                    if (bubble && content && !bubble.querySelector('.delete-message-btn')) {
+                        content.classList.add('pb-8');
+                        const deleteButtonHTML = `
+                            <div class="absolute bottom-2 left-2 flex items-center">
+                                <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                </button>
+                            </div>
+                        `;
+                        bubble.insertAdjacentHTML('beforeend', deleteButtonHTML);
+                    }
+                }
+                // ▲▲▲ 結束優化 ▲▲▲
             }
-        }
-
-        async function callImageGenerationApi(parts, signal) {
-            const conv = getActiveConversation();
-            const modelInfo = MODELS.find(m => m.id === conv.model);
-            if (!modelInfo) throw new Error(`找不到模型設定: ${conv.model}`);
-
-            const apiKey = config.apiKeys.gemini;
-            if (!apiKey) throw new Error(`請先在設定中提供 Gemini API 金鑰。`);
-
-            // Gemini Image Gen API 通常在不同的 endpoint
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelInfo.id}:generateContent?key=${apiKey}`;
-
-            const payload = {
-                contents: [{ role: 'user', parts: parts }],
-                // 可以在此添加 generationConfig，例如 safetySettings
-            };
-
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-                signal
-            });
-
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.error?.message || '圖片生成 API 請求失敗');
-            }
-
-            const result = await response.json();
-            const imageBase64 = result?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-
-            if (!imageBase64) {
-                throw new Error('API 回應中未找到圖片資料。');
-            }
-
-            return imageBase64;
-        }
-
+        };
         function cleanGeminiHistory(history) {
             const cleaned = []; let lastRole = null;
             history.forEach(msg => {
@@ -4200,10 +4070,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 return false;
             }
             const systemPrompt = "你是一個判斷器，根據使用者問題判斷是否需要連網搜尋。如果問題是關於即時、最新資訊、或特定事實，請回答'yes'。如果是常識性、創意寫作、程式碼等，請回答'no'。只輸出'yes'或'no'，不要有任何其他文字。";
-            好的，這是在您指定的程式碼位置之後，直到檔案結尾的完整部分。
-
-```javascript
-            const systemPrompt = "你是一個判斷器，根據使用者問題判斷是否需要連網搜尋。如果問題是關於即時、最新資訊、或特定事實，請回答'yes'。如果是常識性、創意寫作、程式碼等，請回答'no'。只輸出'yes'或'no'，不要有任何其他文字。";
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${CHEAP_MODEL_ID}:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -4303,14 +4169,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.followUpToggleBtn.classList.toggle('rotate-180', !isFollowUpExpanded);
         };
         const updateFollowUpUI = () => {
-            // 圖片生成模型不顯示後續追問
-            const conv = getActiveConversation();
-            const modelInfo = conv ? MODELS.find(m => m.id === conv.model) : null;
-            if (modelInfo && modelInfo.isImageGenerator) {
-                ALL_ELEMENTS.followUpContainer.classList.add('hidden');
-                return;
-            }
-
             if (config.enableFollowUp) {
                 ALL_ELEMENTS.followUpContainer.classList.remove('hidden');
             } else {
@@ -4322,6 +4180,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
 
+            const conv = getActiveConversation();
             if (conv && conv.messages.length > 0 && conv.messages[conv.messages.length-1].role === 'model') {
                 if (config.enableFollowUp) {
                     const lastMessage = conv.messages[conv.messages.length-1].parts.map(p => p.text).join(' ');
@@ -6483,90 +6342,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         // ▲▲▲ 結束新增 ▲▲▲
         
-        // ▼▼▼ 新增：圖片編輯與下載功能函式 ▼▼▼
-        /**
-         * 開啟圖片編輯 Modal 並初始化 Cropper.js
-         */
-        function openImageEditor(messageDiv) {
-            const imgElement = messageDiv.querySelector('.generated-image-container img');
-            if (!imgElement) return;
-
-            const convId = messageDiv.dataset.convId;
-            const messageIndex = parseInt(messageDiv.dataset.messageIndex);
-            
-            // 儲存正在編輯的圖片資訊
-            editingImageInfo = { messageDiv, convId, messageIndex };
-
-            ALL_ELEMENTS.imageToEdit.src = imgElement.src;
-            toggleModal(ALL_ELEMENTS.imageEditModal, true);
-
-            if (cropperInstance) {
-                cropperInstance.destroy();
-            }
-            cropperInstance = new Cropper(ALL_ELEMENTS.imageToEdit, {
-                viewMode: 1,
-                background: false,
-                autoCropArea: 1,
-            });
-        }
-
-        /**
-         * 下載圖片
-         */
-        function downloadImage(imgElement) {
-            const link = document.createElement('a');
-            link.href = imgElement.src;
-            link.download = `generated-image-${Date.now()}.png`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            showNotification(i18n[config.uiLanguage].downloadStarted || '下載已開始...', 'success');
-        }
-
-        /**
-         * 處理確認編輯後的儲存邏輯
-         */
-        async function handleConfirmImageEdit() {
-            if (!cropperInstance || !editingImageInfo.messageDiv) return;
-
-            const { convId, messageIndex } = editingImageInfo;
-            const conv = conversations.find(c => c.id === convId);
-
-            if (!conv || !conv.messages[messageIndex]) {
-                showNotification('找不到原始對話訊息，無法儲存。', 'error');
-                return;
-            }
-
-            const canvas = cropperInstance.getCroppedCanvas({
-                maxWidth: 2048, // 限制最大寬度以避免效能問題
-                imageSmoothingQuality: 'high',
-            });
-            
-            const newImageDataUrl = canvas.toDataURL('image/png');
-            const newBase64 = newImageDataUrl.split(',')[1];
-            
-            // 更新對話紀錄中的資料
-            conv.messages[messageIndex].parts[0].inlineData.data = newBase64;
-            
-            // 更新 UI 上的圖片
-            const imgElement = editingImageInfo.messageDiv.querySelector('.generated-image-container img');
-            imgElement.src = newImageDataUrl;
-            
-            // 儲存變更
-            if (!isTemporaryChat) {
-                await saveAppData();
-            }
-            
-            toggleModal(ALL_ELEMENTS.imageEditModal, false);
-            showNotification(i18n[config.uiLanguage].imageUpdated || '圖片已更新！', 'success');
-
-            // 清空編輯資訊
-            editingImageInfo = { messageDiv: null, convId: null, messageIndex: -1 };
-            cropperInstance.destroy();
-            cropperInstance = null;
-        }
-        // ▲▲▲ 結束新增 ▲▲▲
-        
         // ▼▼▼ 新增：語言切換功能 ▼▼▼
         const applyLanguage = (lang) => {
             const translations = i18n[lang] || i18n['zh-TW'];
@@ -6677,49 +6452,37 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.userProfileBtn.addEventListener('click', openDashboard);
             ALL_ELEMENTS.closeDashboardBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.dataDashboardModal, false));
             // ▲▲▲ 結束新增 ▲▲▲
-             // ▼▼▼ 修改：messageList 的點擊事件委派 ▼▼▼
+             // ▼▼▼ 修改：使用新的複製函式處理複製事件與新增的刪除事件 ▼▼▼
             ALL_ELEMENTS.messageList.addEventListener('click', (e) => {
-                const target = e.target;
-                const messageItem = target.closest('.message-item');
-                if (!messageItem) return;
+                const copyBtn = e.target.closest('.copy-content-btn');
+                const deleteBtn = e.target.closest('.delete-message-btn');
 
-                // 處理複製按鈕
-                if (target.closest('.copy-content-btn')) {
-                    const messageIndex = parseInt(messageItem.dataset.messageIndex);
-                    const conv = getActiveConversation();
-                    const msg = conv?.messages[messageIndex];
-                    if (msg && msg.role === 'model') {
-                        const textToCopy = msg.parts.filter(p => p.text).map(p => p.text).join('\n');
-                        if (textToCopy) {
+
+                if (copyBtn) {
+                    const messageItem = copyBtn.closest('.message-item');
+                    if (messageItem) {
+                        const messageIndex = parseInt(messageItem.dataset.messageIndex);
+                        const conv = getActiveConversation();
+                        const msg = conv?.messages[messageIndex];
+                        if (msg && msg.role === 'model') {
+                            const textToCopy = msg.parts.map(p => p.text).join('\n');
                             copyTextToClipboard(textToCopy)
                                 .then(() => showNotification(i18n[config.uiLanguage].copySuccess || '內容已複製！', 'success'))
-                                .catch(err => showNotification(i18n[config.uiLanguage].copyFailed || '複製失敗！', 'error'));
+                                .catch(err => {
+                                    showNotification(i18n[config.uiLanguage].copyFailed || '複製失敗！瀏覽器可能限制了此功能。', 'error');
+                                    console.error('Could not copy text with any method: ', err);
+                                });
                         }
                     }
-                    return;
-                }
-
-                // 處理刪除按鈕
-                if (target.closest('.delete-message-btn')) {
-                    const messageIndex = parseInt(messageItem.dataset.messageIndex);
-                    handleDeleteMessagePair(messageIndex);
-                    return;
-                }
-
-                // 處理圖片編輯按鈕
-                if (target.closest('.edit-image-btn')) {
-                    openImageEditor(messageItem);
-                    return;
-                }
-
-                // 處理圖片下載按鈕
-                if (target.closest('.download-image-btn')) {
-                    const img = messageItem.querySelector('.generated-image-container img');
-                    if (img) downloadImage(img);
-                    return;
+                } else if (deleteBtn) {
+                    const messageItem = deleteBtn.closest('.message-item');
+                     if (messageItem) {
+                        const messageIndex = parseInt(messageItem.dataset.messageIndex);
+                        handleDeleteMessagePair(messageIndex);
+                    }
                 }
             });
-            // ▲▲▲ 結束修改 ▲▲▲
+             // ▲▲▲ 結束修改 ▲▲▲
             ALL_ELEMENTS.addFileBtn.addEventListener('click', (e) => {
                 const popover = ALL_ELEMENTS.fileOptionsPopover;
                 if (popover.classList.contains('visible')) {
@@ -6899,16 +6662,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 editingAstraForAvatarId = null;
             });
             // ▲▲▲ 結束新增 ▲▲▲
-            // ▼▼▼ 新增：圖片編輯 Modal 事件監聽 ▼▼▼
-            ALL_ELEMENTS.confirmImageEditBtn.addEventListener('click', handleConfirmImageEdit);
-            ALL_ELEMENTS.cancelImageEditBtn.addEventListener('click', () => {
-                toggleModal(ALL_ELEMENTS.imageEditModal, false);
-                if (cropperInstance) {
-                    cropperInstance.destroy();
-                    cropperInstance = null;
-                }
-            });
-            // ▲▲▲ 結束新增 ▲▲▲
 
 
             updateFileInputUI();
@@ -6987,3 +6740,4 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     </script>
 </body>
 </html>
+
