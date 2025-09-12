@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>進階 AI 聊天機器人 Astra-nos-14.6.6</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.6.7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -1216,6 +1216,38 @@
         #avatar-crop-container .cropper-view-box,
         #avatar-crop-container .cropper-face {
             border-radius: 50%;
+        }
+        /* ▲▲▲ 結束：Astras 商店相關樣式 ▲▲▲ */
+
+        /* ▼▼▼ 【問題修正】修正自訂義桌布模式下商店頁面元素顏色 (改為黑色) ▼▼▼ */
+        body.custom-wallpaper-active .astras-store-card {
+            background-color: rgba(255, 255, 255, 0.75) !important; /* 增加白色半透明背景以突顯內容 */
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-color: rgba(200, 200, 200, 0.5) !important;
+        }
+
+        body.custom-wallpaper-active #store-container header h1,
+        body.custom-wallpaper-active #store-container header #back-to-chat-btn,
+        body.custom-wallpaper-active .astras-card-name,
+        body.custom-wallpaper-active .astras-card-desc,
+        body.custom-wallpaper-active .astras-card-avatar {
+            color: #000000 !important; /* 強制所有相關文字/圖示為純黑色 */
+        }
+        /* ▲▲▲ 結束：Astras 商店相關樣式 ▲▲▲ */
+
+        /* ▼▼▼ 【問題修正】修正自訂義桌布模式下商店頁面看不清楚的問題 (文字改為黑色) ▼▼▼ */
+        body.custom-wallpaper-active .astras-store-card {
+            background-color: rgba(255, 255, 255, 0.75) !important; /* 增加白色半透明背景以突顯內容 */
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-color: rgba(200, 200, 200, 0.5) !important;
+        }
+
+        body.custom-wallpaper-active .astras-card-name,
+        body.custom-wallpaper-active .astras-card-desc,
+        body.custom-wallpaper-active .astras-card-avatar {
+            color: #000000 !important; /* 強制所有文字為純黑色 */
         }
         /* ▲▲▲ 結束：Astras 商店相關樣式 ▲▲▲ */
     </style>
@@ -3919,10 +3951,40 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 if (systemInstruction) {
                     messages.push({ role: 'system', content: systemInstruction.parts[0].text });
                 }
-                messages.push(...[...historyForApi, currentMessageForApi].map(m => ({
-                    role: m.role === 'model' ? 'assistant' : m.role,
-                    content: m.parts.map(p => p.text).join('\n')
-                })));
+
+                // ▼▼▼ 從這裡開始修改 ▼▼▼
+                [...historyForApi, currentMessageForApi].forEach(m => {
+                    const role = m.role === 'model' ? 'assistant' : m.role;
+                    const hasMedia = m.parts.some(p => p.inlineData);
+
+                    // 如果訊息包含檔案 (多模態)
+                    if (hasMedia) {
+                        const content = m.parts.map(p => {
+                            if (p.text) {
+                                return { type: 'text', text: p.text };
+                            }
+                            if (p.inlineData) {
+                                return {
+                                    type: 'image_url',
+                                    image_url: {
+                                        // 建立標準的 data URI
+                                        url: `data:${p.inlineData.mimeType};base64,${p.inlineData.data}`
+                                    }
+                                };
+                            }
+                            return null;
+                        }).filter(Boolean); // 過濾掉可能的 null 值
+
+                        messages.push({ role, content });
+                    
+                    // 如果訊息只包含文字
+                    } else {
+                        const content = m.parts.map(p => p.text).join('\n');
+                        messages.push({ role, content });
+                    }
+                });
+                // ▲▲▲ 修改到這裡結束 ▲▲▲
+
                 payload = {
                     model: modelId,
                     messages,
@@ -3933,6 +3995,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 };
                 headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
             }
+
             const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
             if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'API 請求失敗'); }
             const reader = response.body.getReader();
