@@ -3951,40 +3951,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 if (systemInstruction) {
                     messages.push({ role: 'system', content: systemInstruction.parts[0].text });
                 }
-
-                // ▼▼▼ 從這裡開始修改 ▼▼▼
-                [...historyForApi, currentMessageForApi].forEach(m => {
-                    const role = m.role === 'model' ? 'assistant' : m.role;
-                    const hasMedia = m.parts.some(p => p.inlineData);
-
-                    // 如果訊息包含檔案 (多模態)
-                    if (hasMedia) {
-                        const content = m.parts.map(p => {
-                            if (p.text) {
-                                return { type: 'text', text: p.text };
-                            }
-                            if (p.inlineData) {
-                                return {
-                                    type: 'image_url',
-                                    image_url: {
-                                        // 建立標準的 data URI
-                                        url: `data:${p.inlineData.mimeType};base64,${p.inlineData.data}`
-                                    }
-                                };
-                            }
-                            return null;
-                        }).filter(Boolean); // 過濾掉可能的 null 值
-
-                        messages.push({ role, content });
-                    
-                    // 如果訊息只包含文字
-                    } else {
-                        const content = m.parts.map(p => p.text).join('\n');
-                        messages.push({ role, content });
-                    }
-                });
-                // ▲▲▲ 修改到這裡結束 ▲▲▲
-
+                messages.push(...[...historyForApi, currentMessageForApi].map(m => ({
+                    role: m.role === 'model' ? 'assistant' : m.role,
+                    content: m.parts.map(p => p.text).join('\n')
+                })));
                 payload = {
                     model: modelId,
                     messages,
@@ -3995,7 +3965,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 };
                 headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
             }
-
             const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
             if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'API 請求失敗'); }
             const reader = response.body.getReader();
