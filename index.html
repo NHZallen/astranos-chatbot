@@ -1604,6 +1604,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         <li class="settings-nav-item p-3 rounded-md active" data-section="personalization" data-lang-key="personalization">個人化</li>
                         <li class="settings-nav-item p-3 rounded-md" data-section="memory" data-lang-key="memoryManagement">記憶管理</li>
                         <li class="settings-nav-item p-3 rounded-md" data-section="model-management" data-lang-key="modelManagement">模型管理</li>
+                        <li class="settings-nav-item p-3 rounded-md" data-section="plugin-management" data-lang-key="pluginManagement">插件管理</li>
                         <li class="settings-nav-item p-3 rounded-md" data-section="data-management" data-lang-key="dataManagement">資料管理</li>
                         <li class="settings-nav-item p-3 rounded-md" data-section="accessibility" data-lang-key="accessibility">輔助功能</li>
                         <li class="settings-nav-item p-3 rounded-md" data-section="about" data-lang-key="about">關於</li>
@@ -1726,6 +1727,33 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     </div>
                     <!-- 模型管理 -->
                     <div id="model-management-section" class="settings-section">
+                        <div id="plugin-management-section" class="settings-section">
+                        <h3 class="text-lg font-semibold mb-3" data-lang-key="pluginManagement">插件管理</h3>
+                        <div class="space-y-4">
+                            <!-- File Parser Plugin -->
+                            <div class="p-4 border border-[var(--border-color)] rounded-lg">
+                                <div class="flex items-center justify-between">
+                                    <label for="file-parser-toggle" class="flex-1 text-sm font-medium" data-lang-key="fileParserPlugin">啟用檔案解析插件 (OpenRouter)</label>
+                                    <div class="relative inline-block w-12 h-6 mr-2 align-middle select-none transition duration-200 ease-in">
+                                        <input type="checkbox" id="file-parser-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                                        <label for="file-parser-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-[var(--text-secondary)] mt-2" data-lang-key="fileParserPluginDesc">
+                                    允許模型直接讀取 PDF 等文件內容。僅適用於支援此功能的 OpenRouter 模型。
+                                </p>
+                                <div id="pdf-engine-selector-container" class="mt-4">
+                                    <label for="pdf-engine-select" class="block text-sm font-medium mb-1" data-lang-key="pdfProcessingEngine">PDF 處理引擎</label>
+                                    <select id="pdf-engine-select" class="w-full p-2 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)]">
+                                        <option value="pdf-text">pdf-text (速度快，成本低)</option>
+                                        <option value="mistral-ocr">mistral-ocr (精準度高，適用掃描件)</option>
+                                        <option value="native">native (使用模型內建能力)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- ▲▲▲ 結束新增 ▲▲▲ -->
                         <h3 class="text-lg font-semibold mb-3" data-lang-key="apiKeyManagement">API 金鑰管理</h3>
                         <div class="space-y-4">
                             <div>
@@ -2352,6 +2380,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             confirmAvatarCropBtn: document.getElementById('confirm-avatar-crop-btn'),
             cancelAvatarCropBtn: document.getElementById('cancel-avatar-crop-btn'),
             astrasAvatarInput: document.getElementById('astras-avatar-input'),
+            fileParserToggle: document.getElementById('file-parser-toggle'),
+            pdfEngineSelect: document.getElementById('pdf-engine-select'),
+            pdfEngineSelectorContainer: document.getElementById('pdf-engine-selector-container'),
             // ▲▲▲ 結束新增 ▲▲▲
         };
         // 修正: 模型ID更新為最新的公開版本
@@ -2411,6 +2442,21 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let activeConversationId = null;
         let lastNonTempConversationId = null;
         let config = {
+            apiKeys: { gemini: '', openrouter: '' },
+            defaultModel: MODELS[0].id,
+            theme: 'light',
+            modelSettings: [],
+            // ... 其他設定 ...
+            aiDefaultLanguage: 'zh-TW',
+            // ▼▼▼ 【新增處】新增插件管理設定 ▼▼▼
+            plugins: {
+                fileParser: {
+                    enabled: true,
+                    pdfEngine: 'pdf-text', // 'pdf-text', 'mistral-ocr', or 'native'
+                }
+            }
+            // ▲▲▲ 結束新增 ▲▲▲
+        };
             // ▼▼▼ 需求 2 修正：將 openrouter 的結構從物件改為字串 ▼▼▼
             apiKeys: { gemini: '', openrouter: '' },
             // ▲▲▲ 結束修正 ▲▲▲
@@ -3744,7 +3790,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
             try {
-                const completeResponse = await streamApiCall(
+                // ▼▼▼ 【修改處 1】使用物件解構來接收 streamApiCall 的回傳值 ▼▼▼
+                const { fullText, annotations } = await streamApiCall(
                     userParts,
                     (chunk) => {
                         fullResponse += chunk;
@@ -3756,21 +3803,29 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     },
                     abortController.signal
                 );
-                fullResponse = completeResponse;
+
+                fullResponse = fullText; // 將接收到的文字賦值給 fullResponse
                 finalAiMessage.parts = [{ text: fullResponse }];
+
+                // ▼▼▼ 【修改處 2】如果 annotations 存在，就將它存入 AI 訊息物件中 ▼▼▼
+                if (annotations) {
+                    finalAiMessage.annotations = annotations;
+                }
+                
+                // 將包含文字和 annotations 的完整訊息物件存入對話紀錄
                 conv.messages.push(finalAiMessage);
                 if (!isTemporaryChat) await saveAppData();
 
-
-
-
+                // 檢查並觸發後續功能
                 if(config.enableFollowUp) {
                     await generateFollowUpPrompts(fullResponse);
                 }
-                if (config.memoryEnabled1 && config.enableAutoMemory) { // 檢查兩個開關
+                if (config.memoryEnabled1 && config.enableAutoMemory) {
                     await extractPersonalMemory(userMessage, fullResponse);
                 }
+
             } catch (error) {
+                // 錯誤處理邏輯 (這部分維持不變)
                 if (error.name === 'AbortError') {
                     contentDiv.innerHTML = renderMarkdown(fullResponse);
                     finalAiMessage.parts = [{ text: fullResponse }];
@@ -3781,19 +3836,19 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     conv.messages.push(finalAiMessage);
                 }
                 if (!isTemporaryChat) await saveAppData();
+
             } finally {
+                // 清理工作與 UI 更新 (這部分維持不變)
                 abortController = null;
                 updateSubmitButtonState(false);
                 sendConfirmed = false;
                 updateInputState();
                 
-                // ▼▼▼ 優化：AI 回覆完成後，不再重新渲染整個聊天室，而是僅更新最後一則訊息的 UI ▼▼▼
                 const lastMessageDiv = ALL_ELEMENTS.messageList.lastElementChild;
                 if (lastMessageDiv && lastMessageDiv.classList.contains('model-message')) {
                     const bubble = lastMessageDiv.querySelector('.message-bubble');
                     const content = lastMessageDiv.querySelector('.message-content');
                     const aiMessageObject = conv.messages[conv.messages.length - 1];
-
 
                     if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute')) { 
                         content.classList.add('pb-8');
@@ -3811,7 +3866,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     }
                 }
 
-
                 const userMessageDiv = lastMessageDiv ? lastMessageDiv.previousElementSibling : null;
                 if (userMessageDiv && userMessageDiv.classList.contains('user-message')) {
                     const bubble = userMessageDiv.querySelector('.message-bubble');
@@ -3828,7 +3882,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         bubble.insertAdjacentHTML('beforeend', deleteButtonHTML);
                     }
                 }
-                // ▲▲▲ 結束優化 ▲▲▲
             }
         };
         function cleanGeminiHistory(history) {
@@ -3936,45 +3989,62 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     payload.tools = [{"googleSearch": {}}];
                 }
                 headers = { 'Content-Type': 'application/json' };
-            } else {
+            } else { // Provider is 'openrouter'
                 url = 'https://openrouter.ai/api/v1/chat/completions';
-                const messages = [];
-                if (systemInstruction) {
-                    messages.push({ role: 'system', content: systemInstruction.parts[0].text });
-                }
-
-                // ▼▼▼ 【修改處】重構訊息格式以支援多模態 (文字 + 圖片) ▼▼▼
+                
+                // ▼▼▼ 【修改處】重構訊息格式以支援多模態 (圖片 + 檔案) 及 Annotations ▼▼▼
                 const transformedMessages = [...historyForApi, currentMessageForApi].map(m => {
-                    // 將 parts 陣列轉換成 OpenRouter API 接受的格式
                     const contentParts = m.parts.map(p => {
                         if (p.text) {
                             return { type: 'text', text: p.text };
-                        } else if (p.inlineData && p.inlineData.mimeType.startsWith('image/')) {
-                            // 僅處理圖片類型的檔案
-                            return {
-                                type: 'image_url',
-                                image_url: {
-                                    url: `data:${p.inlineData.mimeType};base64,${p.inlineData.data}`
-                                }
-                            };
+                        } else if (p.inlineData) {
+                            const isImage = p.inlineData.mimeType.startsWith('image/');
+                            const fileDataUri = `data:${p.inlineData.mimeType};base64,${p.inlineData.data}`;
+                            
+                            if (isImage) {
+                                // 處理圖片
+                                return {
+                                    type: 'image_url',
+                                    image_url: { url: fileDataUri }
+                                };
+                            } else if (config.plugins.fileParser.enabled) {
+                                // 處理其他檔案 (如 PDF)
+                                return {
+                                    type: 'file',
+                                    file: {
+                                        filename: p.inlineData.name || 'document.pdf',
+                                        file_data: fileDataUri,
+                                    }
+                                };
+                            }
                         }
-                        return null; // 忽略非圖片的其他檔案類型
-                    }).filter(Boolean); // 過濾掉 null 的部分
+                        return null; // 忽略不支援的 part
+                    }).filter(Boolean);
 
-                    // 如果訊息中只有一個純文字部分，content 直接設為字串，否則為陣列
                     const finalContent = (contentParts.length === 1 && contentParts[0].type === 'text')
                         ? contentParts[0].text
                         : contentParts;
                     
-                    return {
+                    const messageObject = {
                         role: m.role === 'model' ? 'assistant' : m.role,
                         content: finalContent
                     };
+                    
+                    // 如果訊息中儲存了 annotations，就把它加回去
+                    if (m.annotations) {
+                        messageObject.annotations = m.annotations;
+                    }
+
+                    return messageObject;
                 });
 
+                const messages = [];
+                if (systemInstruction) {
+                    messages.push({ role: 'system', content: systemInstruction.parts[0].text });
+                }
                 messages.push(...transformedMessages);
                 // ▲▲▲ 結束修改 ▲▲▲
-                
+
                 payload = {
                     model: modelId,
                     messages,
@@ -3983,6 +4053,21 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
                     ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
                 };
+
+                // ▼▼▼ 【新增處】動態加入 plugins 物件 ▼▼▼
+                const hasFile = messages.some(m => Array.isArray(m.content) && m.content.some(p => p.type === 'file'));
+                if (config.plugins.fileParser.enabled && hasFile) {
+                    payload.plugins = [
+                        {
+                            id: 'file-parser',
+                            pdf: {
+                                engine: config.plugins.fileParser.pdfEngine,
+                            },
+                        },
+                    ];
+                }
+                // ▲▲▲ 結束新增 ▲▲▲
+
                 headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
             }
             const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
@@ -4034,8 +4119,25 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     }
                 }
             }
-            return fullText;
+            if (provider === 'openrouter' && buffer.startsWith('data: ')) {
+            const data = buffer.substring(6);
+            if (data.trim() !== '[DONE]') {
+                 try {
+                    const parsed = JSON.parse(data);
+                    // OpenRouter 可能會在最後一個 chunk 中回傳 annotations
+                    if (parsed.choices && parsed.choices[0]?.message?.annotations) {
+                       return {
+                           fullText,
+                           annotations: parsed.choices[0].message.annotations
+                       };
+                    }
+                } catch (e) { /* Ignore final parsing errors if any */ }
+            }
         }
+        // ▲▲▲ 結束新增 ▲▲▲
+
+        return { fullText, annotations: null }; // 預設回傳
+    }
         async function callApiWithSchema(prompt, responseSchema, signal) {
             const apiKey = config.apiKeys.gemini;
             if (!apiKey) {
@@ -4302,6 +4404,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.autoWebSearchToggleSwitch.checked = config.enableAutoWebSearch;
             ALL_ELEMENTS.memoryToggle1.checked = config.memoryEnabled1;
             ALL_ELEMENTS.autoMemoryToggleSwitch.checked = config.enableAutoMemory;
+            ALL_ELEMENTS.fileParserToggle.checked = config.plugins.fileParser.enabled;
+            ALL_ELEMENTS.pdfEngineSelect.value = config.plugins.fileParser.pdfEngine;
+            ALL_ELEMENTS.pdfEngineSelectorContainer.style.display = config.plugins.fileParser.enabled ? 'block' : 'none';
+
+            ALL_ELEMENTS.fileParserToggle.addEventListener('change', (e) => {
+                 ALL_ELEMENTS.pdfEngineSelectorContainer.style.display = e.target.checked ? 'block' : 'none';
+            });
             // ▼▼▼ 新增：設定語言下拉選單的初始值 ▼▼▼
             ALL_ELEMENTS.uiLanguageSelect.value = config.uiLanguage;
             ALL_ELEMENTS.aiLanguageSelect.value = config.aiDefaultLanguage;
@@ -4342,6 +4451,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             // ▼▼▼ 新增：儲存語言設定 ▼▼▼
             config.uiLanguage = ALL_ELEMENTS.uiLanguageSelect.value;
             config.aiDefaultLanguage = ALL_ELEMENTS.aiLanguageSelect.value;
+            config.plugins.fileParser.enabled = ALL_ELEMENTS.fileParserToggle.checked;
+            config.plugins.fileParser.pdfEngine = ALL_ELEMENTS.pdfEngineSelect.value;
             // ▲▲▲ 結束新增 ▲▲▲
             
             // ▼▼▼ 新增：儲存 UI 顏色設定 ▼▼▼
