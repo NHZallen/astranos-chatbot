@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>進階 AI 聊天機器人 Astra-nos-14.6.7</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.6.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -1218,83 +1218,6 @@
             border-radius: 50%;
         }
         /* ▲▲▲ 結束：Astras 商店相關樣式 ▲▲▲ */
-        
-        /* ▼▼▼ 新增：檔案上傳進度圈與檔名樣式 ▼▼▼ */
-        .file-preview-item {
-            /* 將預覽項目改為垂直 flex 佈局以容納檔名 */
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.25rem; /* 4px */
-            width: 80px; /* 稍微加寬以顯示較長的檔名 */
-            animation: subtleScaleIn 0.3s ease-out forwards;
-        }
-
-        .preview-box {
-            position: relative;
-            width: 64px;  /* w-16 */
-            height: 64px; /* h-16 */
-            background-color: var(--hover-bg);
-            border-radius: 0.5rem; /* rounded-lg */
-            overflow: hidden;
-            flex-shrink: 0;
-        }
-
-        .progress-overlay {
-            position: absolute;
-            inset: 0;
-            background-color: rgba(0, 0, 0, 0.6);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 1;
-            transition: opacity 0.3s ease-in-out;
-            z-index: 1;
-        }
-
-        .progress-overlay.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .progress-ring {
-            transform: rotate(-90deg); /* 讓起始點在頂部 */
-        }
-
-        .progress-ring__circle {
-            transition: stroke-dashoffset 0.2s linear;
-        }
-
-        .remove-file-btn {
-            position: absolute;
-            top: 0.25rem;
-            right: 0.25rem;
-            width: 1.25rem;
-            height: 1.25rem;
-            background-color: rgba(0, 0, 0, 0.5);
-            color: white;
-            border-radius: 9999px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
-            line-height: 1;
-            z-index: 2;
-            border: none;
-            cursor: pointer;
-        }
-
-        .file-name-display {
-            font-size: 0.75rem; /* 12px */
-            color: var(--text-secondary);
-            width: 100%;
-            text-align: center;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            padding: 0 4px;
-        }
-        /* ▲▲▲ 結束新增 ▲▲▲ */
     </style>
 
 
@@ -5124,104 +5047,53 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             };
             return await callApiWithSchema(prompt, responseSchema);
         };
-
-        // ▼▼▼ 修改：檔案上傳進度圈相關函式 ▼▼▼
         const renderFilePreviews = () => {
             const { filePreviewContainer } = ALL_ELEMENTS;
             filePreviewContainer.innerHTML = '';
             uploadedFiles.forEach(file => {
                 const previewEl = document.createElement('div');
-                previewEl.className = 'file-preview-item';
-                previewEl.dataset.fileId = file.id;
-
-                let previewContent = '';
+                previewEl.className = 'relative w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden file-preview-item';
+               
                 if (file.type.startsWith('image/')) {
-                    previewContent = `<img src="${file.base64}" class="w-full h-full object-cover">`;
+                    previewEl.innerHTML = `<img src="${file.base64}" class="w-full h-full object-cover">`;
                 } else {
-                    previewContent = `<div class="w-full h-full flex items-center justify-center">
+                    previewEl.innerHTML = `<div class="w-full h-full flex items-center justify-center">
                        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
                     </div>`;
                 }
-
-                previewEl.innerHTML = `
-                    <div class="preview-box">
-                        ${previewContent}
-                        <div class="progress-overlay">
-                            <svg class="progress-ring" width="40" height="40">
-                                <circle class="progress-ring__circle-bg" stroke="rgba(255, 255, 255, 0.3)" stroke-width="4" fill="transparent" r="18" cx="20" cy="20"/>
-                                <circle class="progress-ring__circle" stroke="white" stroke-width="4" fill="transparent" r="18" cx="20" cy="20"/>
-                            </svg>
-                        </div>
-                        <button class="remove-file-btn" onclick="removeFile('${file.id}')">&times;</button>
-                    </div>
-                    <div class="file-name-display" title="${file.name}">${file.name}</div>
-                `;
-                
+               
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'absolute top-0 right-0 m-1 w-5 h-5 bg-black bg-opacity-50 text-white rounded-full flex items-center justify-center text-xs';
+                removeBtn.innerHTML = '&times;';
+                removeBtn.onclick = () => removeFile(file.id);
+               
+                previewEl.appendChild(removeBtn);
                 filePreviewContainer.appendChild(previewEl);
-                
-                const circle = previewEl.querySelector('.progress-ring__circle');
-                const radius = circle.r.baseVal.value;
-                const circumference = 2 * Math.PI * radius;
-                circle.style.strokeDasharray = `${circumference} ${circumference}`;
-                circle.style.strokeDashoffset = circumference;
             });
             updateInputState();
         };
-
         const handleFileSelection = (event) => {
             const files = event.target.files;
             if (!files) return;
-            
             Array.from(files).forEach(file => {
                 const reader = new FileReader();
-                const fileId = crypto.randomUUID();
-                
                 reader.onload = (e) => {
                     uploadedFiles.push({
-                        id: fileId,
-                        name: file.name,
-                        type: file.type,
+                        id: crypto.randomUUID(),
+                        name: file.name,type: file.type,
                         base64: e.target.result,
                     });
                     renderFilePreviews();
-                    simulateUpload(fileId); 
                 };
                 reader.readAsDataURL(file);
             });
            
             event.target.value = '';
         };
-
         const removeFile = (fileId) => {
             uploadedFiles = uploadedFiles.filter(f => f.id !== fileId);
             renderFilePreviews();
         };
-
-        const simulateUpload = (fileId) => {
-            const previewEl = document.querySelector(`.file-preview-item[data-file-id="${fileId}"]`);
-            if (!previewEl) return;
-
-            const circle = previewEl.querySelector('.progress-ring__circle');
-            const overlay = previewEl.querySelector('.progress-overlay');
-            const radius = circle.r.baseVal.value;
-            const circumference = 2 * Math.PI * radius;
-
-            let progress = 0;
-            const interval = setInterval(() => {
-                progress += 5;
-                
-                const offset = circumference - (progress / 100) * circumference;
-                circle.style.strokeDashoffset = offset;
-
-                if (progress >= 100) {
-                    clearInterval(interval);
-                    setTimeout(() => {
-                        overlay.classList.add('hidden');
-                    }, 300);
-                }
-            }, 75);
-        };
-        // ▲▲▲ 結束修改 ▲▲▲
         
         // ▼▼▼ 程式碼修正：處理行動裝置檔案匯出 ▼▼▼
         const handleExport = async () => {
@@ -6845,3 +6717,4 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     </script>
 </body>
 </html>
+
