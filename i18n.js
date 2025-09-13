@@ -936,4 +936,3 @@ window.i18n = {
     astras_official_editor_08_desc: 'Plan Directeur Espagnol est un assistant d\'apprentissage intelligent conçu pour les locuteurs natifs du chinois, axé sur les difficultés typiques en espagnol (conjugaison des verbes, accord en genre/nombre, temps/aspect, pronoms/ordre des mots, prononciation/accentuation, différences culturelles/pragmatiques). Il fournit des méthodes d\'apprentissage systématiques, des exemples de phrases, des conseils de prononciation, des dialogues situationnels et des compléments culturels pour aider les apprenants à construire une structure complète du niveau de base au niveau avancé, leur permettant d\'utiliser l\'espagnol de manière naturelle et confiante dans des scénarios réels (couvrant les variantes espagnoles et latino-américaines).',
   }
 };
-};
