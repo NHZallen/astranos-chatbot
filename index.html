@@ -5118,8 +5118,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderFilePreviews();
         };
         
-        // ▼▼▼ 程式碼修正：處理檔案匯出權限問題 ▼▼▼
+        // ▼▼▼ 程式碼修正 v2：增強匯出功能的穩健性 ▼▼▼
         const handleExport = async () => {
+            // Step 1: Gather and prepare the data. This part is synchronous and safe.
             const dataToExport = {
                 user_credentials: {
                     username: currentUser.username,
@@ -5146,20 +5147,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 return;
             }
            
-            try {
-                const fileName = `chatbot_backup_${currentUser.username}_${new Date().toISOString().split('T')[0]}.json`;
-                const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
-                
-                // --- 方法一: Web Share API (主要用於行動裝置) ---
-                if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], fileName, {type: blob.type})] })) {
-                    await navigator.share({
-                        files: [new File([blob], fileName, {type: blob.type})],
-                        title: 'Chatbot Backup',
-                        text: 'Here is your chatbot data backup.',
-                    });
+            const fileName = `chatbot_backup_${currentUser.username}_${new Date().toISOString().split('T')[0]}.json`;
+            const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
 
-                // --- 方法二: File System Access API (現代桌面瀏覽器) ---
-                } else if ('showSaveFilePicker' in window) {
+            // Step 2: Attempt the download using a prioritized sequence of methods.
+            try {
+                // Method 1: File System Access API (Most reliable for modern desktops)
+                if ('showSaveFilePicker' in window) {
+                    console.log("Attempting export with: File System Access API");
                     const handle = await window.showSaveFilePicker({
                         suggestedName: fileName,
                         types: [{
@@ -5170,27 +5165,57 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     const writable = await handle.createWritable();
                     await writable.write(blob);
                     await writable.close();
-                
-                // --- 方法三: 傳統 a 標籤下載 (作為最終備案) ---
-                } else {
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = fileName;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
+                    
+                    toggleModal(ALL_ELEMENTS.exportDataModal, false);
+                    showNotification(i18n[config.uiLanguage].exportSuccess || '資料匯出成功！', 'success');
+                    return; // Success, exit the function
                 }
-               
+
+                // Method 2: Web Share API (For mobile devices)
+                const shareFile = new File([blob], fileName, {type: blob.type});
+                if (navigator.share && navigator.canShare && navigator.canShare({ files: [shareFile] })) {
+                    console.log("Attempting export with: Web Share API");
+                    await navigator.share({
+                        files: [shareFile],
+                        title: 'Chatbot Backup',
+                        text: 'Here is your chatbot data backup.',
+                    });
+                    
+                    toggleModal(ALL_ELEMENTS.exportDataModal, false);
+                    // No success notification here, as the user might cancel, which is not an error.
+                    return; // Success (or user cancellation), exit the function
+                }
+
+                // Method 3: Traditional <a> tag download (Fallback for older browsers)
+                console.log("Attempting export with: Fallback <a> tag method");
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none'; // Hide the element
+                a.href = url;
+                a.download = fileName;
+                
+                document.body.appendChild(a);
+                a.click(); // This is the line that might fail
+                
+                // Clean up
+                URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
                 toggleModal(ALL_ELEMENTS.exportDataModal, false);
                 showNotification(i18n[config.uiLanguage].exportSuccess || '資料匯出成功！', 'success');
 
             } catch (error) {
-                // 如果使用者取消儲存/分享，會拋出 AbortError，這種情況下我們不需要顯示錯誤訊息
+                // Ignore errors caused by the user cancelling the action
                 if (error.name !== 'AbortError') { 
-                    console.error("Export failed:", error); // 在控制台記錄詳細錯誤
-                    showNotification(`${i18n[config.uiLanguage].exportFailed || '匯出失敗'}: ${error.message}`, 'error');
+                    console.error("Export failed with error:", error); // Log the full error for debugging
+                    // Provide a more specific error message if possible
+                    let errorMessage = i18n[config.uiLanguage].exportFailed || '匯出失敗';
+                    if (error.name === 'SecurityError' || error.message.toLowerCase().includes('permission denied')) {
+                       errorMessage = i18n[config.uiLanguage].exportPermissionError || "瀏覽器阻止了下載。請檢查您的瀏覽器設定，或手動啟用彈出視窗/下載權限。";
+                    }
+                    showNotification(`${errorMessage}: ${error.message}`, 'error');
+                } else {
+                    console.log("Export was cancelled by the user.");
                 }
             }
         };
