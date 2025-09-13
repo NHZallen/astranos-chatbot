@@ -294,13 +294,23 @@ window.i18n = {
 
 
         // Official Astras
-        astras_official_writer_01_name: '旅遊小編',
-        astras_official_writer_01_desc: '這是一款專為社群平台設計的Astras，能以優雅且富有感染力的語言撰寫旅遊景點與飯店介紹，透過細膩的文筆展現高級質感，同時結合城市歷史背景與熱門主題標籤，吸引目標客群並提升內容曝光度。',
-        astras_official_editor_02_name: '社群編輯',
-        astras_official_editor_02_desc: '社群編輯是一個專注於社群帳號經營的智慧助手，不會迎合或編造，而是以真實與一致為原則，協助檢視方向、發掘創意並掌握受眾回應，幫助在策略、內容與互動之間保持平衡，讓社群經營更有條理與延展性。',
-        astras_official_editor_03_name: '攝影之眼',
-        astras_official_editor_03_desc: '攝影之眼是一個專注於攝影的智慧助手，能夠針對構圖、主題、拍攝環境與設備設定提供實用建議。無論你使用手機還是相機，它都能根據不同情境給出專業且易懂的指引，幫助你捕捉更具故事性與美感的影像。',
-    },
+    astras_official_writer_01_name: '旅遊小編',
+    astras_official_writer_01_desc: '這是一款專為社群平台設計的Astras，能以優雅且富有感染力的語言撰寫旅遊景點與飯店介紹，透過細膩的文筆展現高級質感，同時結合城市歷史背景與熱門主題標籤，吸引目標客群並提升內容曝光度。',
+    astras_official_editor_02_name: '社群編輯',
+    astras_official_editor_02_desc: '社群編輯是一個專注於社群帳號經營的智慧助手，不會迎合或編造，而是以真實與一致為原則，協助檢視方向、發掘創意並掌握受眾回應，幫助在策略、內容與互動之間保持平衡，讓社群經營更有條理與延展性。',
+    astras_official_editor_03_name: '攝影之眼',
+    astras_official_editor_03_desc: '攝影之眼是一個專注於攝影的智慧助手，能夠針對構圖、主題、拍攝環境與設備設定提供實用建議。無論你使用手機還是相機，它都能根據不同情境給出專業且易懂的指引，幫助你捕捉更具故事性與美感的影像。',
+    astras_official_editor_04_name: 'Notion VP',
+    astras_official_editor_04_desc: 'Notion VP是一個專注於資訊整理與版面設計的智慧助手，能夠針對使用者提供的資料與需求，提出多種適用的整理方式，並且同時考慮在手機與電腦介面的可讀性與操作體驗。它不僅能協助梳理內容結構，還能提供清晰的版面規劃建議，讓資訊展示更有條理、直觀並具延展性。',
+    astras_official_editor_05_name: '剪序者',
+    astras_official_editor_05_desc: '剪序者是一個同時專注於影片構想與實際剪輯執行的智慧助手，能夠針對不同素材與需求，提供完整的故事設計、分鏡構思、節奏規劃，以及具體的後製操作建議。它的任務不只是提出抽象靈感，而是能幫助使用者將想法落實為實際可執行的剪輯方案，讓影片在敘事、節奏與視覺層面上達到最佳平衡。',
+    astras_official_editor_06_name: '法語藍圖',
+    astras_official_editor_06_desc: '法語藍圖是一個專為中文母語者設計的智慧學習助手，能夠針對中文學習者的語言特徵與常見困難，提供系統化的學習方法、例句示範、發音提示與文化補充，幫助使用者逐步構建從基礎到進階的法語藍圖。',
+    astras_official_editor_07_name: '語感英語',
+    astras_official_editor_07_desc: '語感英語是一個專為中文母語者設計的智慧學習助手，能針對中文學習者的語言特徵與學習痛點，提供系統化的學習方法、例句示範、發音提示與文化補充，幫助使用者在語言基礎與實際應用之間逐步建立完整的學習結構。',
+    astras_official_editor_08_name: '西文藍圖',
+    astras_official_editor_08_desc: '西語藍圖是一個專為中文母語者設計的智慧學習助手，聚焦中文學習者在西班牙語上的典型難點（動詞變位、陰陽性與性數一致、時態體貌、代詞與語序、發音與重音、文化與語用差異），提供系統化的學習方法、例句示範、發音提示、情境對話與文化補充，幫助學習者從基礎到進階逐步建立完整結構，能在真實場景中自然、自信地使用西語（西班牙與拉美變體皆涵蓋）。',
+  },
     'en': {
         // Login Page
         login: 'Login',
@@ -597,12 +607,22 @@ window.i18n = {
 
         // Official Astras
         astras_official_writer_01_name: 'Travel Blogger',
-        astras_official_writer_01_desc: 'This is an Astras designed for social media platforms, capable of writing elegant and engaging introductions for tourist attractions and hotels. It uses refined language to convey a high-end feel, incorporating the city\'s historical background and popular hashtags to attract the target audience and increase content visibility.',
-        astras_official_editor_02_name: 'Social Media Editor',
-        astras_official_editor_02_desc: 'The Social Media Editor is an intelligent assistant focused on social media account management. It operates on principles of authenticity and consistency, rather than pandering or fabricating, to help review strategies, discover creative ideas, manage audience responses, and maintain a balance between strategy, content, and interaction, making social media management more organized and scalable.',
-        astras_official_editor_03_name: 'Eye of Photography',
-        astras_official_editor_03_desc: 'Eye of Photography is an intelligent assistant focused on photography, capable of providing practical advice on composition, themes, shooting environments, and equipment settings. Whether you are using a smartphone or a camera, it offers clear, professional, and accessible guidance tailored to the situation, helping you capture images with stronger storytelling and aesthetic appeal.',
-    },
+    astras_official_writer_01_desc: 'This is an Astras designed for social media platforms, capable of writing elegant and engaging introductions for tourist attractions and hotels. It uses refined language to convey a high-end feel, incorporating the city\'s historical background and popular hashtags to attract the target audience and increase content visibility.',
+    astras_official_editor_02_name: 'Social Media Editor',
+    astras_official_editor_02_desc: 'The Social Media Editor is an intelligent assistant focused on social media account management. It operates on principles of authenticity and consistency, rather than pandering or fabricating, to help review strategies, discover creative ideas, manage audience responses, and maintain a balance between strategy, content, and interaction, making social media management more organized and scalable.',
+    astras_official_editor_03_name: 'Eye of Photography',
+    astras_official_editor_03_desc: 'Eye of Photography is an intelligent assistant focused on photography, capable of providing practical advice on composition, themes, shooting environments, and equipment settings. Whether you are using a smartphone or a camera, it offers clear, professional, and accessible guidance tailored to the situation, helping you capture images with stronger storytelling and aesthetic appeal.',
+    astras_official_editor_04_name: 'Notion VP',
+    astras_official_editor_04_desc: 'Notion VP is an intelligent assistant focused on information organization and layout design. It can propose various suitable organization methods based on user-provided data and needs, while considering readability and user experience on both mobile and desktop interfaces. It not only helps structure content but also provides clear layout suggestions, making information display more organized, intuitive, and scalable.',
+    astras_official_editor_05_name: 'The Sequencer',
+    astras_official_editor_05_desc: 'The Sequencer is an intelligent assistant focused on both video conceptualization and practical editing execution. It can provide complete story design, storyboard ideas, rhythm planning, and specific post-production operational advice for different materials and requirements. Its task is not just to offer abstract inspiration but to help users transform ideas into executable editing plans, achieving the best balance in narrative, rhythm, and visual aspects of the video.',
+    astras_official_editor_06_name: 'French Blueprint',
+    astras_official_editor_06_desc: 'French Blueprint is an intelligent learning assistant designed for native Chinese speakers. It provides systematic learning methods, example sentences, pronunciation tips, and cultural supplements tailored to the linguistic characteristics and common difficulties of Chinese learners, helping users gradually build a French language blueprint from basic to advanced levels.',
+    astras_official_editor_07_name: 'English Sense',
+    astras_official_editor_07_desc: 'English Sense is an intelligent learning assistant designed for native Chinese speakers. It addresses their specific linguistic traits and learning pain points by providing systematic learning methods, example sentences, pronunciation tips, and cultural insights. It helps users build a complete learning structure, bridging the gap between foundational language skills and practical application.',
+    astras_official_editor_08_name: 'Spanish Blueprint',
+    astras_official_editor_08_desc: 'Spanish Blueprint is an intelligent learning assistant designed for native Chinese speakers, focusing on typical difficulties in Spanish (verb conjugation, gender/number agreement, tense/aspect, pronouns/word order, pronunciation/stress, cultural/pragmatic differences). It provides systematic learning methods, example sentences, pronunciation tips, situational dialogues, and cultural supplements to help learners build a complete structure from basic to advanced levels, enabling them to use Spanish naturally and confidently in real scenarios (covering both Spanish and Latin American variants).',
+  },
     'fr': {
         // Login Page
         login: 'Connexion',
@@ -899,10 +919,21 @@ window.i18n = {
 
         // Official Astras
         astras_official_writer_01_name: 'Blogueur de Voyage',
-        astras_official_writer_01_desc: 'Ceci est un Astras conçu pour les plateformes de médias sociaux, capable de rédiger des introductions élégantes et engageantes pour les attractions touristiques et les hôtels. Il utilise un langage raffiné pour transmettre une sensation haut de gamme, en incorporant le contexte historique de la ville et des hashtags populaires pour attirer le public cible et augmenter la visibilité du contenu.',
-        astras_official_editor_02_name: 'Éditeur de Médias Sociaux',
-        astras_official_editor_02_desc: 'L\'Éditeur de Médias Sociaux est un assistant intelligent axé sur la gestion de comptes de médias sociaux. Il fonctionne sur des principes d\'authenticité et de cohérence, plutôt que de complaisance ou d\'invention, pour aider à examiner les stratégies, découvrir des idées créatives, gérer les réponses du public et maintenir un équilibre entre la stratégie, le contenu et l\'interaction, rendant la gestion des médias sociaux plus organisée et évolutive.',
-        astras_official_editor_03_name: 'Œil de la Photographie',
-        astras_official_editor_03_desc: 'Œil de la Photographie est un assistant intelligent spécialisé dans la photographie, capable de fournir des conseils pratiques sur la composition, les thèmes, les environnements de prise de vue et les réglages de l’équipement. Que vous utilisiez un smartphone ou un appareil photo, il offre des recommandations claires, professionnelles et accessibles, adaptées à chaque situation, pour vous aider à capturer des images plus narratives et esthétiques.',
-   }
+    astras_official_writer_01_desc: 'Ceci est un Astras conçu pour les plateformes de médias sociaux, capable de rédiger des introductions élégantes et engageantes pour les attractions touristiques et les hôtels. Il utilise un langage raffiné pour transmettre une sensation haut de gamme, en incorporant le contexte historique de la ville et des hashtags populaires pour attirer le public cible et augmenter la visibilité du contenu.',
+    astras_official_editor_02_name: 'Éditeur de Médias Sociaux',
+    astras_official_editor_02_desc: 'L\'Éditeur de Médias Sociaux est un assistant intelligent axé sur la gestion de comptes de médias sociaux. Il fonctionne sur des principes d\'authenticité et de cohérence, plutôt que de complaisance ou d\'invention, pour aider à examiner les stratégies, découvrir des idées créatives, gérer les réponses du public et maintenir un équilibre entre la stratégie, le contenu et l\'interaction, rendant la gestion des médias sociaux plus organisée et évolutive.',
+    astras_official_editor_03_name: 'Œil de la Photographie',
+    astras_official_editor_03_desc: 'Œil de la Photographie est un assistant intelligent spécialisé dans la photographie, capable de fournir des conseils pratiques sur la composition, les thèmes, les environnements de prise de vue et les réglages de l’équipement. Que vous utilisiez un smartphone ou un appareil photo, il offre des recommandations claires, professionnelles et accessibles, adaptées à chaque situation, pour vous aider à capturer des images plus narratives et esthétiques.',
+    astras_official_editor_04_name: 'VP de Notion',
+    astras_official_editor_04_desc: 'VP de Notion est un assistant intelligent axé sur l\'organisation de l\'information et la conception de mises en page. Il peut proposer diverses méthodes d\'organisation appropriées en fonction des données et des besoins fournis par l\'utilisateur, tout en tenant compte de la lisibilité et de l\'expérience utilisateur sur les interfaces mobiles et de bureau. Il aide non seulement à structurer le contenu, mais fournit également des suggestions de mise en page claires, rendant l\'affichage des informations plus organisé, intuitif et évolutif.',
+    astras_official_editor_05_name: 'Le Séquenceur',
+    astras_official_editor_05_desc: 'Le Séquenceur est un assistant intelligent axé à la fois sur la conceptualisation vidéo et l\'exécution pratique du montage. Il peut fournir une conception complète de l\'histoire, des idées de storyboard, une planification du rythme et des conseils opérationnels spécifiques de post-production pour différents matériaux et exigences. Sa tâche n\'est pas seulement d\'offrir une inspiration abstraite, mais d\'aider les utilisateurs à transformer leurs idées en plans de montage exécutables, atteignant le meilleur équilibre entre narration, rythme et aspects visuels de la vidéo.',
+    astras_official_editor_06_name: 'Plan Directeur Français',
+    astras_official_editor_06_desc: 'Plan Directeur Français est un assistant d\'apprentissage intelligent conçu pour les locuteurs natifs de chinois. Il fournit des méthodes d\'apprentissage systématiques, des phrases d\'exemple, des conseils de prononciation et des compléments culturels adaptés aux caractéristiques linguistiques et aux difficultés courantes des apprenants chinois, aidant les utilisateurs à construire progressivement un plan directeur de la langue française du niveau de base au niveau avancé.',
+    astras_official_editor_07_name: 'Sens de l\'Anglais',
+    astras_official_editor_07_desc: 'Sens de l\'Anglais est un assistant d\'apprentissage intelligent conçu pour les locuteurs natifs du chinois. Il aborde leurs traits linguistiques spécifiques et leurs difficultés d\'apprentissage en fournissant des méthodes d\'apprentissage systématiques, des exemples de phrases, des conseils de prononciation et des aperçus culturels. Il aide les utilisateurs à construire une structure d\'apprentissage complète, comblant le fossé entre les compétences linguistiques fondamentales et l\'application pratique.',
+    astras_official_editor_08_name: 'Plan Directeur Espagnol',
+    astras_official_editor_08_desc: 'Plan Directeur Espagnol est un assistant d\'apprentissage intelligent conçu pour les locuteurs natifs du chinois, axé sur les difficultés typiques en espagnol (conjugaison des verbes, accord en genre/nombre, temps/aspect, pronoms/ordre des mots, prononciation/accentuation, différences culturelles/pragmatiques). Il fournit des méthodes d\'apprentissage systématiques, des exemples de phrases, des conseils de prononciation, des dialogues situationnels et des compléments culturels pour aider les apprenants à construire une structure complète du niveau de base au niveau avancé, leur permettant d\'utiliser l\'espagnol de manière naturelle et confiante dans des scénarios réels (couvrant les variantes espagnoles et latino-américaines).',
+  }
+};
 };
