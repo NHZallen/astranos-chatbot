@@ -5118,7 +5118,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderFilePreviews();
         };
         
-        // ▼▼▼ 程式碼修正：處理行動裝置檔案匯出 ▼▼▼
+        // ▼▼▼ 程式碼修正：處理檔案匯出權限問題 ▼▼▼
         const handleExport = async () => {
             const dataToExport = {
                 user_credentials: {
@@ -5150,15 +5150,29 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 const fileName = `chatbot_backup_${currentUser.username}_${new Date().toISOString().split('T')[0]}.json`;
                 const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
                 
-                // 檢查是否為行動裝置且支援 Web Share API
+                // --- 方法一: Web Share API (主要用於行動裝置) ---
                 if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], fileName, {type: blob.type})] })) {
                     await navigator.share({
                         files: [new File([blob], fileName, {type: blob.type})],
                         title: 'Chatbot Backup',
                         text: 'Here is your chatbot data backup.',
                     });
+
+                // --- 方法二: File System Access API (現代桌面瀏覽器) ---
+                } else if ('showSaveFilePicker' in window) {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: fileName,
+                        types: [{
+                            description: 'JSON Files',
+                            accept: { 'application/json': ['.json'] },
+                        }],
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                
+                // --- 方法三: 傳統 a 標籤下載 (作為最終備案) ---
                 } else {
-                    // 傳統下載方式
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
@@ -5171,8 +5185,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                
                 toggleModal(ALL_ELEMENTS.exportDataModal, false);
                 showNotification(i18n[config.uiLanguage].exportSuccess || '資料匯出成功！', 'success');
+
             } catch (error) {
-                if (error.name !== 'AbortError') { // AbortError 是使用者取消分享，不應視為錯誤
+                // 如果使用者取消儲存/分享，會拋出 AbortError，這種情況下我們不需要顯示錯誤訊息
+                if (error.name !== 'AbortError') { 
+                    console.error("Export failed:", error); // 在控制台記錄詳細錯誤
                     showNotification(`${i18n[config.uiLanguage].exportFailed || '匯出失敗'}: ${error.message}`, 'error');
                 }
             }
