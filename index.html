@@ -3765,11 +3765,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
                 if(config.enableFollowUp) {
-    await generateFollowUpPrompts(userMessage, fullResponse);
-}
-if (config.memoryEnabled1 && config.enableAutoMemory) { // 檢查兩個開關
-    await extractPersonalMemory(userMessage, fullResponse);
-}
+            await generateFollowUpPrompts(userMessage, fullResponse);
+        }
+        if (config.memoryEnabled1 && config.enableAutoMemory) {
+            await extractPersonalMemory(userMessage, fullResponse);
+        }
             } catch (error) {
                 if (error.name === 'AbortError') {
                     contentDiv.innerHTML = renderMarkdown(fullResponse);
@@ -4208,33 +4208,38 @@ if (config.memoryEnabled1 && config.enableAutoMemory) { // 檢查兩個開關
         };
         const updateFollowUpUI = () => {
     // 根據設定顯示或隱藏整個區塊
-    if (config.enableFollowUp) {
-        ALL_ELEMENTS.followUpContainer.classList.remove('hidden');
-    } else {
+    if (!config.enableFollowUp) {
         ALL_ELEMENTS.followUpContainer.classList.add('hidden');
+        return; // 如果功能關閉，直接結束
     }
+    
     // 更新收合按鈕的狀態
     ALL_ELEMENTS.followUpPromptsList.classList.toggle('collapsed', !isFollowUpExpanded);
     ALL_ELEMENTS.followUpToggleBtn.classList.toggle('rotate-180', !isFollowUpExpanded);
 
     const conv = getActiveConversation();
     
-    // 【修正邏輯】
+    // 【修正後的邏輯】
     // 必須確保對話至少有兩則訊息 (一問一答)，且最後一則是 AI 回覆
     if (conv && conv.messages.length >= 2 && conv.messages[conv.messages.length - 1].role === 'model') {
-        if (config.enableFollowUp && ALL_ELEMENTS.followUpPromptsList.children.length === 0) {
-            // 正確地取得 AI 的回覆 (lastMessage) 和對應的使用者問題 (secondLastMessage)
+        // 只有當追問列表為空時才去生成新的
+        if (ALL_ELEMENTS.followUpPromptsList.children.length === 0) {
             const lastMessageObj = conv.messages[conv.messages.length - 1];
             const secondLastMessageObj = conv.messages[conv.messages.length - 2];
 
-            // 確保前一則是使用者的訊息
+            // 再次確認前一則是使用者的訊息，確保對話結構正確
             if (secondLastMessageObj.role === 'user') {
                 const aiResponseText = lastMessageObj.parts.map(p => p.text).join(' ');
                 const userMessageText = secondLastMessageObj.parts.map(p => p.text).join(' ');
                 
                 // 正確地傳入兩個參數來呼叫函式
                 generateFollowUpPrompts(userMessageText, aiResponseText);
+            } else {
+                 ALL_ELEMENTS.followUpContainer.classList.add('hidden');
             }
+        } else {
+            // 如果已有追問提示，則直接顯示容器
+            ALL_ELEMENTS.followUpContainer.classList.remove('hidden');
         }
     } else {
         // 如果條件不符 (例如對話為空，或最後一則訊息是使用者發的)，則隱藏追問區塊
