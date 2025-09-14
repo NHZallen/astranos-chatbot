@@ -3765,7 +3765,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
                 if(config.enableFollowUp) {
-                    await generateFollowUpPrompts(fullResponse);
+                    // 同時傳入使用者訊息和 AI 回覆
+                    await generateFollowUpPrompts(userMessage, fullResponse);
                 }
                 if (config.memoryEnabled1 && config.enableAutoMemory) { // 檢查兩個開關
                     await extractPersonalMemory(userMessage, fullResponse);
@@ -4121,9 +4122,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 console.error("Auto-naming failed: No valid JSON found in the response.");
             }
         };
-        const generateFollowUpPrompts = async (responseText) => {
-            ALL_ELEMENTS.followUpContainer.classList.add('hidden'); // 隱藏舊的提示
-            ALL_ELEMENTS.followUpPromptsList.innerHTML = '';
+        const generateFollowUpPrompts = async (userMessage, aiResponse) => {
+    ALL_ELEMENTS.followUpContainer.classList.add('hidden'); // 隱藏舊的提示
+    ALL_ELEMENTS.followUpPromptsList.innerHTML = '';
             const prompt = `# 角色
 你是一位技藝精湛的「對話導航員」(Conversation Navigator)。你的核心價值在於能敏銳地洞察對話流，並透過提出富有洞察力的問題，為主動、無縫且充滿探索性的交流鋪路。
 
