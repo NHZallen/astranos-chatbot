@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-14.6.17</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.7.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -1238,6 +1238,17 @@
             color: #000000 !important; /* 強制所有文字為純黑色 */
         }
         /* ▲▲▲ 結束：Astras 商店相關樣式 ▲▲▲ */
+
+        /* ▼▼▼ 新增：手機版長按選單樣式 ▼▼▼ */
+        #mobile-options-sheet {
+             transform: translateY(100%);
+             transition: transform 0.3s ease-out;
+        }
+        #mobile-options-modal.visible #mobile-options-sheet {
+             transform: translateY(0);
+        }
+        /* ▲▲▲ 結束新增 ▲▲▲ */
+
         @media (max-width: 768px) {
           input[type="text"],
           input[type="search"],
@@ -1246,6 +1257,12 @@
           select {
             font-size: 16px !important;
           }
+
+          /* ▼▼▼ 新增：手機版隱藏三點按鈕 ▼▼▼ */
+          .sidebar-item .chat-options-btn {
+            display: none;
+          }
+          /* ▲▲▲ 結束新增 ▲▲▲ */
         }
 
         /* 修正問題 1：手機版中搜尋歷史對話彈窗的整體版面過於擁擠的問題
@@ -2097,6 +2114,27 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         </div>
     </div>
     <!-- ▲▲▲ 結束新增 ▲▲▲ -->
+
+    <!-- ▼▼▼ 新增：手機版長按選項 Modal ▼▼▼ -->
+    <div id="mobile-options-modal" class="modal fixed inset-0 bg-black bg-opacity-60 items-end z-50 hidden md:hidden">
+        <div id="mobile-options-sheet" class="bg-[var(--modal-bg)] rounded-t-2xl w-full max-h-[80vh] flex flex-col">
+            <!-- Header with Handle -->
+            <div class="py-4 flex-shrink-0">
+                <div class="w-10 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto"></div>
+            </div>
+            <!-- Conversation Preview -->
+            <div id="mobile-options-preview" class="px-6 pb-4 border-b border-[var(--border-color)] flex-shrink-0">
+                <h3 id="mobile-options-title" class="font-bold text-lg truncate"></h3>
+                <p id="mobile-options-summary" class="text-sm text-[var(--text-secondary)] mt-1 truncate"></p>
+            </div>
+            <!-- Options List -->
+            <div id="mobile-options-list" class="flex-1 overflow-y-auto scroll-area p-4 space-y-1">
+                <!-- 選項將由 JS 動態插入 -->
+            </div>
+        </div>
+    </div>
+    <!-- ▲▲▲ 結束新增 ▲▲▲ -->
+
     <!-- ▼▼▼ 新增：桌布裁切 Modal ▼▼▼ -->
     <div id="wallpaper-crop-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[51]">
         <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-4xl p-6">
@@ -2399,6 +2437,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             cancelAvatarCropBtn: document.getElementById('cancel-avatar-crop-btn'),
             astrasAvatarInput: document.getElementById('astras-avatar-input'),
             // ▲▲▲ 結束新增 ▲▲▲
+            // ▼▼▼ 新增：手機版長按選單元素 ▼▼▼
+            mobileOptionsModal: document.getElementById('mobile-options-modal'),
+            mobileOptionsSheet: document.getElementById('mobile-options-sheet'),
+            mobileOptionsTitle: document.getElementById('mobile-options-title'),
+            mobileOptionsSummary: document.getElementById('mobile-options-summary'),
+            mobileOptionsList: document.getElementById('mobile-options-list'),
+            // ▲▲▲ 結束新增 ▲▲▲
         };
         // 修正: 模型ID更新為最新的公開版本
         const MODELS = [
@@ -2622,7 +2667,83 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         };
 
+        // ▼▼▼ 新增：手機版選項視窗的顯示/隱藏函式 ▼▼▼
+        const hideMobileOptions = () => {
+            toggleModal(ALL_ELEMENTS.mobileOptionsModal, false);
+        };
+        const openMobileOptionsMenu = (convId) => {
+            const conv = conversations.find(c => c.id === convId);
+            if (!conv) return;
 
+            // 填充預覽區域
+            ALL_ELEMENTS.mobileOptionsTitle.textContent = conv.title;
+            const lastMessage = conv.messages.length > 0 ? conv.messages[conv.messages.length - 1] : null;
+            const summaryText = conv.summary || (lastMessage ? lastMessage.parts.map(p => p.text).join(' ') : '尚無訊息');
+            ALL_ELEMENTS.mobileOptionsSummary.textContent = summaryText;
+
+            // 填充選項列表
+            const list = ALL_ELEMENTS.mobileOptionsList;
+            list.innerHTML = ''; // 清空舊選項
+
+            const pinText = conv.pinned ? (i18n[config.uiLanguage].unpin || '取消釘選') : (i18n[config.uiLanguage].pin || '釘選');
+            const options = [
+                { text: i18n[config.uiLanguage].rename || '重新命名', action: 'rename', icon: '✏️' },
+                { text: pinText, action: 'pin', icon: '📌' },
+                { text: i18n[config.uiLanguage].archive || '封存', action: 'archive', icon: '📦' },
+            ];
+
+            options.forEach(opt => {
+                const button = document.createElement('button');
+                button.className = 'w-full text-left p-3 rounded-lg flex items-center gap-4 hover:bg-[var(--hover-bg)] text-base';
+                button.dataset.action = opt.action;
+                button.innerHTML = `<span class="text-xl w-6 text-center">${opt.icon}</span><span>${opt.text}</span>`;
+                list.appendChild(button);
+            });
+            
+            // 加入分隔線
+            const separator1 = document.createElement('div');
+            separator1.className = 'border-t my-1 border-[var(--border-color)]';
+            list.appendChild(separator1);
+
+            // 加入移動選項
+            if (conv.folderId) {
+                const moveOutBtn = document.createElement('button');
+                moveOutBtn.className = 'w-full text-left p-3 rounded-lg flex items-center gap-4 hover:bg-[var(--hover-bg)] text-base';
+                moveOutBtn.dataset.action = 'move';
+                moveOutBtn.dataset.folderId = 'none';
+                moveOutBtn.innerHTML = `<span class="text-xl w-6 text-center">➡️</span><span>${i18n[config.uiLanguage].moveOutOfFolder || '移出資料夾'}</span>`;
+                list.appendChild(moveOutBtn);
+            }
+             folders.forEach(f => {
+                if (f.id !== conv.folderId) {
+                    const moveBtn = document.createElement('button');
+                    moveBtn.className = 'w-full text-left p-3 rounded-lg flex items-center gap-4 hover:bg-[var(--hover-bg)] text-base';
+                    moveBtn.dataset.action = 'move';
+                    moveBtn.dataset.folderId = f.id;
+                    moveBtn.innerHTML = `<span class="text-xl w-6 text-center">${f.icon}</span><span class="truncate">${i18n[config.uiLanguage].moveTo || '移至'}: ${f.name}</span>`;
+                    list.appendChild(moveBtn);
+                }
+            });
+
+            // 加入分隔線
+            const separator2 = document.createElement('div');
+            separator2.className = 'border-t my-1 border-[var(--border-color)]';
+            list.appendChild(separator2);
+            
+            // 加入刪除選項
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'w-full text-left p-3 rounded-lg flex items-center gap-4 hover:bg-[var(--hover-bg)] text-base text-red-600';
+            deleteBtn.dataset.action = 'delete';
+            deleteBtn.innerHTML = `<span class="text-xl w-6 text-center">🗑️</span><span>${i18n[config.uiLanguage].delete || '刪除'}</span>`;
+            list.appendChild(deleteBtn);
+
+            // 在 modal 上儲存 convId 以便後續操作
+            ALL_ELEMENTS.mobileOptionsModal.dataset.convId = convId;
+
+            // 顯示 modal
+            toggleModal(ALL_ELEMENTS.mobileOptionsModal, true);
+        };
+        // ▲▲▲ 結束新增 ▲▲▲
 
 
         const showCustomDialog = (options) => {
@@ -3187,7 +3308,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 ALL_ELEMENTS.folderList.appendChild(folderElement);
             });
         };
-        // ▼▼▼ 需求 4 修正：修改函式以加入模型後綴 ▼▼▼
+        // ▼▼▼ 修改：綁定長按事件到歷史對話元素 ▼▼▼
         const createConversationElement = (conv) => {
             const item = document.createElement('div');
             item.className = `sidebar-item w-full text-left p-3 rounded-lg flex items-center justify-between cursor-pointer ${conv.id === activeConversationId && !isTemporaryChat && !isSelectionMode ? 'active' : ''}`;
@@ -3195,11 +3316,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
             const modelInfo = MODELS.find(m => m.id === conv.model);
-            // --- 修改開始 ---
-            // 原本是直接使用 modelInfo.name，現在我們只取 '(' 前面的部分
             const modelCodename = modelInfo ? modelInfo.name.split(' (')[0] : '';
             const modelNameSuffix = modelCodename ? `<span class="model-suffix">${modelCodename}</span>` : '';
-            // --- 修改結束 ---
 
 
             const contentWrapper = document.createElement('div');
@@ -3211,8 +3329,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 </div>
                 <button class="chat-options-btn flex-shrink-0 w-6 h-6 rounded-md hover:bg-[var(--hover-bg)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>
             `;
-
-
 
 
             if (isSelectionMode) {
@@ -3236,9 +3352,33 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
 
 
-
-
             item.appendChild(contentWrapper);
+            
+            // --- 主要修改開始 ---
+            let pressTimer;
+            item.addEventListener('touchstart', (e) => {
+                if (isSelectionMode) return;
+                pressTimer = window.setTimeout(() => {
+                    if (window.innerWidth <= 768) {
+                        e.preventDefault();
+                        openMobileOptionsMenu(conv.id);
+                    }
+                }, 500); // 500ms 認定為長按
+            }, { passive: true });
+
+            item.addEventListener('touchend', () => { clearTimeout(pressTimer); });
+            item.addEventListener('touchmove', () => { clearTimeout(pressTimer); });
+
+            item.addEventListener('contextmenu', (e) => {
+                if (isSelectionMode) return;
+                if (window.innerWidth <= 768) {
+                    e.preventDefault();
+                    clearTimeout(pressTimer);
+                    openMobileOptionsMenu(conv.id);
+                }
+            });
+            // --- 主要修改結束 ---
+
             item.addEventListener('click', () => {
                 if (isSelectionMode) {
                     const checkbox = item.querySelector('.conv-select-checkbox');
@@ -3251,10 +3391,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             });
 
-
-
-
-            // 為 chat-options-btn 綁定事件，阻止冒泡
             const chatOptionsBtn = contentWrapper.querySelector('.chat-options-btn');
             if (chatOptionsBtn) {
                 chatOptionsBtn.addEventListener('click', (e) => {
@@ -3264,7 +3400,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
             return item;
         };
-        // ▲▲▲ 結束修正 ▲▲▲
+        // ▲▲▲ 結束修改 ▲▲▲
         const renderArchivedChats = () => {
             ALL_ELEMENTS.archivedChatsContainer.innerHTML = '';
             const archived = conversations.filter(c => c.archived).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -6644,6 +6780,43 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.userProfileBtn.addEventListener('click', openDashboard);
             ALL_ELEMENTS.closeDashboardBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.dataDashboardModal, false));
             // ▲▲▲ 結束新增 ▲▲▲
+
+            // ▼▼▼ 新增：手機版長按選單事件綁定 ▼▼▼
+            ALL_ELEMENTS.mobileOptionsModal.addEventListener('click', (e) => {
+                if (e.target.id === 'mobile-options-modal') {
+                    hideMobileOptions();
+                }
+            });
+            ALL_ELEMENTS.mobileOptionsList.addEventListener('click', (e) => {
+                const button = e.target.closest('button');
+                if (!button) return;
+                const convId = ALL_ELEMENTS.mobileOptionsModal.dataset.convId;
+                const action = button.dataset.action;
+
+                if (!convId || !action) return;
+
+                switch(action) {
+                    case 'rename':
+                        showRenameModal(convId, 'conversation', e);
+                        break;
+                    case 'pin':
+                        togglePinChat(convId, e);
+                        break;
+                    case 'archive':
+                        archiveChat(convId, e);
+                        break;
+                    case 'delete':
+                        deleteChat(convId, e);
+                        break;
+                    case 'move':
+                        const folderId = button.dataset.folderId === 'none' ? null : button.dataset.folderId;
+                        moveConversationToFolder(convId, folderId);
+                        break;
+                }
+                hideMobileOptions();
+            });
+            // ▲▲▲ 結束新增 ▲▲▲
+
              // ▼▼▼ 修改：使用新的複製函式處理複製事件與新增的刪除事件 ▼▼▼
             ALL_ELEMENTS.messageList.addEventListener('click', (e) => {
                 const copyBtn = e.target.closest('.copy-content-btn');
@@ -6932,4 +7105,3 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     </script>
 </body>
 </html>
-
