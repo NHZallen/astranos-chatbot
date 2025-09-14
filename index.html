@@ -1284,37 +1284,6 @@
             -ms-user-select: none;     /* 適用於舊版 IE */
             user-select: none;         /* CSS 標準語法 */
         }
-        @media (max-width: 768px) {
-          .sidebar-item .chat-options-btn {
-            display: none;
-          }
-        }
-
-        /* 長按選單中的功能按鈕樣式 */
-        .long-press-action-btn {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem; /* 12px */
-            width: 100%;
-            text-align: left;
-            padding: 0.75rem 1rem; /* 12px 16px */
-            border-radius: 0.5rem; /* 8px */
-            font-size: 0.875rem; /* 14px */
-            transition: background-color 0.2s;
-        }
-
-        .long-press-action-btn:hover {
-            background-color: var(--hover-bg);
-        }
-        
-        /* 為刪除按鈕設定特殊的紅色 */
-        .long-press-action-btn.delete {
-            color: #ef4444; /* Tailwind's red-500 */
-        }
-
-        .long-press-action-btn.delete:hover {
-            background-color: rgba(239, 68, 68, 0.1); /* 淺紅色背景 */
-        }
     </style>
 
 
@@ -1958,23 +1927,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 <h2 id="view-archived-title" class="text-2xl font-bold truncate" data-lang-key="viewArchivedChat">檢視封存的對話</h2>
                 <button id="close-view-archived-modal-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
             </div>
-            <div id="long-press-menu-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[52]">
-        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-3xl flex flex-col" style="max-height: 85vh;">
-            <!-- Modal Header -->
-            <div class="p-4 border-b border-[var(--border-color)] flex justify-between items-center flex-shrink-0">
-                <h2 id="long-press-menu-title" class="text-xl font-bold truncate" data-lang-key="conversationPreview">對話預覽</h2>
-                <button id="close-long-press-menu-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
-            </div>
-            <!-- Chat Preview Area (Scrollable) -->
-            <div id="long-press-chat-preview" class="flex-1 p-4 overflow-y-auto space-y-4 scroll-area">
-                <!-- Conversation messages will be dynamically inserted here -->
-            </div>
-            <!-- Action List (Scrollable) -->
-            <div id="long-press-action-list" class="flex-shrink-0 border-t border-[var(--border-color)] p-2 scroll-area" style="max-height: 200px; overflow-y: auto;">
-                <!-- Action buttons will be dynamically inserted here -->
-            </div>
-        </div>
-    </div>
             <div id="view-archived-content" class="p-6 overflow-y-auto space-y-4 scroll-area flex-1">
                 <!-- Archived messages will be dynamically inserted here -->
             </div>
@@ -2300,11 +2252,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             closeViewArchivedModalBtn: document.getElementById('close-view-archived-modal-btn'),
             closeViewArchivedModalBtnFooter: document.getElementById('close-view-archived-modal-btn-footer'),
             // ▲▲▲ 結束新增 ▲▲▲
-            longPressMenuModal: document.getElementById('long-press-menu-modal'),
-            longPressMenuTitle: document.getElementById('long-press-menu-title'),
-            longPressChatPreview: document.getElementById('long-press-chat-preview'),
-            longPressActionList: document.getElementById('long-press-action-list'),
-            closeLongPressMenuBtn: document.getElementById('close-long-press-menu-btn'),
             renameModal: document.getElementById('rename-modal'),
             renameInput: document.getElementById('rename-input'),
             saveRenameBtn: document.getElementById('save-rename-btn'),
@@ -3240,14 +3187,20 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 ALL_ELEMENTS.folderList.appendChild(folderElement);
             });
         };
-            const createConversationElement = (conv) => {
+        // ▼▼▼ 需求 4 修正：修改函式以加入模型後綴 ▼▼▼
+        const createConversationElement = (conv) => {
             const item = document.createElement('div');
             item.className = `sidebar-item w-full text-left p-3 rounded-lg flex items-center justify-between cursor-pointer ${conv.id === activeConversationId && !isTemporaryChat && !isSelectionMode ? 'active' : ''}`;
             item.dataset.id = conv.id;
 
+
             const modelInfo = MODELS.find(m => m.id === conv.model);
+            // --- 修改開始 ---
+            // 原本是直接使用 modelInfo.name，現在我們只取 '(' 前面的部分
             const modelCodename = modelInfo ? modelInfo.name.split(' (')[0] : '';
             const modelNameSuffix = modelCodename ? `<span class="model-suffix">${modelCodename}</span>` : '';
+            // --- 修改結束 ---
+
 
             const contentWrapper = document.createElement('div');
             contentWrapper.className = 'flex-1 flex items-center justify-between truncate';
@@ -3259,8 +3212,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 <button class="chat-options-btn flex-shrink-0 w-6 h-6 rounded-md hover:bg-[var(--hover-bg)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>
             `;
 
+
+
+
             if (isSelectionMode) {
-                // ... (此處的批次選取邏輯保持不變)
                 item.classList.add('pr-2');
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
@@ -3280,54 +3235,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 contentWrapper.querySelector('.chat-options-btn').classList.add('hidden');
             }
 
+
+
+
             item.appendChild(contentWrapper);
-
-            // --- 長按與點擊事件處理 ---
-            let pressTimer = null;
-            let touchMoved = false;
-
-            const startPress = (e) => {
-                // 只在手機模式下啟用長按
-                if (window.innerWidth > 768) return;
-                touchMoved = false;
-                pressTimer = setTimeout(() => {
-                    if (!touchMoved) { // 如果手指沒有移動，觸發長按
-                        handleLongPress(conv.id);
-                    }
-                }, 500); // 500毫秒定義為長按
-            };
-
-            const cancelPress = () => {
-                clearTimeout(pressTimer);
-            };
-            
-            const onMove = () => {
-                touchMoved = true;
-                clearTimeout(pressTimer);
-            };
-
-            // 綁定電腦滑鼠和手機觸控事件
-            item.addEventListener('mousedown', startPress);
-            item.addEventListener('touchstart', startPress, { passive: true });
-
-            item.addEventListener('mouseup', cancelPress);
-            item.addEventListener('mouseleave', cancelPress);
-            item.addEventListener('touchend', cancelPress);
-            
-            item.addEventListener('mousemove', onMove);
-            item.addEventListener('touchmove', onMove);
-
-            item.addEventListener('click', (e) => {
-                // 如果是長按，阻止後續的點擊事件觸發
-                if (pressTimer && (e.type === 'click' && window.innerWidth <= 768)) {
-                    const timeSincePress = performance.now() - (e.timeStamp || 0);
-                    if (timeSincePress < 500) { // 如果從 mousedown 到 click 的時間很短
-                       // 這是正常的點擊
-                    } else {
-                       // 這可能是長按後的釋放，我們可能需要阻止它
-                    }
-                }
-
+            item.addEventListener('click', () => {
                 if (isSelectionMode) {
                     const checkbox = item.querySelector('.conv-select-checkbox');
                     if (checkbox) {
@@ -3339,7 +3251,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             });
 
-            // 為 chat-options-btn 綁定事件 (電腦版點擊)
+
+
+
+            // 為 chat-options-btn 綁定事件，阻止冒泡
             const chatOptionsBtn = contentWrapper.querySelector('.chat-options-btn');
             if (chatOptionsBtn) {
                 chatOptionsBtn.addEventListener('click', (e) => {
@@ -6713,7 +6628,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.closeViewArchivedModalBtn.addEventListener('click', closeViewArchivedModal);
             ALL_ELEMENTS.closeViewArchivedModalBtnFooter.addEventListener('click', closeViewArchivedModal);
             // ▲▲▲ 結束新增 ▲▲▲
-            ALL_ELEMENTS.closeLongPressMenuBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.longPressMenuModal, false));
             ALL_ELEMENTS.saveRenameBtn.addEventListener('click', handleRename);
             ALL_ELEMENTS.cancelRenameBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.renameModal, false));
             ALL_ELEMENTS.saveFolderSettingsBtn.addEventListener('click', handleSaveFolderSettings);
@@ -6991,80 +6905,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             applyLanguage('zh-TW'); // 預設載入繁體中文
         })();
         const FOLDER_ICONS = ['📁', '📂', '🗂️', '📚', '📝', '🗃️', '📘', '📙', '📗', '📕'];
-        const handleLongPress = (convId) => {
-            const conv = conversations.find(c => c.id === convId);
-            if (!conv) return;
-
-            // 填入標題、預覽內容和功能按鈕
-            ALL_ELEMENTS.longPressMenuTitle.textContent = conv.title;
-            renderLongPressPreview(conv);
-            renderLongPressActions(conv);
-
-            // 顯示 Modal
-            toggleModal(ALL_ELEMENTS.longPressMenuModal, true);
-        };
-
-        const renderLongPressPreview = (conv) => {
-            const container = ALL_ELEMENTS.longPressChatPreview;
-            container.innerHTML = ''; // 清空舊內容
-
-            // 只預覽最新的 10 則訊息以提升效能
-            const messagesToPreview = conv.messages.slice(-10);
-
-            if (messagesToPreview.length === 0) {
-                container.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].noMessagesInConversation || '此對話沒有訊息。'}</p>`;
-                return;
-            }
-
-            messagesToPreview.forEach(msg => {
-                const isUser = msg.role === 'user';
-                const messageDiv = document.createElement('div');
-                messageDiv.className = `flex items-start gap-2 md:gap-4 ${isUser ? 'justify-end user-message' : 'model-message'}`;
-                
-                let contentHTML = '';
-                msg.parts.forEach(part => {
-                    if (part.text) {
-                        // 預覽時，將 Markdown 簡化為純文字顯示
-                        contentHTML += `<div>${isUser ? part.text.replace(/\n/g, '<br>') : part.text}</div>`;
-                    }
-                });
-
-                const messageBubble = `
-                    <div class="p-3 rounded-lg max-w-full md:max-w-md message-bubble">
-                        <div class="prose prose-sm max-w-none message-content ${isUser ? 'text-white' : 'text-[var(--text-primary)]'}">${contentHTML}</div>
-                    </div>`;
-                
-                // 為了簡潔，預覽中不顯示頭像
-                messageDiv.innerHTML = messageBubble;
-                container.appendChild(messageDiv);
-            });
-        };
-
-        const renderLongPressActions = (conv) => {
-            const container = ALL_ELEMENTS.longPressActionList;
-            container.innerHTML = ''; // 清空舊按鈕
-            const lang = config.uiLanguage;
-
-            const createActionButton = (text, icon, className, onClick) => {
-                const button = document.createElement('button');
-                button.className = `long-press-action-btn ${className}`;
-                button.innerHTML = `${icon}<span>${text}</span>`;
-                button.addEventListener('click', (e) => {
-                    onClick(e);
-                    // 執行後自動關閉 Modal
-                    toggleModal(ALL_ELEMENTS.longPressMenuModal, false);
-                });
-                container.appendChild(button);
-            };
-
-            const pinText = conv.pinned ? (i18n[lang].unpin || '取消釘選') : (i18n[lang].pin || '釘選');
-            
-            // 建立所有功能按鈕
-            createActionButton(i18n[lang].rename || '重新命名', '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>', '', (e) => showRenameModal(conv.id, 'conversation', e));
-            createActionButton(pinText, '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>', '', (e) => togglePinChat(conv.id, e));
-            createActionButton(i18n[lang].archive || '封存', '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>', '', (e) => archiveChat(conv.id, e));
-            createActionButton(i18n[lang].delete || '刪除', '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>', 'delete', (e) => deleteChat(conv.id, e));
-        };
         
         // ▼▼▼ 新增：登入頁面語言切換邏輯 ▼▼▼
         ALL_ELEMENTS.loginLangBtn.addEventListener('click', (e) => {
