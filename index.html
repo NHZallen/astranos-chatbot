@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-14.7.0</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.7.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -137,19 +137,20 @@
             animation: chatFadeIn 0.3s ease-out forwards;
         }
         
-        /* 資料夾開合動畫 */
+        /* ▼▼▼ 修改：資料夾開合動畫 (使用 data-open 屬性) ▼▼▼ */
         .folder-item > .folder-content-container {
             overflow-y: hidden;
             transition: max-height 0.35s cubic-bezier(0.2, 1, 0.3, 1);
             max-height: 0;
         }
-        .folder-item[open] > .folder-content-container {
+        .folder-item[data-open="true"] > .folder-content-container {
             max-height: 100vh; /* 一個足夠大的值以容納內容 */
             transition: max-height 0.5s cubic-bezier(0.2, 1, 0.3, 1);
         }
-        .folder-item[open] > summary {
+        .folder-item[data-open="true"] > .folder-summary {
             margin-bottom: 4px; /* 開啟時增加一點間距 */
         }
+        /* ▲▲▲ 結束修改 ▲▲▲ */
         
         /* 輸入框容器焦點動畫 */
         @keyframes pulse-glow {
@@ -332,10 +333,17 @@
 
 
 
-        .folder-item summary { list-style: none; cursor: pointer; }
-        .folder-item summary::-webkit-details-marker { display: none; }
-        .folder-item summary .folder-arrow { transition: transform 0.2s; }
-        .folder-item[open] summary .folder-arrow { transform: rotate(90deg); }
+        /* ▼▼▼ 修改：資料夾箭頭動畫 (使用 data-open 屬性) ▼▼▼ */
+        .folder-summary { 
+            cursor: pointer;
+        }
+        .folder-summary .folder-arrow { 
+            transition: transform 0.2s; 
+        }
+        .folder-item[data-open="true"] .folder-summary .folder-arrow { 
+            transform: rotate(90deg); 
+        }
+        /* ▲▲▲ 結束修改 ▲▲▲ */
 
 
 
@@ -1320,7 +1328,8 @@
             font-size: 16px !important;
           }
           /* ▼▼▼ 【需求實現】在手機版隱藏原本的選項按鈕 ▼▼▼ */
-          .sidebar-item .chat-options-btn {
+          .sidebar-item .chat-options-btn,
+          .folder-summary .folder-options-btn { /* 新增：也隱藏資料夾的選項按鈕 */
               display: none;
           }
           /* ▲▲▲ 【需求實現】結束 ▲▲▲ */
@@ -1356,7 +1365,7 @@
                 order: 4;
             }
         }
-        .sidebar-item {
+        .sidebar-item, .folder-summary { /* 新增 .folder-summary */
             -webkit-user-select: none; /* 適用於 Safari/Chrome 等 WebKit 核心的瀏覽器 */
             -moz-user-select: none;    /* 適用於 Firefox */
             -ms-user-select: none;     /* 適用於舊版 IE */
@@ -3209,6 +3218,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
         };
         // ▲▲▲ 結束修改 ▲▲▲
+        // ▼▼▼ 修改：重構 renderFolders 以使用 div 和自訂點擊邏輯 ▼▼▼
         const renderFolders = () => {
             ALL_ELEMENTS.folderList.innerHTML = '';
             folders.forEach(folder => {
@@ -3222,24 +3232,21 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     });
 
 
-
-
-                const folderElement = document.createElement('details');
+                const folderElement = document.createElement('div');
                 folderElement.className = 'folder-item text-sm';
-                if (folder.isOpen) folderElement.open = true;
-                folderElement.addEventListener('toggle', () => {
-                    folder.isOpen = folderElement.open;
-                    saveAppData();
-                });
+                folderElement.dataset.id = folder.id;
+                folderElement.dataset.open = folder.isOpen;
+
+
                 folderElement.innerHTML = `
-                    <summary class="sidebar-item p-3 rounded-lg flex items-center justify-between">
+                    <div class="folder-summary sidebar-item p-3 rounded-lg flex items-center justify-between">
                         <div class="flex items-center gap-2 truncate">
                             <svg class="folder-arrow flex-shrink-0" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                             <span class="folder-icon mr-1">${folder.icon}</span>
                             <span class="font-medium truncate" style="color: ${FOLDER_COLORS[folder.color] || FOLDER_COLORS.gray};">${folder.name}</span>
                         </div>
                         <button data-id="${folder.id}" class="folder-options-btn flex-shrink-0 w-6 h-6 rounded-md hover:bg-[var(--active-bg)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>
-                    </summary>
+                    </div>
                     <div class="folder-content-container pl-4 mt-1 space-y-1"></div>
                 `;
                 const contentContainer = folderElement.querySelector('.folder-content-container');
@@ -3248,23 +3255,32 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 });
 
 
+                const folderSummary = folderElement.querySelector('.folder-summary');
+                folderSummary.addEventListener('click', (e) => {
+                    if (e.target.closest('.folder-options-btn')) return;
 
 
-                // 為 folder-options-btn 綁定事件，阻止冒泡
+                    const folderItem = e.currentTarget.closest('.folder-item');
+                    const folderObj = folders.find(f => f.id === folderItem.dataset.id);
+                    if (folderObj) {
+                        folderObj.isOpen = !folderObj.isOpen;
+                        folderItem.dataset.open = folderObj.isOpen;
+                        saveAppData();
+                    }
+                });
+
+
                 const folderOptionsBtn = folderElement.querySelector('.folder-options-btn');
-                if (folderOptionsBtn) {
-                    folderOptionsBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        createFolderMenu(folder.id, folderOptionsBtn);
-                    });
-                }
-
-
+                folderOptionsBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    createFolderMenu(folder.id, folderOptionsBtn);
+                });
 
 
                 ALL_ELEMENTS.folderList.appendChild(folderElement);
             });
         };
+        // ▲▲▲ 結束修改 ▲▲▲
         // ▼▼▼ 【需求實現】修改 createConversationElement 以加入長按功能 ▼▼▼
         const createConversationElement = (conv) => {
             const item = document.createElement('div');
@@ -3318,7 +3334,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 pressTimer = setTimeout(() => {
                     // 長按觸發
                     e.preventDefault(); // 防止觸發點擊或預設選單
-                    showMobileContextMenu(conv.id);
+                    showMobileContextMenu(conv.id, e.currentTarget);
                     pressTimer = null; // 清除計時器以防萬一
                 }, 500); // 500毫秒視為長按
             };
@@ -5121,8 +5137,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderBatchMoveModal();
             toggleModal(ALL_ELEMENTS.batchMoveModal, true);
         };
-        const renderBatchMoveModal = () => {
+        const renderBatchMoveModal = (singleConvId = null) => {
             const container = ALL_ELEMENTS.batchMoveFolderList;
+            // 儲存是哪個對話觸發了移動（如果有的話）
+            container.dataset.singleConvId = singleConvId || ''; 
             container.innerHTML = `
                 <button class="w-full text-left p-2 rounded-md hover:bg-[var(--hover-bg)]" data-folder-id="none">
                     ${i18n[config.uiLanguage].moveOutOfFolder || '移出資料夾'}
@@ -5157,12 +5175,25 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
         };
         const batchMoveToFolder = async (folderId) => {
-            const count = selectedConversationIds.size;
-            selectedConversationIds.forEach(convId => {
+            const singleConvId = ALL_ELEMENTS.batchMoveFolderList.dataset.singleConvId;
+            let idsToMove;
+
+            if (singleConvId) {
+                idsToMove = new Set([singleConvId]);
+            } else {
+                idsToMove = selectedConversationIds;
+            }
+            const count = idsToMove.size;
+
+            idsToMove.forEach(convId => {
                 moveConversationToFolder(convId, folderId);
             });
             toggleModal(ALL_ELEMENTS.batchMoveModal, false);
-            toggleSelectionMode();
+
+            if (!singleConvId) {
+                toggleSelectionMode(); // 只有在批次模式下才退出
+            }
+
             showNotification(`${i18n[config.uiLanguage].moved || '已移動'} ${count} ${i18n[config.uiLanguage].conversations || '個對話。'}`);
         };
         const highlightText = (text, query) => {
@@ -6750,10 +6781,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             moveConversationToFolder(convId, null);
                             break;
                         case 'move-to':
-                            // For moving to a folder, we might need another modal.
-                            // For simplicity, let's just log it for now.
-                            // A better implementation would open a folder selection modal.
-                            showNotification('「移至資料夾」功能正在開發中。', 'warning');
+                             // 觸發批次移動 Modal，並傳入單一對話 ID
+                            renderBatchMoveModal(convId);
+                            toggleModal(ALL_ELEMENTS.batchMoveModal, true);
                             break;
                     }
                 }, 300);
