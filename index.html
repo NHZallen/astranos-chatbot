@@ -4096,7 +4096,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
         const generateTitleAndSummary = async (conv) => {
             const conversationHistory = conv.messages.slice(0, 5).map(m => `${m.role}: ${m.parts.map(p => p.text).join(' ')}`).join('\n');
-            const prompt = `為以下對話生成一個簡潔且能代表核心主題的標題。標題應直接反映使用者詢問的主要內容，而不是以你的視角描述AI的行為，（例如，好的標題是「法國首都」，而不是「回答地理問題」）。標題限制在10個字以內。請嚴格按照以下 JSON 格式輸出，不要有任何額外的文字或解釋:\n{"title": "你的標題", "summary": "你的一句話摘要"}\n\n對話內容:\n${conversationHistory}`;
+            為以下對話生成一個簡潔且能代表核心主題的標題。標題應直接反映使用者詢問的主要內容，而不是以你的視角描述AI的行為，（例如，好的標題是「法國首都」，而不是「回答地理問題」）。標題限制在10個字以內。請嚴格按照以下 JSON 格式輸出，不要有任何額外的文字或解釋:\n{"title": "你的標題", "summary": "你的一句話摘要"}\n\n對話內容:\n${conversationHistory}`;
             const responseSchema = {
                 type: "OBJECT",
                 properties: {
@@ -4124,22 +4124,48 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const generateFollowUpPrompts = async (responseText) => {
             ALL_ELEMENTS.followUpContainer.classList.add('hidden'); // 隱藏舊的提示
             ALL_ELEMENTS.followUpPromptsList.innerHTML = '';
-            const prompt = `根據這段文字，提供四個相關且簡潔的後續追問或延伸問題（每個不超過15個字）。請嚴格以 JSON 陣列格式輸出，不要有任何額外的文字或解釋。例如：["問題一", "問題二", "問題三", "問題四"]。文字內容：${responseText.trim()}`;
-            const responseSchema = {
-                type: "ARRAY",
-                items: { type: "STRING" },
-                minItems: 4,
-                maxItems: 4
-            };
-            const followUpPrompts = await callApiWithSchema(prompt, responseSchema);
+            const generateFollowUpPrompts = async (userQuestion, responseText) => {
+    ALL_ELEMENTS.followUpContainer.classList.add('hidden');
+    ALL_ELEMENTS.followUpPromptsList.innerHTML = '';
 
+    // ▼▼▼【優化後的提示詞】▼▼▼
+    const prompt = `
+# 角色
+你是一位善於洞察與引導的對話專家。你的任務是基於使用者最近的提問和你的回答，預測使用者可能感興趣的下一步，並生成 3 到 4 個有啟發性的後續追問提示。
 
+# 對話上下文
+【使用者最近的提問】: "${userQuestion}"
+【你剛才的回答】: "${responseText.substring(0, 1000)}..." 
+// 截斷回答以避免過長
 
+# 任務規則
+1.  **多樣性**: 提供的提示應涵蓋不同角度，例如：
+    *   一個用於「深入挖掘」細節。
+    *   一個用於「橫向擴展」到相關主題。
+    *   一個用於「實際應用」或下一步行動。
+2.  **使用者視角**: 提示語氣應自然，就像是使用者自己會提出的問題。
+3.  **精簡有力**: 每個提示都應簡潔明瞭，長度約在 10-20 字之間。
+4.  **避免重複與無效提問**: 不要問「還有什麼可以幫你的嗎？」這類空泛問題。
 
-            if (followUpPrompts && followUpPrompts.length > 0) {
-                renderFollowUpPrompts(followUpPrompts);
-            }
-        };
+# 輸出格式
+請嚴格以 JSON 陣列格式輸出，陣列中包含 3 到 4 個字串，不要有任何額外的文字或解釋。
+範例: ["深入了解 A 的原理", "A 和 B 有什麼不同？", "如何將 A 應用在我的專案中？"]
+`;
+    // ▲▲▲【優化後的提示詞】▲▲▲
+
+    const responseSchema = {
+        type: "ARRAY",
+        items: { type: "STRING" },
+        minItems: 3, // 改為彈性的 3-4 個
+        maxItems: 4
+    };
+
+    const followUpPrompts = await callApiWithSchema(prompt, responseSchema);
+
+    if (followUpPrompts && followUpPrompts.length > 0) {
+        renderFollowUpPrompts(followUpPrompts);
+    }
+};
         const renderFollowUpPrompts = (prompts) => {
             const { followUpContainer, followUpPromptsList } = ALL_ELEMENTS;
             followUpPromptsList.innerHTML = '';
