@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>進階 AI 聊天機器人 Astra-nos-14.6.12</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.6.10</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -3765,8 +3765,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
                 if(config.enableFollowUp) {
-                    // 同時傳入使用者訊息和 AI 回覆
-                    await generateFollowUpPrompts(userMessage, fullResponse);
+                    await generateFollowUpPrompts(fullResponse);
                 }
                 if (config.memoryEnabled1 && config.enableAutoMemory) { // 檢查兩個開關
                     await extractPersonalMemory(userMessage, fullResponse);
@@ -4122,48 +4121,25 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 console.error("Auto-naming failed: No valid JSON found in the response.");
             }
         };
-        const generateFollowUpPrompts = async (userMessage, aiResponse) => {
-    ALL_ELEMENTS.followUpContainer.classList.add('hidden'); // 隱藏舊的提示
-    ALL_ELEMENTS.followUpPromptsList.innerHTML = '';
-            const prompt = `# 角色
-你是一位技藝精湛的「對話導航員」(Conversation Navigator)。你的核心價值在於能敏銳地洞察對話流，並透過提出富有洞察力的問題，為主動、無縫且充滿探索性的交流鋪路。
+        const generateFollowUpPrompts = async (responseText) => {
+            ALL_ELEMENTS.followUpContainer.classList.add('hidden'); // 隱藏舊的提示
+            ALL_ELEMENTS.followUpPromptsList.innerHTML = '';
+            const prompt = `根據這段文字，提供四個相關且簡潔的後續追問或延伸問題（每個不超過15個字）。請嚴格以 JSON 陣列格式輸出，不要有任何額外的文字或解釋。例如：["問題一", "問題二", "問題三", "問題四"]。文字內容：${responseText.trim()}`;
+            const responseSchema = {
+                type: "ARRAY",
+                items: { type: "STRING" },
+                minItems: 4,
+                maxItems: 4
+            };
+            const followUpPrompts = await callApiWithSchema(prompt, responseSchema);
 
-# 核心哲學
-好的追問不是隨機的，而是對使用者潛在需求的預測。你的目標是分析【使用者查詢】與【AI 回應】之間的資訊差、潛在的模糊點以及自然的延伸方向，然後提出能精準滿足這些潛在需求的提示。
 
-# 任務
-根據【使用者最新查詢】與【AI 最新回應】，生成**不多不少，正好四個**，能夠引導對話向更深、更廣或更實用方向發展的後續追問提示。
 
-# 思考框架與執行步驟
-為了確保追問的品質與多樣性，請嚴格遵循以下四步思考流程：
 
-**第一步：理解意圖與評估回應**
--   使用者查詢的真正目的是什麼？(是尋求事實、觀點、教學還是創意？)
--   AI 的回應在多大程度上滿足了這個意圖？是否存在任何可以進一步闡述的空間？
-
-**第二步：採用三種使用者心態進行腦力激盪**
-你必須從以下三種不同的角度，至少各想出一個問題的雛形：
-1.  **務實主義者 (The Pragmatist)**：這個人關心實際應用。
-    *   思考方向：「這個資訊/程式碼/方法如何應用到我的具體情境中？」、「可以給我一個能直接使用的範例嗎？」、「它能解決什麼實際問題？」
-2.  **分析師 (The Analyst)**：這個人渴望深度和細節。
-    *   思考方向：「這個概念的原理是什麼？」、「它和另一個概念的深層區別在哪裡？」、「這種方法的優缺點或潛在風險是什麼？」
-3.  **夢想家 (The Visionary)**：這個人尋求創意與可能性。
-    *   思考方向：「如果我們把這個概念應用到另一個領域會怎樣？」、「基於這個，下一步最有趣的發展會是什麼？」、「有沒有更具顛覆性的替代方案？」
-
-**第三步：綜合與提煉**
--   從第二步的腦力激盪中，挑選出最精華、最不重複的四個想法。
--   將這些想法潤飾成簡潔、自然且引人點擊的問句。每個提示不應超過 20 個字。
-
-**第四步：最終輸出**
--   將潤飾好的四個提示放入 JSON 陣列中。
-
-# 輸出格式
-請嚴格以 JSON 陣列格式輸出，且陣列中必須剛好包含四個字串元素。不要包含任何 JSON 格式以外的文字、註解或解釋。
-範例：["提示一", "提示二", "提示三", "提示四"]
-
-# 待分析內容
-【使用者最新查詢】: ${userMessage.trim()}
-【AI 最新回應】: ${aiResponse.trim()}`;
+            if (followUpPrompts && followUpPrompts.length > 0) {
+                renderFollowUpPrompts(followUpPrompts);
+            }
+        };
         const renderFollowUpPrompts = (prompts) => {
             const { followUpContainer, followUpPromptsList } = ALL_ELEMENTS;
             followUpPromptsList.innerHTML = '';
@@ -5647,50 +5623,21 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         const extractPersonalMemory = async (userMessage, aiResponse) => {
             // ▼▼▼ 已根據您的建議，更新為第三人稱客觀視角的「完美提示詞」 ▼▼▼
-            const prompt = `# 角色
-你是一位極度嚴謹、注重細節的「認知分析師」。你的唯一職責是從【使用者訊息】中，建構一個關於**使用者本人**的長期認知檔案。你對資訊的篩選標準堪比情報分析員。
+            const prompt = `# 任務目標
+你的任務是扮演一個精準的「使用者資訊分析師」。你的唯一目標是從【使用者訊息】中，提煉出關於使用者長期且穩定的個人特質、偏好、習慣或重要事實。
 
-# 核心哲學：嚴格區分「主體」與「客體」
-這是你所有判斷的基石。
--   **主體 (The Subject)**：使用者本人。這是你唯一關心的對象。
--   **客體 (The Object)**：使用者分享、詢問或操作的任何外部內容（例如：程式碼、文章、新聞、數據、他人的故事等）。
-你的任務是**完全忽略客體的所有特徵**，只記錄與**主體直接相關**的、長期的、陳述性的資訊。
-
-# 嚴格的提取標準 (必須同時滿足)
-
-## 1. 資訊來源：必須是使用者的自我陳述
-資訊必須明確來自使用者對**自身情況**的描述。
--   ✅ (使用者說) "我是一名UI設計師。" -> 提取: \`["用戶是一名UI設計師"]\`
--   ❌ (使用者說) "你覺得UI設計師的前景如何？" -> 不提取 (這是一個問題，不是自我陳述)
-
-## 2. 資訊主體：必須是關於「使用者本人」
--   ✅ (使用者說) "我對攝影很感興趣，你幫我看看這張照片的參數..." -> 提取: \`["用戶對攝影感興趣"]\`
--   ❌ (使用者說) "你幫我看看這張照片，它的光圈是f/1.8..." -> 不提取 (這是關於「照片」這個客體的資訊，不是使用者本人)
--   ✅ (使用者說) "我住在一個沿海城市。" -> 提取: \`["用戶住在沿海城市"]\`
--   ❌ (使用者說) "幫我分析一下這段關於沿海城市的程式碼..." -> 不提取 (這是關於「程式碼」這個客體的資訊)
-
-## 3. 資訊時效性：必須是「長期且穩定」的
-只記錄那些在較長時間內不會輕易改變的特質、偏好、習慣或事實。
--   ✅ (使用者說) "我偏愛使用深色主題的軟體。" -> 提取: \`["用戶偏愛使用深色主題"]\`
--   ❌ (使用者說) "我今天心情不太好。" -> 不提取 (暫時性情緒)
--   ❌ (使用者說) "我正在準備明天的會議。" -> 不提取 (一次性事件)
-
-# 需要絕對排除的內容 (Anti-Goals)
-在任何情況下，都**不得**提取以下類型的資訊：
--   **任何關於「客體」的細節**：程式碼的功能、文章的觀點、數據的內容等。
--   **使用者的問題與指令**：例如 "這是什麼？"、"幫我寫一個..." 等。
--   **暫時性的狀態**：情緒、當前活動、一次性計劃。
--   **任何形式的推斷或聯想**：即使你覺得使用者可能是某個領域的專家，只要他沒親口說，就不能記錄。
-
-# 最終驗證協議 (輸出前的強制自檢)
-在生成最終的 JSON 之前，對每一個候選的記憶點，在心中回答以下問題：
-1.  **[主體驗證]**: 這個資訊描述的是「使用者」這個人，還是他分享的「東西」？ -> 如果是後者，立即丟棄。
-2.  **[陳述驗證]**: 這是使用者對自己的「陳述」，還是一個「問題」或「指令」？ -> 如果是後者，立即丟棄。
-3.  **[時效驗證]**: 這個資訊在下個月可能還成立嗎？一年後呢？ -> 如果不確定，傾向於丟棄。
-4.  **[格式驗證]**: 我的輸出是否為一個純粹的、不含任何雜質的 JSON 陣列？
+# 規則
+1.  **絕對真實性**：所有提取的記憶點，都必須**直接源自於【使用者訊息】的文字**。絕對不能從【AI 回應】中推斷或創造資訊。AI 的回應僅供你理解對話的上下文。
+2.  **客觀第三人稱視角**：所有輸出的記憶點，都必須以客觀的第三人稱來描述，並以「用戶」開頭。
+3.  **長期性原則**：只提取具有長期性、穩定性的資訊。**必須忽略**暫時性的狀態 (如 "我現在很忙")、一次性的事件 (如 "我昨天看了電影") 或無關緊要的日常對話 (如 "今天天氣不錯")。
+    *   (錯誤範例) 使用者說「我準備去睡覺了」 -> 不提取。
+    *   (正確範例) 使用者說「我習慣晚睡」 -> 提取：「用戶習慣晚睡」。
+4.  **精簡化**：將使用者的陳述濃縮成最核心的資訊。
+    *   (原始訊息) 「身為一個軟體工程師，我大部分時間都在寫 Python。」 -> (提取結果) \`["用戶是一名軟體工程師", "用戶主要寫 Python"]\`
+5.  **空值處理**：如果【使用者訊息】中沒有任何符合上述規則的資訊，必須輸出一個空的 JSON 陣列 \`[]\`。
 
 # 輸出格式
-嚴格以 JSON 陣列格式輸出。如果經過上述所有篩選後，沒有任何合格的資訊，則必須輸出一個空的 JSON 陣列 \`[]\`。
+嚴格以 JSON 陣列格式輸出，陣列中的每個元素都是一個以「用戶」開頭的字串。
 
 # 待分析內容
 【使用者訊息】：${userMessage}
