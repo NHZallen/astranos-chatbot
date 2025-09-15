@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-14.7.6</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.7.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -2553,16 +2553,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             Pink: '#ec4899', Rose: '#f43f5e', Slate: '#64748b'
         };
         // ▲▲▲ 結束：UI 顏色主題調色盤 ▲▲▲
-        
-        // ▼▼▼ 新增：無限滾動設定與狀態 ▼▼▼
-        const HISTORY_PAGE_SIZE = 15; // 側邊欄每次載入的對話數量
-        const MESSAGE_PAGE_SIZE = 4; // 聊天視窗每次載入的訊息數量
-        let historyRenderedCount = 0;
-        let messageRenderedStartIndex = 0;
-        let sidebarScrollObserver = null;
-        let chatScrollObserver = null;
-        // ▲▲▲ 結束新增 ▲▲▲
-
         let conversations = [];
         let folders = [];
         let astras = [];
@@ -2874,8 +2864,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (saved) {
                 try {
                     const data = JSON.parse(saved);
-                    // ▼▼▼ 修改：為資料夾物件加上 renderedCount 屬性以支援延遲載入 ▼▼▼
-                    folders = (data.folders || []).map(f => ({...getDefaultFolder(), ...f, renderedCount: 0 }));
+                    folders = (data.folders || []).map(f => ({...getDefaultFolder(), ...f}));
                     conversations = (data.conversations || []).map(c => ({
                         archived: false, summary: '', folderId: null, isWebSearchEnabled: false, astrasId: null, pinned: false, ...c,
                         genConfig: c.genConfig || getDefaultGenConfig(),
@@ -3136,10 +3125,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
 
-        // ▼▼▼ 修改：實現無限滾動的 renderHistorySidebar 和輔助函式 ▼▼▼
         const renderHistorySidebar = () => {
-            // 此函式現在只處理初始渲染的重置
-            historyRenderedCount = 0;
             ALL_ELEMENTS.historyList.innerHTML = '';
             const visibleConversations = conversations
                 .filter(c => !c.archived && !c.folderId)
@@ -3148,40 +3134,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     if (!a.pinned && b.pinned) return 1;
                     return new Date(b.createdAt) - new Date(a.createdAt);
                 });
-            loadNextHistoryPage(visibleConversations); // 呼叫新函式來載入第一頁
+            visibleConversations.forEach(conv => {
+                ALL_ELEMENTS.historyList.appendChild(createConversationElement(conv));
+            });
         };
-
-        const loadNextHistoryPage = (sortedList) => {
-            const listElement = ALL_ELEMENTS.historyList;
-            
-            // 移除舊的哨兵元素
-            const oldSentinel = listElement.querySelector('.history-sentinel');
-            if (oldSentinel) {
-                sidebarScrollObserver.unobserve(oldSentinel);
-                oldSentinel.remove();
-            }
-
-            const start = historyRenderedCount;
-            const end = Math.min(start + HISTORY_PAGE_SIZE, sortedList.length);
-            
-            for (let i = start; i < end; i++) {
-                listElement.appendChild(createConversationElement(sortedList[i]));
-            }
-            
-            historyRenderedCount = end;
-
-            // 如果還有更多，則新增下一個哨兵元素
-            if (historyRenderedCount < sortedList.length) {
-                const sentinel = document.createElement('div');
-                sentinel.className = 'history-sentinel';
-                listElement.appendChild(sentinel);
-                if (sidebarScrollObserver) {
-                    sidebarScrollObserver.observe(sentinel);
-                }
-            }
-        };
-        // ▲▲▲ 結束修改 ▲▲▲
-
         // ▼▼▼ 修改：更新 renderAstras 以顯示頭像 ▼▼▼
         const renderAstras = () => {
             ALL_ELEMENTS.astrasList.innerHTML = '';
@@ -3220,17 +3176,25 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
         };
         // ▲▲▲ 結束修改 ▲▲▲
-        
-        // ▼▼▼ 修改：實現無限滾動的 renderFolders 和輔助函式 ▼▼▼
+        // ▼▼▼ 修改：重構 renderFolders 以使用 div 和自訂點擊邏輯 ▼▼▼
         const renderFolders = () => {
             ALL_ELEMENTS.folderList.innerHTML = '';
             folders.forEach(folder => {
-                folder.renderedCount = 0; // 在每次完全重新渲染時重置計數器
+                const folderConvs = folder.conversationIds
+                    .map(id => conversations.find(c => c.id === id))
+                    .filter(c => c && !c.archived)
+                    .sort((a,b) => {
+                        if (a.pinned && !b.pinned) return -1;
+                        if (!a.pinned && b.pinned) return 1;
+                        return new Date(b.createdAt) - new Date(a.createdAt);
+                    });
+
 
                 const folderElement = document.createElement('div');
                 folderElement.className = 'folder-item text-sm';
                 folderElement.dataset.id = folder.id;
                 folderElement.dataset.open = folder.isOpen;
+
 
                 folderElement.innerHTML = `
                     <div class="folder-summary sidebar-item p-3 rounded-lg flex items-center justify-between">
@@ -3243,13 +3207,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     </div>
                     <div class="folder-content-container pl-4 mt-1 space-y-1"></div>
                 `;
-                
                 const contentContainer = folderElement.querySelector('.folder-content-container');
-                loadNextFolderPage(folder.id, contentContainer); // 呼叫新函式來載入第一頁
+                folderConvs.forEach(conv => {
+                    contentContainer.appendChild(createConversationElement(conv));
+                });
+
 
                 const folderSummary = folderElement.querySelector('.folder-summary');
-                // ... (此處省略長按和點擊邏輯，與原始碼相同)
-                 let pressTimer = null;
+
+                // --- 長按邏輯開始 (為資料夾新增) ---
+                let pressTimer = null;
                 let touchMoved = false;
 
                 const startPress = (e) => {
@@ -3257,7 +3224,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     touchMoved = false;
                     pressTimer = setTimeout(() => {
                         e.preventDefault();
-                        showMobileContextMenuForFolder(folder.id);
+                        showMobileContextMenuForFolder(folder.id); // 呼叫新的資料夾選單函式
                         pressTimer = null;
                     }, 500);
                 };
@@ -3289,7 +3256,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 folderSummary.addEventListener('mouseup', cancelPress);
                 folderSummary.addEventListener('mouseleave', cancelPress);
                 folderSummary.addEventListener('click', handleClick);
-                
+                // --- 長按邏輯結束 ---
+
+
                 const folderOptionsBtn = folderElement.querySelector('.folder-options-btn');
                 folderOptionsBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -3300,47 +3269,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 ALL_ELEMENTS.folderList.appendChild(folderElement);
             });
         };
-
-        const loadNextFolderPage = (folderId, container) => {
-            const folder = folders.find(f => f.id === folderId);
-            if (!folder) return;
-
-            const oldSentinel = container.querySelector('.folder-sentinel');
-            if (oldSentinel) {
-                sidebarScrollObserver.unobserve(oldSentinel);
-                oldSentinel.remove();
-            }
-
-            const folderConvs = folder.conversationIds
-                .map(id => conversations.find(c => c.id === id))
-                .filter(c => c && !c.archived)
-                .sort((a,b) => {
-                    if (a.pinned && !b.pinned) return -1;
-                    if (!a.pinned && b.pinned) return 1;
-                    return new Date(b.createdAt) - new Date(a.createdAt);
-                });
-
-            const start = folder.renderedCount;
-            const end = Math.min(start + HISTORY_PAGE_SIZE, folderConvs.length);
-
-            for (let i = start; i < end; i++) {
-                container.appendChild(createConversationElement(folderConvs[i]));
-            }
-
-            folder.renderedCount = end;
-
-            if (folder.renderedCount < folderConvs.length) {
-                const sentinel = document.createElement('div');
-                sentinel.className = 'folder-sentinel';
-                sentinel.dataset.folderId = folderId;
-                container.appendChild(sentinel);
-                if (sidebarScrollObserver) {
-                    sidebarScrollObserver.observe(sentinel);
-                }
-            }
-        };
         // ▲▲▲ 結束修改 ▲▲▲
-
         // ▼▼▼ 【需求實現】修改 createConversationElement 以加入長按功能 ▼▼▼
         const createConversationElement = (conv) => {
             const item = document.createElement('div');
@@ -3473,15 +3402,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.archivedChatsContainer.querySelectorAll('.unarchive-btn').forEach(btn => btn.addEventListener('click', (e) => unarchiveChat(e.target.dataset.id, e)));
             ALL_ELEMENTS.archivedChatsContainer.querySelectorAll('.delete-archived-btn').forEach(btn => btn.addEventListener('click', (e) => deleteChat(e.target.dataset.id, e)));
         };
-        
-        // ▼▼▼ 修改：實現無限滾動的 renderChat 和輔助函式 ▼▼▼
         const renderChat = () => {
             const conv = getActiveConversation();
             
             const messageList = ALL_ELEMENTS.messageList;
-            messageList.classList.remove('chat-view-transition'); // 動畫重置
-            messageList.innerHTML = ''; // 清空內容
-            if (chatScrollObserver) chatScrollObserver.disconnect(); // 中斷舊的觀察器
+            // 為確保動畫重播，先移除 class
+            messageList.classList.remove('chat-view-transition');
+
 
             if (!conv) {
                 messageList.innerHTML = '';
@@ -3490,97 +3417,30 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 ALL_ELEMENTS.astrasIndicator.classList.add('hidden');
                 return;
             }
-
             ALL_ELEMENTS.headerTitle.textContent = conv.archived ? `(${i18n[config.uiLanguage].archived || '已封存'}) ${conv.title}` : conv.title;
             renderModelSwitcher();
             updateWebSearchUI();
             updateAstrasIndicator();
-
+            
+            messageList.innerHTML = ''; // 清空內容
             if (conv.messages.length === 0) {
                 const greeting = `${currentUser.username}, ${i18n[config.uiLanguage].howCanIHelp || '有什麼可以為您服務的嗎？'}`;
                 messageList.innerHTML = `<div class="text-center text-[var(--text-secondary)] mt-16"><p class="text-lg">${greeting}</p></div>`;
             } else {
-                // 計算首次載入的訊息
-                messageRenderedStartIndex = Math.max(0, conv.messages.length - MESSAGE_PAGE_SIZE);
-                const messagesToRender = conv.messages.slice(messageRenderedStartIndex);
-                
-                // 如果還有更早的訊息，則設定觀察器
-                if (messageRenderedStartIndex > 0) {
-                    const sentinel = document.createElement('div');
-                    sentinel.id = 'message-sentinel';
-                    messageList.appendChild(sentinel);
-                    setupChatObserver(sentinel);
-                }
-                
-                // 渲染第一批訊息
-                messagesToRender.forEach((msg, index) => {
-                    const originalIndex = messageRenderedStartIndex + index;
-                    addMessageToUI(msg, originalIndex, false, false);
-                });
-                
-                // 初次載入後自動滾動到底部
-                ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'auto' });
+                // ▼▼▼ 程式碼修正 ▼▼▼
+                conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
+                // ▲▲▲ 程式碼修正 ▲▲▲
             }
             
+            // 強制瀏覽器重繪，為動畫做準備
             void messageList.offsetWidth; 
+
+
+            // 添加 class 以觸發淡入動畫
             messageList.classList.add('chat-view-transition');
+            
             updateInputState();
         };
-
-        const setupChatObserver = (sentinel) => {
-            if (chatScrollObserver) chatScrollObserver.disconnect();
-            
-            const options = {
-                root: ALL_ELEMENTS.chatContainer,
-                rootMargin: '200px 0px 0px 0px', // 提前 200px 觸發
-                threshold: 0
-            };
-            
-            const callback = (entries, observer) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        observer.unobserve(entry.target); 
-                        loadPreviousMessages();
-                    }
-                });
-            };
-            
-            chatScrollObserver = new IntersectionObserver(callback, options);
-            chatScrollObserver.observe(sentinel);
-        };
-
-        const loadPreviousMessages = () => {
-            const conv = getActiveConversation();
-            if (!conv || messageRenderedStartIndex === 0) return;
-
-            const chatContainer = ALL_ELEMENTS.chatContainer;
-            const sentinel = document.getElementById('message-sentinel');
-
-            const oldScrollHeight = chatContainer.scrollHeight;
-
-            const newStartIndex = Math.max(0, messageRenderedStartIndex - MESSAGE_PAGE_SIZE);
-            const messagesToPrepend = conv.messages.slice(newStartIndex, messageRenderedStartIndex);
-
-            // 反轉陣列以正確順序前插
-            messagesToPrepend.reverse().forEach(msg => {
-                const originalIndex = conv.messages.indexOf(msg);
-                addMessageToUI(msg, originalIndex, false, false, true); // prepend = true
-            });
-            
-            messageRenderedStartIndex = newStartIndex;
-
-            // 恢復滾動位置
-            chatContainer.scrollTop = chatContainer.scrollHeight - oldScrollHeight;
-
-            if (messageRenderedStartIndex > 0 && sentinel) {
-                if(chatScrollObserver) chatScrollObserver.observe(sentinel);
-            } else if (sentinel) {
-                if(chatScrollObserver) chatScrollObserver.disconnect();
-                sentinel.remove();
-            }
-        };
-        // ▲▲▲ 結束修改 ▲▲▲
-
         const updateAstrasIndicator = () => {
             const conv = getActiveConversation();
             const astrasId = conv ? conv.astrasId : null;
@@ -3845,23 +3705,22 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             updateApiKeyWarningBadge();
         };
         
-        // ▼▼▼ 修改：addMessageToUI 支援 prepend 以實現無限滾動 ▼▼▼
-        const addMessageToUI = (msg, index, shouldSave = true, shouldScroll = true, prepend = false) => {
+        // ▼▼▼ 程式碼修改 ▼▼▼
+        const addMessageToUI = (msg, index, shouldSave = true, shouldScroll = true) => {
             const conv = getActiveConversation();
             if (shouldSave) {
-                conv.messages.push(msg);
+                 conv.messages.push(msg);
                 if (conv.messages.length === 1 && msg.role === 'user' && !conv.isRenamed && config.autoNaming) {
                     const textPart = msg.parts.find(p => p.text);
                     if (textPart) {
                         conv.title = textPart.text.substring(0, 30) || i18n[config.uiLanguage].newChat || '新對話';
                         ALL_ELEMENTS.headerTitle.textContent = conv.title;
-                        renderHistorySidebar(); // 這會觸發重新渲染，但因為是新對話，所以沒問題
+                        renderHistorySidebar();
                         generateTitleAndSummary(conv);
                     }
                 }
                 saveAppData();
             }
-
             const messageDiv = document.createElement('div');
             messageDiv.dataset.messageIndex = index;
             const isUser = msg.role === 'user';
@@ -3946,14 +3805,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
             messageDiv.innerHTML = isUser ? `${messageBubble}${icon}` : `${icon}${messageBubble}`;
+            if (ALL_ELEMENTS.messageList.querySelector('.text-center')) ALL_ELEMENTS.messageList.innerHTML = '';
 
-            if (prepend) {
-                ALL_ELEMENTS.messageList.insertBefore(messageDiv, ALL_ELEMENTS.messageList.children[1]); // Insert after sentinel
-            } else {
-                if (ALL_ELEMENTS.messageList.querySelector('.text-center')) ALL_ELEMENTS.messageList.innerHTML = '';
-                ALL_ELEMENTS.messageList.appendChild(messageDiv);
-            }
-            
+
+            ALL_ELEMENTS.messageList.appendChild(messageDiv);
             if (shouldScroll) {
                 ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
             }
@@ -3961,7 +3816,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
             return messageDiv;
         };
-        // ▲▲▲ 結束修改 ▲▲▲
+        // ▲▲▲ 程式碼修改 ▲▲▲
 
 
         const handleFormSubmit = async (e) => {
@@ -7033,37 +6888,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         async function initChatApp() {
             await loadConfig();
             await loadAppData();
-            
-            // ▼▼▼ 新增：初始化 IntersectionObserver ▼▼▼
-            const sidebarScrollArea = document.querySelector('#sidebar .scroll-area');
-            const sidebarObserverOptions = {
-                root: sidebarScrollArea,
-                rootMargin: '0px 0px 300px 0px', // 提前 300px 開始載入
-                threshold: 0
-            };
-
-            sidebarScrollObserver = new IntersectionObserver((entries, observer) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        if (entry.target.classList.contains('history-sentinel')) {
-                            const visibleConversations = conversations
-                                .filter(c => !c.archived && !c.folderId)
-                                .sort((a, b) => {
-                                    if (a.pinned && !b.pinned) return -1;
-                                    if (!a.pinned && b.pinned) return 1;
-                                    return new Date(b.createdAt) - new Date(a.createdAt);
-                                });
-                            loadNextHistoryPage(visibleConversations);
-                        } else if (entry.target.classList.contains('folder-sentinel')) {
-                            const folderId = entry.target.dataset.folderId;
-                            const container = entry.target.parentElement;
-                            loadNextFolderPage(folderId, container);
-                        }
-                    }
-                });
-            }, sidebarObserverOptions);
-            // ▲▲▲ 結束新增 ▲▲▲
-            
             applyCustomWallpaper(); 
             applyUiTheme();
             setTheme(config.theme); 
