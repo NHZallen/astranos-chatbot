@@ -352,7 +352,7 @@
         .color-swatch:hover, .icon-option:hover { transform: scale(1.1); }
         .color-swatch.selected { border-color: #3b82f6; }
         .icon-option.selected { background-color: var(--active-bg); border-color: #3b82f6; }
-        #web-search-btn.active { color: #3b82f6; }
+        #web-search-btn.active, #header-temp-chat-toggle-btn.active { color: #3b82f6; }
         
         /* 批次操作欄動畫 */
         #batch-action-bar {
@@ -830,7 +830,12 @@
         #logout-btn:hover, .folder-options-btn:hover, .chat-options-btn:hover, .astras-options-btn:hover, #new-folder-btn:hover, #new-astras-btn:hover {
             color: #111827;
         }
-        
+        #temp-chat-indicator { /* 臨時對話標籤顏色保持不變 */
+             color: #A16207;
+        }
+        .dark #temp-chat-indicator {
+            color: #FBBF24;
+        }
         .pinned-icon { /* 釘選圖示顏色保持不變 */
             color: #fbbf24;
         }
@@ -1612,16 +1617,26 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 </div>
                         <!-- ▼▼▼ 新增：API 金鑰未設定警示 ▼▼▼ -->
                         <div id="api-key-warning-badge" class="hidden cursor-pointer" title="目前選用的模型需要 API 金鑰，請點此設定" data-lang-key-title="apiKeyWarning">
-    <!-- SVG content -->
-</div>
-<!-- ▲▲▲ 結束：API 金鑰未設定警示 ▲▲▲ -->
-</div>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-500" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.21 3.03-1.742 3.03H4.42c-1.532 0-2.492-1.696-1.742-3.03l5.58-9.92zM10 13a1 1 0 110-2 1 1 0 010 2zm-1-4a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <!-- ▲▲▲ 結束：API 金鑰未設定警示 ▲▲▲ -->
+                        <span id="temp-chat-indicator" class="hidden text-xs font-bold bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full" data-lang-key="tempChat">臨時對話</span>
+                    </div>
                     <div class="flex items-center gap-1 md:gap-2">
-    <button id="web-search-btn" title="聯網搜尋" class="flex-shrink:0 h-10 w-10 rounded-full flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 transition-colors" data-lang-key-title="webSearch">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-        </button>
-    <div id="model-switcher-container" class="relative"></div>
-</div>
+                        <button id="web-search-btn" title="聯網搜尋" class="flex-shrink:0 h-10 w-10 rounded-full flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 transition-colors" data-lang-key-title="webSearch">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                            </button>
+                        <button id="header-temp-chat-toggle-btn" title="臨時對話 (不儲存紀錄)" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-[var(--text-secondary)]" data-lang-key-title="tempChatDesc">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 0 0-8 8c0 2.4.8 4.6 2.2 6.3l-1.4 2.8c-.1.2 0 .5.2.6s.4.1.6 0l2.8-1.4A8 8 0 1 0 12 2z"/><path d="M12 6v6"/><path d="M12 16h.01"/></svg>
+                        </button>
+                        <div id="model-switcher-container" class="relative"></div>
+                    </div>
+                </header>
+                <div id="chat-container" class="flex-1 p-4 md:p-6 overflow-y-auto scroll-area">
+                    <div id="message-list" class="space-y-8 max-w-4xl mx-auto"></div>
+                </div>
                 <!-- 新增：後續追問功能區塊 -->
                 <div id="follow-up-container" class="p-2 md:p-4 bg-[var(--input-bar-bg)] border-t border-[var(--border-color)] hidden">
                     <div class="max-w-4xl mx-auto">
@@ -2527,6 +2542,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let astras = [];
         let personalMemories = []; // 第一類記憶: 陣列 of {id, content, enabled}
         let activeConversationId = null;
+        let lastNonTempConversationId = null;
         let config = {
             // ▼▼▼ 需求 2 修正：將 openrouter 的結構從物件改為字串 ▼▼▼
             apiKeys: { gemini: '', openrouter: '' },
@@ -2565,6 +2581,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let abortController = null;
         let isSelectionMode = false;
         let selectedConversationIds = new Set();
+        let isTemporaryChat = false;
+        let currentTempConversation = null;
         let uploadedFiles = [];
         let sidebarOpen = false;
         let sendConfirmed = false;
@@ -2883,35 +2901,81 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 pinned: false
             };
         };
-        const startNewChat = () => {
-    const activeConv = getActiveConversation();
-    if (activeConv && activeConv.messages.length === 0) {
-        showNotification('請先傳送訊息再開始新對話。', 'warning');
-        return;
-    }
+        const startNewChat = (isTemporary = false) => {
+            const activeConv = getActiveConversation();
+            if (activeConv && activeConv.messages.length === 0 && !isTemporaryChat && !isTemporary) {
+                showNotification('請先傳送訊息再開始新對話。', 'warning');
+                return;
+            }
 
-    uploadedFiles = [];
 
-    if (conversations.length > 0 && conversations[0].messages.length === 0 && !conversations[0].isRenamed) {
-        loadChat(conversations[0].id);
-        return;
-    }
-    const newConv = createBaseConversation('新對話');
-    conversations.unshift(newConv);
-    activeConversationId = newConv.id;
-    saveAppData();
 
-    renderAll();
-    toggleSidebar(false);
-    sendConfirmed = false;
-    updateInputState();
-    updateApiKeyWarningBadge();
-    // 重新載入對話時，清除追問提示
-    renderFollowUpPrompts([]);
-};
+
+            if (!isTemporary) {
+                isTemporaryChat = false;
+            } else {
+                if (!isTemporaryChat) { // Store last non-temp chat only when entering temp mode
+                    lastNonTempConversationId = activeConversationId;
+                }
+                isTemporaryChat = true;
+            }
+            uploadedFiles = [];
+
+
+
+
+            if (isTemporary) {
+                currentTempConversation = createBaseConversation('臨時對話');
+                activeConversationId = currentTempConversation.id;
+            } else {
+                currentTempConversation = null;
+                if (conversations.length > 0 && conversations[0].messages.length === 0 && !conversations[0].isRenamed) {
+                    loadChat(conversations[0].id);
+                    return;
+                }
+                const newConv = createBaseConversation('新對話');
+                conversations.unshift(newConv);
+                activeConversationId = newConv.id;
+                saveAppData();
+            }
+
+
+
+
+            renderAll();
+            toggleSidebar(false);
+            sendConfirmed = false;
+            updateInputState();
+            updateApiKeyWarningBadge();
+            // 重新載入對話時，清除追問提示
+            renderFollowUpPrompts([]);
+        };
+        const toggleTemporaryChat = () => {
+            if (isTemporaryChat) {
+                // Turn off temp chat
+                isTemporaryChat = false;
+                currentTempConversation = null;
+                if (lastNonTempConversationId && conversations.some(c => c.id === lastNonTempConversationId)) {
+                    loadChat(lastNonTempConversationId);
+                } else {
+                    const firstAvailable = conversations.find(c => !c.archived) || null;
+                    if (firstAvailable) {
+                        loadChat(firstAvailable.id);
+                    } else {
+                        startNewChat(false);
+                    }
+                }
+                lastNonTempConversationId = null;
+            } else {
+                // Turn on temp chat
+                startNewChat(true);
+            }
+        };
         const loadChat = (id) => {
-    if (id !== activeConversationId) {
-        activeConversationId = id;
+            if (id !== activeConversationId || isTemporaryChat) {
+                isTemporaryChat = false;
+                currentTempConversation = null;
+                activeConversationId = id;
                 uploadedFiles = [];
                 renderAll();
             }
@@ -2941,8 +3005,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 conversations.splice(convIndex, 1);
             }
             await saveAppData();
-if (activeConversationId === id) {
-    const nextConv = conversations.find(c => !c.archived && !c.folderId);
+            if (activeConversationId === id) {
+                isTemporaryChat = false;
+                currentTempConversation = null;
+                const nextConv = conversations.find(c => !c.archived && !c.folderId);
                 activeConversationId = nextConv ? nextConv.id : null;
                 if (!activeConversationId) {
                     const firstInFolder = conversations.find(c => c.folderId);
@@ -3082,8 +3148,8 @@ if (activeConversationId === id) {
             itemToRename = { id: null, type: null };
         };
         const getActiveConversation = () => {
-    return conversations.find(c => c.id === activeConversationId);
-};
+            return isTemporaryChat ? currentTempConversation : conversations.find(c => c.id === activeConversationId);
+        };
         const renderAll = () => {
             renderHistorySidebar();
             renderFolders();
@@ -3091,9 +3157,11 @@ if (activeConversationId === id) {
             renderChat();
             renderArchivedChats();
             renderBatchActionBar();
-renderFilePreviews();
-updateFollowUpUI(); // 新增: 渲染後續追問介面
-applyLanguage(config.uiLanguage); // 新增：每次渲染時都應用語言
+            renderFilePreviews();
+            updateFollowUpUI(); // 新增: 渲染後續追問介面
+            ALL_ELEMENTS.headerTempChatToggleBtn.classList.toggle('active', isTemporaryChat);
+            ALL_ELEMENTS.tempChatIndicator.classList.toggle('hidden', !isTemporaryChat);
+            applyLanguage(config.uiLanguage); // 新增：每次渲染時都應用語言
         };
 
 
@@ -3681,9 +3749,10 @@ applyLanguage(config.uiLanguage); // 新增：每次渲染時都應用語言
         
         // ▼▼▼ 程式碼修改 ▼▼▼
         const addMessageToUI = (msg, index, shouldSave = true, shouldScroll = true) => {
-    const conv = getActiveConversation();
-    if (shouldSave) {
-        conv.messages.push(msg);
+            const conv = getActiveConversation();
+            if (shouldSave) {
+                 if (isTemporaryChat) {
+                    conv.messages.push(msg);
                 } else {
                     conv.messages.push(msg);
                     if (conv.messages.length === 1 && msg.role === 'user' && !conv.isRenamed && config.autoNaming) {
@@ -6830,7 +6899,13 @@ applyLanguage(config.uiLanguage); // 新增：每次渲染時都應用語言
                     toggleSidebar(false);
                 }
             });
-            ALL_ELEMENTS.newChatBtn.addEventListener('click', () => startNewChat());
+            ALL_ELEMENTS.newChatBtn.addEventListener('click', () => startNewChat(false));
+            ALL_ELEMENTS.headerTempChatToggleBtn.addEventListener('click', () => {
+                toggleTemporaryChat();
+                updateWebSearchUI();
+                updateInputState();
+                updateApiKeyWarningBadge();
+            });
             ALL_ELEMENTS.openSearchBtn.addEventListener('click', () => {
                 toggleModal(ALL_ELEMENTS.searchModal, true);
                 ALL_ELEMENTS.modalSearchInput.value = '';
@@ -7171,3 +7246,4 @@ applyLanguage(config.uiLanguage); // 新增：每次渲染時都應用語言
     </script>
 </body>
 </html>
+
