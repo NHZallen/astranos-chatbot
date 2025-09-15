@@ -2949,12 +2949,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             updateApiKeyWarningBadge();
             // 重新載入對話時，清除追問提示
             renderFollowUpPrompts([]);
-
-            // ▼▼▼ 【需求實現】在手機/平板上點擊對話後關閉側邊欄 ▼▼▼
-            if (window.innerWidth < 1024) { // 1024px 是 Tailwind CSS 的 'lg' 中斷點
-                toggleSidebar(false);
-            }
-            // ▲▲▲ 【需求實現】結束 ▲▲▲
         };
         const deleteChat = async (id, event) => {
             event?.stopPropagation();
@@ -3351,6 +3345,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         }
                     } else {
                         loadChat(conv.id);
+                        toggleSidebar(false); // <--- 在這裡加入這一行
                     }
                 }
             };
@@ -5704,16 +5699,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
         function toggleSidebar(show) {
             const { sidebar, sidebarOverlay } = ALL_ELEMENTS;
-
-            // 判斷側邊欄最終應該是開啟還是關閉的狀態
-            const shouldBeOpen = typeof show === 'boolean' ? show : !sidebar.classList.contains('open');
-
-            // 更新全域變數，確保程式其他地方的邏輯也能同步
-            sidebarOpen = shouldBeOpen;
-
-            // 透過切換 CSS class 來控制顯示/隱藏，讓 CSS 負責動畫
-            sidebar.classList.toggle('open', shouldBeOpen);
-            sidebarOverlay.classList.toggle('visible', shouldBeOpen);
+            sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
+            if (sidebarOpen) {
+                sidebar.style.transform = 'translateX(0)';
+                sidebarOverlay.classList.add('visible');
+            } else {
+                sidebar.style.transform = 'translateX(-100%)';
+                sidebarOverlay.classList.remove('visible');
+            }
         }
 
 
