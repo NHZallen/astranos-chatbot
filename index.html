@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-14.7.1</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.8.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -235,34 +235,6 @@
             transform: scale(1) translateY(0);
         }
 
-
-
-
-        #temp-chat-indicator {
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            background-color: rgba(255, 229, 100, 0.2);
-            border: 1px solid rgba(255, 229, 100, 0.4);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
-            color: #A16207;
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            /* 新增過渡動畫 */
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-        #temp-chat-indicator.hidden {
-             opacity: 0;
-             transform: scale(0.8);
-        }
-        .dark #temp-chat-indicator {
-            background-color: rgba(255, 229, 100, 0.25);
-            border: 1px solid rgba(255, 229, 100, 0.5);
-            color: #FBBF24;
-        }
-
-
         #notification-container {
             position: fixed;
             top: 1.5rem;
@@ -352,7 +324,7 @@
         .color-swatch:hover, .icon-option:hover { transform: scale(1.1); }
         .color-swatch.selected { border-color: #3b82f6; }
         .icon-option.selected { background-color: var(--active-bg); border-color: #3b82f6; }
-        #web-search-btn.active, #header-temp-chat-toggle-btn.active { color: #3b82f6; }
+        #web-search-btn.active { color: #3b82f6; }
         
         /* 批次操作欄動畫 */
         #batch-action-bar {
@@ -830,12 +802,6 @@
         #logout-btn:hover, .folder-options-btn:hover, .chat-options-btn:hover, .astras-options-btn:hover, #new-folder-btn:hover, #new-astras-btn:hover {
             color: #111827;
         }
-        #temp-chat-indicator { /* 臨時對話標籤顏色保持不變 */
-             color: #A16207;
-        }
-        .dark #temp-chat-indicator {
-            color: #FBBF24;
-        }
         .pinned-icon { /* 釘選圖示顏色保持不變 */
             color: #fbbf24;
         }
@@ -1092,9 +1058,6 @@
         .dark .pinned-icon {
             color: #fbbf24 !important;
         }
-        .dark #temp-chat-indicator {
-            color: #FBBF24 !important;
-        }
         .dark .model-suffix {
             color: #ffffff !important; /* 模型後綴也改為白色 */
             background-color: rgba(255, 255, 255, 0.15) !important; /* 微調背景以突顯 */
@@ -1271,6 +1234,7 @@
             max-height: 80vh;
             display: flex;
             flex-direction: column;
+            touch-action: none; /* 【新增】防止頁面滾動干擾手勢 */
         }
         #mobile-context-menu.visible {
             transform: translateY(0);
@@ -1608,13 +1572,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         </button>
                         <h1 id="header-title" class="text-xl font-semibold truncate" data-lang-key="newChat">新對話</h1>
                         <div id="astras-indicator" class="hidden items-center gap-2 ml-2">
-    <div class="flex items-center gap-1 bg-[var(--hover-bg)] px-2 py-1 rounded-full">
-        <span id="current-astras-name" class="text-sm font-medium text-[var(--text-primary)]"></span>
-        <button id="close-astras-btn" class="p-1 rounded-full hover:bg-[var(--active-bg)] text-[var(--text-secondary)]" title="關閉 Astras" data-lang-key-title="closeAstras">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-        </button>
-    </div>
-</div>
+                            <div class="flex items-center gap-1 bg-[var(--hover-bg)] px-2 py-1 rounded-full">
+                                <span id="current-astras-name" class="text-sm font-medium text-[var(--text-primary)]"></span>
+                                <button id="close-astras-btn" class="p-1 rounded-full hover:bg-[var(--active-bg)] text-[var(--text-secondary)]" title="關閉 Astras" data-lang-key-title="closeAstras">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                </button>
+                            </div>
+                        </div>
                         <!-- ▼▼▼ 新增：API 金鑰未設定警示 ▼▼▼ -->
                         <div id="api-key-warning-badge" class="hidden cursor-pointer" title="目前選用的模型需要 API 金鑰，請點此設定" data-lang-key-title="apiKeyWarning">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-500" viewBox="0 0 20 20" fill="currentColor">
@@ -1622,14 +1586,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             </svg>
                         </div>
                         <!-- ▲▲▲ 結束：API 金鑰未設定警示 ▲▲▲ -->
-                        <span id="temp-chat-indicator" class="hidden text-xs font-bold bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full" data-lang-key="tempChat">臨時對話</span>
                     </div>
                     <div class="flex items-center gap-1 md:gap-2">
                         <button id="web-search-btn" title="聯網搜尋" class="flex-shrink:0 h-10 w-10 rounded-full flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 transition-colors" data-lang-key-title="webSearch">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-                            </button>
-                        <button id="header-temp-chat-toggle-btn" title="臨時對話 (不儲存紀錄)" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-[var(--text-secondary)]" data-lang-key-title="tempChatDesc">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 0 0-8 8c0 2.4.8 4.6 2.2 6.3l-1.4 2.8c-.1.2 0 .5.2.6s.4.1.6 0l2.8-1.4A8 8 0 1 0 12 2z"/><path d="M12 6v6"/><path d="M12 16h.01"/></svg>
                         </button>
                         <div id="model-switcher-container" class="relative"></div>
                     </div>
@@ -2302,14 +2262,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             logoutBtn: document.getElementById('logout-btn'),
             usernameDisplay: document.getElementById('username-display'),
             newChatBtn: document.getElementById('new-chat-btn'),
-            headerTempChatToggleBtn: document.getElementById('header-temp-chat-toggle-btn'),
             openSearchBtn: document.getElementById('open-search-btn'),
             historyList: document.getElementById('history-list'),
             folderList: document.getElementById('folder-list'),
             newFolderBtn: document.getElementById('new-folder-btn'),
             settingsBtn: document.getElementById('settings-btn'),
             headerTitle: document.getElementById('header-title'),
-            tempChatIndicator: document.getElementById('temp-chat-indicator'),
             modelSwitcherContainer: document.getElementById('model-switcher-container'),
             chatContainer: document.getElementById('chat-container'),
             messageList: document.getElementById('message-list'),
@@ -2542,7 +2500,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let astras = [];
         let personalMemories = []; // 第一類記憶: 陣列 of {id, content, enabled}
         let activeConversationId = null;
-        let lastNonTempConversationId = null;
         let config = {
             // ▼▼▼ 需求 2 修正：將 openrouter 的結構從物件改為字串 ▼▼▼
             apiKeys: { gemini: '', openrouter: '' },
@@ -2581,8 +2538,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let abortController = null;
         let isSelectionMode = false;
         let selectedConversationIds = new Set();
-        let isTemporaryChat = false;
-        let currentTempConversation = null;
         let uploadedFiles = [];
         let sidebarOpen = false;
         let sendConfirmed = false;
@@ -2844,7 +2799,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 config.lastUsedModel = MODELS[0].id;
             }
         };
-        const saveAppData = async () => { if (currentUser && !isTemporaryChat) await setItem(getAppDataKey(), JSON.stringify({ conversations, folders, astras, personalMemories })); };
+        const saveAppData = async () => { if (currentUser) await setItem(getAppDataKey(), JSON.stringify({ conversations, folders, astras, personalMemories })); };
         const loadAppData = async () => {
             if (!currentUser) return;
             const saved = await getItem(getAppDataKey());
@@ -2901,47 +2856,22 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 pinned: false
             };
         };
-        const startNewChat = (isTemporary = false) => {
+        const startNewChat = () => {
             const activeConv = getActiveConversation();
-            if (activeConv && activeConv.messages.length === 0 && !isTemporaryChat && !isTemporary) {
+            if (activeConv && activeConv.messages.length === 0) {
                 showNotification('請先傳送訊息再開始新對話。', 'warning');
                 return;
             }
-
-
-
-
-            if (!isTemporary) {
-                isTemporaryChat = false;
-            } else {
-                if (!isTemporaryChat) { // Store last non-temp chat only when entering temp mode
-                    lastNonTempConversationId = activeConversationId;
-                }
-                isTemporaryChat = true;
-            }
             uploadedFiles = [];
-
-
-
-
-            if (isTemporary) {
-                currentTempConversation = createBaseConversation('臨時對話');
-                activeConversationId = currentTempConversation.id;
-            } else {
-                currentTempConversation = null;
-                if (conversations.length > 0 && conversations[0].messages.length === 0 && !conversations[0].isRenamed) {
-                    loadChat(conversations[0].id);
-                    return;
-                }
-                const newConv = createBaseConversation('新對話');
-                conversations.unshift(newConv);
-                activeConversationId = newConv.id;
-                saveAppData();
+            // 如果第一筆對話是空的，直接載入它，而不是建立新的
+            if (conversations.length > 0 && conversations[0].messages.length === 0 && !conversations[0].isRenamed) {
+                loadChat(conversations[0].id);
+                return;
             }
-
-
-
-
+            const newConv = createBaseConversation('新對話');
+            conversations.unshift(newConv);
+            activeConversationId = newConv.id;
+            saveAppData();
             renderAll();
             toggleSidebar(false);
             sendConfirmed = false;
@@ -2950,31 +2880,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             // 重新載入對話時，清除追問提示
             renderFollowUpPrompts([]);
         };
-        const toggleTemporaryChat = () => {
-            if (isTemporaryChat) {
-                // Turn off temp chat
-                isTemporaryChat = false;
-                currentTempConversation = null;
-                if (lastNonTempConversationId && conversations.some(c => c.id === lastNonTempConversationId)) {
-                    loadChat(lastNonTempConversationId);
-                } else {
-                    const firstAvailable = conversations.find(c => !c.archived) || null;
-                    if (firstAvailable) {
-                        loadChat(firstAvailable.id);
-                    } else {
-                        startNewChat(false);
-                    }
-                }
-                lastNonTempConversationId = null;
-            } else {
-                // Turn on temp chat
-                startNewChat(true);
-            }
-        };
         const loadChat = (id) => {
-            if (id !== activeConversationId || isTemporaryChat) {
-                isTemporaryChat = false;
-                currentTempConversation = null;
+            if (id !== activeConversationId) {
                 activeConversationId = id;
                 uploadedFiles = [];
                 renderAll();
@@ -3006,8 +2913,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
             await saveAppData();
             if (activeConversationId === id) {
-                isTemporaryChat = false;
-                currentTempConversation = null;
                 const nextConv = conversations.find(c => !c.archived && !c.folderId);
                 activeConversationId = nextConv ? nextConv.id : null;
                 if (!activeConversationId) {
@@ -3026,8 +2931,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if(conv) conv.archived = true;
             await saveAppData();
             if (activeConversationId === id) {
-                isTemporaryChat = false;
-                currentTempConversation = null;
                 const nextConv = conversations.find(c => !c.archived);
                 activeConversationId = nextConv ? nextConv.id : null;
                 if (!activeConversationId) startNewChat();
@@ -3148,7 +3051,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             itemToRename = { id: null, type: null };
         };
         const getActiveConversation = () => {
-            return isTemporaryChat ? currentTempConversation : conversations.find(c => c.id === activeConversationId);
+            return conversations.find(c => c.id === activeConversationId);
         };
         const renderAll = () => {
             renderHistorySidebar();
@@ -3159,8 +3062,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderBatchActionBar();
             renderFilePreviews();
             updateFollowUpUI(); // 新增: 渲染後續追問介面
-            ALL_ELEMENTS.headerTempChatToggleBtn.classList.toggle('active', isTemporaryChat);
-            ALL_ELEMENTS.tempChatIndicator.classList.toggle('hidden', !isTemporaryChat);
             applyLanguage(config.uiLanguage); // 新增：每次渲染時都應用語言
         };
 
@@ -3185,7 +3086,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.astrasList.innerHTML = '';
             astras.forEach(ast => {
                 const item = document.createElement('div');
-                item.className = `sidebar-item w-full text-left p-2.5 rounded-lg flex items-center justify-between cursor-pointer ${ast.id === getActiveAstrasId() && !isTemporaryChat && !isSelectionMode ? 'active' : ''}`;
+                item.className = `sidebar-item w-full text-left p-2.5 rounded-lg flex items-center justify-between cursor-pointer ${ast.id === getActiveAstrasId() && !isSelectionMode ? 'active' : ''}`;
                 item.dataset.id = ast.id;
                 
                 const avatarUrl = ast.avatarUrl;
@@ -3315,7 +3216,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         // ▼▼▼ 【需求實現】修改 createConversationElement 以加入長按功能 ▼▼▼
         const createConversationElement = (conv) => {
             const item = document.createElement('div');
-            item.className = `sidebar-item w-full text-left p-3 rounded-lg flex items-center justify-between cursor-pointer ${conv.id === activeConversationId && !isTemporaryChat && !isSelectionMode ? 'active' : ''}`;
+            item.className = `sidebar-item w-full text-left p-3 rounded-lg flex items-center justify-between cursor-pointer ${conv.id === activeConversationId && !isSelectionMode ? 'active' : ''}`;
             item.dataset.id = conv.id;
 
             const modelInfo = MODELS.find(m => m.id === conv.model);
@@ -3505,7 +3406,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const conv = getActiveConversation();
             if (conv) {
                 conv.astrasId = astrasId;
-                if (!isTemporaryChat) saveAppData();
+                saveAppData();
                 renderAll();
                 updateInputState();
             }
@@ -3514,7 +3415,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const conv = getActiveConversation();
             if (conv) {
                 conv.astrasId = null;
-                if (!isTemporaryChat) saveAppData();
+                saveAppData();
                 renderAll();
                 updateInputState();
                 showNotification(i18n[config.uiLanguage].astrasDeactivated || '已關閉 Astras。', 'success');
@@ -3751,21 +3652,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const addMessageToUI = (msg, index, shouldSave = true, shouldScroll = true) => {
             const conv = getActiveConversation();
             if (shouldSave) {
-                 if (isTemporaryChat) {
-                    conv.messages.push(msg);
-                } else {
-                    conv.messages.push(msg);
-                    if (conv.messages.length === 1 && msg.role === 'user' && !conv.isRenamed && config.autoNaming) {
-                        const textPart = msg.parts.find(p => p.text);
-                        if (textPart) {
-                            conv.title = textPart.text.substring(0, 30) || i18n[config.uiLanguage].newChat || '新對話';
-                            ALL_ELEMENTS.headerTitle.textContent = conv.title;
-                            renderHistorySidebar();
-                            generateTitleAndSummary(conv);
-                        }
+                 conv.messages.push(msg);
+                if (conv.messages.length === 1 && msg.role === 'user' && !conv.isRenamed && config.autoNaming) {
+                    const textPart = msg.parts.find(p => p.text);
+                    if (textPart) {
+                        conv.title = textPart.text.substring(0, 30) || i18n[config.uiLanguage].newChat || '新對話';
+                        ALL_ELEMENTS.headerTitle.textContent = conv.title;
+                        renderHistorySidebar();
+                        generateTitleAndSummary(conv);
                     }
-                    saveAppData();
                 }
+                saveAppData();
             }
             const messageDiv = document.createElement('div');
             messageDiv.dataset.messageIndex = index;
@@ -3957,7 +3854,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 fullResponse = completeResponse;
                 finalAiMessage.parts = [{ text: fullResponse }];
                 conv.messages.push(finalAiMessage);
-                if (!isTemporaryChat) await saveAppData();
+                await saveAppData();
 
                     if(config.enableFollowUp) {
                     // ▼▼▼ 修改後 ▼▼▼
@@ -3977,7 +3874,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     finalAiMessage.parts = [{ text: `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}` }];
                     conv.messages.push(finalAiMessage);
                 }
-                if (!isTemporaryChat) await saveAppData();
+                await saveAppData();
             } finally {
                 abortController = null;
                 updateSubmitButtonState(false);
@@ -4988,7 +4885,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
 
-            if (!isTemporaryChat) await saveAppData();
+            await saveAppData();
             renderAll();
         };
         const deleteFolder = async (id, event) => {
@@ -5571,7 +5468,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     if (firstConv) {
                         loadChat(firstConv.id);
                     } else {
-                        startNewChat(false);
+                        startNewChat();
                     }
                 } catch (error) {
                     showNotification(`${i18n[config.uiLanguage].importFailed}: ${error.message}`, 'error');
@@ -6731,7 +6628,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         // ▲▲▲ 結束新增 ▲▲▲
 
-        // ▼▼▼ 【需求實現】手機版長按選單相關函式 ▼▼▼
+        // ▼▼▼ 【需求實現】手機版長按選單相關函式 (含滑動關閉) ▼▼▼
         const showMobileContextMenu = (convId) => {
             const oldMenu = document.getElementById('mobile-context-menu-wrapper');
             if (oldMenu) oldMenu.remove();
@@ -6783,6 +6680,31 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             };
 
             overlay.addEventListener('click', closeMenu);
+
+            // 【新增】滑動關閉邏輯
+            let touchStartY = 0;
+            let touchMoveY = 0;
+            menu.addEventListener('touchstart', (e) => {
+                touchStartY = e.touches[0].clientY;
+            }, { passive: true });
+            menu.addEventListener('touchmove', (e) => {
+                touchMoveY = e.touches[0].clientY;
+                const deltaY = touchMoveY - touchStartY;
+                if (deltaY > 0) { // 只在向下滑動時作用
+                    menu.style.transform = `translateY(${deltaY}px)`;
+                }
+            }, { passive: true });
+            menu.addEventListener('touchend', () => {
+                const deltaY = touchMoveY - touchStartY;
+                if (deltaY > 100) { // 滑動超過 100px 則觸發關閉
+                    closeMenu();
+                } else { // 否則彈回原位
+                    menu.style.transform = '';
+                }
+                touchStartY = 0;
+                touchMoveY = 0;
+            });
+            // 【結束】滑動關閉邏輯
 
             menu.addEventListener('click', (e) => {
                 const actionTarget = e.target.closest('.menu-item');
@@ -6856,6 +6778,31 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             };
 
             overlay.addEventListener('click', closeMenu);
+            
+            // 【新增】滑動關閉邏輯
+            let touchStartY = 0;
+            let touchMoveY = 0;
+            menu.addEventListener('touchstart', (e) => {
+                touchStartY = e.touches[0].clientY;
+            }, { passive: true });
+            menu.addEventListener('touchmove', (e) => {
+                touchMoveY = e.touches[0].clientY;
+                const deltaY = touchMoveY - touchStartY;
+                if (deltaY > 0) {
+                    menu.style.transform = `translateY(${deltaY}px)`;
+                }
+            }, { passive: true });
+            menu.addEventListener('touchend', () => {
+                const deltaY = touchMoveY - touchStartY;
+                if (deltaY > 100) {
+                    closeMenu();
+                } else {
+                    menu.style.transform = '';
+                }
+                touchStartY = 0;
+                touchMoveY = 0;
+            });
+            // 【結束】滑動關閉邏輯
 
             menu.addEventListener('click', (e) => {
                 const actionTarget = e.target.closest('.menu-item');
@@ -6888,7 +6835,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             applyUiTheme();
             setTheme(config.theme); 
             ALL_ELEMENTS.usernameDisplay.textContent = currentUser.username;
-            if (!conversations.find(c => !c.archived)) startNewChat(false);
+            if (!conversations.find(c => !c.archived)) startNewChat();
             renderAll();
             updateInputState();
             setupVoiceInput();
@@ -6899,13 +6846,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     toggleSidebar(false);
                 }
             });
-            ALL_ELEMENTS.newChatBtn.addEventListener('click', () => startNewChat(false));
-            ALL_ELEMENTS.headerTempChatToggleBtn.addEventListener('click', () => {
-                toggleTemporaryChat();
-                updateWebSearchUI();
-                updateInputState();
-                updateApiKeyWarningBadge();
-            });
+            ALL_ELEMENTS.newChatBtn.addEventListener('click', () => startNewChat());
             ALL_ELEMENTS.openSearchBtn.addEventListener('click', () => {
                 toggleModal(ALL_ELEMENTS.searchModal, true);
                 ALL_ELEMENTS.modalSearchInput.value = '';
@@ -7028,7 +6969,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 if (!conv || conv.provider !== 'gemini' || conv.archived) return;
                 conv.isWebSearchEnabled = !conv.isWebSearchEnabled;
                 updateWebSearchUI();
-                if (!isTemporaryChat) await saveAppData();
+                await saveAppData();
             });
             ALL_ELEMENTS.followUpToggleBtn.addEventListener('click', toggleFollowUpPrompts);
             
@@ -7172,7 +7113,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
             updateFileInputUI();
             
-            startNewChat(false);
+            startNewChat();
         }
 
 
@@ -7192,9 +7133,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 if (conv && conv.messages[index] && conv.messages[index + 1]) {
                     // 刪除使用者訊息和後續的 AI 回覆
                     conv.messages.splice(index, 2);
-                    if (!isTemporaryChat) {
-                        await saveAppData();
-                    }
+                    await saveAppData();
                     renderChat(); // 重新渲染聊天視窗
                     showNotification(i18n[config.uiLanguage].messageDeleted || '對話已刪除。', 'success');
                 }
@@ -7241,9 +7180,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         });
         // ▲▲▲ 結束新增 ▲▲▲
-
-
     </script>
 </body>
 </html>
-
