@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-14.7.5</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.8.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -1282,6 +1282,12 @@
             color: #ef4444;
         }
         /* ▲▲▲ 【需求實現】結束 ▲▲▲ */
+        
+        /* ▼▼▼ 新增：搜尋結果檢視按鈕樣式 ▼▼▼ */
+        .view-search-result-btn {
+            display: block; /* Default for desktop */
+        }
+        /* ▲▲▲ 結束新增 ▲▲▲ */
 
         @media (max-width: 768px) {
           input[type="text"],
@@ -1297,6 +1303,15 @@
               display: none;
           }
           /* ▲▲▲ 【需求實現】結束 ▲▲▲ */
+          
+          /* ▼▼▼ 新增：手機版隱藏搜尋結果的檢視按鈕 ▼▼▼ */
+          .view-search-result-btn {
+              display: none;
+          }
+          #search-results-container .p-3 { 
+              cursor: pointer;
+          }
+          /* ▲▲▲ 結束新增 ▲▲▲ */
         }
         @media (max-width: 768px) {
   /* 讓 Modal 內容垂直排列 */
@@ -2097,6 +2112,23 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             </div>
         </div>
     </div>
+    <!-- ▼▼▼ 新增：搜尋結果檢視 Modal ▼▼▼ -->
+    <div id="search-result-view-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[51]">
+        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-3xl flex flex-col" style="max-height: 90vh;">
+            <div class="p-6 border-b border-[var(--border-color)] flex justify-between items-center flex-shrink-0">
+                <h2 id="view-search-result-title" class="text-2xl font-bold truncate" data-lang-key="viewConversation">檢視對話</h2>
+                <button id="close-view-search-result-modal-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
+            </div>
+            <div id="view-search-result-content" class="p-6 overflow-y-auto space-y-4 scroll-area flex-1">
+                <!-- 搜尋結果的訊息將被動態插入此處 -->
+            </div>
+            <div class="p-4 bg-[var(--sidebar-bg)] border-t border-[var(--border-color)] flex justify-end gap-3 flex-shrink-0">
+                <button id="close-view-search-result-modal-btn-footer" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]" data-lang-key="close">關閉</button>
+                <button id="confirm-view-search-result-btn" class="px-4 py-2 rounded-md btn-primary" data-lang-key="confirm">確認</button>
+            </div>
+        </div>
+    </div>
+    <!-- ▲▲▲ 結束新增 ▲▲▲ -->
     <div id="notification-container"></div>
     <div id="custom-dialog-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
         <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl p-6 w-full max-w-sm">
@@ -2390,6 +2422,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             modalSearchScopeSelect: document.getElementById('modal-search-scope-select'),
             searchResultsContainer: document.getElementById('search-results-container'),
             performSearchBtn: document.getElementById('perform-search-btn'),
+            // ▼▼▼ 新增：搜尋結果檢視 Modal 相關元素 ▼▼▼
+            searchResultViewModal: document.getElementById('search-result-view-modal'),
+            viewSearchResultTitle: document.getElementById('view-search-result-title'),
+            viewSearchResultContent: document.getElementById('view-search-result-content'),
+            closeViewSearchResultModalBtn: document.getElementById('close-view-search-result-modal-btn'),
+            closeViewSearchResultModalBtnFooter: document.getElementById('close-view-search-result-modal-btn-footer'),
+            confirmViewSearchResultBtn: document.getElementById('confirm-view-search-result-btn'),
+            // ▲▲▲ 結束新增 ▲▲▲
             fileInputContainer: document.getElementById('file-input-container'),
             addFileBtn: document.getElementById('add-file-btn'),
             fileOptionsPopover: document.getElementById('file-options-popover'),
@@ -3925,6 +3965,29 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             } catch (error) {
                 if (error.name === 'AbortError') {
                     contentDiv.innerHTML = renderMarkdown(fullResponse);
+                        const isUserScrolledToBottom = ALL_ELEMENTS.chatContainer.scrollHeight - ALL_ELEMENTS.chatContainer.scrollTop <= ALL_ELEMENTS.chatContainer.clientHeight + 1;
+                        if (isUserScrolledToBottom) {
+                            ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
+                        }
+                    },
+                    abortController.signal
+                );
+                fullResponse = completeResponse;
+                finalAiMessage.parts = [{ text: fullResponse }];
+                conv.messages.push(finalAiMessage);
+                await saveAppData();
+
+                    if(config.enableFollowUp) {
+                    // ▼▼▼ 修改後 ▼▼▼
+                    // 將 userMessage 也傳入函式
+                    await generateFollowUpPrompts(userMessage, fullResponse);
+                }
+                if (config.memoryEnabled1 && config.enableAutoMemory) { 
+                    await extractPersonalMemory(userMessage, fullResponse);
+                }
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    contentDiv.innerHTML = renderMarkdown(fullResponse);
                     finalAiMessage.parts = [{ text: fullResponse }];
                     conv.messages.push(finalAiMessage);
                 } else {
@@ -5191,6 +5254,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 return text;
             }
         };
+        // ▼▼▼ 修改：performSearchAndRenderResults 以實現新功能 ▼▼▼
         const performSearchAndRenderResults = async () => {
             const query = ALL_ELEMENTS.modalSearchInput.value.trim();
             const scope = ALL_ELEMENTS.modalSearchScopeSelect.value;
@@ -5200,90 +5264,152 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 container.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].searchPrompt}</p>`;
                 return;
             }
-            const results = [];
-            if (scope === 'natural') {
-                const generatedKeywords = await generateSearchKeywords(query);
-                if (generatedKeywords && generatedKeywords.length > 0) {
-                    const keywordQueries = generatedKeywords.join('|');
-                    conversations.forEach(conv => {
-                        let matchFound = false;
-                        let titleHTML = conv.title;
-                        let snippetHTML = '';
-                        if (conv.title.toLowerCase().match(new RegExp(keywordQueries, 'gi'))) {
-                            matchFound = true;
-                            titleHTML = highlightText(conv.title, keywordQueries);
-                        }
-                        for (const msg of conv.messages) {
-                            for (const part of msg.parts) {
-                                if (part.text && part.text.toLowerCase().match(new RegExp(keywordQueries, 'gi'))) {
-                                    matchFound = true;
-                                    const text = part.text;
-                                    const matchIndex = text.toLowerCase().search(new RegExp(keywordQueries, 'gi'));
-                                    const start = Math.max(0, matchIndex - 40);
-                                    const end = Math.min(text.length, matchIndex + query.length + 40);
-                                    snippetHTML = (start > 0 ? '...' : '') + highlightText(text.substring(start, end), keywordQueries) + (end < text.length ? '...' : '');
-                                    break;
-                                }
-                            }
-                            if (snippetHTML) break;
-                        }
-                        if (matchFound) {
-                            results.push({ conv, titleHTML, snippetHTML });
-                        }
-                    });
+
+            let results = [];
+            
+            const searchLogic = (conv, currentQuery) => {
+                let matchFound = false;
+                let titleHTML = conv.title;
+                let snippetHTML = '';
+                const lowerCaseQuery = currentQuery.toLowerCase();
+
+                if (conv.title.toLowerCase().includes(lowerCaseQuery)) {
+                    matchFound = true;
+                    titleHTML = highlightText(conv.title, currentQuery);
                 }
-            } else {
-                // 原有關鍵字搜索邏輯
-                const lowerCaseQuery = query.toLowerCase();
-                const searchIn = scope === 'keyword-title' ? 'title' : 'content';
-                conversations.forEach(conv => {
-                    let matchFound = false;
-                    let titleHTML = conv.title;
-                    let snippetHTML = '';
-                    if (conv.title.toLowerCase().includes(lowerCaseQuery)) {
-                        matchFound = true;
-                        titleHTML = highlightText(conv.title, query);
-                    }
-                    if (searchIn === 'content') {
-                        for (const msg of conv.messages) {
-                            for (const part of msg.parts) {
-                                if (part.text && part.text.toLowerCase().includes(lowerCaseQuery)) {
-                                    matchFound = true;
+                if (scope === 'keyword-content' || scope === 'natural') {
+                    for (const msg of conv.messages) {
+                        for (const part of msg.parts) {
+                            if (part.text && part.text.toLowerCase().includes(lowerCaseQuery)) {
+                                matchFound = true;
+                                if (!snippetHTML) { // Only create snippet for the first match
                                     const text = part.text;
                                     const matchIndex = text.toLowerCase().indexOf(lowerCaseQuery);
                                     const start = Math.max(0, matchIndex - 40);
-                                    const end = Math.min(text.length, matchIndex + query.length + 40);
-                                    snippetHTML = (start > 0 ? '...' : '') + highlightText(text.substring(start, end), query) + (end < text.length ? '...' : '');
-                                    break;
+                                    const end = Math.min(text.length, matchIndex + currentQuery.length + 40);
+                                    snippetHTML = (start > 0 ? '...' : '') + highlightText(text.substring(start, end), currentQuery) + (end < text.length ? '...' : '');
                                 }
+                                break;
                             }
-                            if (snippetHTML) break;
                         }
+                        if (snippetHTML) break;
                     }
-                    if (matchFound) {
-                        results.push({ conv, titleHTML, snippetHTML });
+                }
+                if (matchFound) {
+                    return { conv, titleHTML, snippetHTML };
+                }
+                return null;
+            };
+
+            if (scope === 'natural') {
+                const generatedKeywords = await generateSearchKeywords(query);
+                if (generatedKeywords && generatedKeywords.length > 0) {
+                    const uniqueResults = new Map();
+                    generatedKeywords.forEach(keyword => {
+                        conversations.forEach(conv => {
+                            const result = searchLogic(conv, keyword);
+                            if (result && !uniqueResults.has(conv.id)) {
+                                uniqueResults.set(conv.id, result);
+                            }
+                        });
+                    });
+                    results = Array.from(uniqueResults.values());
+                }
+            } else {
+                conversations.forEach(conv => {
+                    const result = searchLogic(conv, query);
+                    if (result) {
+                        results.push(result);
                     }
                 });
             }
+
             if (results.length === 0) {
                 container.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].noResultsFound || '找不到符合的對話。'}</p>`;
                 return;
             }
+
             results.forEach(({ conv, titleHTML, snippetHTML }) => {
                 const item = document.createElement('div');
-                item.className = 'p-3 rounded-md hover:bg-[var(--hover-bg)] cursor-pointer border border-transparent hover:border-[var(--border-color)]';
+                item.className = 'p-3 rounded-md hover:bg-[var(--hover-bg)] border border-transparent hover:border-[var(--border-color)] flex justify-between items-center';
                 item.dataset.id = conv.id;
+                
                 item.innerHTML = `
-                    <div class="font-medium truncate">${titleHTML}</div>
-                    ${snippetHTML ? `<p class="text-xs text-[var(--text-secondary)] mt-1 truncate">${snippetHTML}</p>` : ''}
+                    <div class="flex-1 min-w-0">
+                        <div class="font-medium truncate">${titleHTML}</div>
+                        ${snippetHTML ? `<p class="text-xs text-[var(--text-secondary)] mt-1 truncate">${snippetHTML}</p>` : ''}
+                    </div>
+                    <button data-id="${conv.id}" class="view-search-result-btn ml-4 flex-shrink-0 text-xs bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full hover:bg-blue-200 font-semibold">${i18n[config.uiLanguage].view || '檢視'}</button>
                 `;
-                item.addEventListener('click', () => {
-                    loadChat(conv.id);
-                    toggleModal(ALL_ELEMENTS.searchModal, false);
+                
+                // --- 為整個項目添加長按事件 (手機版) ---
+                let pressTimer = null;
+                item.addEventListener('touchstart', (e) => {
+                    pressTimer = setTimeout(() => {
+                        e.preventDefault();
+                        showSearchResultView(conv.id);
+                    }, 500);
+                }, { passive: true });
+                item.addEventListener('touchend', () => clearTimeout(pressTimer));
+                item.addEventListener('touchmove', () => clearTimeout(pressTimer));
+
+                // --- 為檢視按鈕添加點擊事件 (桌面版) ---
+                const viewBtn = item.querySelector('.view-search-result-btn');
+                viewBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    showSearchResultView(conv.id);
                 });
+                
                 container.appendChild(item);
             });
         };
+        // ▲▲▲ 結束修改 ▲▲▲
+        
+        // ▼▼▼ 新增：搜尋結果檢視相關函式 ▼▼▼
+        const showSearchResultView = (convId) => {
+            const conv = conversations.find(c => c.id === convId);
+            if (!conv) return;
+
+            ALL_ELEMENTS.viewSearchResultTitle.textContent = conv.title;
+            const contentContainer = ALL_ELEMENTS.viewSearchResultContent;
+            contentContainer.innerHTML = ''; 
+
+            if (conv.messages.length === 0) {
+                contentContainer.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].noMessagesInConversation || '此對話沒有訊息。'}</p>`;
+            } else {
+                // 與 showArchivedChatPreview 共用訊息渲染邏輯
+                conv.messages.forEach(msg => {
+                    const isUser = msg.role === 'user';
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = `flex items-start gap-2 md:gap-4 ${isUser ? 'justify-end user-message' : 'model-message'}`;
+                    const icon = isUser 
+                        ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>` 
+                        : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
+
+                    let contentHTML = '';
+                    msg.parts.forEach(part => {
+                        if (part.text) {
+                            contentHTML += `<div>${isUser ? part.text.replace(/\n/g, '<br>') : renderMarkdown(part.text)}</div>`;
+                        } else if (part.inlineData) {
+                            const src = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+                            if (part.inlineData.mimeType.startsWith('image/')) {
+                                contentHTML += `<img src="${src}" class="mt-2 max-w-xs max-h-48 rounded-lg object-cover border border-[var(--border-color)]">`;
+                            }
+                        }
+                    });
+
+                    const messageBubble = `<div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble"><div class="prose prose-sm max-w-none message-content ${isUser ? 'text-white' : 'text-[var(--text-primary)]'}">${contentHTML}</div></div>`;
+                    messageDiv.innerHTML = isUser ? `${messageBubble}${icon}` : `${icon}${messageBubble}`;
+                    contentContainer.appendChild(messageDiv);
+                });
+            }
+
+            // 將對話 ID 附加到確認按鈕上
+            ALL_ELEMENTS.confirmViewSearchResultBtn.dataset.convId = convId;
+            toggleModal(ALL_ELEMENTS.searchResultViewModal, true);
+        };
+        // ▲▲▲ 結束新增 ▲▲▲
+        
         // 新增: 使用AI生成自然語言搜索的關鍵字
         const generateSearchKeywords = async (naturalQuery) => {
             const prompt = `從以下自然語言查詢中，提取 10-15 個最相關的關鍵字，用於搜索對話記錄。請嚴格以 JSON 陣列格式輸出，不要有任何額外的文字或解釋。例如：["關鍵字1", "關鍵字2", "關鍵字3"]。查詢內容：${naturalQuery}`;
@@ -6931,10 +7057,22 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.themeDarkBtn.addEventListener('click', () => setTheme('dark'));
             ALL_ELEMENTS.openArchivedModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.archivedChatsModal, true));
             ALL_ELEMENTS.closeArchivedModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.archivedChatsModal, false));
-            // ▼▼▼ 新增：封存對話檢視 Modal 的關閉事件 ▼▼▼
+            // ▼▼▼ 新增：封存/搜尋對話檢視 Modal 的關閉事件 ▼▼▼
             const closeViewArchivedModal = () => toggleModal(ALL_ELEMENTS.viewArchivedChatModal, false);
             ALL_ELEMENTS.closeViewArchivedModalBtn.addEventListener('click', closeViewArchivedModal);
             ALL_ELEMENTS.closeViewArchivedModalBtnFooter.addEventListener('click', closeViewArchivedModal);
+            
+            const closeSearchResultViewModal = () => toggleModal(ALL_ELEMENTS.searchResultViewModal, false);
+            ALL_ELEMENTS.closeViewSearchResultModalBtn.addEventListener('click', closeSearchResultViewModal);
+            ALL_ELEMENTS.closeViewSearchResultModalBtnFooter.addEventListener('click', closeSearchResultViewModal);
+            ALL_ELEMENTS.confirmViewSearchResultBtn.addEventListener('click', (e) => {
+                const convId = e.target.dataset.convId;
+                if (convId) {
+                    loadChat(convId);
+                    toggleModal(ALL_ELEMENTS.searchResultViewModal, false);
+                    toggleModal(ALL_ELEMENTS.searchModal, false);
+                }
+            });
             // ▲▲▲ 結束新增 ▲▲▲
             ALL_ELEMENTS.saveRenameBtn.addEventListener('click', handleRename);
             ALL_ELEMENTS.cancelRenameBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.renameModal, false));
@@ -7236,5 +7374,3 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     </script>
 </body>
 </html>
-
-
