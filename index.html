@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-14.8.1</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.8.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -1278,6 +1278,7 @@
             border-bottom: 1px solid var(--border-color);
             cursor: pointer;
             font-size: 1rem; /* 16px */
+            color: var(--text-primary); /* 【修正】使用變數 */
         }
         #mobile-context-menu .menu-item:last-child {
             border-bottom: none;
@@ -1295,6 +1296,38 @@
         }
          #mobile-context-menu .menu-item.delete svg {
             color: #ef4444;
+        }
+        /* 【修正】深色模式與自訂桌布模式的顏色適配 */
+        .dark #mobile-context-menu .menu-header,
+        .dark #mobile-context-menu .menu-item {
+            color: var(--text-primary);
+        }
+        .dark #mobile-context-menu .menu-item svg {
+            color: var(--text-secondary);
+        }
+        .dark #mobile-context-menu .menu-item.delete {
+            color: #ef4444 !important;
+        }
+        .dark #mobile-context-menu .menu-item.delete svg {
+            color: #ef4444 !important;
+        }
+        body.custom-wallpaper-active #mobile-context-menu {
+            color: #111827 !important;
+            background-color: rgba(255, 255, 255, 0.85) !important;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-color: rgba(200, 200, 200, 0.5) !important;
+        }
+        body.custom-wallpaper-active #mobile-context-menu .menu-header,
+        body.custom-wallpaper-active #mobile-context-menu .menu-item {
+             color: #111827 !important;
+        }
+        body.custom-wallpaper-active #mobile-context-menu .menu-item svg {
+            color: #6b7280 !important;
+        }
+        body.custom-wallpaper-active #mobile-context-menu .menu-item.delete,
+        body.custom-wallpaper-active #mobile-context-menu .menu-item.delete svg {
+            color: #ef4444 !important;
         }
         /* ▲▲▲ 【需求實現】結束 ▲▲▲ */
 
@@ -2367,6 +2400,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     <input type="file" id="wallpaper-upload-input" class="hidden" accept="image/*">
     <input type="file" id="astras-avatar-input" class="hidden" accept="image/*">
     <!-- ▲▲▲ 結束新增 ▲▲▲ -->
+    <!-- ▼▼▼ 新增：手機版長按選單（由 JS 動態生成並添加到 body）▼▼▼ -->
+    <div id="mobile-context-menu-wrapper"></div>
+    <!-- ▲▲▲ 結束新增 ▲▲▲ -->
+
     <script src="./i18n.js"></script>
     <script src="./demo-conversations.js"></script>
     <script src="./astras-data.js"></script>
@@ -3014,6 +3051,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     conversations = (data.conversations || []).map(c => ({
                         archived: false, summary: '', folderId: null, isWebSearchEnabled: false, astrasId: null, pinned: false, ...c,
                         genConfig: c.genConfig || getDefaultGenConfig(),
+                        // ▼▼▼ 【排序修正】新增 lastUpdatedAt 屬性並進行資料遷移 ▼▼▼
+                        lastUpdatedAt: c.lastUpdatedAt || (c.messages && c.messages.length > 0 ? c.messages[c.messages.length - 1].createdAt : c.createdAt),
                         messages: (c.messages || []).map(m => ({
                             ...m,
                             createdAt: m.createdAt || c.createdAt, // 修正：為舊版訊息補上時間戳
@@ -3043,6 +3082,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const getDefaultFolder = () => ({ color: 'gray', icon: '📁' , isOpen: false});
         const createBaseConversation = (title) => {
             const defaultModelInfo = MODELS.find(m => m.id === config.lastUsedModel) || MODELS.find(m => m.id === config.defaultModel) || MODELS[0];
+            const now = new Date().toISOString();
             return {
                 id: crypto.randomUUID(),
                 title: title,
@@ -3051,7 +3091,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 model: defaultModelInfo.id,
                 provider: defaultModelInfo.provider,
                 archived: false,
-                createdAt: new Date().toISOString(),
+                createdAt: now,
+                lastUpdatedAt: now, // 【排序修正】建立新對話時即設定
                 genConfig: getDefaultGenConfig(),
                 isRenamed: false,
                 folderId: null,
@@ -3100,9 +3141,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             event?.stopPropagation();
             if (!(await showCustomConfirm('您確定要永久刪除此對話嗎？此操作無法復原。'))) return;
 
-
-
-
             const convIndex = conversations.findIndex(c => c.id === id);
             if (convIndex > -1) {
                 const conv = conversations[convIndex];
@@ -3114,19 +3152,18 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
                 conversations.splice(convIndex, 1);
             }
+            
             await saveAppData();
+
+            // ▼▼▼ 【刪除優化】修改此處邏輯 ▼▼▼
             if (activeConversationId === id) {
-                const nextConv = conversations.find(c => !c.archived && !c.folderId);
-                activeConversationId = nextConv ? nextConv.id : null;
-                if (!activeConversationId) {
-                    const firstInFolder = conversations.find(c => c.folderId);
-                    if (firstInFolder) activeConversationId = firstInFolder.id;
-                }
-                if (!activeConversationId) startNewChat();
-                else loadChat(activeConversationId);
+                // 根據使用者需求，立即跳轉到新對話頁面
+                startNewChat();
             } else {
+                // 如果刪除的不是當前對話，只需重新渲染介面
                 renderAll();
             }
+            // ▲▲▲ 結束修改 ▲▲▲
         };
         const archiveChat = async (id, event) => {
             event?.stopPropagation();
@@ -3275,10 +3312,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.historyList.innerHTML = '';
             const visibleConversations = conversations
                 .filter(c => !c.archived && !c.folderId)
+                // ▼▼▼ 【排序修正】使用 lastUpdatedAt 進行排序 ▼▼▼
                 .sort((a, b) => {
                     if (a.pinned && !b.pinned) return -1;
                     if (!a.pinned && b.pinned) return 1;
-                    return new Date(b.createdAt) - new Date(a.createdAt);
+                    const dateB = b.lastUpdatedAt || b.createdAt;
+                    const dateA = a.lastUpdatedAt || a.createdAt;
+                    return new Date(dateB) - new Date(dateA);
                 });
             visibleConversations.forEach(conv => {
                 ALL_ELEMENTS.historyList.appendChild(createConversationElement(conv));
@@ -3329,10 +3369,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 const folderConvs = folder.conversationIds
                     .map(id => conversations.find(c => c.id === id))
                     .filter(c => c && !c.archived)
+                    // ▼▼▼ 【排序修正】使用 lastUpdatedAt 進行排序 ▼▼▼
                     .sort((a,b) => {
                         if (a.pinned && !b.pinned) return -1;
                         if (!a.pinned && b.pinned) return 1;
-                        return new Date(b.createdAt) - new Date(a.createdAt);
+                        const dateB = b.lastUpdatedAt || b.createdAt;
+                        const dateA = a.lastUpdatedAt || a.createdAt;
+                        return new Date(dateB) - new Date(dateA);
                     });
 
 
@@ -3924,8 +3967,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                             </button>
-                            <span class="text-xs text-gray-400">${timeString}</span>
-                        </div>
+                            <span class="text-xs text-gray-400">${timeString}</span></div>
                     `;
                     contentPaddingClass = 'pb-8'; 
                 } else {
@@ -4016,7 +4058,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
             addMessageToUI(userMessageObject, conv.messages.length, true);
 
-
+            // 【排序修正】更新對話的最後互動時間
+            conv.lastUpdatedAt = new Date().toISOString();
 
 
             if (config.enableAutoWebSearch && conv.provider === 'gemini' && !conv.isWebSearchEnabled) {
@@ -4064,6 +4107,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 fullResponse = completeResponse;
                 finalAiMessage.parts = [{ text: fullResponse }];
                 conv.messages.push(finalAiMessage);
+                // 【排序修正】AI 回覆後，再次更新對話的最後互動時間
+                conv.lastUpdatedAt = new Date().toISOString();
                 await saveAppData();
 
                     if(config.enableFollowUp) {
