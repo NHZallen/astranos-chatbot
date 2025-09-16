@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-14.7.8</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.7.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -2175,7 +2175,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 <button id="close-search-modal-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
             </div>
             <div class="p-4 flex items-center gap-2 border-b border-[var(--border-color)]">
-                <input type="search" id="modal-search-input" placeholder="搜尋..." class="flex-1 p-2 text-sm border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] focus:ring-2 focus:ring-blue-500 focus:outline-none" data-lang-key-placeholder="searchPlaceholder">
+                <input type="search" id="modal-search-input" placeholder="輸入自然語言問題或關鍵字..." class="flex-1 p-2 text-sm border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] focus:ring-2 focus:ring-blue-500 focus:outline-none" data-lang-key-placeholder="searchPlaceholder">
                 <select id="modal-search-scope-select" class="text-sm border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] focus:ring-2 focus:ring-blue-500 focus:outline-none p-2">
                     <option value="keyword-title" data-lang-key="searchScopeTitle">關鍵字 (標題)</option>
                     <option value="keyword-content" data-lang-key="searchScopeContent">關鍵字 (內文)</option>
@@ -2187,7 +2187,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 </button>
             </div>
             <div id="search-results-container" class="p-4 overflow-y-auto space-y-2 scroll-area flex-1">
-                <p class="text-center text-[var(--text-secondary)]" data-lang-key="searchPrompt">請輸入關鍵字進行搜尋。</p>
+                <p class="text-center text-[var(--text-secondary)]" data-lang-key="searchPrompt">請輸入想查詢的內容，例如「上次討論的食譜」。</p>
             </div>
         </div>
     </div>
@@ -5299,115 +5299,127 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const highlightText = (text, query) => {
             if (!query || !text) return text;
             try {
+                // 將多個關鍵字用 | 連接，形成一個 OR 條件的正則表達式
                 const regex = new RegExp(`(${query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
                 return text.replace(regex, '<mark class="bg-yellow-300 dark:bg-yellow-500 rounded px-1">$1</mark>');
             } catch (e) {
+                // 如果正則表達式創建失敗（例如，查詢字符串格式不正確），返回原始文本
                 return text;
             }
         };
+
+        // ▼▼▼ 【優化】搜尋功能 ▼▼▼
         const performSearchAndRenderResults = async () => {
             const query = ALL_ELEMENTS.modalSearchInput.value.trim();
             const scope = ALL_ELEMENTS.modalSearchScopeSelect.value;
             const container = ALL_ELEMENTS.searchResultsContainer;
             container.innerHTML = '';
+
             if (!query) {
-                container.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].searchPrompt}</p>`;
+                container.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].searchPrompt || '請輸入想查詢的內容，例如「上次討論的食譜」。'}</p>`;
                 return;
             }
-            const results = [];
-            if (scope === 'natural') {
-                const generatedKeywords = await generateSearchKeywords(query);
-                if (generatedKeywords && generatedKeywords.length > 0) {
-                    const keywordQueries = generatedKeywords.join('|');
-                    conversations.forEach(conv => {
-                        let matchFound = false;
-                        let titleHTML = conv.title;
-                        let snippetHTML = '';
-                        if (conv.title.toLowerCase().match(new RegExp(keywordQueries, 'gi'))) {
-                            matchFound = true;
-                            titleHTML = highlightText(conv.title, keywordQueries);
-                        }
-                        for (const msg of conv.messages) {
-                            for (const part of msg.parts) {
-                                if (part.text && part.text.toLowerCase().match(new RegExp(keywordQueries, 'gi'))) {
-                                    matchFound = true;
-                                    const text = part.text;
-                                    const matchIndex = text.toLowerCase().search(new RegExp(keywordQueries, 'gi'));
-                                    const start = Math.max(0, matchIndex - 40);
-                                    const end = Math.min(text.length, matchIndex + query.length + 40);
-                                    snippetHTML = (start > 0 ? '...' : '') + highlightText(text.substring(start, end), keywordQueries) + (end < text.length ? '...' : '');
-                                    break;
-                                }
-                            }
-                            if (snippetHTML) break;
-                        }
-                        if (matchFound) {
-                            results.push({ conv, titleHTML, snippetHTML });
-                        }
-                    });
+
+            let resultsWithScores = [];
+            const processedConvIds = new Set(); // 確保每個對話只被處理一次
+
+            let searchKeywords = scope === 'natural' ? await generateSearchKeywords(query) : [query];
+            if (!searchKeywords || searchKeywords.length === 0) searchKeywords = [query];
+            const searchRegex = new RegExp(searchKeywords.map(kw => kw.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')).join('|'), 'gi');
+
+
+            conversations.forEach(conv => {
+                if (processedConvIds.has(conv.id)) return;
+
+                let score = 0;
+                let titleHTML = conv.title;
+                let snippetHTML = '';
+
+                // 檢查標題符合
+                const titleMatches = conv.title.match(searchRegex);
+                if (titleMatches) {
+                    score += 5; // 標題符合給予較高權重
+                    titleHTML = highlightText(conv.title, searchKeywords.join('|'));
                 }
-            } else {
-                // 原有關鍵字搜索邏輯
-                const lowerCaseQuery = query.toLowerCase();
-                const searchIn = scope === 'keyword-title' ? 'title' : 'content';
-                conversations.forEach(conv => {
-                    let matchFound = false;
-                    let titleHTML = conv.title;
-                    let snippetHTML = '';
-                    if (conv.title.toLowerCase().includes(lowerCaseQuery)) {
-                        matchFound = true;
-                        titleHTML = highlightText(conv.title, query);
-                    }
-                    if (searchIn === 'content') {
-                        for (const msg of conv.messages) {
-                            for (const part of msg.parts) {
-                                if (part.text && part.text.toLowerCase().includes(lowerCaseQuery)) {
-                                    matchFound = true;
-                                    const text = part.text;
-                                    const matchIndex = text.toLowerCase().indexOf(lowerCaseQuery);
-                                    const start = Math.max(0, matchIndex - 40);
-                                    const end = Math.min(text.length, matchIndex + query.length + 40);
-                                    snippetHTML = (start > 0 ? '...' : '') + highlightText(text.substring(start, end), query) + (end < text.length ? '...' : '');
-                                    break;
+
+                // 檢查內文符合 (只有在 scope 不是僅限標題時)
+                if (scope !== 'keyword-title') {
+                    for (const msg of conv.messages) {
+                        for (const part of msg.parts) {
+                            if (part.text) {
+                                const contentMatches = part.text.match(searchRegex);
+                                if (contentMatches) {
+                                    score += contentMatches.length; // 根據符合次數加分
+                                    if (!snippetHTML) { // 只取第一個符合的內文片段
+                                        const matchIndex = part.text.search(searchRegex);
+                                        const start = Math.max(0, matchIndex - 40);
+                                        const end = Math.min(part.text.length, matchIndex + query.length + 40);
+                                        snippetHTML = (start > 0 ? '...' : '') + highlightText(part.text.substring(start, end), searchKeywords.join('|')) + (end < part.text.length ? '...' : '');
+                                    }
                                 }
                             }
-                            if (snippetHTML) break;
                         }
                     }
-                    if (matchFound) {
-                        results.push({ conv, titleHTML, snippetHTML });
-                    }
-                });
-            }
-            if (results.length === 0) {
+                }
+                
+                if (score > 0) {
+                    resultsWithScores.push({ conv, titleHTML, snippetHTML, score });
+                    processedConvIds.add(conv.id);
+                }
+            });
+            
+            if (resultsWithScores.length === 0) {
                 container.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].noResultsFound || '找不到符合的對話。'}</p>`;
                 return;
             }
-            results.forEach(({ conv, titleHTML, snippetHTML }) => {
-                const item = document.createElement('div');
-                item.className = 'p-3 rounded-md hover:bg-[var(--hover-bg)] cursor-pointer border border-transparent hover:border-[var(--border-color)]';
-                item.dataset.id = conv.id;
-                item.innerHTML = `
-                    <div class="font-medium truncate">${titleHTML}</div>
-                    ${snippetHTML ? `<p class="text-xs text-[var(--text-secondary)] mt-1 truncate">${snippetHTML}</p>` : ''}
-                `;
-                item.addEventListener('click', () => {
-                    loadChat(conv.id);
-                    toggleModal(ALL_ELEMENTS.searchModal, false);
+
+            // 計算最高分以進行正規化
+            const maxScore = Math.max(...resultsWithScores.map(r => r.score), 1);
+
+            // 根據分數排序並渲染
+            resultsWithScores
+                .sort((a, b) => b.score - a.score)
+                .forEach(({ conv, titleHTML, snippetHTML, score }) => {
+                    const relevancePercentage = Math.round((score / maxScore) * 100);
+                    const item = document.createElement('div');
+                    item.className = 'p-3 rounded-md hover:bg-[var(--hover-bg)] cursor-pointer border border-transparent hover:border-[var(--border-color)] flex justify-between items-center';
+                    item.dataset.id = conv.id;
+                    item.innerHTML = `
+                        <div class="flex-1 overflow-hidden">
+                            <div class="font-medium truncate">${titleHTML}</div>
+                            ${snippetHTML ? `<p class="text-xs text-[var(--text-secondary)] mt-1 truncate">${snippetHTML}</p>` : ''}
+                        </div>
+                        <div class="ml-4 text-sm font-semibold text-blue-600 flex-shrink-0">${relevancePercentage}%</div>
+                    `;
+                    item.addEventListener('click', () => {
+                        loadChat(conv.id);
+                        toggleModal(ALL_ELEMENTS.searchModal, false);
+                    });
+                    container.appendChild(item);
                 });
-                container.appendChild(item);
-            });
         };
+        // ▲▲▲ 【優化】結束 ▲▲▲
+        
         // 新增: 使用AI生成自然語言搜索的關鍵字
         const generateSearchKeywords = async (naturalQuery) => {
-            const prompt = `從以下自然語言查詢中，提取 10-15 個最相關的關鍵字，用於搜索對話記錄。請嚴格以 JSON 陣列格式輸出，不要有任何額外的文字或解釋。例如：["關鍵字1", "關鍵字2", "關鍵字3"]。查詢內容：${naturalQuery}`;
+            const prompt = `從以下自然語言查詢中，提取 3-5 個最相關的核心關鍵字，用於搜索對話記錄。請嚴格以 JSON 陣列格式輸出，不要有任何額外的文字或解釋。例如：["關鍵字1", "關鍵字2", "關鍵字3"]。查詢內容：${naturalQuery}`;
             const responseSchema = {
                 type: "ARRAY",
                 items: { type: "STRING" },
-                minItems: 10,
-                maxItems: 15
+                minItems: 3,
+                maxItems: 5
             };
-            return await callApiWithSchema(prompt, responseSchema);
+            try {
+                const keywords = await callApiWithSchema(prompt, responseSchema);
+                // 增加一個檢查，確保回傳的是陣列
+                if (Array.isArray(keywords)) {
+                    return keywords;
+                }
+                return null; // 如果回傳格式不對，則返回 null
+            } catch (error) {
+                console.error("生成搜索關鍵字失敗:", error);
+                return null; // 發生錯誤時也返回 null
+            }
         };
         const renderFilePreviews = () => {
             const { filePreviewContainer } = ALL_ELEMENTS;
