@@ -5814,19 +5814,15 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         function toggleSidebar(show) {
             const { sidebar, sidebarOverlay } = ALL_ELEMENTS;
             sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
-
-            // 移除可能存在的行內樣式，讓 CSS class 來控制最終狀態
-            sidebar.style.transform = '';
-            sidebarOverlay.style.opacity = '';
-            
             if (sidebarOpen) {
-                sidebar.classList.add('open'); // 使用 class 來觸發 CSS 定義的 transform
+                sidebar.style.transform = 'translateX(0)';
                 sidebarOverlay.classList.add('visible');
             } else {
-                sidebar.classList.remove('open');
+                sidebar.style.transform = 'translateX(-100%)';
                 sidebarOverlay.classList.remove('visible');
             }
         }
+
 
         function closeAllPopovers() {
             document.querySelectorAll('.popover.visible').forEach(popover => {
@@ -7074,76 +7070,60 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
         // ▼▼▼ 【需求實現】側邊欄滑動手勢邏輯 ▼▼▼
         const setupSidebarGestures = () => {
-            const { sidebar, sidebarOverlay, sidebarOpenHandle } = ALL_ELEMENTS;
             let touchStartX = 0;
-            let currentX = 0;
+            let touchCurrentX = 0;
             let isDragging = false;
-            let sidebarWidth = 0;
+            const threshold = 50; // 需要滑動超過 50px 才觸發
 
-            const onDragStart = (e) => {
-                // 只在觸控事件時觸發
-                if (e.type === 'mousedown') return; 
-
-                // 判斷是否從有效區域開始拖曳
-                const canDragOpen = !sidebarOpen && e.target === sidebarOpenHandle;
-                const canDragClose = sidebarOpen && (e.target === sidebar || e.target === sidebarOverlay);
-
-                if (canDragOpen || canDragClose) {
-                    isDragging = true;
+            // --- 在側邊欄上滑動以關閉 ---
+            ALL_ELEMENTS.sidebar.addEventListener('touchstart', (e) => {
+                if (sidebarOpen) {
                     touchStartX = e.touches[0].clientX;
-                    sidebarWidth = sidebar.offsetWidth;
-                    // 拖曳開始時，禁用動畫以獲得即時反饋
-                    sidebar.classList.add('no-transition');
-                    sidebarOverlay.classList.add('no-transition');
+                    isDragging = true;
                 }
-            };
+            }, { passive: true });
 
-            const onDragMove = (e) => {
-                if (!isDragging) return;
-                
-                currentX = e.touches[0].clientX;
-                const deltaX = currentX - touchStartX;
+            ALL_ELEMENTS.sidebar.addEventListener('touchmove', (e) => {
+                if (!isDragging || !sidebarOpen) return;
+                touchCurrentX = e.touches[0].clientX;
+            }, { passive: true });
 
-                // 根據側邊欄當前是開是關，計算新的位置
-                const initialTransform = sidebarOpen ? 0 : -sidebarWidth;
-                let newTransform = initialTransform + deltaX;
-
-                // 限制拖曳範圍，不能超出 [-sidebarWidth, 0]
-                newTransform = Math.max(-sidebarWidth, Math.min(newTransform, 0));
-
-                // 實時更新側邊欄位置和遮罩透明度
-                sidebar.style.transform = `translateX(${newTransform}px)`;
-                const openRatio = (newTransform + sidebarWidth) / sidebarWidth;
-                sidebarOverlay.style.opacity = openRatio * 0.5; // 遮罩最大透明度為 0.5
-                sidebarOverlay.style.visibility = 'visible'; // 拖曳時強制可見
-            };
-
-            const onDragEnd = () => {
-                if (!isDragging) return;
-
+            ALL_ELEMENTS.sidebar.addEventListener('touchend', () => {
+                if (!isDragging || !sidebarOpen) return;
                 isDragging = false;
-                
-                // 恢復動畫
-                sidebar.classList.remove('no-transition');
-                sidebarOverlay.classList.remove('no-transition');
-                
-                // 根據當前位置決定是吸附回去還是完全打開
-                const currentTransform = new DOMMatrix(getComputedStyle(sidebar).transform).e;
-                const openRatio = (currentTransform + sidebarWidth) / sidebarWidth;
-
-                // 如果拉開超過 1/3，或者關閉時還剩下超過 2/3，則判定為另一狀態
-                if (openRatio > 0.33) {
-                    toggleSidebar(true); // 吸附打開
-                } else {
-                    toggleSidebar(false); // 吸附關閉
+                const deltaX = touchCurrentX - touchStartX;
+                if (deltaX < -threshold) { // 向左滑動超過閾值
+                    toggleSidebar(false);
                 }
-            };
+                touchStartX = 0;
+                touchCurrentX = 0;
+            });
 
-            // 綁定事件到 document，以便在任何地方滑動都能捕捉到 move 和 end
-            document.addEventListener('touchstart', onDragStart, { passive: true });
-            document.addEventListener('touchmove', onDragMove, { passive: true });
-            document.addEventListener('touchend', onDragEnd);
+            // --- 在螢幕邊緣滑動以開啟 ---
+            ALL_ELEMENTS.sidebarOpenHandle.addEventListener('touchstart', (e) => {
+                if (!sidebarOpen) {
+                    touchStartX = e.touches[0].clientX;
+                    isDragging = true;
+                }
+            }, { passive: true });
+
+            ALL_ELEMENTS.sidebarOpenHandle.addEventListener('touchmove', (e) => {
+                if (!isDragging || sidebarOpen) return;
+                touchCurrentX = e.touches[0].clientX;
+            }, { passive: true });
+
+            ALL_ELEMENTS.sidebarOpenHandle.addEventListener('touchend', () => {
+                if (!isDragging || sidebarOpen) return;
+                isDragging = false;
+                const deltaX = touchCurrentX - touchStartX;
+                if (deltaX > threshold) { // 向右滑動超過閾值
+                    toggleSidebar(true);
+                }
+                touchStartX = 0;
+                touchCurrentX = 0;
+            });
         };
+        // ▲▲▲ 【需求實現】結束 ▲▲▲
 
 
         async function initChatApp() {
