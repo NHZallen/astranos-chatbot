@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-14.7.6</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.7.7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -86,6 +86,21 @@
 
 
         body { background-color: var(--chat-bg); color: var(--text-primary); } /* 移除 height: 100vh; overflow: hidden; */
+        
+        /* ▼▼▼ 【第一步 新增】滾動優化與背景鎖定 ▼▼▼ */
+        .scroll-area {
+            /* 在 iOS 和其他觸控裝置上啟用基於動量的慣性滾動 */
+            -webkit-overflow-scrolling: touch;
+            /* 防止容器內的滾動影響到父元素（如 body），有效抑制滾動穿透和過度的橡皮筋效果 */
+            overscroll-behavior-y: contain;
+        }
+        
+        /* 當彈窗開啟時，應用於 body 以鎖定背景滾動 */
+        body.modal-open {
+            overflow: hidden;
+        }
+        /* ▲▲▲ 【第一步 結束】 ▲▲▲ */
+
         .sidebar { background-color: var(--sidebar-bg); border-right: 1px solid var(--border-color); transition: transform 0.3s ease-in-out; }
         .scroll-area::-webkit-scrollbar { width: 8px; }
         .scroll-area::-webkit-scrollbar-track { background: transparent; }
@@ -2792,11 +2807,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const toggleModal = (modalElement, show) => {
             if (!modalElement) return;
             if (show) {
+                // ▼▼▼ 【第二步 修改】開啟彈窗時，在 body 新增 class 以鎖定背景 ▼▼▼
+                document.body.classList.add('modal-open');
+                // ▲▲▲ 【第二步 結束】 ▲▲▲
                 modalElement.classList.remove('hidden');
                 requestAnimationFrame(() => {
                     modalElement.classList.add('visible');
                 });
             } else {
+                // ▼▼▼ 【第二步 修改】關閉彈窗時，從 body 移除 class 以恢復背景滾動 ▼▼▼
+                document.body.classList.remove('modal-open');
+                // ▲▲▲ 【第二步 結束】 ▲▲▲
                 modalElement.classList.remove('visible');
                 const onTransitionEnd = () => {
                     modalElement.classList.add('hidden');
@@ -5972,7 +5993,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 *   **[禁令二] 程式碼與技術內容：** 任何形式的程式碼、腳本、設定檔、或錯誤訊息。
 *   **[禁令三] 一次性指令與問題：** 使用者要求你執行的單次任務。
     *   *例如：* "幫我寫一封郵件"、"法國的首都是哪裡？"、"翻譯這段文字"
-*   **[禁令四] 暫時性狀態與情緒：** 短時間內會改變的狀態。
+*   **[禁令四] 暫時性狀態與情緒：** 短時間内會改變的狀態。
     *   *例如：* "我今天很累"、"我現在要去開會"、"我肚子餓了"
 *   **[禁令五] 引用或複製的內容：** 如果使用者貼上了一大段不屬於他原創觀點的文字（如新聞、文章），不應從中提取記憶。
 
