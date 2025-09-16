@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-14.7.7</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.7.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -1630,7 +1630,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             <!-- Sidebar Overlay (for mobile) -->
             <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 opacity-0"></div>
 
-
+            <!-- ▼▼▼ 【需求實現】新增：側邊欄開啟手勢熱區 ▼▼▼ -->
+            <div id="sidebar-open-handle" class="fixed top-0 left-0 h-full z-20" style="width: 20px; touch-action: pan-y;"></div>
+            <!-- ▲▲▲ 【需求實現】結束 ▲▲▲ -->
 
 
             <!-- Sidebar -->
@@ -2507,6 +2509,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             sidebar: document.getElementById('sidebar'),
             sidebarOverlay: document.getElementById('sidebar-overlay'),
             menuToggleBtn: document.getElementById('menu-toggle-btn'),
+            sidebarOpenHandle: document.getElementById('sidebar-open-handle'), // 新增：側邊欄開啟熱區
             // 新增: 後續追問相關元素
             followUpContainer: document.getElementById('follow-up-container'),
             followUpToggleBtn: document.getElementById('follow-up-toggle-btn'),
@@ -7065,6 +7068,63 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         // ▲▲▲ 【需求實現】結束 ▲▲▲
 
+        // ▼▼▼ 【需求實現】側邊欄滑動手勢邏輯 ▼▼▼
+        const setupSidebarGestures = () => {
+            let touchStartX = 0;
+            let touchCurrentX = 0;
+            let isDragging = false;
+            const threshold = 50; // 需要滑動超過 50px 才觸發
+
+            // --- 在側邊欄上滑動以關閉 ---
+            ALL_ELEMENTS.sidebar.addEventListener('touchstart', (e) => {
+                if (sidebarOpen) {
+                    touchStartX = e.touches[0].clientX;
+                    isDragging = true;
+                }
+            }, { passive: true });
+
+            ALL_ELEMENTS.sidebar.addEventListener('touchmove', (e) => {
+                if (!isDragging || !sidebarOpen) return;
+                touchCurrentX = e.touches[0].clientX;
+            }, { passive: true });
+
+            ALL_ELEMENTS.sidebar.addEventListener('touchend', () => {
+                if (!isDragging || !sidebarOpen) return;
+                isDragging = false;
+                const deltaX = touchCurrentX - touchStartX;
+                if (deltaX < -threshold) { // 向左滑動超過閾值
+                    toggleSidebar(false);
+                }
+                touchStartX = 0;
+                touchCurrentX = 0;
+            });
+
+            // --- 在螢幕邊緣滑動以開啟 ---
+            ALL_ELEMENTS.sidebarOpenHandle.addEventListener('touchstart', (e) => {
+                if (!sidebarOpen) {
+                    touchStartX = e.touches[0].clientX;
+                    isDragging = true;
+                }
+            }, { passive: true });
+
+            ALL_ELEMENTS.sidebarOpenHandle.addEventListener('touchmove', (e) => {
+                if (!isDragging || sidebarOpen) return;
+                touchCurrentX = e.touches[0].clientX;
+            }, { passive: true });
+
+            ALL_ELEMENTS.sidebarOpenHandle.addEventListener('touchend', () => {
+                if (!isDragging || sidebarOpen) return;
+                isDragging = false;
+                const deltaX = touchCurrentX - touchStartX;
+                if (deltaX > threshold) { // 向右滑動超過閾值
+                    toggleSidebar(true);
+                }
+                touchStartX = 0;
+                touchCurrentX = 0;
+            });
+        };
+        // ▲▲▲ 【需求實現】結束 ▲▲▲
+
 
         async function initChatApp() {
             await loadConfig();
@@ -7078,8 +7138,15 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             updateInputState();
             setupVoiceInput();
             setupScrollToBottomButton(); // 【需求實現】初始化滾動按鈕
+            setupSidebarGestures(); // 【需求實現】初始化側邊欄手勢
             ALL_ELEMENTS.menuToggleBtn.addEventListener('click', () => toggleSidebar());
             ALL_ELEMENTS.sidebarOverlay.addEventListener('click', () => toggleSidebar(false));
+            ALL_ELEMENTS.chatContainer.addEventListener('click', (e) => {
+                // 如果點擊的不是互動元素，且側邊欄是開啟的，則關閉
+                if (!e.target.closest('button, a, input, select, textarea') && sidebarOpen) {
+                    toggleSidebar(false);
+                }
+            });
             ALL_ELEMENTS.newChatBtn.addEventListener('click', () => startNewChat());
             ALL_ELEMENTS.openSearchBtn.addEventListener('click', () => {
                 toggleModal(ALL_ELEMENTS.searchModal, true);
