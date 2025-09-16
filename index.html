@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-14.8.3</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.8.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -651,12 +651,6 @@
             z-index: -1;
             display: none;
             transition: opacity 0.3s ease-in-out;
-            /* 【問題修正 1】防止在手機上長按時選取到背景圖 */
-            pointer-events: none;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
         }
 
 
@@ -729,8 +723,6 @@
         body.custom-wallpaper-active .message-bubble::before {
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
-            /* 【問題修正 3】移除渲染動畫 */
-            transition: none;
         }
         
         /* 在桌布模式下，AI 泡泡使用變數定義的半透明背景，文字為黑色 */
@@ -1338,17 +1330,6 @@
             color: #ef4444 !important;
         }
         /* ▲▲▲ 【需求實現】結束 ▲▲▲ */
-
-        /* 【問題修正 2】將搜尋檢視框的標題與按鈕設為不可選取 */
-        #search-view-modal h2, 
-        #search-view-modal #close-search-view-modal-btn, 
-        #search-view-modal #search-view-close-btn, 
-        #search-view-modal #search-view-confirm-btn {
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-        }
 
         @media (max-width: 768px) {
           input[type="text"],
@@ -2263,7 +2244,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 <h2 id="search-view-title" class="text-2xl font-bold truncate">檢視對話</h2>
                 <button id="close-search-view-modal-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
             </div>
-            <div id="search-view-content" class="p-6 overflow-y-auto space-y-4 scroll-area flex-1">
+            <div id="search-view-content" class="p-6 overflow-y-auto space-y-4 scroll-area flex-1" style="-webkit-user-select: none; user-select: none;">
                 <!-- Conversation messages will be dynamically inserted here -->
             </div>
             <div class="p-4 bg-[var(--sidebar-bg)] border-t border-[var(--border-color)] flex justify-end gap-3 flex-shrink-0">
@@ -5486,14 +5467,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 item.className = 'p-3 rounded-md hover:bg-[var(--hover-bg)] border border-transparent hover:border-[var(--border-color)]';
                 item.dataset.id = conv.id;
 
+                // ▼▼▼ 這就是被還原的程式碼 ▼▼▼
                 const scoreHTML = scope === 'natural' ? `
                     <div class="flex items-center gap-2 mt-2">
                         <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
                             <div class="bg-blue-600 h-2.5 rounded-full" style="width: ${score}%"></div>
                         </div>
-                        <span class="text-sm font-medium text-gray-500 dark:text-gray-400">${score}</span>
+                        <span class="text-sm font-medium text-gray-500 dark:text-gray-400">${score}%</span>
                     </div>
                 ` : '';
+                // ▲▲▲ 結束還原 ▲▲▲
 
                 item.innerHTML = `
                     <div class="flex justify-between items-center">
@@ -5590,85 +5573,105 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             return await callApiWithSchema(prompt, responseSchema);
         };
         
-        // ▼▼▼ 【問題修正 4】重寫評分機制 ▼▼▼
+        // 新增: 計算相關性分數的複雜邏輯
         const calculateRelevanceScores = (weightedKeywords) => {
             let results = [];
+            let processedConvIds = new Set();
+
+
             const totalWeightSum = weightedKeywords.reduce((sum, kw) => sum + kw.weight, 0);
 
+
             conversations.forEach(conv => {
-                let titleScore = 0;
-                let contentScore = 0;
-                let foundKeywordsInTitle = new Set();
-                let foundKeywordsInContent = new Map(); // keyword -> count
+                if (processedConvIds.has(conv.id)) return;
 
-                // 1. 評分標題
+
+                let totalScore = 0;
+                let maxPossibleScore = 0;
+                let foundKeywords = new Set();
+                let bestSnippet = '';
+                let titleHTML = conv.title;
+                const totalMessages = conv.messages.length;
+
+
                 weightedKeywords.forEach(kw => {
-                    if (conv.title.toLowerCase().includes(kw.keyword.toLowerCase())) {
-                        titleScore += kw.weight;
-                        foundKeywordsInTitle.add(kw.keyword.toLowerCase());
-                    }
-                });
+                    const keywordLower = kw.keyword.toLowerCase();
+                    maxPossibleScore += kw.weight * 10; // 理論上的最高分，用於歸一化
 
-                // 2. 評分內容
-                conv.messages.forEach(msg => {
-                    msg.parts.forEach(part => {
-                        if (part.text) {
-                            weightedKeywords.forEach(kw => {
-                                const occurrences = (part.text.toLowerCase().match(new RegExp(kw.keyword.toLowerCase(), 'g')) || []).length;
-                                if (occurrences > 0) {
-                                    const currentCount = foundKeywordsInContent.get(kw.keyword.toLowerCase()) || 0;
-                                    foundKeywordsInContent.set(kw.keyword.toLowerCase(), currentCount + occurrences);
+
+                    // 1. 檢查標題
+                    if (conv.title.toLowerCase().includes(keywordLower)) {
+                        totalScore += kw.weight * 10; // 在標題中找到，權重最高
+                        foundKeywords.add(keywordLower);
+                        titleHTML = highlightText(titleHTML, kw.keyword);
+                    }
+
+
+                    // 2. 檢查內文
+                    conv.messages.forEach((msg, msgIndex) => {
+                        msg.parts.forEach(part => {
+                            if (part.text && part.text.toLowerCase().includes(keywordLower)) {
+                                foundKeywords.add(keywordLower);
+
+
+                                // 2a. 頻率加權
+                                const occurrences = (part.text.toLowerCase().match(new RegExp(keywordLower, 'g')) || []).length;
+                                totalScore += kw.weight * occurrences * 0.5; // 每次出現增加基礎分
+
+
+                                // 2b. 時效性加權 (越新的訊息分數越高)
+                                const recencyWeight = (msgIndex + 1) / totalMessages;
+                                totalScore += kw.weight * recencyWeight * 2;
+
+
+                                // 2c. 角色加權 (使用者提問更重要)
+                                const roleWeight = msg.role === 'user' ? 1.5 : 1;
+                                totalScore += kw.weight * roleWeight;
+
+
+                                // 產生程式碼片段
+                                if (!bestSnippet) {
+                                    const text = part.text;
+                                    const matchIndex = text.toLowerCase().indexOf(keywordLower);
+                                    const start = Math.max(0, matchIndex - 40);
+                                    const end = Math.min(text.length, matchIndex + kw.keyword.length + 40);
+                                    bestSnippet = (start > 0 ? '...' : '') + text.substring(start, end) + (end < text.length ? '...' : '');
                                 }
-                            });
-                        }
+                            }
+                        });
                     });
                 });
-                
-                // 計算內容分數
-                foundKeywordsInContent.forEach((count, keyword) => {
-                    const kwData = weightedKeywords.find(k => k.keyword.toLowerCase() === keyword);
-                    if (kwData) {
-                        contentScore += kwData.weight * Math.log1p(count); // 使用對數平滑化頻率
-                    }
-                });
 
-                // 3. 計算共現獎勵 (Co-occurrence Bonus)
-                let coOccurrenceBonus = 0;
-                if (foundKeywordsInTitle.size > 1) {
-                    coOccurrenceBonus += foundKeywordsInTitle.size * 2;
-                }
-                if (foundKeywordsInContent.size > 1) {
-                    coOccurrenceBonus += foundKeywordsInContent.size * 1.5;
-                }
-                if (foundKeywordsInTitle.size > 0 && foundKeywordsInContent.size > 0) {
-                    coOccurrenceBonus += 5; // 標題和內容都有匹配時給予額外獎勵
-                }
-                
-                // 4. 計算總分
-                // 提升標題權重，並結合內容分數與獎勵
-                let totalScore = (titleScore * 2.5) + (contentScore * 1.5) + coOccurrenceBonus;
-                
-                if (totalScore > 0) {
-                    // 5. 分數歸一化與非線性化
-                    // 使用一個簡單的公式將分數映射到 0-99 範圍，並拉開差距
-                    const normalizedScore = (totalScore / (totalWeightSum * 3)) * 100;
-                    const finalScore = Math.floor(99 * (1 - 1 / (1 + normalizedScore / 20))); // Sigmoid-like curve
-                    
+
+                if (foundKeywords.size > 0) {
+                    // 3. 關鍵字覆蓋率加權
+                    const coverageRatio = foundKeywords.size / weightedKeywords.length;
+                    totalScore *= (1 + coverageRatio); // 覆蓋率越高，總分加成越多
+
+
+                    // 4. 分數歸一化到 0-100
+                    let finalScore = Math.min(100, Math.round((totalScore / maxPossibleScore) * 100 * 3)); // *3 是放大係數，讓分數更有區別度
+                    finalScore = Math.min(99, finalScore); // 避免輕易達到100分
+
+
+                    // 組合所有關鍵字用於高亮顯示
                     const allKeywordsQuery = weightedKeywords.map(kw => kw.keyword).join('|');
-                    const snippetHTML = conv.summary ? highlightText(conv.summary, allKeywordsQuery) : '';
+                    const highlightedSnippet = highlightText(bestSnippet, allKeywordsQuery);
+
 
                     results.push({
                         conv,
                         titleHTML: highlightText(conv.title, allKeywordsQuery),
-                        snippetHTML,
-                        score: Math.max(1, finalScore) // 最低分為1
+                        snippetHTML: highlightedSnippet,
+                        score: finalScore
                     });
+                    processedConvIds.add(conv.id);
                 }
             });
 
+
             return results;
         };
-        // ▲▲▲ 【問題修正 4】結束 ▲▲▲
 
 
         const renderFilePreviews = () => {
