@@ -1393,6 +1393,93 @@
 .model-message .prose::-webkit-scrollbar-thumb:hover {
     background-color: var(--text-secondary);
 }
+#scroll-to-bottom-btn {
+            position: absolute; /* 相對於 <main> 元素定位 */
+            bottom: 110px; /* 一個預設的初始位置，JS 會動態更新 */
+            left: 50%;
+            /* 先往右推 50%，再用 transform 拉回自身寬度的一半，實現完美置中 */
+            transform: translateX(-50%) translateY(20px); 
+            opacity: 0;
+            pointer-events: none; /* 隱藏時不可點擊 */
+            
+            width: 44px;
+            height: 44px;
+            border-radius: 9999px; /* 藥丸型狀 */
+            
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            
+            /* --- 淺色/深色模式下的基礎樣式 --- */
+            background-color: var(--chat-bg);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px var(--shadow-color);
+            
+            z-index: 25; /* 確保在聊天內容之上，但在彈出視窗之下 */
+            
+            /* --- 所有變化的過渡動畫 --- */
+            transition: opacity 0.2s ease-out, transform 0.2s ease-out, background-color 0.2s, color 0.2s, border-color 0.2s, bottom 0.3s ease-out;
+        }
+
+        /* 按鈕可見時的狀態 */
+        #scroll-to-bottom-btn.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0); /* 從下方滑入 */
+            pointer-events: auto;
+        }
+
+        /* --- 果凍彈性動畫 --- */
+        @keyframes jelly-press {
+            0% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(0.85); }
+            100% { transform: translateX(-50%) scale(1); }
+        }
+        
+        #scroll-to-bottom-btn:active {
+            /* 點擊時觸發果凍動畫，同時移除 translateY 以避免位移衝突 */
+            animation: jelly-press 0.2s ease-out;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* --- 深色模式下的簡單樣式 --- */
+        .dark #scroll-to-bottom-btn {
+            background-color: var(--chat-bg);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        /* --- 自訂義桌布模式下的「凝膠果凍玻璃」樣式 --- */
+        body.custom-wallpaper-active #scroll-to-bottom-btn {
+            /* 使用帶有透明度的主要按鈕顏色變數 */
+            background-color: rgba(var(--button-primary-rgb, 59, 130, 246), 0.5);
+            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--button-primary-text, #ffffff);
+            overflow: hidden; /* 隱藏偽元素超出範圍的部分 */
+        }
+
+        /* --- 凝膠果凍的內部光澤效果 (使用偽元素) --- */
+        body.custom-wallpaper-active #scroll-to-bottom-btn::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0) 60%);
+            transform: translateY(50%); /* 初始將光澤往下移 */
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            opacity: 0.8;
+            pointer-events: none; /* 確保不影響點擊 */
+        }
+        
+        /* --- 懸停時的光澤變化動畫 --- */
+        body.custom-wallpaper-active #scroll-to-bottom-btn:hover::before {
+            transform: translateY(30%) scale(1.1);
+            opacity: 1;
+        }
     </style>
 
 
@@ -1655,6 +1742,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 <div id="chat-container" class="flex-1 p-4 md:p-6 overflow-y-auto scroll-area">
                     <div id="message-list" class="space-y-8 max-w-4xl mx-auto"></div>
                 </div>
+                <button id="scroll-to-bottom-btn" class="hidden" title="滾動到最新訊息">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <polyline points="19 12 12 19 5 12"></polyline>
+                    </svg>
+                </button>
                 <!-- 新增：後續追問功能區塊 -->
                 <div id="follow-up-container" class="p-2 md:p-4 bg-[var(--input-bar-bg)] border-t border-[var(--border-color)] hidden">
                     <div class="max-w-4xl mx-auto">
@@ -2483,6 +2576,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             uiLanguageSelect: document.getElementById('ui-language-select'),
             aiLanguageSelect: document.getElementById('ai-language-select'),
             // ▲▲▲ 結束新增 ▲▲▲
+            scrollToBottomBtn: document.getElementById('scroll-to-bottom-btn'),
+            mainInputBarContainer: document.querySelector('.p-2.md\\:p-4.bg-\\[var\\(--input-bar-bg\\)\\]'),
             // ▼▼▼ 新增：商店與頭像相關元素 ▼▼▼
             storeContainer: document.getElementById('store-container'),
             openStoreBtn: document.getElementById('open-store-btn'),
@@ -2596,6 +2691,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let editingAstrasId = null;
         let currentSpeechRecognition = null;
         let currentVoiceTarget = null;
+        let isAutoScrolling = false;
+        let autoScrollRequest = null;
         // ▼▼▼ 需求 1 新增：圖表實例變數 ▼▼▼
         let modelPieChart = null;
         let timeDistChart = null;
@@ -2775,7 +2872,147 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             };
         };
         // ▲▲▲ 結束新增 ▲▲▲
+        // ▼▼▼ 【功能新增】滾動到底部按鈕核心邏輯 ▼▼▼
 
+        /**
+         * 自訂的、可中斷的平滑滾動函式
+         * @param {HTMLElement} element - 要滾動的元素
+         * @param {number} to - 目標滾動位置
+         * @param {number} duration - 動畫持續時間 (毫秒)
+         */
+        const customSmoothScrollTo = (element, to, duration = 400) => {
+            if (autoScrollRequest) {
+                cancelAnimationFrame(autoScrollRequest);
+            }
+
+            isAutoScrolling = true;
+            const start = element.scrollTop;
+            const change = to - start;
+            let startTime = null;
+
+            const animateScroll = (currentTime) => {
+                if (startTime === null) startTime = currentTime;
+                const elapsed = currentTime - startTime;
+                
+                // Ease-out-quad 缓動函數，效果更自然
+                const t = Math.min(1, elapsed / duration);
+                const easedT = t * (2 - t);
+
+                element.scrollTop = start + change * easedT;
+
+                if (elapsed < duration) {
+                    autoScrollRequest = requestAnimationFrame(animateScroll);
+                } else {
+                    element.scrollTop = to; // 確保精確到達目的地
+                    isAutoScrolling = false;
+                    autoScrollRequest = null;
+                    // 滾動結束後再次檢查按鈕可見性
+                    checkScrollButtonVisibility(); 
+                }
+            };
+            autoScrollRequest = requestAnimationFrame(animateScroll);
+        };
+
+        /**
+         * 中斷自動滾動
+         */
+        const stopAutoScroll = () => {
+            if (isAutoScrolling) {
+                cancelAnimationFrame(autoScrollRequest);
+                isAutoScrolling = false;
+                autoScrollRequest = null;
+                // 使用者中斷後，因為肯定不在底部，所以需要重新顯示按鈕
+                // 使用 setTimeout 避免與滾動事件的執行順序衝突
+                setTimeout(() => {
+                     if(ALL_ELEMENTS.scrollToBottomBtn) ALL_ELEMENTS.scrollToBottomBtn.classList.add('visible');
+                }, 50);
+            }
+        };
+
+        /**
+         * 檢查並更新滾動按鈕的顯示或隱藏狀態 (使用節流閥優化性能)
+         */
+        const checkScrollButtonVisibility = throttle(() => {
+            if (isAutoScrolling || !ALL_ELEMENTS.chatContainer) return;
+            const { scrollTop, scrollHeight, clientHeight } = ALL_ELEMENTS.chatContainer;
+            // 當滾動條距離底部超過 150px 時，視為離開底部
+            const isNearBottom = scrollHeight - scrollTop - clientHeight < 150; 
+            
+            if (isNearBottom) {
+                ALL_ELEMENTS.scrollToBottomBtn.classList.remove('visible');
+            } else {
+                ALL_ELEMENTS.scrollToBottomBtn.classList.add('visible');
+            }
+        }, 100); // 每 100 毫秒最多執行一次
+
+        /**
+         * 動態更新滾動按鈕的位置，使其始終在輸入框或追問提示的上方
+         */
+        const updateScrollButtonPosition = () => {
+            if (!ALL_ELEMENTS.scrollToBottomBtn) return;
+            
+            // 判斷哪個元素是當前的底部錨點
+            const isFollowUpVisible = !ALL_ELEMENTS.followUpContainer.classList.contains('hidden');
+            const anchorElement = isFollowUpVisible ? ALL_ELEMENTS.followUpContainer : ALL_ELEMENTS.mainInputBarContainer;
+            
+            if (!anchorElement) return;
+
+            const mainAreaRect = anchorElement.parentElement.getBoundingClientRect();
+            const anchorRect = anchorElement.getBoundingClientRect();
+
+            // 計算按鈕的 bottom 樣式值
+            // (主區域底部 - 錨點頂部) + 間距
+            const bottomOffset = mainAreaRect.bottom - anchorRect.top + 16; // 16px 固定間距
+            
+            ALL_ELEMENTS.scrollToBottomBtn.style.bottom = `${bottomOffset}px`;
+        };
+
+        /**
+         * 設置所有與滾動按鈕相關的事件監聽器
+         */
+        const setupScrollButton = () => {
+            if (!ALL_ELEMENTS.scrollToBottomBtn) return;
+
+            // 1. 點擊按鈕時，平滑滾動到底部
+            ALL_ELEMENTS.scrollToBottomBtn.addEventListener('click', () => {
+                 customSmoothScrollTo(ALL_ELEMENTS.chatContainer, ALL_ELEMENTS.chatContainer.scrollHeight);
+                 ALL_ELEMENTS.scrollToBottomBtn.classList.remove('visible'); // 點擊後立即隱藏
+            });
+
+            // 2. 監聽聊天視窗的滾動，以決定是否顯示按鈕
+            ALL_ELEMENTS.chatContainer.addEventListener('scroll', checkScrollButtonVisibility);
+
+            // 3. 監聽手動操作以中斷自動滾動
+            ALL_ELEMENTS.chatContainer.addEventListener('wheel', stopAutoScroll, { passive: true });
+            ALL_ELEMENTS.chatContainer.addEventListener('touchstart', stopAutoScroll, { passive: true });
+            
+            // 4. 監聽視窗大小變化，更新按鈕位置
+            window.addEventListener('resize', throttle(updateScrollButtonPosition, 100));
+            
+            // 5. 使用 MutationObserver 監聽追問區塊的樣式變化，以即時更新按鈕位置
+            const observer = new MutationObserver(updateScrollButtonPosition);
+            observer.observe(ALL_ELEMENTS.followUpContainer, { attributes: true, attributeFilter: ['class', 'style'] });
+            observer.observe(ALL_ELEMENTS.followUpPromptsList, { attributes: true, attributeFilter: ['class', 'style'] });
+            
+            // 6. 初始載入時，計算一次按鈕位置
+            setTimeout(updateScrollButtonPosition, 200); // 延遲執行以確保佈局穩定
+        };
+
+        /**
+         * 將 HEX 顏色碼轉換為 RGB 字串 (e.g., "255, 255, 255")
+         * @param {string} hex - HEX 顏色碼
+         * @returns {string} RGB 顏色字串
+         */
+        const convertHexToRgbString = (hex) => {
+            if (!hex || !hex.startsWith('#')) return '59, 130, 246'; // 預設返回藍色
+            hex = hex.replace('#', '');
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+            return `${r}, ${g}, ${b}`;
+        };
+
+        // ▲▲▲ 【功能新增】結束 ▲▲▲
 
         // ▼▼▼ 修改：使用 marked.js 解析後，再用 DOMPurify 消毒以防止 XSS ▼▼▼
         const renderMarkdown = (text) => {
@@ -6249,6 +6486,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
             root.style.setProperty('--button-primary-bg', primaryBg);
             root.style.setProperty('--button-primary-text', textColor);
+            root.style.setProperty('--button-primary-rgb', convertHexToRgbString(singleColorForRgb));
             updateThemeButtons(); // Re-apply active styles for theme buttons
         };
         
@@ -6890,6 +7128,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderAll();
             updateInputState();
             setupVoiceInput();
+            setupScrollButton();
             ALL_ELEMENTS.menuToggleBtn.addEventListener('click', () => toggleSidebar());
             ALL_ELEMENTS.sidebarOverlay.addEventListener('click', () => toggleSidebar(false));
             ALL_ELEMENTS.newChatBtn.addEventListener('click', () => startNewChat());
