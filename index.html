@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-14.8.0</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.7.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -1483,16 +1483,6 @@
             transform: translateX(-50%) scale(1.05); /* 稍微放大 */
         }
         /* ▲▲▲ 【需求實現】結束 ▲▲▲ */
-
-        /* ▼▼▼【搜索邏輯優化】新增：搜索結果符合度樣式 ▼▼▼ */
-        .search-result-item .relevance-score {
-            opacity: 0.8;
-            transition: opacity 0.2s ease-in-out;
-        }
-        .search-result-item:hover .relevance-score {
-            opacity: 1;
-        }
-        /* ▲▲▲【搜索邏輯優化】結束 ▲▲▲ */
     </style>
 
 
@@ -3877,7 +3867,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     mediaPartsContent.forEach(media => {
                         const src = `data:${media.mimeType};base64,${media.data}`;
                         if (media.mimeType.startsWith('image/')) {
-                            mediaHTML += `<img src="${src}" class="max-w-xs max-h-48 rounded-lg object-cover border border-[var(--border-color)]">`;
+                            mediaHTML += `<imgsrc="${src}" class="max-w-xs max-h-48 rounded-lg object-cover border border-[var(--border-color)]">`;
                         } else {
                             mediaHTML += `<div class="p-2 bg-[var(--hover-bg)] rounded-lg text-sm flex items-center gap-2 border border-[var(--border-color)]">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
@@ -4230,7 +4220,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
                     ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
                 };
-                headers = { 'Authorization':headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
+                headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
             }
             const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
             if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'API 請求失敗'); }
@@ -5309,215 +5299,138 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const highlightText = (text, query) => {
             if (!query || !text) return text;
             try {
-                const regex = new RegExp(`(${query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
+                // 將多關鍵字查詢（用 | 分隔）轉換為正規表示式
+                const safeQuery = query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                const regex = new RegExp(`(${safeQuery})`, 'gi');
                 return text.replace(regex, '<mark class="bg-yellow-300 dark:bg-yellow-500 rounded px-1">$1</mark>');
             } catch (e) {
+                // 如果正規表示式創建失敗，返回原始文本
+                console.error("Highlight regex error:", e);
                 return text;
             }
         };
 
-        // ▼▼▼【搜索邏輯優化】新增：ASR-100 評分核心函數 ▼▼▼
-        /**
-         * Astra 智慧搜索相關性評分模型 (ASR-100)
-         * 根據多個維度為對話計算一個精確的相關性分數。
-         * @param {object} conversation - 要評分的對話物件。
-         * @param {string[]} keywords - 從使用者查詢中提取的核心關鍵詞陣列。
-         * @returns {number} - 0-100 之間的整數分數。
-         */
-        function calculateRelevanceScore(conversation, keywords) {
-            if (!keywords || keywords.length === 0) return 0;
-
-            let totalScore = 0;
-            const lowerCaseKeywords = keywords.map(k => k.toLowerCase());
-            const keywordRegex = new RegExp(lowerCaseKeywords.join('|'), 'gi');
-
-            // 維度一：標題精準度 (滿分 30 分)
-            let titleScore = 0;
-            const lowerCaseTitle = conversation.title.toLowerCase();
-            const matchedKeywordsInTitle = lowerCaseKeywords.filter(kw => lowerCaseTitle.includes(kw));
-            
-            if (lowerCaseKeywords.every(kw => lowerCaseTitle.includes(kw))) {
-                titleScore = 20; // 核心詞完全命中
-                if (lowerCaseTitle.includes(keywords.join(' ').toLowerCase())) {
-                    titleScore = 25; // 包含匹配
-                }
-            } else if (matchedKeywordsInTitle.length > 0) {
-                // 核心詞部分命中
-                titleScore = 15 * (matchedKeywordsInTitle.length / keywords.length);
-            }
-            totalScore += titleScore;
-
-            // 維度二：內容相關性 (滿分 50 分)
-            let contentScore = 0;
-            let keywordFrequency = 0;
-            let isHitInFirstMessage = false;
-            let isHitInUserMessage = false;
-            let isHitInAiMessage = false;
-
-            conversation.messages.forEach((msg, index) => {
-                const textContent = msg.parts.map(p => p.text || '').join(' ').toLowerCase();
-                const matches = textContent.match(keywordRegex);
-                if (matches) {
-                    keywordFrequency += matches.length;
-                    if (index === 0 && msg.role === 'user') {
-                        isHitInFirstMessage = true;
-                    }
-                    if (msg.role === 'user') isHitInUserMessage = true;
-                    if (msg.role === 'model') isHitInAiMessage = true;
-                }
-            });
-
-            // 1. 關鍵詞加權頻率 (最高 20 分)
-            contentScore += Math.min(20, Math.round(10 * Math.log10(keywordFrequency + 1))); // 稍微調整對數基數以拉開分數差距
-            // 2. 首則訊息命中獎勵 (15 分)
-            if (isHitInFirstMessage) {
-                contentScore += 15;
-            }
-            // 3. 關鍵詞分佈獎勵 (10 分)
-            if (isHitInUserMessage && isHitInAiMessage) {
-                contentScore += 10;
-            }
-            // 4. 關鍵詞鄰近度獎勵 (5 分) - 簡化實現：如果匹配到多個不同關鍵詞則獎勵
-            const uniqueHits = new Set();
-            conversation.messages.forEach(msg => {
-                const textContent = msg.parts.map(p => p.text || '').join(' ').toLowerCase();
-                lowerCaseKeywords.forEach(kw => {
-                    if (textContent.includes(kw)) {
-                        uniqueHits.add(kw);
-                    }
-                });
-            });
-            if (uniqueHits.size > 1) {
-                contentScore += 5;
-            }
-            totalScore += Math.min(50, contentScore); // 確保內容分數不超過 50
-
-            // 維度三：情境關聯性 (滿分 20 分)
-            let contextScore = 0;
-            // 1. 時間衰減分數 (最高 10 分)
-            const daysAgo = (new Date() - new Date(conversation.createdAt)) / (1000 * 60 * 60 * 24);
-            if (daysAgo <= 365) {
-                contextScore += 10 * (1 - (daysAgo / 365));
-            }
-            // 2. 對話深度獎勵 (最高 10 分)
-            const messageCount = conversation.messages.length;
-            const totalWordCount = conversation.messages.reduce((sum, msg) => sum + msg.parts.map(p => p.text || '').join(' ').split(/\s+/).length, 0);
-            contextScore += Math.min(5, 5 * (messageCount / 20));
-            contextScore += Math.min(5, 5 * (totalWordCount / 2000));
-            
-            totalScore += contextScore;
-
-            return Math.round(totalScore);
-        }
-
-        // ▼▼▼【搜索邏輯優化】新增：智慧關鍵詞提取函數 ▼▼▼
-        /**
-         * 使用 AI 從自然語言查詢中提取核心關鍵詞。
-         * @param {string} naturalQuery - 使用者的自然語言搜索查詢。
-         * @returns {Promise<string[]|null>} - 一個包含關鍵詞的字串陣列，或在失敗時返回 null。
-         */
-        async function extractKeywordsFromQuery(naturalQuery) {
-            const prompt = `從以下這句用於搜索對話記錄的查詢中，提取出 3 到 5 個最核心的關鍵詞或短語。請嚴格按照 JSON 陣列格式輸出，不要包含任何額外的文字或解釋。\n\n查詢語句："${naturalQuery}"`;
-            const responseSchema = {
-                type: "ARRAY",
-                items: { type: "STRING" },
-                minItems: 2,
-                maxItems: 5
-            };
-
-            try {
-                const keywords = await callApiWithSchema(prompt, responseSchema);
-                if (keywords && Array.isArray(keywords)) {
-                    return keywords.filter(kw => typeof kw === 'string' && kw.trim() !== '');
-                }
-                return null;
-            } catch (error) {
-                console.error("Failed to extract keywords with AI:", error);
-                // AI 提取失敗時的備用方案：簡單分詞
-                return naturalQuery.split(/\s+/).filter(word => word.length > 1);
-            }
-        }
-
-        // ▼▼▼【搜索邏輯優化】重構主搜索函數，替換原有函數 ▼▼▼
         const performSearchAndRenderResults = async () => {
             const query = ALL_ELEMENTS.modalSearchInput.value.trim();
             const scope = ALL_ELEMENTS.modalSearchScopeSelect.value;
             const container = ALL_ELEMENTS.searchResultsContainer;
-            container.innerHTML = `<div class="text-center p-4">${i18n[config.uiLanguage].searching || '正在搜尋中...'}</div>`;
+            container.innerHTML = '';
+
 
             if (!query) {
                 container.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].searchPrompt}</p>`;
                 return;
             }
 
-            let keywords;
+
+            container.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].searching || '正在搜尋中...'}</p>`;
+
+
+            let results = [];
+            let processedConvIds = new Set(); // 用於防止重複顯示同一個對話
+
+
             if (scope === 'natural') {
-                keywords = await extractKeywordsFromQuery(query);
-                if (!keywords || keywords.length === 0) {
-                    container.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].keywordExtractionFailed || '無法提取關鍵詞，請嘗試更明確的查詢。'}</p>`;
+                try {
+                    const weightedKeywords = await generateSearchKeywords(query);
+                    if (!weightedKeywords || weightedKeywords.length === 0) {
+                        throw new Error(i18n[config.uiLanguage].keywordGenerationFailed || '無法從您的查詢中提取關鍵字。');
+                    }
+                    
+                    results = calculateRelevanceScores(weightedKeywords);
+
+
+                } catch (error) {
+                    container.innerHTML = `<p class="text-center text-red-500">${error.message}</p>`;
                     return;
                 }
-            } else { // 關鍵字搜索
-                keywords = [query];
-            }
-            
-            const lowerCaseQuery = query.toLowerCase();
+            } else {
+                // 原有關鍵字搜索邏輯
+                const lowerCaseQuery = query.toLowerCase();
+                const searchIn = scope === 'keyword-title' ? ['title'] : ['title', 'content'];
 
-            // 1. 計算所有對話的分數
-            const resultsWithScores = conversations
-                .map(conv => {
-                    let score = calculateRelevanceScore(conv, keywords);
-                    // 為完全匹配的標題提供滿分，確保其排在最前
-                    if (conv.title.toLowerCase() === lowerCaseQuery) {
-                        score = 100;
+
+                conversations.forEach(conv => {
+                    if (processedConvIds.has(conv.id)) return;
+
+
+                    let matchFound = false;
+                    let titleHTML = conv.title;
+                    let snippetHTML = '';
+
+
+                    if (searchIn.includes('title') && conv.title.toLowerCase().includes(lowerCaseQuery)) {
+                        matchFound = true;
+                        titleHTML = highlightText(conv.title, query);
                     }
-                    return { conv, score };
-                })
-                .filter(result => result.score > 5); // 過濾掉分數極低的結果
 
-            // 2. 根據分數從高到低排序
-            resultsWithScores.sort((a, b) => b.score - a.score);
-            
-            // 3. 處理結果呈現
-            container.innerHTML = ''; // 清空容器
-            if (resultsWithScores.length === 0) {
+
+                    if (searchIn.includes('content')) {
+                        for (const msg of conv.messages) {
+                            for (const part of msg.parts) {
+                                if (part.text && part.text.toLowerCase().includes(lowerCaseQuery)) {
+                                    matchFound = true;
+                                    // 如果標題尚未被高亮，則高亮它
+                                    if (titleHTML === conv.title) {
+                                        titleHTML = highlightText(conv.title, query);
+                                    }
+                                    const text = part.text;
+                                    const matchIndex = text.toLowerCase().indexOf(lowerCaseQuery);
+                                    const start = Math.max(0, matchIndex - 40);
+                                    const end = Math.min(text.length, matchIndex + query.length + 40);
+                                    snippetHTML = (start > 0 ? '...' : '') + highlightText(text.substring(start, end), query) + (end < text.length ? '...' : '');
+                                    break;
+                                }
+                            }
+                            if (snippetHTML) break;
+                        }
+                    }
+
+
+                    if (matchFound) {
+                        results.push({ conv, titleHTML, snippetHTML, score: 0 }); // 關鍵字搜索不計算分數
+                        processedConvIds.add(conv.id);
+                    }
+                });
+            }
+
+
+            // 根據分數排序結果 (自然語言)
+            if (scope === 'natural') {
+                results.sort((a, b) => b.score - a.score);
+            }
+
+
+            container.innerHTML = ''; // 清空 "搜尋中..."
+            if (results.length === 0) {
                 container.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].noResultsFound || '找不到符合的對話。'}</p>`;
                 return;
             }
 
-            resultsWithScores.forEach(result => {
-                const { conv, score } = result;
 
-                // 生成高亮標題和內容摘要 (Snippet)
-                const titleHTML = highlightText(conv.title, keywords.join('|'));
-                let snippetHTML = '';
-                const keywordRegex = new RegExp(keywords.join('|'), 'gi');
-                for (const msg of conv.messages) {
-                    const textContent = msg.parts.map(p => p.text || '').join(' ');
-                    if (textContent.match(keywordRegex)) {
-                        const matchIndex = textContent.toLowerCase().indexOf(keywords[0].toLowerCase());
-                        const start = Math.max(0, matchIndex - 40);
-                        const end = Math.min(textContent.length, matchIndex + 60);
-                        snippetHTML = (start > 0 ? '...' : '') + highlightText(textContent.substring(start, end), keywords.join('|')) + (end < textContent.length ? '...' : '');
-                        break;
-                    }
-                }
-
+            results.forEach(({ conv, titleHTML, snippetHTML, score }) => {
                 const item = document.createElement('div');
-                item.className = 'search-result-item p-3 rounded-md hover:bg-[var(--hover-bg)] cursor-pointer border border-transparent hover:border-[var(--border-color)] flex justify-between items-center';
+                item.className = 'p-3 rounded-md hover:bg-[var(--hover-bg)] cursor-pointer border border-transparent hover:border-[var(--border-color)]';
                 item.dataset.id = conv.id;
-                
+
+
+                const scoreHTML = scope === 'natural' ? `
+                    <div class="flex items-center gap-2 mt-2">
+                        <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                            <div class="bg-blue-600 h-2.5 rounded-full" style="width: ${score}%"></div>
+                        </div>
+                        <span class="text-sm font-medium text-gray-500 dark:text-gray-400">${score}%</span>
+                    </div>
+                ` : '';
+
+
                 item.innerHTML = `
-                    <div class="flex-grow overflow-hidden pr-4">
-                        <div class="font-medium truncate">${titleHTML}</div>
-                        ${snippetHTML ? `<p class="text-xs text-[var(--text-secondary)] mt-1 truncate">${snippetHTML}</p>` : ''}
-                    </div>
-                    <div class="relevance-score flex-shrink-0 text-right">
-                        <span class="text-lg font-bold text-blue-600">${score}%</span>
-                        <div class="text-xs text-[var(--text-secondary)]">${i18n[config.uiLanguage].relevance || '符合度'}</div>
-                    </div>
+                    <div class="font-medium truncate">${titleHTML || highlightText(conv.title, query)}</div>
+                    ${snippetHTML ? `<p class="text-xs text-[var(--text-secondary)] mt-1 truncate">${snippetHTML}</p>` : ''}
+                    ${scoreHTML}
                 `;
-                
+
+
                 item.addEventListener('click', () => {
                     loadChat(conv.id);
                     toggleModal(ALL_ELEMENTS.searchModal, false);
@@ -5525,6 +5438,130 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 container.appendChild(item);
             });
         };
+        // 新增: 使用AI生成自然語言搜索的關鍵字 (帶權重)
+        const generateSearchKeywords = async (naturalQuery) => {
+            const prompt = `分析以下自然語言查詢，提取 5-10 個最相關的核心關鍵字。對於每個關鍵字，根據其在查詢中的重要性，給予一個 1 到 10 的權重分數（10為最重要）。請嚴格按照以下 JSON 格式輸出，不要有任何額外的文字或解釋。
+範例:
+查詢: "去年夏天在巴黎鐵塔附近吃的最好吃的法國可麗餅是什麼？"
+輸出: [{"keyword": "可麗餅", "weight": 10}, {"keyword": "巴黎鐵塔", "weight": 9}, {"keyword": "法國", "weight": 7}, {"keyword": "吃", "weight": 5}, {"keyword": "去年夏天", "weight": 4}]
+
+查詢內容：${naturalQuery}`;
+            const responseSchema = {
+                type: "ARRAY",
+                items: {
+                    type: "OBJECT",
+                    properties: {
+                        keyword: { type: "STRING" },
+                        weight: { type: "INTEGER", minimum: 1, maximum: 10 }
+                    },
+                    required: ["keyword", "weight"]
+                },
+                minItems: 3,
+                maxItems: 10
+            };
+            return await callApiWithSchema(prompt, responseSchema);
+        };
+        
+        // 新增: 計算相關性分數的複雜邏輯
+        const calculateRelevanceScores = (weightedKeywords) => {
+            let results = [];
+            let processedConvIds = new Set();
+
+
+            const totalWeightSum = weightedKeywords.reduce((sum, kw) => sum + kw.weight, 0);
+
+
+            conversations.forEach(conv => {
+                if (processedConvIds.has(conv.id)) return;
+
+
+                let totalScore = 0;
+                let maxPossibleScore = 0;
+                let foundKeywords = new Set();
+                let bestSnippet = '';
+                let titleHTML = conv.title;
+                const totalMessages = conv.messages.length;
+
+
+                weightedKeywords.forEach(kw => {
+                    const keywordLower = kw.keyword.toLowerCase();
+                    maxPossibleScore += kw.weight * 10; // 理論上的最高分，用於歸一化
+
+
+                    // 1. 檢查標題
+                    if (conv.title.toLowerCase().includes(keywordLower)) {
+                        totalScore += kw.weight * 10; // 在標題中找到，權重最高
+                        foundKeywords.add(keywordLower);
+                        titleHTML = highlightText(titleHTML, kw.keyword);
+                    }
+
+
+                    // 2. 檢查內文
+                    conv.messages.forEach((msg, msgIndex) => {
+                        msg.parts.forEach(part => {
+                            if (part.text && part.text.toLowerCase().includes(keywordLower)) {
+                                foundKeywords.add(keywordLower);
+
+
+                                // 2a. 頻率加權
+                                const occurrences = (part.text.toLowerCase().match(new RegExp(keywordLower, 'g')) || []).length;
+                                totalScore += kw.weight * occurrences * 0.5; // 每次出現增加基礎分
+
+
+                                // 2b. 時效性加權 (越新的訊息分數越高)
+                                const recencyWeight = (msgIndex + 1) / totalMessages;
+                                totalScore += kw.weight * recencyWeight * 2;
+
+
+                                // 2c. 角色加權 (使用者提問更重要)
+                                const roleWeight = msg.role === 'user' ? 1.5 : 1;
+                                totalScore += kw.weight * roleWeight;
+
+
+                                // 產生程式碼片段
+                                if (!bestSnippet) {
+                                    const text = part.text;
+                                    const matchIndex = text.toLowerCase().indexOf(keywordLower);
+                                    const start = Math.max(0, matchIndex - 40);
+                                    const end = Math.min(text.length, matchIndex + kw.keyword.length + 40);
+                                    bestSnippet = (start > 0 ? '...' : '') + text.substring(start, end) + (end < text.length ? '...' : '');
+                                }
+                            }
+                        });
+                    });
+                });
+
+
+                if (foundKeywords.size > 0) {
+                    // 3. 關鍵字覆蓋率加權
+                    const coverageRatio = foundKeywords.size / weightedKeywords.length;
+                    totalScore *= (1 + coverageRatio); // 覆蓋率越高，總分加成越多
+
+
+                    // 4. 分數歸一化到 0-100
+                    let finalScore = Math.min(100, Math.round((totalScore / maxPossibleScore) * 100 * 3)); // *3 是放大係數，讓分數更有區別度
+                    finalScore = Math.min(99, finalScore); // 避免輕易達到100分
+
+
+                    // 組合所有關鍵字用於高亮顯示
+                    const allKeywordsQuery = weightedKeywords.map(kw => kw.keyword).join('|');
+                    const highlightedSnippet = highlightText(bestSnippet, allKeywordsQuery);
+
+
+                    results.push({
+                        conv,
+                        titleHTML: highlightText(conv.title, allKeywordsQuery),
+                        snippetHTML: highlightedSnippet,
+                        score: finalScore
+                    });
+                    processedConvIds.add(conv.id);
+                }
+            });
+
+
+            return results;
+        };
+
 
         const renderFilePreviews = () => {
             const { filePreviewContainer } = ALL_ELEMENTS;
