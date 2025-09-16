@@ -1282,12 +1282,6 @@
             color: #ef4444;
         }
         /* ▲▲▲ 【需求實現】結束 ▲▲▲ */
-        
-        /* ▼▼▼ 新增：搜尋結果檢視按鈕樣式 ▼▼▼ */
-        .view-search-result-btn {
-            display: block; /* Default for desktop */
-        }
-        /* ▲▲▲ 結束新增 ▲▲▲ */
 
         @media (max-width: 768px) {
           input[type="text"],
@@ -1303,15 +1297,6 @@
               display: none;
           }
           /* ▲▲▲ 【需求實現】結束 ▲▲▲ */
-          
-          /* ▼▼▼ 新增：手機版隱藏搜尋結果的檢視按鈕 ▼▼▼ */
-          .view-search-result-btn {
-              display: none;
-          }
-          #search-results-container .p-3 { 
-              cursor: pointer;
-          }
-          /* ▲▲▲ 結束新增 ▲▲▲ */
         }
         @media (max-width: 768px) {
   /* 讓 Modal 內容垂直排列 */
@@ -2116,15 +2101,15 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     <div id="search-result-view-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[51]">
         <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-3xl flex flex-col" style="max-height: 90vh;">
             <div class="p-6 border-b border-[var(--border-color)] flex justify-between items-center flex-shrink-0">
-                <h2 id="view-search-result-title" class="text-2xl font-bold truncate" data-lang-key="viewConversation">檢視對話</h2>
-                <button id="close-view-search-result-modal-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
+                <h2 id="search-result-view-title" class="text-2xl font-bold truncate">檢視對話</h2>
+                <button id="close-search-result-view-modal-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
             </div>
-            <div id="view-search-result-content" class="p-6 overflow-y-auto space-y-4 scroll-area flex-1">
-                <!-- 搜尋結果的訊息將被動態插入此處 -->
+            <div id="search-result-view-content" class="p-6 overflow-y-auto space-y-4 scroll-area flex-1">
+                <!-- Messages will be dynamically inserted here -->
             </div>
             <div class="p-4 bg-[var(--sidebar-bg)] border-t border-[var(--border-color)] flex justify-end gap-3 flex-shrink-0">
-                <button id="close-view-search-result-modal-btn-footer" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]" data-lang-key="close">關閉</button>
-                <button id="confirm-view-search-result-btn" class="px-4 py-2 rounded-md btn-primary" data-lang-key="confirm">確認</button>
+                <button id="close-search-result-view-modal-btn-footer" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]" data-lang-key="close">關閉</button>
+                <button id="confirm-go-to-chat-btn" class="px-4 py-2 rounded-md btn-primary" data-lang-key="confirm">確認</button>
             </div>
         </div>
     </div>
@@ -2424,11 +2409,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             performSearchBtn: document.getElementById('perform-search-btn'),
             // ▼▼▼ 新增：搜尋結果檢視 Modal 相關元素 ▼▼▼
             searchResultViewModal: document.getElementById('search-result-view-modal'),
-            viewSearchResultTitle: document.getElementById('view-search-result-title'),
-            viewSearchResultContent: document.getElementById('view-search-result-content'),
-            closeViewSearchResultModalBtn: document.getElementById('close-view-search-result-modal-btn'),
-            closeViewSearchResultModalBtnFooter: document.getElementById('close-view-search-result-modal-btn-footer'),
-            confirmViewSearchResultBtn: document.getElementById('confirm-view-search-result-btn'),
+            searchResultViewTitle: document.getElementById('search-result-view-title'),
+            searchResultViewContent: document.getElementById('search-result-view-content'),
+            closeSearchResultViewModalBtn: document.getElementById('close-search-result-view-modal-btn'),
+            closeSearchResultViewModalBtnFooter: document.getElementById('close-search-result-view-modal-btn-footer'),
+            confirmGoToChatBtn: document.getElementById('confirm-go-to-chat-btn'),
             // ▲▲▲ 結束新增 ▲▲▲
             fileInputContainer: document.getElementById('file-input-container'),
             addFileBtn: document.getElementById('add-file-btn'),
@@ -3799,548 +3784,525 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     mediaPartsContent.forEach(media => {
                         const src = `data:${media.mimeType};base64,${media.data}`;
                         if (media.mimeType.startsWith('image/')) {
-                            mediaHTML += `<img src="${src}" class="max-w-xs max-h-48 rounded-lg object-cover border border-[var(--border-color)]">`;
-                        } else {
-                            mediaHTML += `<div class="p-2 bg-[var(--hover-bg)] rounded-lg text-sm flex items-center gap-2 border border-[var(--border-color)]">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-                                <span>${media.name || '檔案'}</span>
-                            </div>`;
-                        }
-                    });
-                    mediaHTML += '</div>';
-                    contentHTML += mediaHTML;
-                }
-                
-                if (!isUser) {
-                    const timeString = formatFullTimestamp(msg.createdAt);
-                    actionButtons = `
-                        <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
-                            <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                            </button>
-                            <span class="text-xs text-gray-400">${timeString}</span>
-                        </div>
-                    `;
-                    contentPaddingClass = 'pb-8'; 
+                    mediaHTML += `<img src="${src}" class="max-w-xs max-h-48 rounded-lg object-cover border border-[var(--border-color)]">`;
                 } else {
-                    const currentConv = getActiveConversation();
-                    if (currentConv && index + 1 < currentConv.messages.length && currentConv.messages[index + 1].role === 'model') {
-                         actionButtons = `
-                            <div class="absolute bottom-2 left-2 flex items-center">
-                                <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                </button>
-                            </div>
-                        `;
-                        contentPaddingClass = 'pb-8';
-                    }
-                }
-            }
-
-
-            const messageBubble = `
-                <div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble relative ${isUser ? 'text-white' : ''}" >
-                    <div class="prose prose-sm max-w-none ${isUser ? 'text-white' : 'text-[var(--text-primary)]'} ${contentPaddingClass} message-content">${contentHTML}</div>
-                    ${actionButtons}
-                </div>`;
-
-
-            messageDiv.innerHTML = isUser ? `${messageBubble}${icon}` : `${icon}${messageBubble}`;
-            if (ALL_ELEMENTS.messageList.querySelector('.text-center')) ALL_ELEMENTS.messageList.innerHTML = '';
-
-
-            ALL_ELEMENTS.messageList.appendChild(messageDiv);
-            if (shouldScroll) {
-                ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
-            }
-
-
-            return messageDiv;
-        };
-        // ▲▲▲ 程式碼修改 ▲▲▲
-
-
-        const handleFormSubmit = async (e) => {
-            e.preventDefault();
-            if (abortController) return;
-            const userMessage = ALL_ELEMENTS.messageInput.value.trim();
-            if (!userMessage && uploadedFiles.length === 0) return;
-
-
-            renderFollowUpPrompts([]);
-
-
-            const conv = getActiveConversation();
-            if (conv.archived) return;
-
-
-
-
-            abortController = new AbortController();
-            updateSubmitButtonState(true);
-
-
-            if (!sendConfirmed) {
-                sendConfirmed = true;
-                updateInputState();
-                return;
-            }
-
-
-
-
-            const userParts = [];
-            if (userMessage) {
-                userParts.push({ text: userMessage });
-            }
-            uploadedFiles.forEach(file => {
-                userParts.push({
-                    inlineData: {
-                        mimeType: file.type,
-                        data: file.base64.split(',')[1]
-                    }
-                });
-            });
-
-
-            const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
-            addMessageToUI(userMessageObject, conv.messages.length, true);
-
-
-
-
-            if (config.enableAutoWebSearch && conv.provider === 'gemini' && !conv.isWebSearchEnabled) {
-                try {
-                    const needsSearch = await shouldPerformWebSearch(userMessage);
-                    if (needsSearch) {
-                        conv.isWebSearchEnabled = true;
-                        showNotification(i18n[config.uiLanguage].autoWebSearchNotice || '偵測到問題需要連網搜尋，已自動開啟。', 'warning');
-                    }
-                    updateWebSearchUI();
-                } catch(err) {
-                    console.error("Auto web search check failed:", err);
-                }
-            }
-
-
-
-
-            ALL_ELEMENTS.messageInput.value = '';
-            uploadedFiles = [];
-            renderFilePreviews();
-            
-            const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
-            const contentDiv = loadingMessageDiv.querySelector('.message-content');
-            let fullResponse = '';
-            
-            const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
-
-
-            try {
-                const completeResponse = await streamApiCall(
-                    userParts,
-                    (chunk) => {
-                        fullResponse += chunk;
-                        contentDiv.innerHTML = renderMarkdown(fullResponse);
-                        const isUserScrolledToBottom = ALL_ELEMENTS.chatContainer.scrollHeight - ALL_ELEMENTS.chatContainer.scrollTop <= ALL_ELEMENTS.chatContainer.clientHeight + 1;
-                        if (isUserScrolledToBottom) {
-                            ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
-                        }
-                    },
-                    abortController.signal
-                );
-                fullResponse = completeResponse;
-                finalAiMessage.parts = [{ text: fullResponse }];
-                conv.messages.push(finalAiMessage);
-                await saveAppData();
-
-                    if(config.enableFollowUp) {
-                    // ▼▼▼ 修改後 ▼▼▼
-                    // 將 userMessage 也傳入函式
-                    await generateFollowUpPrompts(userMessage, fullResponse);
-                }
-                if (config.memoryEnabled1 && config.enableAutoMemory) { 
-                    await extractPersonalMemory(userMessage, fullResponse);
-                }
-            } catch (error) {
-                if (error.name === 'AbortError') {
-                    contentDiv.innerHTML = renderMarkdown(fullResponse);
-                        const isUserScrolledToBottom = ALL_ELEMENTS.chatContainer.scrollHeight - ALL_ELEMENTS.chatContainer.scrollTop <= ALL_ELEMENTS.chatContainer.clientHeight + 1;
-                        if (isUserScrolledToBottom) {
-                            ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
-                        }
-                    },
-                    abortController.signal
-                );
-                fullResponse = completeResponse;
-                finalAiMessage.parts = [{ text: fullResponse }];
-                conv.messages.push(finalAiMessage);
-                await saveAppData();
-
-                    if(config.enableFollowUp) {
-                    // ▼▼▼ 修改後 ▼▼▼
-                    // 將 userMessage 也傳入函式
-                    await generateFollowUpPrompts(userMessage, fullResponse);
-                }
-                if (config.memoryEnabled1 && config.enableAutoMemory) { 
-                    await extractPersonalMemory(userMessage, fullResponse);
-                }
-            } catch (error) {
-                if (error.name === 'AbortError') {
-                    contentDiv.innerHTML = renderMarkdown(fullResponse);
-                    finalAiMessage.parts = [{ text: fullResponse }];
-                    conv.messages.push(finalAiMessage);
-                } else {
-                    contentDiv.textContent = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
-                    finalAiMessage.parts = [{ text: `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}` }];
-                    conv.messages.push(finalAiMessage);
-                }
-                await saveAppData();
-            } finally {
-                abortController = null;
-                updateSubmitButtonState(false);
-                sendConfirmed = false;
-                updateInputState();
-                
-                // ▼▼▼ 優化：AI 回覆完成後，不再重新渲染整個聊天室，而是僅更新最後一則訊息的 UI ▼▼▼
-                const lastMessageDiv = ALL_ELEMENTS.messageList.lastElementChild;
-                if (lastMessageDiv && lastMessageDiv.classList.contains('model-message')) {
-                    const bubble = lastMessageDiv.querySelector('.message-bubble');
-                    const content = lastMessageDiv.querySelector('.message-content');
-                    const aiMessageObject = conv.messages[conv.messages.length - 1];
-
-
-                    if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute')) { 
-                        content.classList.add('pb-8');
-                        
-                        const timeString = formatFullTimestamp(aiMessageObject.createdAt);
-                        const actionButtonsHTML = `
-                            <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
-                                <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                                </button>
-                                <span class="text-xs text-gray-400">${timeString}</span>
-                            </div>
-                        `;
-                        bubble.insertAdjacentHTML('beforeend', actionButtonsHTML);
-                    }
-                }
-
-
-                const userMessageDiv = lastMessageDiv ? lastMessageDiv.previousElementSibling : null;
-                if (userMessageDiv && userMessageDiv.classList.contains('user-message')) {
-                    const bubble = userMessageDiv.querySelector('.message-bubble');
-                    const content = userMessageDiv.querySelector('.message-content');
-                    if (bubble && content && !bubble.querySelector('.delete-message-btn')) {
-                        content.classList.add('pb-8');
-                        const deleteButtonHTML = `
-                            <div class="absolute bottom-2 left-2 flex items-center">
-                                <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                </button>
-                            </div>
-                        `;
-                        bubble.insertAdjacentHTML('beforeend', deleteButtonHTML);
-                    }
-                }
-                // ▲▲▲ 結束優化 ▲▲▲
-            }
-        };
-        function cleanGeminiHistory(history) {
-            const cleaned = []; let lastRole = null;
-            history.forEach(msg => {
-                // 修正重點：
-                // 創建一個只包含 API 所需的 role 和 parts 欄位的新物件，
-                // 藉此移除如 createdAt 等自訂的額外屬性。
-                const sanitizedMsg = { role: msg.role, parts: msg.parts };
-
-
-                if (sanitizedMsg.role === 'model' && !sanitizedMsg.parts.some(p => (p.text && p.text.trim() !== '') || p.inlineData)) return;
-                
-                if (sanitizedMsg.role === lastRole && lastRole === 'user') {
-                    cleaned[cleaned.length - 1].parts.push(...sanitizedMsg.parts);
-                } else {
-                    cleaned.push(sanitizedMsg);
-                    lastRole = sanitizedMsg.role;
+                    mediaHTML += `<div class="p-2 bg-[var(--hover-bg)] rounded-lg text-sm flex items-center gap-2 border border-[var(--border-color)]">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                        <span>${media.name || '檔案'}</span>
+                    </div>`;
                 }
             });
-            if (cleaned.length > 0 && cleaned[0].role !== 'user') cleaned.shift();
-            return cleaned;
+            mediaHTML += '</div>';
+            contentHTML += mediaHTML;
         }
-        async function streamApiCall(parts, onChunk, signal) {
-            const conv = getActiveConversation();
-            const modelInfo = MODELS.find(m => m.id === conv.model);
-            if (!modelInfo) throw new Error(`找不到模型設定: ${conv.model}`);
-
-
-
-
-            const { provider, id: modelId } = modelInfo;
-            let apiKey;
-            if (provider === 'gemini') {
-                apiKey = config.apiKeys.gemini;
-            // ▼▼▼ 需求 2 修正：所有 OpenRouter 模型共用一個金鑰 ▼▼▼
-            } else if (provider === 'openrouter') {
-                apiKey = config.apiKeys.openrouter;
+        
+        if (!isUser) {
+            const timeString = formatFullTimestamp(msg.createdAt);
+            actionButtons = `
+                <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
+                    <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    </button>
+                    <span class="text-xs text-gray-400">${timeString}</span>
+                </div>
+            `;
+            contentPaddingClass = 'pb-8'; 
+        } else {
+            const currentConv = getActiveConversation();
+            if (currentConv && index + 1 < currentConv.messages.length && currentConv.messages[index + 1].role === 'model') {
+                 actionButtons = `
+                    <div class="absolute bottom-2 left-2 flex items-center">
+                        <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                        </button>
+                    </div>
+                `;
+                contentPaddingClass = 'pb-8';
             }
-            // ▲▲▲ 結束修正 ▲▲▲
-
-
-
-
-            if (!apiKey) throw new Error(`請先在設定中提供 ${modelInfo.name} 所需的 API 金鑰。`);
-
-
-
-
-            const historyForApi = conv.messages.slice(0, -1);
-            const currentMessageForApi = { role: 'user', parts: parts };
-            let url, payload, headers;
-            let systemInstruction = null;
-            
-            // ▼▼▼ 新增：語言指令 ▼▼▼
-            let languageInstruction = '';
-            const langMap = {
-                'zh-TW': '請用繁體中文回覆，除非使用者有特別要求。',
-                'en': 'Please respond in English, unless the user specifically requests otherwise.',
-                'fr': 'Veuillez répondre en français, sauf si l\'utilisateur demande spécifiquement le contraire.'
-            };
-            languageInstruction = langMap[config.aiDefaultLanguage] || '';
-            // ▲▲▲ 結束新增 ▲▲▲
-
-
-            if (conv.astrasId) {
-                const ast = astras.find(a => a.id === conv.astrasId);
-                if (ast) {
-                    systemInstruction = { parts: [{ text: `${ast.instructions}\n\n${languageInstruction}` }] };
-                }
-            }
-            if (!systemInstruction && languageInstruction) {
-                 systemInstruction = { parts: [{ text: languageInstruction }] };
-            }
-
-
-            let memoryPrompt = '';
-            if (config.memoryEnabled1) {
-                const enabledMemories = personalMemories.filter(m => m.enabled).map(m => m.content).join('\n');
-                if (enabledMemories) {
-                    memoryPrompt += `個人習慣記憶：\n${enabledMemories}\n`;
-                }
-            }
-            if (memoryPrompt) {
-                if (systemInstruction) {
-                    systemInstruction.parts[0].text += `\n\n${memoryPrompt}`;
-                } else {
-                    systemInstruction = { parts: [{ text: memoryPrompt }] };
-                }
-            }
-            if (provider === 'gemini') {
-                url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?key=${apiKey}`;
-                payload = {
-                    contents: cleanGeminiHistory([...historyForApi, currentMessageForApi]),
-                    generationConfig: {
-                        ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
-                        ...(conv.genConfig.topP !== null && { topP: conv.genConfig.topP }),
-                        ...(conv.genConfig.maxTokens !== null && { maxOutputTokens: conv.genConfig.maxTokens }),
-                    }
-                };
-                if (systemInstruction) {
-                    payload.systemInstruction = systemInstruction;
-                }
-                if (conv.isWebSearchEnabled) {
-                    payload.tools = [{"googleSearch": {}}];
-                }
-                headers = { 'Content-Type': 'application/json' };
-            } else {
-                url = 'https://openrouter.ai/api/v1/chat/completions';
-                const messages = [];
-                if (systemInstruction) {
-                    messages.push({ role: 'system', content: systemInstruction.parts[0].text });
-                }
-                messages.push(...[...historyForApi, currentMessageForApi].map(m => ({
-                    role: m.role === 'model' ? 'assistant' : m.role,
-                    content: m.parts.map(p => p.text).join('\n')
-                })));
-                payload = {
-                    model: modelId,
-                    messages,
-                    stream: true,
-                    ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
-                    ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
-                    ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
-                };
-                headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
-            }
-            const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
-            if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'API 請求失敗'); }
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = '';
-            let fullText = '';
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
-                buffer += decoder.decode(value, { stream: true });
-
-
-
-
-                if (provider === 'gemini') {
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop();
-                    for (const line of lines) {
-                        if (line.trim().startsWith('"text":')) {
-                            try {
-                                const jsonStr = `{${line}}`;
-                                const parsed = JSON.parse(jsonStr);
-                                const textChunk = parsed.text;
-                                if (textChunk) {
-                                    fullText += textChunk;
-                                    onChunk(textChunk);
-                                }
-                            } catch (e) { /* Ignore */ }
-                        }
-                    }
-                } else {
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop();
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            const data = line.substring(6);
-                            if (data.trim() === '[DONE]') break;
-                            try {
-                                const parsed = JSON.parse(data);
-                                const textChunk = parsed.choices[0]?.delta?.content || '';
-                                if (textChunk) {
-                                    fullText += textChunk;
-                                    onChunk(textChunk);
-                                }
-                            } catch (e) { /* Ignore */ }
-                        }
-                    }
-                }
-            }
-            return fullText;
         }
-        async function callApiWithSchema(prompt, responseSchema, signal) {
-            const apiKey = config.apiKeys.gemini;
-            if (!apiKey) {
-                console.error("Gemini API key is not set for generating structured response.");
-                return null;
+    }
+
+
+    const messageBubble = `
+        <div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble relative ${isUser ? 'text-white' : ''}" >
+            <div class="prose prose-sm max-w-none ${isUser ? 'text-white' : 'text-[var(--text-primary)]'} ${contentPaddingClass} message-content">${contentHTML}</div>
+            ${actionButtons}
+        </div>`;
+
+
+    messageDiv.innerHTML = isUser ? `${messageBubble}${icon}` : `${icon}${messageBubble}`;
+    if (ALL_ELEMENTS.messageList.querySelector('.text-center')) ALL_ELEMENTS.messageList.innerHTML = '';
+
+
+    ALL_ELEMENTS.messageList.appendChild(messageDiv);
+    if (shouldScroll) {
+        ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
+    }
+
+
+    return messageDiv;
+};
+// ▲▲▲ 程式碼修改 ▲▲▲
+
+
+const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    if (abortController) return;
+    const userMessage = ALL_ELEMENTS.messageInput.value.trim();
+    if (!userMessage && uploadedFiles.length === 0) return;
+
+
+    renderFollowUpPrompts([]);
+
+
+    const conv = getActiveConversation();
+    if (conv.archived) return;
+
+
+
+
+    abortController = new AbortController();
+    updateSubmitButtonState(true);
+
+
+    if (!sendConfirmed) {
+        sendConfirmed = true;
+        updateInputState();
+        return;
+    }
+
+
+
+
+    const userParts = [];
+    if (userMessage) {
+        userParts.push({ text: userMessage });
+    }
+    uploadedFiles.forEach(file => {
+        userParts.push({
+            inlineData: {
+                mimeType: file.type,
+                data: file.base64.split(',')[1]
             }
-            const payload = {
-                contents: [{ role: 'user', parts: [{ text: prompt }] }],
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: responseSchema,
-                }
-            };
+        });
+    });
 
 
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${CHEAP_MODEL_ID}:generateContent?key=${apiKey}`;
-            try {
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
-                    signal
-                });
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error?.message || 'API request failed');
-                }
+    const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
+    addMessageToUI(userMessageObject, conv.messages.length, true);
 
 
-                const result = await response.json();
-                
-                const jsonString = result?.candidates?.[0]?.content?.parts?.[0]?.text;
 
 
-                if (jsonString) {
-                    let cleanedJsonString = jsonString.trim();
-                    if (cleanedJsonString.startsWith("```json")) {
-                        cleanedJsonString = cleanedJsonString.substring(7).trim();
-                    }
-                    if (cleanedJsonString.endsWith("```")) {
-                        cleanedJsonString = cleanedJsonString.slice(0, -3).trim();
-                    }
+    if (config.enableAutoWebSearch && conv.provider === 'gemini' && !conv.isWebSearchEnabled) {
+        try {
+            const needsSearch = await shouldPerformWebSearch(userMessage);
+            if (needsSearch) {
+                conv.isWebSearchEnabled = true;
+                showNotification(i18n[config.uiLanguage].autoWebSearchNotice || '偵測到問題需要連網搜尋，已自動開啟。', 'warning');
+            }
+            updateWebSearchUI();
+        } catch(err) {
+            console.error("Auto web search check failed:", err);
+        }
+    }
+
+
+
+
+    ALL_ELEMENTS.messageInput.value = '';
+    uploadedFiles = [];
+    renderFilePreviews();
     
-                    try {
-                        return JSON.parse(cleanedJsonString);
-                    } catch (e) {
-                        console.error("清理後的 JSON 解析失敗:", e);
-                        console.error("原始字串:", jsonString);
-                        throw new Error("無法解析 API 回傳的 JSON 字串。");
-                    }
+    const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
+    const contentDiv = loadingMessageDiv.querySelector('.message-content');
+    let fullResponse = '';
+    
+    const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
+
+
+    try {
+        const completeResponse = await streamApiCall(
+            userParts,
+            (chunk) => {
+                fullResponse += chunk;
+                contentDiv.innerHTML = renderMarkdown(fullResponse);
+                const isUserScrolledToBottom = ALL_ELEMENTS.chatContainer.scrollHeight - ALL_ELEMENTS.chatContainer.scrollTop <= ALL_ELEMENTS.chatContainer.clientHeight + 1;
+                if (isUserScrolledToBottom) {
+                    ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
                 }
-            } catch (error) {
-                console.error('Error generating structured response:', error);
-            }
-            return null;
+            },
+            abortController.signal
+        );
+        fullResponse = completeResponse;
+        finalAiMessage.parts = [{ text: fullResponse }];
+        conv.messages.push(finalAiMessage);
+        await saveAppData();
+
+            if(config.enableFollowUp) {
+            // ▼▼▼ 修改後 ▼▼▼
+            // 將 userMessage 也傳入函式
+            await generateFollowUpPrompts(userMessage, fullResponse);
         }
-        async function shouldPerformWebSearch(prompt) {
-            const apiKey = config.apiKeys.gemini;
-            if (!apiKey) {
-                console.warn("Gemini API key is not set. Cannot perform auto web search check.");
-                return false;
+        if (config.memoryEnabled1 && config.enableAutoMemory) { 
+            await extractPersonalMemory(userMessage, fullResponse);
+        }
+    } catch (error) {
+        if (error.name === 'AbortError') {
+            contentDiv.innerHTML = renderMarkdown(fullResponse);
+            finalAiMessage.parts = [{ text: fullResponse }];
+            conv.messages.push(finalAiMessage);
+        } else {
+            contentDiv.textContent = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
+            finalAiMessage.parts = [{ text: `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}` }];
+            conv.messages.push(finalAiMessage);
+        }
+        await saveAppData();
+    } finally {
+        abortController = null;
+        updateSubmitButtonState(false);
+        sendConfirmed = false;
+        updateInputState();
+        
+        // ▼▼▼ 優化：AI 回覆完成後，不再重新渲染整個聊天室，而是僅更新最後一則訊息的 UI ▼▼▼
+        const lastMessageDiv = ALL_ELEMENTS.messageList.lastElementChild;
+        if (lastMessageDiv && lastMessageDiv.classList.contains('model-message')) {
+            const bubble = lastMessageDiv.querySelector('.message-bubble');
+            const content = lastMessageDiv.querySelector('.message-content');
+            const aiMessageObject = conv.messages[conv.messages.length - 1];
+
+
+            if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute')) { 
+                content.classList.add('pb-8');
+                
+                const timeString = formatFullTimestamp(aiMessageObject.createdAt);
+                const actionButtonsHTML = `
+                    <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
+                        <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        </button>
+                        <span class="text-xs text-gray-400">${timeString}</span>
+                    </div>
+                `;
+                bubble.insertAdjacentHTML('beforeend', actionButtonsHTML);
             }
-            const systemPrompt = "你是一個判斷器，根據使用者問題判斷是否需要連網搜尋。如果問題是關於即時、最新資訊、或特定事實，請回答'yes'。如果是常識性、創意寫作、程式碼等，請回答'no'。只輸出'yes'或'no'，不要有任何其他文字。";
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${CHEAP_MODEL_ID}:generateContent?key=${apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [
-                        { role: 'user', parts: [{ text: systemPrompt }] },
-                        { role: 'model', parts: [{ text: "好的，我會只回答'yes'或'no'。" }] },
-                        { role: 'user', parts: [{ text: prompt }] }
-                    ],
-                }),
-                signal: AbortSignal.timeout(3000)
-            });
-            if (!response.ok) {
-                console.error('Auto web search check failed:', await response.text());
-                return false;
-            }
-            const result = await response.json();
-            const text = result?.candidates?.[0]?.content?.parts?.[0]?.text?.trim().toLowerCase();
-            return text === 'yes';
         }
 
 
+        const userMessageDiv = lastMessageDiv ? lastMessageDiv.previousElementSibling : null;
+        if (userMessageDiv && userMessageDiv.classList.contains('user-message')) {
+            const bubble = userMessageDiv.querySelector('.message-bubble');
+            const content = userMessageDiv.querySelector('.message-content');
+            if (bubble && content && !bubble.querySelector('.delete-message-btn')) {
+                content.classList.add('pb-8');
+                const deleteButtonHTML = `
+                    <div class="absolute bottom-2 left-2 flex items-center">
+                        <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                        </button>
+                    </div>
+                `;
+                bubble.insertAdjacentHTML('beforeend', deleteButtonHTML);
+            }
+        }
+        // ▲▲▲ 結束優化 ▲▲▲
+    }
+};
+function cleanGeminiHistory(history) {
+    const cleaned = []; let lastRole = null;
+    history.forEach(msg => {
+        // 修正重點：
+        // 創建一個只包含 API 所需的 role 和 parts 欄位的新物件，
+        // 藉此移除如 createdAt 等自訂的額外屬性。
+        const sanitizedMsg = { role: msg.role, parts: msg.parts };
 
 
-        const generateTitleAndSummary = async (conv) => {
-            const conversationHistory = conv.messages.slice(0, 5).map(m => `${m.role}: ${m.parts.map(p => p.text).join(' ')}`).join('\n');
-            const prompt = `為以下對話生成一個簡潔且能代表核心主題的標題。標題應直接反映使用者詢問的主要內容，而不是以你的視角描述AI的行為，（例如，好的標題是「法國首都」，而不是「回答地理問題」）。標題限制在10個字以內。請嚴格按照以下 JSON 格式輸出，不要有任何額外的文字或解釋:\n{"title": "你的標題", "summary": "你的一句話摘要"}\n\n對話內容:\n${conversationHistory}`;
-            const responseSchema = {
-                type: "OBJECT",
-                properties: {
-                    title: { type: "STRING" },
-                    summary: { type: "STRING" }
-                },
-                propertyOrdering: ["title", "summary"]
-            };
-            const data = await callApiWithSchema(prompt, responseSchema);
+        if (sanitizedMsg.role === 'model' && !sanitizedMsg.parts.some(p => (p.text && p.text.trim() !== '') || p.inlineData)) return;
+        
+        if (sanitizedMsg.role === lastRole && lastRole === 'user') {
+            cleaned[cleaned.length - 1].parts.push(...sanitizedMsg.parts);
+        } else {
+            cleaned.push(sanitizedMsg);
+            lastRole = sanitizedMsg.role;
+        }
+    });
+    if (cleaned.length > 0 && cleaned[0].role !== 'user') cleaned.shift();
+    return cleaned;
+}
+async function streamApiCall(parts, onChunk, signal) {
+    const conv = getActiveConversation();
+    const modelInfo = MODELS.find(m => m.id === conv.model);
+    if (!modelInfo) throw new Error(`找不到模型設定: ${conv.model}`);
 
 
 
 
-            if (data && data.title && data.summary) {
-                conv.title = data.title;
-                conv.summary = data.summary;
-                await saveAppData();
-                renderHistorySidebar();
-                if (conv.id === activeConversationId) { ALL_ELEMENTS.headerTitle.textContent = conv.title; }
-                showNotification(i18n[config.uiLanguage].autoNamed || '對話已自動命名', 'success');
-            } else {
-                console.error("Auto-naming failed: No valid JSON found in the response.");
+    const { provider, id: modelId } = modelInfo;
+    let apiKey;
+    if (provider === 'gemini') {
+        apiKey = config.apiKeys.gemini;
+    // ▼▼▼ 需求 2 修正：所有 OpenRouter 模型共用一個金鑰 ▼▼▼
+    } else if (provider === 'openrouter') {
+        apiKey = config.apiKeys.openrouter;
+    }
+    // ▲▲▲ 結束修正 ▲▲▲
+
+
+
+
+    if (!apiKey) throw new Error(`請先在設定中提供 ${modelInfo.name} 所需的 API 金鑰。`);
+
+
+
+
+    const historyForApi = conv.messages.slice(0, -1);
+    const currentMessageForApi = { role: 'user', parts: parts };
+    let url, payload, headers;
+    let systemInstruction = null;
+    
+    // ▼▼▼ 新增：語言指令 ▼▼▼
+    let languageInstruction = '';
+    const langMap = {
+        'zh-TW': '請用繁體中文回覆，除非使用者有特別要求。',
+        'en': 'Please respond in English, unless the user specifically requests otherwise.',
+        'fr': 'Veuillez répondre en français, sauf si l\'utilisateur demande spécifiquement le contraire.'
+    };
+    languageInstruction = langMap[config.aiDefaultLanguage] || '';
+    // ▲▲▲ 結束新增 ▲▲▲
+
+
+    if (conv.astrasId) {
+        const ast = astras.find(a => a.id === conv.astrasId);
+        if (ast) {
+            systemInstruction = { parts: [{ text: `${ast.instructions}\n\n${languageInstruction}` }] };
+        }
+    }
+    if (!systemInstruction && languageInstruction) {
+         systemInstruction = { parts: [{ text: languageInstruction }] };
+    }
+
+
+    let memoryPrompt = '';
+    if (config.memoryEnabled1) {
+        const enabledMemories = personalMemories.filter(m => m.enabled).map(m => m.content).join('\n');
+        if (enabledMemories) {
+            memoryPrompt += `個人習慣記憶：\n${enabledMemories}\n`;
+        }
+    }
+    if (memoryPrompt) {
+        if (systemInstruction) {
+            systemInstruction.parts[0].text += `\n\n${memoryPrompt}`;
+        } else {
+            systemInstruction = { parts: [{ text: memoryPrompt }] };
+        }
+    }
+    if (provider === 'gemini') {
+        url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?key=${apiKey}`;
+        payload = {
+            contents: cleanGeminiHistory([...historyForApi, currentMessageForApi]),
+            generationConfig: {
+                ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
+                ...(conv.genConfig.topP !== null && { topP: conv.genConfig.topP }),
+                ...(conv.genConfig.maxTokens !== null && { maxOutputTokens: conv.genConfig.maxTokens }),
             }
         };
-        const generateFollowUpPrompts = async (userMessage, responseText) => {
-            ALL_ELEMENTS.followUpContainer.classList.add('hidden');
-            ALL_ELEMENTS.followUpPromptsList.innerHTML = '';
+        if (systemInstruction) {
+            payload.systemInstruction = systemInstruction;
+        }
+        if (conv.isWebSearchEnabled) {
+            payload.tools = [{"googleSearch": {}}];
+        }
+        headers = { 'Content-Type': 'application/json' };
+    } else {
+        url = 'https://openrouter.ai/api/v1/chat/completions';
+        const messages = [];
+        if (systemInstruction) {
+            messages.push({ role: 'system', content: systemInstruction.parts[0].text });
+        }
+        messages.push(...[...historyForApi, currentMessageForApi].map(m => ({
+            role: m.role === 'model' ? 'assistant' : m.role,
+            content: m.parts.map(p => p.text).join('\n')
+        })));
+        payload = {
+            model: modelId,
+            messages,
+            stream: true,
+            ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
+            ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
+            ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
+        };
+        headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
+    }
+    const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
+    if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'API 請求失敗'); }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullText = '';
+    while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
 
-            const prompt = `# 你的核心身份與最高指令 (MANDATORY DIRECTIVE)
+
+
+
+        if (provider === 'gemini') {
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+            for (const line of lines) {
+                if (line.trim().startsWith('"text":')) {
+                    try {
+                        const jsonStr = `{${line}}`;
+                        const parsed = JSON.parse(jsonStr);
+                        const textChunk = parsed.text;
+                        if (textChunk) {
+                            fullText += textChunk;
+                            onChunk(textChunk);
+                        }
+                    } catch (e) { /* Ignore */ }
+                }
+            }
+        } else {
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const data = line.substring(6);
+                    if (data.trim() === '[DONE]') break;
+                    try {
+                        const parsed = JSON.parse(data);
+                        const textChunk = parsed.choices[0]?.delta?.content || '';
+                        if (textChunk) {
+                            fullText += textChunk;
+                            onChunk(textChunk);
+                        }
+                    } catch (e) { /* Ignore */ }
+                }
+            }
+        }
+    }
+    return fullText;
+}
+async function callApiWithSchema(prompt, responseSchema, signal) {
+    const apiKey = config.apiKeys.gemini;
+    if (!apiKey) {
+        console.error("Gemini API key is not set for generating structured response.");
+        return null;
+    }
+    const payload = {
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: responseSchema,
+        }
+    };
+
+
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${CHEAP_MODEL_ID}:generateContent?key=${apiKey}`;
+    try {
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error?.message || 'API request failed');
+        }
+
+
+        const result = await response.json();
+        
+        const jsonString = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+
+        if (jsonString) {
+            let cleanedJsonString = jsonString.trim();
+            if (cleanedJsonString.startsWith("```json")) {
+                cleanedJsonString = cleanedJsonString.substring(7).trim();
+            }
+            if (cleanedJsonString.endsWith("```")) {
+                cleanedJsonString = cleanedJsonString.slice(0, -3).trim();
+            }
+
+            try {
+                return JSON.parse(cleanedJsonString);
+            } catch (e) {
+                console.error("清理後的 JSON 解析失敗:", e);
+                console.error("原始字串:", jsonString);
+                throw new Error("無法解析 API 回傳的 JSON 字串。");
+            }
+        }
+    } catch (error) {
+        console.error('Error generating structured response:', error);
+    }
+    return null;
+}
+async function shouldPerformWebSearch(prompt) {
+    const apiKey = config.apiKeys.gemini;
+    if (!apiKey) {
+        console.warn("Gemini API key is not set. Cannot perform auto web search check.");
+        return false;
+    }
+    const systemPrompt = "你是一個判斷器，根據使用者問題判斷是否需要連網搜尋。如果問題是關於即時、最新資訊、或特定事實，請回答'yes'。如果是常識性、創意寫作、程式碼等，請回答'no'。只輸出'yes'或'no'，不要有任何其他文字。";
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${CHEAP_MODEL_ID}:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            contents: [
+                { role: 'user', parts: [{ text: systemPrompt }] },
+                { role: 'model', parts: [{ text: "好的，我會只回答'yes'或'no'。" }] },
+                { role: 'user', parts: [{ text: prompt }] }
+            ],
+        }),
+        signal: AbortSignal.timeout(3000)
+    });
+    if (!response.ok) {
+        console.error('Auto web search check failed:', await response.text());
+        return false;
+    }
+    const result = await response.json();
+    const text = result?.candidates?.[0]?.content?.parts?.[0]?.text?.trim().toLowerCase();
+    return text === 'yes';
+}
+
+
+
+
+const generateTitleAndSummary = async (conv) => {
+    const conversationHistory = conv.messages.slice(0, 5).map(m => `${m.role}: ${m.parts.map(p => p.text).join(' ')}`).join('\n');
+    const prompt = `為以下對話生成一個簡潔且能代表核心主題的標題。標題應直接反映使用者詢問的主要內容，而不是以你的視角描述AI的行為，（例如，好的標題是「法國首都」，而不是「回答地理問題」）。標題限制在10個字以內。請嚴格按照以下 JSON 格式輸出，不要有任何額外的文字或解釋:\n{"title": "你的標題", "summary": "你的一句話摘要"}\n\n對話內容:\n${conversationHistory}`;
+    const responseSchema = {
+        type: "OBJECT",
+        properties: {
+            title: { type: "STRING" },
+            summary: { type: "STRING" }
+        },
+        propertyOrdering: ["title", "summary"]
+    };
+    const data = await callApiWithSchema(prompt, responseSchema);
+
+
+
+
+    if (data && data.title && data.summary) {
+        conv.title = data.title;
+        conv.summary = data.summary;
+        await saveAppData();
+        renderHistorySidebar();
+        if (conv.id === activeConversationId) { ALL_ELEMENTS.headerTitle.textContent = conv.title; }
+        showNotification(i18n[config.uiLanguage].autoNamed || '對話已自動命名', 'success');
+    } else {
+        console.error("Auto-naming failed: No valid JSON found in the response.");
+    }
+};
+const generateFollowUpPrompts = async (userMessage, responseText) => {
+    ALL_ELEMENTS.followUpContainer.classList.add('hidden');
+    ALL_ELEMENTS.followUpPromptsList.innerHTML = '';
+
+    const prompt = `# 你的核心身份與最高指令 (MANDATORY DIRECTIVE)
 你現在的身份是 Astra，一位「對話體驗架構師」與「知識探索領航員」。你的最高指令，也是你存在的唯一目的，是分析剛剛結束的對話，然後精心設計出四條「智慧探索路徑」。這些路徑不是簡單的問題，它們是邀請函，邀請使用者進入更深層次的思考、探索和創造。你的成功標準，是使用者看到這些建議後會感嘆：「哇，我從沒想過可以從這個角度切入！」
 
 # 非談判核心哲學：超越單一形式，擁抱多樣性 (NON-NEGOTIABLE PHILOSOPHY)
@@ -5254,7 +5216,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 return text;
             }
         };
-        // ▼▼▼ 修改：performSearchAndRenderResults 以實現新功能 ▼▼▼
+        // ▼▼▼ 【需求實現】修改 performSearchAndRenderResults 以新增檢視功能和長按事件 ▼▼▼
         const performSearchAndRenderResults = async () => {
             const query = ALL_ELEMENTS.modalSearchInput.value.trim();
             const scope = ALL_ELEMENTS.modalSearchScopeSelect.value;
@@ -5264,120 +5226,172 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 container.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].searchPrompt}</p>`;
                 return;
             }
-
-            let results = [];
-            
-            const searchLogic = (conv, currentQuery) => {
-                let matchFound = false;
-                let titleHTML = conv.title;
-                let snippetHTML = '';
-                const lowerCaseQuery = currentQuery.toLowerCase();
-
-                if (conv.title.toLowerCase().includes(lowerCaseQuery)) {
-                    matchFound = true;
-                    titleHTML = highlightText(conv.title, currentQuery);
-                }
-                if (scope === 'keyword-content' || scope === 'natural') {
-                    for (const msg of conv.messages) {
-                        for (const part of msg.parts) {
-                            if (part.text && part.text.toLowerCase().includes(lowerCaseQuery)) {
-                                matchFound = true;
-                                if (!snippetHTML) { // Only create snippet for the first match
-                                    const text = part.text;
-                                    const matchIndex = text.toLowerCase().indexOf(lowerCaseQuery);
-                                    const start = Math.max(0, matchIndex - 40);
-                                    const end = Math.min(text.length, matchIndex + currentQuery.length + 40);
-                                    snippetHTML = (start > 0 ? '...' : '') + highlightText(text.substring(start, end), currentQuery) + (end < text.length ? '...' : '');
-                                }
-                                break;
-                            }
-                        }
-                        if (snippetHTML) break;
-                    }
-                }
-                if (matchFound) {
-                    return { conv, titleHTML, snippetHTML };
-                }
-                return null;
-            };
-
+            const results = [];
+            // Natural language search logic remains the same...
             if (scope === 'natural') {
                 const generatedKeywords = await generateSearchKeywords(query);
                 if (generatedKeywords && generatedKeywords.length > 0) {
-                    const uniqueResults = new Map();
-                    generatedKeywords.forEach(keyword => {
-                        conversations.forEach(conv => {
-                            const result = searchLogic(conv, keyword);
-                            if (result && !uniqueResults.has(conv.id)) {
-                                uniqueResults.set(conv.id, result);
+                    const keywordQueries = generatedKeywords.join('|');
+                    conversations.forEach(conv => {
+                        let matchFound = false;
+                        let titleHTML = conv.title;
+                        let snippetHTML = '';
+                        if (conv.title.toLowerCase().match(new RegExp(keywordQueries, 'gi'))) {
+                            matchFound = true;
+                            titleHTML = highlightText(conv.title, keywordQueries);
+                        }
+                        for (const msg of conv.messages) {
+                            for (const part of msg.parts) {
+                                if (part.text && part.text.toLowerCase().match(new RegExp(keywordQueries, 'gi'))) {
+                                    matchFound = true;
+                                    const text = part.text;
+                                    const matchIndex = text.toLowerCase().search(new RegExp(keywordQueries, 'gi'));
+                                    const start = Math.max(0, matchIndex - 40);
+                                    const end = Math.min(text.length, query.length + 40);
+                                    snippetHTML = (start > 0 ? '...' : '') + highlightText(text.substring(start, end), keywordQueries) + (end < text.length ? '...' : '');
+                                    break;
+                                }
                             }
-                        });
+                            if (snippetHTML) break;
+                        }
+                        if (matchFound) {
+                            results.push({ conv, titleHTML, snippetHTML });
+                        }
                     });
-                    results = Array.from(uniqueResults.values());
                 }
             } else {
+                // Keyword search logic remains the same...
+                const lowerCaseQuery = query.toLowerCase();
+                const searchIn = scope === 'keyword-title' ? 'title' : 'content';
                 conversations.forEach(conv => {
-                    const result = searchLogic(conv, query);
-                    if (result) {
-                        results.push(result);
+                    let matchFound = false;
+                    let titleHTML = conv.title;
+                    let snippetHTML = '';
+                    if (conv.title.toLowerCase().includes(lowerCaseQuery)) {
+                        matchFound = true;
+                        titleHTML = highlightText(conv.title, query);
+                    }
+                    if (searchIn === 'content') {
+                        for (const msg of conv.messages) {
+                            for (const part of msg.parts) {
+                                if (part.text && part.text.toLowerCase().includes(lowerCaseQuery)) {
+                                    matchFound = true;
+                                    const text = part.text;
+                                    const matchIndex = text.toLowerCase().indexOf(lowerCaseQuery);
+                                    const start = Math.max(0, matchIndex - 40);
+                                    const end = Math.min(text.length, matchIndex + query.length + 40);
+                                    snippetHTML = (start > 0 ? '...' : '') + highlightText(text.substring(start, end), query) + (end < text.length ? '...' : '');
+                                    break;
+                                }
+                            }
+                            if (snippetHTML) break;
+                        }
+                    }
+                    if (matchFound) {
+                        results.push({ conv, titleHTML, snippetHTML });
                     }
                 });
             }
+
 
             if (results.length === 0) {
                 container.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].noResultsFound || '找不到符合的對話。'}</p>`;
                 return;
             }
 
+
             results.forEach(({ conv, titleHTML, snippetHTML }) => {
                 const item = document.createElement('div');
-                item.className = 'p-3 rounded-md hover:bg-[var(--hover-bg)] border border-transparent hover:border-[var(--border-color)] flex justify-between items-center';
+                // Main container for the result item
+                item.className = 'p-3 rounded-md hover:bg-[var(--hover-bg)] border border-transparent hover:border-[var(--border-color)] flex items-center justify-between gap-2';
                 item.dataset.id = conv.id;
                 
-                item.innerHTML = `
-                    <div class="flex-1 min-w-0">
-                        <div class="font-medium truncate">${titleHTML}</div>
-                        ${snippetHTML ? `<p class="text-xs text-[var(--text-secondary)] mt-1 truncate">${snippetHTML}</p>` : ''}
-                    </div>
-                    <button data-id="${conv.id}" class="view-search-result-btn ml-4 flex-shrink-0 text-xs bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full hover:bg-blue-200 font-semibold">${i18n[config.uiLanguage].view || '檢視'}</button>
+                // Content part of the item
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'flex-1 cursor-pointer truncate';
+                contentDiv.innerHTML = `
+                    <div class="font-medium truncate">${titleHTML}</div>
+                    ${snippetHTML ? `<p class="text-xs text-[var(--text-secondary)] mt-1 truncate">${snippetHTML}</p>` : ''}
                 `;
                 
-                // --- 為整個項目添加長按事件 (手機版) ---
+                // "View" button for desktop
+                const viewBtn = document.createElement('button');
+                viewBtn.textContent = i18n[config.uiLanguage].view || '檢視';
+                viewBtn.className = 'hidden md:block text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded hover:bg-blue-200 flex-shrink-0';
+                viewBtn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent the main click event from firing
+                    showSearchResultPreview(conv.id);
+                });
+                
+                item.appendChild(contentDiv);
+                item.appendChild(viewBtn);
+
+
+                // --- Event handling ---
                 let pressTimer = null;
-                item.addEventListener('touchstart', (e) => {
+                let touchMoved = false;
+
+
+                const startPress = (e) => {
+                    if (window.innerWidth >= 768) return; // Only for mobile
+                    touchMoved = false;
                     pressTimer = setTimeout(() => {
                         e.preventDefault();
-                        showSearchResultView(conv.id);
-                    }, 500);
-                }, { passive: true });
-                item.addEventListener('touchend', () => clearTimeout(pressTimer));
-                item.addEventListener('touchmove', () => clearTimeout(pressTimer));
+                        showSearchResultPreview(conv.id);
+                        pressTimer = null;
+                    }, 500); // 500ms for long press
+                };
 
-                // --- 為檢視按鈕添加點擊事件 (桌面版) ---
-                const viewBtn = item.querySelector('.view-search-result-btn');
-                viewBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    showSearchResultView(conv.id);
-                });
+
+                const cancelPress = () => {
+                    clearTimeout(pressTimer);
+                    pressTimer = null;
+                };
+
+
+                // Click/Tap action: Go to chat
+                const handleClick = () => {
+                    if (pressTimer || !touchMoved) { // If it wasn't a long press or drag
+                        cancelPress();
+                        loadChat(conv.id);
+                        toggleModal(ALL_ELEMENTS.searchModal, false);
+                    }
+                };
+
+
+                item.addEventListener('click', handleClick);
+                
+                // Long press events for mobile
+                item.addEventListener('touchstart', startPress, { passive: true });
+                item.addEventListener('touchend', cancelPress);
+                item.addEventListener('touchmove', () => { 
+                    touchMoved = true;
+                    cancelPress();
+                }, { passive: true });
+                // Fallback for non-touch devices (dev tools)
+                item.addEventListener('mousedown', startPress);
+                item.addEventListener('mouseup', cancelPress);
+                item.addEventListener('mouseleave', cancelPress);
                 
                 container.appendChild(item);
             });
         };
-        // ▲▲▲ 結束修改 ▲▲▲
+        // ▲▲▲ 【需求實現】結束 ▲▲▲
         
-        // ▼▼▼ 新增：搜尋結果檢視相關函式 ▼▼▼
-        const showSearchResultView = (convId) => {
+        // ▼▼▼ 【需求實現】新增函式以顯示搜尋結果預覽 ▼▼▼
+        const showSearchResultPreview = (convId) => {
             const conv = conversations.find(c => c.id === convId);
             if (!conv) return;
 
-            ALL_ELEMENTS.viewSearchResultTitle.textContent = conv.title;
-            const contentContainer = ALL_ELEMENTS.viewSearchResultContent;
-            contentContainer.innerHTML = ''; 
+
+            ALL_ELEMENTS.searchResultViewTitle.textContent = conv.title;
+            const contentContainer = ALL_ELEMENTS.searchResultViewContent;
+            contentContainer.innerHTML = ''; // Clear previous content
+
 
             if (conv.messages.length === 0) {
-                contentContainer.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].noMessagesInConversation || '此對話沒有訊息。'}</p>`;
+                contentContainer.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].noMessagesInChat || '此對話沒有訊息。'}</p>`;
             } else {
-                // 與 showArchivedChatPreview 共用訊息渲染邏輯
                 conv.messages.forEach(msg => {
                     const isUser = msg.role === 'user';
                     const messageDiv = document.createElement('div');
@@ -5385,6 +5399,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     const icon = isUser 
                         ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>` 
                         : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
+
 
                     let contentHTML = '';
                     msg.parts.forEach(part => {
@@ -5398,18 +5413,25 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         }
                     });
 
-                    const messageBubble = `<div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble"><div class="prose prose-sm max-w-none message-content ${isUser ? 'text-white' : 'text-[var(--text-primary)]'}">${contentHTML}</div></div>`;
+
+                    const messageBubble = `
+                        <div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble">
+                            <div class="prose prose-sm max-w-none message-content ${isUser ? 'text-white' : 'text-[var(--text-primary)]'}">${contentHTML}</div>
+                        </div>`;
+                    
                     messageDiv.innerHTML = isUser ? `${messageBubble}${icon}` : `${icon}${messageBubble}`;
                     contentContainer.appendChild(messageDiv);
                 });
             }
 
-            // 將對話 ID 附加到確認按鈕上
-            ALL_ELEMENTS.confirmViewSearchResultBtn.dataset.convId = convId;
+
+            // Store the conversation ID in the confirm button to use it later
+            ALL_ELEMENTS.confirmGoToChatBtn.dataset.id = convId;
             toggleModal(ALL_ELEMENTS.searchResultViewModal, true);
         };
-        // ▲▲▲ 結束新增 ▲▲▲
-        
+        // ▲▲▲ 【需求實現】結束 ▲▲▲
+
+
         // 新增: 使用AI生成自然語言搜索的關鍵字
         const generateSearchKeywords = async (naturalQuery) => {
             const prompt = `從以下自然語言查詢中，提取 10-15 個最相關的關鍵字，用於搜索對話記錄。請嚴格以 JSON 陣列格式輸出，不要有任何額外的文字或解釋。例如：["關鍵字1", "關鍵字2", "關鍵字3"]。查詢內容：${naturalQuery}`;
@@ -7050,6 +7072,19 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             });
             ALL_ELEMENTS.modalSearchScopeSelect.addEventListener('change', performSearchAndRenderResults);
+            // ▼▼▼ 【需求實現】為搜尋結果檢視 Modal 綁定事件 ▼▼▼
+            const closeSearchResultViewModal = () => toggleModal(ALL_ELEMENTS.searchResultViewModal, false);
+            ALL_ELEMENTS.closeSearchResultViewModalBtn.addEventListener('click', closeSearchResultViewModal);
+            ALL_ELEMENTS.closeSearchResultViewModalBtnFooter.addEventListener('click', closeSearchResultViewModal);
+            ALL_ELEMENTS.confirmGoToChatBtn.addEventListener('click', (e) => {
+                const convId = e.currentTarget.dataset.id;
+                if (convId) {
+                    loadChat(convId);
+                    toggleModal(ALL_ELEMENTS.searchResultViewModal, false);
+                    toggleModal(ALL_ELEMENTS.searchModal, false);
+                }
+            });
+            // ▲▲▲ 【需求實現】結束 ▲▲▲
             ALL_ELEMENTS.settingsBtn.addEventListener('click', () => { setupSettingsModal(); toggleModal(ALL_ELEMENTS.settingsModal, true); });
             ALL_ELEMENTS.closeSettingsBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.settingsModal, false));
             ALL_ELEMENTS.saveSettingsBtn.addEventListener('click', saveSettings);
@@ -7057,22 +7092,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.themeDarkBtn.addEventListener('click', () => setTheme('dark'));
             ALL_ELEMENTS.openArchivedModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.archivedChatsModal, true));
             ALL_ELEMENTS.closeArchivedModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.archivedChatsModal, false));
-            // ▼▼▼ 新增：封存/搜尋對話檢視 Modal 的關閉事件 ▼▼▼
+            // ▼▼▼ 新增：封存對話檢視 Modal 的關閉事件 ▼▼▼
             const closeViewArchivedModal = () => toggleModal(ALL_ELEMENTS.viewArchivedChatModal, false);
             ALL_ELEMENTS.closeViewArchivedModalBtn.addEventListener('click', closeViewArchivedModal);
             ALL_ELEMENTS.closeViewArchivedModalBtnFooter.addEventListener('click', closeViewArchivedModal);
-            
-            const closeSearchResultViewModal = () => toggleModal(ALL_ELEMENTS.searchResultViewModal, false);
-            ALL_ELEMENTS.closeViewSearchResultModalBtn.addEventListener('click', closeSearchResultViewModal);
-            ALL_ELEMENTS.closeViewSearchResultModalBtnFooter.addEventListener('click', closeSearchResultViewModal);
-            ALL_ELEMENTS.confirmViewSearchResultBtn.addEventListener('click', (e) => {
-                const convId = e.target.dataset.convId;
-                if (convId) {
-                    loadChat(convId);
-                    toggleModal(ALL_ELEMENTS.searchResultViewModal, false);
-                    toggleModal(ALL_ELEMENTS.searchModal, false);
-                }
-            });
             // ▲▲▲ 結束新增 ▲▲▲
             ALL_ELEMENTS.saveRenameBtn.addEventListener('click', handleRename);
             ALL_ELEMENTS.cancelRenameBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.renameModal, false));
