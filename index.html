@@ -5361,10 +5361,18 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
 
             let results = [];
-            // ... (此處省略了與之前版本相同的自然語言和關鍵字搜尋邏輯)
-            // 搜尋邏輯 (與您提供的程式碼相同，此處為簡化省略)
+            
             if (scope === 'natural') {
-                 results = calculateRelevanceScores(await generateSearchKeywords(query));
+                try {
+                    const weightedKeywords = await generateSearchKeywords(query);
+                    if (!weightedKeywords || weightedKeywords.length === 0) {
+                        throw new Error(i18n[config.uiLanguage].keywordGenerationFailed || '無法從您的查詢中提取關鍵字。');
+                    }
+                    results = calculateRelevanceScores(weightedKeywords);
+                } catch (error) {
+                    container.innerHTML = `<p class="text-center text-red-500">${error.message}</p>`;
+                    return;
+                }
             } else {
                 const lowerCaseQuery = query.toLowerCase();
                 const searchIn = scope === 'keyword-title' ? ['title'] : ['title', 'content'];
@@ -5378,15 +5386,18 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     }
                     if (searchIn.includes('content')) {
                         for (const msg of conv.messages) {
-                            if (msg.parts[0].text && msg.parts[0].text.toLowerCase().includes(lowerCaseQuery)) {
-                                matchFound = true;
-                                const text = msg.parts[0].text;
-                                const matchIndex = text.toLowerCase().indexOf(lowerCaseQuery);
-                                const start = Math.max(0, matchIndex - 40);
-                                const end = Math.min(text.length, matchIndex + query.length + 40);
-                                snippetHTML = (start > 0 ? '...' : '') + highlightText(text.substring(start, end), query) + (end < text.length ? '...' : '');
-                                break;
+                            for (const part of msg.parts) {
+                                if (part.text && part.text.toLowerCase().includes(lowerCaseQuery)) {
+                                    matchFound = true;
+                                    const text = part.text;
+                                    const matchIndex = text.toLowerCase().indexOf(lowerCaseQuery);
+                                    const start = Math.max(0, matchIndex - 40);
+                                    const end = Math.min(text.length, matchIndex + query.length + 40);
+                                    snippetHTML = (start > 0 ? '...' : '') + highlightText(text.substring(start, end), query) + (end < text.length ? '...' : '');
+                                    break;
+                                }
                             }
+                            if (snippetHTML) break;
                         }
                     }
                     if (matchFound) {
@@ -5411,9 +5422,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 item.className = 'p-3 rounded-md hover:bg-[var(--hover-bg)] border border-transparent hover:border-[var(--border-color)]';
                 item.dataset.id = conv.id;
 
-                const scoreHTML = scope === 'natural' ? `...` : '';
+                // ▼▼▼ 這就是被還原的程式碼 ▼▼▼
+                const scoreHTML = scope === 'natural' ? `
+                    <div class="flex items-center gap-2 mt-2">
+                        <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                            <div class="bg-blue-600 h-2.5 rounded-full" style="width: ${score}%"></div>
+                        </div>
+                        <span class="text-sm font-medium text-gray-500 dark:text-gray-400">${score}%</span>
+                    </div>
+                ` : '';
+                // ▲▲▲ 結束還原 ▲▲▲
 
-                // 新增檢視按鈕
                 item.innerHTML = `
                     <div class="flex justify-between items-center">
                         <div class="flex-1 min-w-0">
@@ -5425,22 +5444,19 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     ${scoreHTML}
                 `;
 
-                // 【需求 2 實現】直接點擊項目，跳轉並關閉側邊欄
                 const titleArea = item.querySelector('.flex-1');
                 titleArea.addEventListener('click', () => {
                     loadChat(conv.id);
-                    toggleSidebar(false); // 關閉側邊欄
+                    toggleSidebar(false);
                     toggleModal(ALL_ELEMENTS.searchModal, false);
                 });
                 
-                // 桌面版檢視按鈕
                 const viewBtn = item.querySelector('.search-view-btn');
                 viewBtn.addEventListener('click', (e) => {
-                    e.stopPropagation(); // 防止觸發 titleArea 的點擊事件
+                    e.stopPropagation();
                     showConversationInViewModal(conv.id);
                 });
 
-                // 【需求 1 實現】手機版長按檢視
                 let pressTimer = null;
                 item.addEventListener('touchstart', (e) => {
                     pressTimer = setTimeout(() => {
