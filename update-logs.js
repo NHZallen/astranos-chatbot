@@ -5,7 +5,7 @@ const updateLogs = [
         content: [
             "<strong>新增：</strong>在「關於」頁面新增了版本更新資訊入口，方便使用者查看所有版本的更新日誌。",
             "<strong>新增：</strong>新增了「啟用更新通知」開關，開啟後每次載入都會彈出最新版本更新內容。",
-            "<strong>優化：</strong>更新日誌內容集中到獨立的 <code>update-logs.js</code> 檔案中，方便後續維護與修改。",
+            "<strong>優化：</strong>更新日誌內容集中到獨立的update-logs.js檔案中，方便後續維護與修改。",
         ]
     },
     {
