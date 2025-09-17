@@ -3100,6 +3100,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 isWebSearchEnabled: false,
                 pinned: false,
                 isTemporary: true // <--- 新增此行
+                isNaming: false
             };
         };
         const startNewChat = () => {
@@ -3310,30 +3311,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             applyLanguage(config.uiLanguage); // 新增：每次渲染時都應用語言
         };
 
-
-
-
         const renderHistorySidebar = () => {
             ALL_ELEMENTS.historyList.innerHTML = '';
-            const activeConv = getActiveConversation();
         
-            // 如果當前是一個臨時對話，顯示 "思考中" 的佔位符
-            if (activeConv && activeConv.isTemporary) {
-                const thinkingPlaceholder = document.createElement('div');
-                thinkingPlaceholder.className = 'sidebar-item p-3 rounded-lg flex items-center gap-3 text-[var(--text-secondary)] italic';
-                thinkingPlaceholder.innerHTML = `
-                    <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span data-lang-key="thinking">${i18n[config.uiLanguage].thinking || 'AI思考中...'}</span>
-                `;
-                ALL_ELEMENTS.historyList.appendChild(thinkingPlaceholder);
-            }
-
-            // 從列表中過濾掉臨時對話
-            const visibleConversations = conversations
-                .filter(c => !c.archived && !c.folderId && !c.isTemporary)
+            // 正常排序所有非資料夾內的對話
+            const sortedConversations = conversations
+                .filter(c => !c.archived && !c.folderId)
                 .sort((a, b) => {
                     if (a.pinned && !b.pinned) return -1;
                     if (!a.pinned && b.pinned) return 1;
@@ -3342,7 +3325,28 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     return new Date(dateB) - new Date(dateA);
                 });
 
-            visibleConversations.forEach(conv => {
+            sortedConversations.forEach(conv => {
+                // 1. 如果是對話是臨時的 (使用者還沒發送第一句話)，則完全不顯示在列表
+                if (conv.isTemporary) {
+                    return; // 跳過此對話
+                }
+
+                // 2. 如果對話正在命名中，顯示 "AI思考中..." 的動畫
+                if (conv.isNaming) {
+                    const thinkingPlaceholder = document.createElement('div');
+                    thinkingPlaceholder.className = 'sidebar-item p-3 rounded-lg flex items-center gap-3 text-[var(--text-secondary)] italic';
+                    thinkingPlaceholder.innerHTML = `
+                        <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span data-lang-key="naming">${i18n[config.uiLanguage].naming || 'AI思考中...'}</span>
+                    `;
+                    ALL_ELEMENTS.historyList.appendChild(thinkingPlaceholder);
+                    return; // 顯示完動畫後，跳過此對話的正常渲染
+                }
+
+                // 3. 對於所有其他正常的對話，正常渲染
                 ALL_ELEMENTS.historyList.appendChild(createConversationElement(conv));
             });
         };
@@ -4086,16 +4090,23 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             // 【排序修正】更新對話的最後互動時間
             conv.lastUpdatedAt = new Date().toISOString();
             if (conv.isTemporary) {
-                conv.isTemporary = false;
-                // 確保側邊欄先顯示 "新對話"，然後再由 AI 更新
+                conv.isTemporary = false; // 轉為永久
+                conv.isNaming = true;      // 開始命名狀態
+                
+                // 立即更新側邊欄以顯示 "AI思考中..."
                 renderHistorySidebar(); 
+                
                 if (config.autoNaming) {
+                    // 非同步執行命名，不會阻塞後續流程
                     generateTitleAndSummary(conv);
+                } else {
+                    // 如果沒有開啟自動命名，也要手動結束命名狀態
+                    conv.isNaming = false;
                 }
-                // 儲存 isTemporary 的變更
+                
+                // 儲存 isTemporary 和 isNaming 的變更
                 await saveAppData();
             }
-
 
             if (config.enableAutoWebSearch && conv.provider === 'gemini' && !conv.isWebSearchEnabled) {
                 try {
@@ -4497,11 +4508,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (data && data.title && data.summary) {
                 conv.title = data.title;
                 conv.summary = data.summary;
+                conv.isNaming = false; // <--- 新增此行，結束命名狀態
                 await saveAppData();
                 renderHistorySidebar();
                 if (conv.id === activeConversationId) { ALL_ELEMENTS.headerTitle.textContent = conv.title; }
                 showNotification(i18n[config.uiLanguage].autoNamed || '對話已自動命名', 'success');
             } else {
+                // 如果命名失敗，也要結束命名狀態
+                conv.isNaming = false; // <--- 在 else 區塊也新增此行
+                await saveAppData();
+                renderHistorySidebar(); // 重新渲染以移除 spinner
                 console.error("Auto-naming failed: No valid JSON found in the response.");
             }
         };
