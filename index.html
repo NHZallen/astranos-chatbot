@@ -3099,7 +3099,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 astrasId: null,
                 isWebSearchEnabled: false,
                 pinned: false,
-                isTemporary: true // <--- 新增此行
+                isTemporary: true, // <--- 新增此行
                 isNaming: false
             };
         };
@@ -4045,28 +4045,19 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const userMessage = ALL_ELEMENTS.messageInput.value.trim();
             if (!userMessage && uploadedFiles.length === 0) return;
 
-
             renderFollowUpPrompts([]);
-
 
             const conv = getActiveConversation();
             if (conv.archived) return;
 
-
-
-
             abortController = new AbortController();
             updateSubmitButtonState(true);
-
 
             if (!sendConfirmed) {
                 sendConfirmed = true;
                 updateInputState();
                 return;
             }
-
-
-
 
             const userParts = [];
             if (userMessage) {
@@ -4081,31 +4072,25 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 });
             });
 
-
+            // 正確的邏輯：只新增一次使用者訊息
             const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
             addMessageToUI(userMessageObject, conv.messages.length, true);
+            conv.lastUpdatedAt = new Date().toISOString();
 
-            // 【排序修正】更新對話的最後互動時間
-            conv.lastUpdatedAt = new Date().toISOString();
-            // 【排序修正】更新對話的最後互動時間
-            conv.lastUpdatedAt = new Date().toISOString();
+            // 將臨時對話轉為永久，並觸發命名狀態
             if (conv.isTemporary) {
-                conv.isTemporary = false; // 轉為永久
-                conv.isNaming = true;      // 開始命名狀態
+                conv.isTemporary = false;
+                conv.isNaming = true;
                 
-                // 立即更新側邊欄以顯示 "AI思考中..."
-                renderHistorySidebar(); 
+                renderHistorySidebar(); // 立即更新側邊欄以顯示 "AI思考中..."
                 
                 if (config.autoNaming) {
-                    // 非同步執行命名，不會阻塞後續流程
-                    generateTitleAndSummary(conv);
+                    generateTitleAndSummary(conv); // 非同步執行命名
                 } else {
-                    // 如果沒有開啟自動命名，也要手動結束命名狀態
-                    conv.isNaming = false;
+                    conv.isNaming = false; // 如果關閉自動命名，直接結束狀態
                 }
                 
-                // 儲存 isTemporary 和 isNaming 的變更
-                await saveAppData();
+                await saveAppData(); // 儲存狀態變更
             }
 
             if (config.enableAutoWebSearch && conv.provider === 'gemini' && !conv.isWebSearchEnabled) {
@@ -4121,9 +4106,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             }
 
-
-
-
             ALL_ELEMENTS.messageInput.value = '';
             uploadedFiles = [];
             renderFilePreviews();
@@ -4134,32 +4116,26 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             
             const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
 
-
             try {
                 const completeResponse = await streamApiCall(
                     userParts,
                     (chunk) => {
                         fullResponse += chunk;
                         contentDiv.innerHTML = renderMarkdown(fullResponse);
-                        // ▼▼▼ 【需求實現】修改：AI 回應時，如果使用者不在底部，就不強制滾動 ▼▼▼
                         const isNearBottom = ALL_ELEMENTS.chatContainer.scrollHeight - ALL_ELEMENTS.chatContainer.scrollTop <= ALL_ELEMENTS.chatContainer.clientHeight + 150;
                         if (isNearBottom) {
                             ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'auto' });
                         }
-                        // ▲▲▲ 【需求實現】結束 ▲▲▲
                     },
                     abortController.signal
                 );
                 fullResponse = completeResponse;
                 finalAiMessage.parts = [{ text: fullResponse }];
                 conv.messages.push(finalAiMessage);
-                // 【排序修正】AI 回覆後，再次更新對話的最後互動時間
                 conv.lastUpdatedAt = new Date().toISOString();
                 await saveAppData();
 
-                    if(config.enableFollowUp) {
-                    // ▼▼▼ 修改後 ▼▼▼
-                    // 將 userMessage 也傳入函式
+                if(config.enableFollowUp) {
                     await generateFollowUpPrompts(userMessage, fullResponse);
                 }
                 if (config.memoryEnabled1 && config.enableAutoMemory) { 
@@ -4182,13 +4158,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 sendConfirmed = false;
                 updateInputState();
                 
-                // ▼▼▼ 優化：AI 回覆完成後，不再重新渲染整個聊天室，而是僅更新最後一則訊息的 UI ▼▼▼
                 const lastMessageDiv = ALL_ELEMENTS.messageList.lastElementChild;
                 if (lastMessageDiv && lastMessageDiv.classList.contains('model-message')) {
                     const bubble = lastMessageDiv.querySelector('.message-bubble');
                     const content = lastMessageDiv.querySelector('.message-content');
                     const aiMessageObject = conv.messages[conv.messages.length - 1];
-
 
                     if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute')) { 
                         content.classList.add('pb-8');
@@ -4206,7 +4180,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     }
                 }
 
-
                 const userMessageDiv = lastMessageDiv ? lastMessageDiv.previousElementSibling : null;
                 if (userMessageDiv && userMessageDiv.classList.contains('user-message')) {
                     const bubble = userMessageDiv.querySelector('.message-bubble');
@@ -4223,7 +4196,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         bubble.insertAdjacentHTML('beforeend', deleteButtonHTML);
                     }
                 }
-                // ▲▲▲ 結束優化 ▲▲▲
             }
         };
         function cleanGeminiHistory(history) {
