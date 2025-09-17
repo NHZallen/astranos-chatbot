@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-14.8.3</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.8.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -3098,44 +3098,40 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 folderId: null,
                 astrasId: null,
                 isWebSearchEnabled: false,
-                pinned: false
+                pinned: false,
+                isTemporary: true // <--- 新增此行
             };
         };
         const startNewChat = () => {
-            const activeConv = getActiveConversation();
-            // 如果當前活躍的對話就是一個空的對話，則不做任何事，避免重複操作。
-            if (activeConv && activeConv.messages.length === 0 && !activeConv.isRenamed) {
-                toggleSidebar(false); // 如果側邊欄是開的，就關閉它
-                return;
+            // 清除任何先前未使用的臨時對話
+            const oldTempChatCount = conversations.length;
+            conversations = conversations.filter(c => !c.isTemporary || c.messages.length > 0);
+            if (conversations.length < oldTempChatCount) {
+                 saveAppData(); // 如果有清除，就儲存一次
             }
-        
+
             uploadedFiles = [];
         
-            // 【修正核心】搜尋整個對話列表，尋找是否存在一個空的、且未被手動重新命名的對話
-            const existingEmptyChat = conversations.find(c => c.messages.length === 0 && !c.isRenamed);
-        
-            if (existingEmptyChat) {
-                // 如果找到了，就直接載入那個對話
-                loadChat(existingEmptyChat.id);
-                toggleSidebar(false); // 【修正核心】並且關閉側邊欄
-                return; // 結束函式，不再往下執行
-            }
-        
-            // 如果沒有找到任何空的對話，才執行創建新對話的流程
+            // 創建一個新的臨時對話
             const newConv = createBaseConversation('新對話');
             conversations.unshift(newConv);
             activeConversationId = newConv.id;
-            saveAppData();
+            
             renderAll();
             toggleSidebar(false);
             sendConfirmed = false;
             updateInputState();
             updateApiKeyWarningBadge();
-            // 重新載入對話時，清除追問提示
             renderFollowUpPrompts([]);
         };
         const loadChat = (id) => {
             if (id !== activeConversationId) {
+                // 如果我們正從一個空的臨時對話切換出去，就將其刪除
+                const previousConv = getActiveConversation();
+                if (previousConv && previousConv.isTemporary && previousConv.messages.length === 0) {
+                    conversations = conversations.filter(c => c.id !== previousConv.id);
+                }
+
                 activeConversationId = id;
                 uploadedFiles = [];
                 renderAll();
@@ -3319,9 +3315,25 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
         const renderHistorySidebar = () => {
             ALL_ELEMENTS.historyList.innerHTML = '';
+            const activeConv = getActiveConversation();
+        
+            // 如果當前是一個臨時對話，顯示 "思考中" 的佔位符
+            if (activeConv && activeConv.isTemporary) {
+                const thinkingPlaceholder = document.createElement('div');
+                thinkingPlaceholder.className = 'sidebar-item p-3 rounded-lg flex items-center gap-3 text-[var(--text-secondary)] italic';
+                thinkingPlaceholder.innerHTML = `
+                    <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span data-lang-key="thinking">${i18n[config.uiLanguage].thinking || 'AI思考中...'}</span>
+                `;
+                ALL_ELEMENTS.historyList.appendChild(thinkingPlaceholder);
+            }
+
+            // 從列表中過濾掉臨時對話
             const visibleConversations = conversations
-                .filter(c => !c.archived && !c.folderId)
-                // ▼▼▼ 【排序修正】使用 lastUpdatedAt 進行排序 ▼▼▼
+                .filter(c => !c.archived && !c.folderId && !c.isTemporary)
                 .sort((a, b) => {
                     if (a.pinned && !b.pinned) return -1;
                     if (!a.pinned && b.pinned) return 1;
@@ -3329,6 +3341,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     const dateA = a.lastUpdatedAt || a.createdAt;
                     return new Date(dateB) - new Date(dateA);
                 });
+
             visibleConversations.forEach(conv => {
                 ALL_ELEMENTS.historyList.appendChild(createConversationElement(conv));
             });
@@ -3909,13 +3922,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const conv = getActiveConversation();
             if (shouldSave) {
                  conv.messages.push(msg);
-                if (conv.messages.length === 1 && msg.role === 'user' && !conv.isRenamed && config.autoNaming) {
+                // 只有當這是一個臨時對話的第一條訊息時，才觸發自動命名
+                if (conv.messages.length === 1 && msg.role === 'user' && conv.isTemporary && !conv.isRenamed && config.autoNaming) {
                     const textPart = msg.parts.find(p => p.text);
                     if (textPart) {
                         conv.title = textPart.text.substring(0, 30) || i18n[config.uiLanguage].newChat || '新對話';
                         ALL_ELEMENTS.headerTitle.textContent = conv.title;
-                        renderHistorySidebar();
-                        generateTitleAndSummary(conv);
+                        // 不再由這裡觸發命名，交給 handleFormSubmit 統一處理
+                        // generateTitleAndSummary(conv);
                     }
                 }
                 saveAppData();
@@ -4069,6 +4083,21 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
             // 【排序修正】更新對話的最後互動時間
             conv.lastUpdatedAt = new Date().toISOString();
+            const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
+            addMessageToUI(userMessageObject, conv.messages.length, true);
+
+            // 【排序修正】更新對話的最後互動時間
+            conv.lastUpdatedAt = new Date().toISOString();
+            if (conv.isTemporary) {
+                conv.isTemporary = false;
+                // 確保側邊欄先顯示 "新對話"，然後再由 AI 更新
+                renderHistorySidebar(); 
+                if (config.autoNaming) {
+                    generateTitleAndSummary(conv);
+                }
+                // 儲存 isTemporary 的變更
+                await saveAppData();
+            }
 
 
             if (config.enableAutoWebSearch && conv.provider === 'gemini' && !conv.isWebSearchEnabled) {
