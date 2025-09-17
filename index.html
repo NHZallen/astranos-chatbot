@@ -3103,16 +3103,25 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         const startNewChat = () => {
             const activeConv = getActiveConversation();
-            if (activeConv && activeConv.messages.length === 0) {
-                showNotification('請先傳送訊息再開始新對話。', 'warning');
+            // 如果當前活躍的對話就是一個空的對話，則不做任何事，避免重複操作。
+            if (activeConv && activeConv.messages.length === 0 && !activeConv.isRenamed) {
+                toggleSidebar(false); // 如果側邊欄是開的，就關閉它
                 return;
             }
+        
             uploadedFiles = [];
-            // 如果第一筆對話是空的，直接載入它，而不是建立新的
-            if (conversations.length > 0 && conversations[0].messages.length === 0 && !conversations[0].isRenamed) {
-                loadChat(conversations[0].id);
-                return;
+        
+            // 【修正核心】搜尋整個對話列表，尋找是否存在一個空的、且未被手動重新命名的對話
+            const existingEmptyChat = conversations.find(c => c.messages.length === 0 && !c.isRenamed);
+        
+            if (existingEmptyChat) {
+                // 如果找到了，就直接載入那個對話
+                loadChat(existingEmptyChat.id);
+                toggleSidebar(false); // 【修正核心】並且關閉側邊欄
+                return; // 結束函式，不再往下執行
             }
+        
+            // 如果沒有找到任何空的對話，才執行創建新對話的流程
             const newConv = createBaseConversation('新對話');
             conversations.unshift(newConv);
             activeConversationId = newConv.id;
