@@ -709,10 +709,9 @@ user-select: none;
 
 /*
 ================================================================================
-  [USER REQUEST] UNIFIED GEL-GLASS EFFECT FOR CUSTOM WALLPAPER
-  This entire block is designed to override existing styles when a custom
-  wallpaper is active, creating a unified, transparent, jelly-like glass
-  appearance for specified UI elements.
+  [USER REQUEST] UNIFIED GEL-GLASS EFFECT (REVISED VERSION)
+  - Reverts specific modals to their original solid style.
+  - Fixes model menu text shadow and font size issues.
 ================================================================================
 */
 
@@ -720,7 +719,7 @@ user-select: none;
 body.custom-wallpaper-active,
 body.custom-wallpaper-active #app-container > .bg-\[var\(--chat-bg\)\],
 body.custom-wallpaper-active .bg-\[var\(--input-bar-bg\)\],
-body.custom-wallpaper-active #settings-modal .bg-\[var\(--sidebar-bg\)\],
+/* We no longer reset settings modal background here, as it's excluded below */
 body.custom-wallpaper-active .message-bubble::before,
 body.custom-wallpaper-active #message-input {
     background-color: transparent !important;
@@ -731,27 +730,45 @@ body.custom-wallpaper-active #settings-modal .border-t {
     border-color: transparent !important;
 }
 
-/* --- 2. Applying the Gel-Glass Effect to All Target Components --- */
-/* Main containers: Sidebar, Modals, Popovers, View Windows */
+
+/* --- 2. Applying the Gel-Glass Effect (WITH EXCLUSIONS) --- */
+/* Main containers: Apply glass effect to Sidebar, Popovers, and ONLY CERTAIN modals */
 body.custom-wallpaper-active .sidebar,
-body.custom-wallpaper-active .modal > div,
+body.custom-wallpaper-active .modal:not(#settings-modal):not(#search-modal):not(#folder-settings-modal):not(#astras-create-modal) > div,
 body.custom-wallpaper-active .popover,
 body.custom-wallpaper-active #search-view-modal > div,
 body.custom-wallpaper-active #trash-view-modal > div,
 body.custom-wallpaper-active #mobile-context-menu {
-    background-color: rgba(255, 255, 255, 0.08) !important; /* A near-transparent base for substance */
+    background-color: rgba(255, 255, 255, 0.08) !important;
     backdrop-filter: blur(22px) !important;
     -webkit-backdrop-filter: blur(22px) !important;
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
     box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.3), 0 4px 20px rgba(0, 0, 0, 0.2) !important;
 }
 
+/* Revert the excluded modals back to their solid state */
+body.custom-wallpaper-active #settings-modal > div,
+body.custom-wallpaper-active #search-modal > div,
+body.custom-wallpaper-active #folder-settings-modal > div,
+body.custom-wallpaper-active #astras-create-modal > div {
+    background-color: var(--modal-bg) !important;
+    backdrop-filter: none !important;
+    box-shadow: 0 10px 15px -3px var(--shadow-color), 0 4px 6px -2px var(--shadow-color) !important;
+}
+.dark body.custom-wallpaper-active #settings-modal > div,
+.dark body.custom-wallpaper-active #search-modal > div,
+.dark body.custom-wallpaper-active #folder-settings-modal > div,
+.dark body.custom-wallpaper-active #astras-create-modal > div {
+    background-color: var(--modal-bg) !important; /* Ensures dark mode solid color */
+}
+
+
 /* Model Menu: Higher opacity as requested */
 body.custom-wallpaper-active #model-options-popover {
     background-color: rgba(255, 255, 255, 0.18) !important;
 }
 
-/* Message Bubbles: Apply the effect via the pseudo-element */
+/* Message Bubbles & Other Glass Elements */
 body.custom-wallpaper-active .message-bubble {
     border: 1px solid rgba(255, 255, 255, 0.25) !important;
     box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
@@ -760,8 +777,6 @@ body.custom-wallpaper-active .message-bubble::before {
     backdrop-filter: blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
 }
-
-/* Follow-up Prompts Section */
 body.custom-wallpaper-active #follow-up-container {
     border-top: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
@@ -776,8 +791,6 @@ body.custom-wallpaper-active .follow-up-prompt-btn:hover {
     background-color: rgba(255, 255, 255, 0.25) !important;
     transform: scale(1.03);
 }
-
-/* Input Bar */
 body.custom-wallpaper-active .input-wrapper {
     background-color: rgba(255, 255, 255, 0.1) !important;
     backdrop-filter: blur(22px) !important;
@@ -786,19 +799,16 @@ body.custom-wallpaper-active .input-wrapper {
     box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.3), 0 4px 15px rgba(0, 0, 0, 0.2) !important;
 }
 
-/* --- 3. Adaptive Text Color & Readability ---
-   Implements adaptive pure black/white text with a contrasting "glow"
-   to ensure readability on any background, fulfilling WCAG goals.
-*/
-/* Default State (for light/mixed wallpapers): PURE BLACK text with a white glow. */
+/* --- 3. Adaptive Text Color & Readability (WITH EXCLUSIONS) --- */
+/* Default State (light wallpaper): Black text with white glow */
 body.custom-wallpaper-active .sidebar,
-body.custom-wallpaper-active .modal > div,
+body.custom-wallpaper-active .modal:not(#settings-modal):not(#search-modal):not(#folder-settings-modal):not(#astras-create-modal) > div,
 body.custom-wallpaper-active .popover,
 body.custom-wallpaper-active .message-bubble,
 body.custom-wallpaper-active #follow-up-container,
 body.custom-wallpaper-active #input-bar-container,
 body.custom-wallpaper-active .sidebar *,
-body.custom-wallpaper-active .modal > div *,
+body.custom-wallpaper-active .modal:not(#settings-modal):not(#search-modal):not(#folder-settings-modal):not(#astras-create-modal) > div *,
 body.custom-wallpaper-active .popover *,
 body.custom-wallpaper-active .message-bubble *,
 body.custom-wallpaper-active #follow-up-container *,
@@ -807,15 +817,15 @@ body.custom-wallpaper-active #input-bar-container * {
     text-shadow: 0 0 5px rgba(255, 255, 255, 0.7), 0 0 2px rgba(255, 255, 255, 0.8);
 }
 
-/* Dark Wallpaper State: PURE WHITE text with a black glow. */
+/* Dark Wallpaper State: White text with black glow */
 body.custom-wallpaper-active.wallpaper-is-dark .sidebar,
-body.custom-wallpaper-active.wallpaper-is-dark .modal > div,
+body.custom-wallpaper-active.wallpaper-is-dark .modal:not(#settings-modal):not(#search-modal):not(#folder-settings-modal):not(#astras-create-modal) > div,
 body.custom-wallpaper-active.wallpaper-is-dark .popover,
 body.custom-wallpaper-active.wallpaper-is-dark .message-bubble,
 body.custom-wallpaper-active.wallpaper-is-dark #follow-up-container,
 body.custom-wallpaper-active.wallpaper-is-dark #input-bar-container,
 body.custom-wallpaper-active.wallpaper-is-dark .sidebar *,
-body.custom-wallpaper-active.wallpaper-is-dark .modal > div *,
+body.custom-wallpaper-active.wallpaper-is-dark .modal:not(#settings-modal):not(#search-modal):not(#folder-settings-modal):not(#astras-create-modal) > div *,
 body.custom-wallpaper-active.wallpaper-is-dark .popover *,
 body.custom-wallpaper-active.wallpaper-is-dark .message-bubble *,
 body.custom-wallpaper-active.wallpaper-is-dark #follow-up-container *,
@@ -824,8 +834,20 @@ body.custom-wallpaper-active.wallpaper-is-dark #input-bar-container * {
     text-shadow: 0 0 5px rgba(0, 0, 0, 0.7), 0 0 2px rgba(0, 0, 0, 0.8);
 }
 
-/* --- 4. Fine-tuning and Edge Cases --- */
-/* Remove text shadow from inputs for cleaner typing */
+/* --- 4. Fine-tuning and Fixes --- */
+
+/* [FIX] Remove text shadow and set original font sizes for Model Menu */
+body.custom-wallpaper-active #model-options-popover * {
+    text-shadow: none !important;
+}
+body.custom-wallpaper-active #model-options-popover h4 {
+    font-size: 1rem !important; /* 16px */
+}
+body.custom-wallpaper-active #model-options-popover .model-description {
+    font-size: 0.75rem !important; /* 12px */
+}
+
+/* Remove text shadow from inputs */
 body.custom-wallpaper-active input,
 body.custom-wallpaper-active textarea {
     text-shadow: none !important;
@@ -840,49 +862,35 @@ body.custom-wallpaper-active.wallpaper-is-dark textarea::placeholder {
     color: rgba(255,255,255,0.6) !important;
 }
 
-/* Ensure code blocks have a readable background and inherit text color correctly */
-body.custom-wallpaper-active .prose pre {
-    background-color: rgba(0, 0, 0, 0.3) !important;
-}
-body.custom-wallpaper-active.wallpaper-is-dark .prose pre {
-    background-color: rgba(255, 255, 255, 0.15) !important;
-}
-body.custom-wallpaper-active .prose pre code {
-    background-color: transparent !important;
-}
+/* Readable code blocks */
+body.custom-wallpaper-active .prose pre { background-color: rgba(0, 0, 0, 0.3) !important; }
+body.custom-wallpaper-active.wallpaper-is-dark .prose pre { background-color: rgba(255, 255, 255, 0.15) !important; }
+body.custom-wallpaper-active .prose pre code { background-color: transparent !important; }
 
-/* Restore special colors (like delete buttons, pins) but keep the shadow */
+/* Restore special colors but keep their glow */
 body.custom-wallpaper-active .text-red-600,
 body.custom-wallpaper-active .text-red-500,
-body.custom-wallpaper-active .notification.error {
-    color: #ef4444 !important;
-    text-shadow: inherit;
-}
-body.custom-wallpaper-active .pinned-icon {
-    color: #fbbf24 !important;
-    text-shadow: inherit;
-}
+body.custom-wallpaper-active .notification.error { color: #ef4444 !important; text-shadow: inherit; }
+body.custom-wallpaper-active .pinned-icon { color: #fbbf24 !important; text-shadow: inherit; }
 body.custom-wallpaper-active .notification.success { color: #22c55e !important; text-shadow: inherit; }
 body.custom-wallpaper-active .notification.warning { color: #f97316 !important; text-shadow: inherit; }
 
-/* Ensure button text with its own background is clean */
+/* Clean button text */
 body.custom-wallpaper-active .btn-primary {
     color: var(--button-primary-text) !important;
     text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
 }
 
-/* Remove shadow from icons */
-body.custom-wallpaper-active svg {
-    text-shadow: none !important;
-}
+/* Remove shadow from SVG icons */
+body.custom-wallpaper-active svg { text-shadow: none !important; }
 
-/* Handle hover/active states on sidebar items */
+/* Hover/active states */
 body.custom-wallpaper-active .sidebar-item:hover,
 body.custom-wallpaper-active .sidebar-item.active {
     background-color: rgba(255, 255, 255, 0.25) !important;
 }
 
-/* Override the default empty chat message style */
+/* Empty chat message style */
 body.custom-wallpaper-active #message-list > div.text-center {
     background-color: rgba(255, 255, 255, 0.1) !important;
     backdrop-filter: blur(20px) !important;
@@ -894,6 +902,7 @@ body.custom-wallpaper-active #message-list > div.text-center {
     max-width: max-content;
     margin: 4rem auto 0;
 }
+
 /*
 ================================================================================
   END OF [USER REQUEST] BLOCK
