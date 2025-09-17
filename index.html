@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-14.8.7</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.8.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -2116,18 +2116,32 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     </div>
                     <!-- 關於 -->
                     <div id="about-section" class="settings-section">
-                        <h3 class="text-lg font-semibold mb-3" data-lang-key="helpCenter"></h3>
-                        <p class="text-sm text-[var(--text-secondary)] mb-4" data-lang-key="helpCenterDesc"></p>
-                        
-                        <h3 class="text-lg font-semibold mb-3" data-lang-key="termsOfUse"></h3>
-                        <p class="text-sm text-[var(--text-secondary)] mb-4" data-lang-key="termsOfUseDesc"></p>
-                        
-                        <h3 class="text-lg font-semibold mb-3" data-lang-key="privacyPolicy"></h3>
-                        <p class="text-sm text-[var(--text-secondary)] mb-4" data-lang-key="privacyPolicyDesc"></p>
-                        
-                        <h3 class="text-lg font-semibold mb-3" data-lang-key="version"></h3>
-                        <p class="text-sm text-[var(--text-secondary)]" data-lang-key="versionNumber"></p>
-                    </div>
+    <h3 class="text-lg font-semibold mb-3" data-lang-key="helpCenter"></h3>
+    <p class="text-sm text-[var(--text-secondary)] mb-4" data-lang-key="helpCenterDesc"></p>
+    
+    <h3 class="text-lg font-semibold mb-3" data-lang-key="termsOfUse"></h3>
+    <p class="text-sm text-[var(--text-secondary)] mb-4" data-lang-key="termsOfUseDesc"></p>
+    
+    <h3 class="text-lg font-semibold mb-3" data-lang-key="privacyPolicy"></h3>
+    <p class="text-sm text-[var(--text-secondary)] mb-4" data-lang-key="privacyPolicyDesc"></p>
+    
+    <h3 class="text-lg font-semibold mb-3" data-lang-key="version"></h3>
+    <!-- ▼▼▼ 【第一步 新增】更新資訊入口與通知開關 ▼▼▼ -->
+    <div class="space-y-4">
+        <button id="view-update-log-btn" class="w-full text-left p-2 rounded-md hover:bg-[var(--hover-bg)] font-medium" data-lang-key="viewUpdateLog">
+            查看版本更新資訊
+        </button>
+        <div class="flex items-center justify-between">
+            <label for="update-notification-toggle" class="flex-1 text-sm font-medium" data-lang-key="enableUpdateNotification">啟用更新通知彈窗</label>
+            <div class="relative inline-block w-12 h-6 mr-2 align-middle select-none transition duration-200 ease-in">
+                <input type="checkbox" name="update-notification-toggle" id="update-notification-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                <label for="update-notification-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+            </div>
+        </div>
+    </div>
+    <!-- ▲▲▲ 【第一步 結束】 ▲▲▲ -->
+    <p class="text-sm text-[var(--text-secondary)] mt-4" data-lang-key="versionNumber"></p>
+</div>
                 </div>
             </div>
             <div class="p-4 bg-[var(--sidebar-bg)] border-t border-[var(--border-color)] flex justify-end gap-3">
@@ -2433,10 +2447,45 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     <!-- ▼▼▼ 新增：手機版長按選單（由 JS 動態生成並添加到 body）▼▼▼ -->
     <div id="mobile-context-menu-wrapper"></div>
     <!-- ▲▲▲ 結束新增 ▲▲▲ -->
+    <!-- 完整更新日誌彈窗 -->
+    <div id="update-log-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[51]">
+        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-2xl flex flex-col" style="max-height: 90vh;">
+            <div class="p-6 border-b border-[var(--border-color)] flex justify-between items-center flex-shrink-0">
+                <h2 class="text-2xl font-bold" data-lang-key="versionUpdateInfo">版本更新資訊</h2>
+                <button id="close-update-log-modal-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
+            </div>
+            <div id="update-log-content" class="p-6 overflow-y-auto space-y-6 scroll-area flex-1">
+                <!-- 更新日誌將由 JS 動態插入此處 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 自動更新通知彈窗 -->
+    <div id="update-notification-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
+        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl p-6 w-full max-w-md">
+            <div class="flex items-start">
+                <div class="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center mr-4">
+                    <svg class="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h2 id="notification-title" class="text-xl font-bold mb-2"></h2>
+                    <div id="notification-content" class="text-sm text-[var(--text-secondary)] mb-4">
+                        <!-- 最新更新內容將由 JS 動態插入此處 -->
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-4">
+                <button id="close-update-notification-modal-btn" class="px-4 py-2 rounded-md btn-primary" data-lang-key="iGotIt">我瞭解了</button>
+            </div>
+        </div>
+    </div>
 
     <script src="./i18n.js"></script>
     <script src="./demo-conversations.js"></script>
     <script src="./astras-data.js"></script>
+    <script src="./update-logs.js"></script>
     <script src="./main.js"></script>
     <script>
         // ▼▼▼ 新增：登入頁面 Demo 區塊的互動邏輯 ▼▼▼
@@ -2705,6 +2754,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             searchViewCloseBtn: document.getElementById('search-view-close-btn'),
             searchViewConfirmBtn: document.getElementById('search-view-confirm-btn'),
             // ▲▲▲ 【需求 1 結束】 ▲▲▲
+            // ▼▼▼ 【第三步 新增】更新日誌相關元素 ▼▼▼
+    viewUpdateLogBtn: document.getElementById('view-update-log-btn'),
+    updateNotificationToggle: document.getElementById('update-notification-toggle'),
+    updateLogModal: document.getElementById('update-log-modal'),
+    closeUpdateLogModalBtn: document.getElementById('close-update-log-modal-btn'),
+    updateLogContent: document.getElementById('update-log-content'),
+    updateNotificationModal: document.getElementById('update-notification-modal'),
+    notificationTitle: document.getElementById('notification-title'),
+    notificationContent: document.getElementById('notification-content'),
+    closeUpdateNotificationModalBtn: document.getElementById('close-update-notification-modal-btn'),
+    // ▲▲▲ 【第三步 結束】 ▲▲▲
         };
         // 修正: 模型ID更新為最新的公開版本
         const MODELS = [
@@ -2791,6 +2851,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             // ▼▼▼ 新增：語言設定 ▼▼▼
             uiLanguage: 'zh-TW',
             aiDefaultLanguage: 'zh-TW',
+            enableUpdateNotification: true,
             // ▲▲▲ 結束新增 ▲▲▲
         };
         let itemToRename = { id: null, type: null };
@@ -4775,6 +4836,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderAiBubbleColorDropdown();
             renderUserBubbleColorDropdown();
             renderUiColorOptions();
+            ALL_ELEMENTS.updateNotificationToggle.checked = config.enableUpdateNotification;
             const navItems = ALL_ELEMENTS.settingsNav.querySelectorAll('.settings-nav-item');
             navItems.forEach(item => {
                 item.addEventListener('click', () => {
@@ -4805,6 +4867,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             // ▼▼▼ 新增：儲存語言設定 ▼▼▼
             config.uiLanguage = ALL_ELEMENTS.uiLanguageSelect.value;
             config.aiDefaultLanguage = ALL_ELEMENTS.aiLanguageSelect.value;
+            config.enableUpdateNotification = ALL_ELEMENTS.updateNotificationToggle.checked;
             // ▲▲▲ 結束新增 ▲▲▲
             
             // ▼▼▼ 新增：儲存 UI 顏色設定 ▼▼▼
@@ -7895,6 +7958,24 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
             // ▲▲▲ 結束新增 ▲▲▲
 
+            ALL_ELEMENTS.viewUpdateLogBtn.addEventListener('click', showUpdateLogModal);
+    ALL_ELEMENTS.closeUpdateLogModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.updateLogModal, false));
+    ALL_ELEMENTS.closeUpdateNotificationModalBtn.addEventListener('click', () => {
+        // 關閉時，將最新版本號存入 localStorage
+        if (typeof UPDATE_LOGS !== 'undefined' && UPDATE_LOGS.length > 0) {
+            localStorage.setItem('lastSeenUpdateVersion', UPDATE_LOGS[0].version);
+        }
+        toggleModal(ALL_ELEMENTS.updateNotificationModal, false);
+    });
+    // ▲▲▲ 【第九步 結束】 ▲▲▲
+
+
+    updateFileInputUI();
+    
+    startNewChat();
+
+    handleUpdateNotification();
+}
 
             updateFileInputUI();
             
@@ -7925,6 +8006,71 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         };
         // ▲▲▲ 結束新增 ▲▲▲
+        const showUpdateLogModal = () => {
+        const { updateLogContent, updateLogModal } = ALL_ELEMENTS;
+        updateLogContent.innerHTML = ''; // 清空舊內容
+
+        if (typeof UPDATE_LOGS !== 'undefined' && UPDATE_LOGS.length > 0) {
+            UPDATE_LOGS.forEach(log => {
+                const logEntry = document.createElement('div');
+                logEntry.className = 'border-b border-[var(--border-color)] pb-4 last:border-b-0';
+                
+                let changesHTML = '<ul class="list-disc pl-5 mt-2 space-y-1 text-sm text-[var(--text-secondary)]">';
+                log.changes.forEach(change => {
+                    changesHTML += `<li>${change}</li>`;
+                });
+                changesHTML += '</ul>';
+
+                logEntry.innerHTML = `
+                    <div class="flex items-baseline gap-3">
+                        <h3 class="text-lg font-bold">v${log.version}</h3>
+                        <p class="text-sm text-[var(--text-secondary)]">${log.date}</p>
+                    </div>
+                    ${changesHTML}
+                `;
+                updateLogContent.appendChild(logEntry);
+            });
+        } else {
+            updateLogContent.innerHTML = `<p>${i18n[config.uiLanguage].noUpdateLogs || '暫無更新紀錄。'}</p>`;
+        }
+        
+        toggleModal(updateLogModal, true);
+    };
+        const showUpdateNotificationPopup = () => {
+        if (typeof UPDATE_LOGS === 'undefined' || UPDATE_LOGS.length === 0) return;
+
+        const latestLog = UPDATE_LOGS[0];
+        const { notificationTitle, notificationContent, updateNotificationModal } = ALL_ELEMENTS;
+
+        notificationTitle.textContent = `${i18n[config.uiLanguage].updateNotificationTitle || 'Astra 已更新至'} v${latestLog.version}！`;
+        
+        let changesHTML = '<ul class="list-disc pl-5 space-y-1">';
+        latestLog.changes.forEach(change => {
+            changesHTML += `<li>${change}</li>`;
+        });
+        changesHTML += '</ul>';
+
+        notificationContent.innerHTML = changesHTML;
+
+        toggleModal(updateNotificationModal, true);
+    };
+
+    const handleUpdateNotification = () => {
+        // 1. 檢查開關是否開啟
+        if (!config.enableUpdateNotification) return;
+
+        // 2. 檢查是否有更新日誌資料
+        if (typeof UPDATE_LOGS === 'undefined' || UPDATE_LOGS.length === 0) return;
+
+        // 3. 取得最新版本號和上次看過的版本號
+        const latestVersion = UPDATE_LOGS[0].version;
+        const lastSeenVersion = localStorage.getItem('lastSeenUpdateVersion');
+
+        // 4. 如果最新版本比上次看過的版本新，則顯示通知
+        if (latestVersion !== lastSeenVersion) {
+            showUpdateNotificationPopup();
+        }
+    };
         
         ALL_ELEMENTS.authForm.addEventListener('submit', handleLogin);
         
