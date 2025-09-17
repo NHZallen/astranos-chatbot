@@ -1,6 +1,6 @@
 const updateLogs = [
     {
-        version: "14.8.1",
+        version: "14.8.9",
         date: "2025-09-18",
         content: [
             "<strong>新增：</strong>在「設定」頁面新增了垃圾筒功能，方便使用者檢視已刪除文件給予永久刪除與復原的能力。",
