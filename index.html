@@ -709,8 +709,8 @@ user-select: none;
 
 /*
 ================================================================================
-  [USER REQUEST] UNIFIED GEL-GLASS EFFECT (REVISED VERSION)
-  - Reverts specific modals to their original solid style.
+  [USER REQUEST] UNIFIED GEL-GLASS EFFECT (FINAL REVISION)
+  - Correctly reverts ALL specified modals (including Folder Settings) to solid.
   - Fixes model menu text shadow and font size issues.
 ================================================================================
 */
@@ -719,7 +719,6 @@ user-select: none;
 body.custom-wallpaper-active,
 body.custom-wallpaper-active #app-container > .bg-\[var\(--chat-bg\)\],
 body.custom-wallpaper-active .bg-\[var\(--input-bar-bg\)\],
-/* We no longer reset settings modal background here, as it's excluded below */
 body.custom-wallpaper-active .message-bubble::before,
 body.custom-wallpaper-active #message-input {
     background-color: transparent !important;
@@ -746,7 +745,7 @@ body.custom-wallpaper-active #mobile-context-menu {
     box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.3), 0 4px 20px rgba(0, 0, 0, 0.2) !important;
 }
 
-/* Revert the excluded modals back to their solid state */
+/* [FIX] Revert the excluded modals back to their solid state */
 body.custom-wallpaper-active #settings-modal > div,
 body.custom-wallpaper-active #search-modal > div,
 body.custom-wallpaper-active #folder-settings-modal > div,
@@ -754,12 +753,14 @@ body.custom-wallpaper-active #astras-create-modal > div {
     background-color: var(--modal-bg) !important;
     backdrop-filter: none !important;
     box-shadow: 0 10px 15px -3px var(--shadow-color), 0 4px 6px -2px var(--shadow-color) !important;
+    border: 1px solid var(--border-color) !important;
 }
+/* Ensure dark mode solid color for reverted modals */
 .dark body.custom-wallpaper-active #settings-modal > div,
 .dark body.custom-wallpaper-active #search-modal > div,
 .dark body.custom-wallpaper-active #folder-settings-modal > div,
 .dark body.custom-wallpaper-active #astras-create-modal > div {
-    background-color: var(--modal-bg) !important; /* Ensures dark mode solid color */
+    background-color: var(--modal-bg) !important;
 }
 
 
@@ -800,7 +801,7 @@ body.custom-wallpaper-active .input-wrapper {
 }
 
 /* --- 3. Adaptive Text Color & Readability (WITH EXCLUSIONS) --- */
-/* Default State (light wallpaper): Black text with white glow */
+/* Apply adaptive text to glass elements */
 body.custom-wallpaper-active .sidebar,
 body.custom-wallpaper-active .modal:not(#settings-modal):not(#search-modal):not(#folder-settings-modal):not(#astras-create-modal) > div,
 body.custom-wallpaper-active .popover,
@@ -816,8 +817,7 @@ body.custom-wallpaper-active #input-bar-container * {
     color: #000000 !important;
     text-shadow: 0 0 5px rgba(255, 255, 255, 0.7), 0 0 2px rgba(255, 255, 255, 0.8);
 }
-
-/* Dark Wallpaper State: White text with black glow */
+/* Apply adaptive text for dark wallpapers */
 body.custom-wallpaper-active.wallpaper-is-dark .sidebar,
 body.custom-wallpaper-active.wallpaper-is-dark .modal:not(#settings-modal):not(#search-modal):not(#folder-settings-modal):not(#astras-create-modal) > div,
 body.custom-wallpaper-active.wallpaper-is-dark .popover,
@@ -833,6 +833,22 @@ body.custom-wallpaper-active.wallpaper-is-dark #input-bar-container * {
     color: #ffffff !important;
     text-shadow: 0 0 5px rgba(0, 0, 0, 0.7), 0 0 2px rgba(0, 0, 0, 0.8);
 }
+
+/* Restore original text color for the reverted solid modals */
+body.custom-wallpaper-active #settings-modal *,
+body.custom-wallpaper-active #search-modal *,
+body.custom-wallpaper-active #folder-settings-modal *,
+body.custom-wallpaper-active #astras-create-modal * {
+    color: var(--text-primary) !important;
+    text-shadow: none !important;
+}
+.dark body.custom-wallpaper-active #settings-modal *,
+.dark body.custom-wallpaper-active #search-modal *,
+.dark body.custom-wallpaper-active #folder-settings-modal *,
+.dark body.custom-wallpaper-active #astras-create-modal * {
+    color: var(--text-primary) !important;
+}
+
 
 /* --- 4. Fine-tuning and Fixes --- */
 
