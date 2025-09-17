@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-14.9.0</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.8.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -1585,37 +1585,6 @@ body.custom-wallpaper-active #latest-update-modal .p-4.bg-\[var\(--sidebar-bg\)\
             }
         }
         /* ▲▲▲ 結束新增 ▲▲▲ */
-
-        /* ▼▼▼ 【需求實現】滾動果凍動畫 ▼▼▼ */
-        /* -- 聊天泡泡動畫 -- */
-        #message-list.jelly-scrolling .message-bubble {
-            animation: jelly-bubble-stretch 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        #message-list.jelly-scrolling .message-bubble .message-content {
-            animation: jelly-text-stretch 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        @keyframes jelly-bubble-stretch {
-            0%, 100% { transform: scale(1, 1); }
-            50% { transform: scale(0.98, 1.12); } /* 垂直拉伸 12%, 水平壓縮 2% */
-        }
-        @keyframes jelly-text-stretch {
-            0%, 100% { transform: scale(1, 1); }
-            /* 在 150ms 左右達到最大拉伸 (43% of 350ms) */
-            43% { transform: scale(0.99, 1.05); } /* 垂直拉伸 5%, 水平壓縮 1% */
-            /* 保持拉伸狀態約 50ms ( (57-43)/100 * 350ms ≈ 49ms ) */
-            57% { transform: scale(0.99, 1.05); }
-        }
-
-        /* -- 模型選單動畫 -- */
-        #model-options-popover.jelly-scrolling {
-            /* JS 會根據滾動方向設定 transform-origin */
-            animation: jelly-menu-stretch 280ms cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        @keyframes jelly-menu-stretch {
-            0%, 100% { transform: scaleY(1); }
-            50% { transform: scaleY(1.08); } /* 垂直拉伸 8% */
-        }
-        /* ▲▲▲ 【需求實現】結束 ▲▲▲ */
     </style>
 
 
@@ -4132,7 +4101,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     <span class="font-semibold text-sm md:text-base text-[var(--text-primary)]">${currentModel.name}</span>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </button>
-                <div id="model-options-popover" class="popover absolute right-0 mt-6 w-72 md:w-80 rounded-lg border border-[var(--border-color)] z-50 scroll-area">
+                <div id="model-options-popover" class="popover absolute right-0 mt-6 w-72 md:w-80 rounded-lg border border-[var(--border-color)] z-50">
                     ${optionsHTML}
                 </div>
             `;
@@ -5791,7 +5760,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         e.preventDefault();
                         showConversationInViewModal(conv.id);
                     }, 500);
-                }, { passive: false });
+                }, { passive: true });
                 item.addEventListener('touchend', () => clearTimeout(pressTimer));
                 item.addEventListener('touchmove', () => clearTimeout(pressTimer), { passive: true });
 
@@ -7814,57 +7783,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         // ▲▲▲ 【需求實現】結束 ▲▲▲
 
-        // ▼▼▼ 【需求實現】新增：滾動果凍動畫邏輯 ▼▼▼
-        const setupJellyScrollAnimations = () => {
-            let lastScrollTop = {
-                chat: 0,
-                modelMenu: 0
-            };
-            let animationTimeout = {
-                chat: null,
-                modelMenu: null
-            };
-
-            const triggerAnimation = (element, className) => {
-                element.classList.add(className);
-                clearTimeout(animationTimeout[element.id]);
-                animationTimeout[element.id] = setTimeout(() => {
-                    element.classList.remove(className);
-                }, 350); // 動畫時間 + 一點緩衝
-            };
-
-            // 1. 聊天視窗滾動
-            ALL_ELEMENTS.chatContainer.addEventListener('scroll', throttle(() => {
-                triggerAnimation(ALL_ELEMENTS.messageList, 'jelly-scrolling');
-            }, 100), { passive: true });
-
-            // 2. 模型選單滾動 (需要動態綁定)
-            const setupModelMenuScroll = () => {
-                const modelMenu = document.getElementById('model-options-popover');
-                if (modelMenu) {
-                    modelMenu.addEventListener('scroll', throttle(() => {
-                        const scrollTop = modelMenu.scrollTop;
-                        if (scrollTop > lastScrollTop.modelMenu) {
-                            modelMenu.style.transformOrigin = 'top';
-                        } else {
-                            modelMenu.style.transformOrigin = 'bottom';
-                        }
-                        lastScrollTop.modelMenu = scrollTop <= 0 ? 0 : scrollTop;
-                        triggerAnimation(modelMenu, 'jelly-scrolling');
-                    }, 100), { passive: true });
-                }
-            };
-            
-            // 因為模型選單是動態生成的，我們在點擊按鈕時才綁定事件
-            document.addEventListener('click', (e) => {
-                if(e.target.closest('#current-model-btn')) {
-                    // 等待 popover 渲染出來
-                    setTimeout(setupModelMenuScroll, 10);
-                }
-            });
-        };
-        // ▲▲▲ 【需求實現】結束 ▲▲▲
-
         // ▼▼▼ 新增：版本更新相關函式 ▼▼▼
         const showUpdateHistory = () => {
             const container = ALL_ELEMENTS.updateInfoContent;
@@ -8098,7 +8016,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             updateInputState();
             setupVoiceInput();
             setupScrollToBottomButton(); // 【需求實現】初始化滾動按鈕
-            setupJellyScrollAnimations(); // 【需求實現】初始化果凍動畫
             checkAndShowLatestUpdate(); // ▼▼▼ 新增：初始化時檢查更新 ▼▼▼
             ALL_ELEMENTS.menuToggleBtn.addEventListener('click', () => toggleSidebar());
             ALL_ELEMENTS.sidebarOverlay.addEventListener('click', () => toggleSidebar(false));
@@ -8388,7 +8305,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.trashBatchDeleteBtn.addEventListener('click', handleBatchDeleteFromTrash);
             ALL_ELEMENTS.emptyTrashBtn.addEventListener('click', handleEmptyTrash);
             // ▲▲▲ 結束新增 ▲▲▲
-
 
             updateFileInputUI();
             
