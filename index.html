@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-14.8.8</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.8.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -1559,13 +1559,22 @@ body.custom-wallpaper-active #latest-update-modal > div {
 #search-view-content,
 #store-container,
 #search-modal,
-#settings-modal
+#settings-modal,
+#trash-section, /* 新增：垃圾桶區塊 */
+#trash-view-modal /* 新增：垃圾桶檢視彈窗 */
 {
     -webkit-user-select: none; /* 適用於 Safari/Chrome 等 WebKit 核心的瀏覽器 */
     -moz-user-select: none;    /* 適用於 Firefox */
     -ms-user-select: none;     /* 適用於舊版 IE */
     user-select: none;         /* CSS 標準語法，禁止使用者選取元素內容 */
 }
+        /* ▼▼▼ 新增：垃圾桶手機版檢視按鈕樣式 ▼▼▼ */
+        @media (max-width: 768px) {
+            .trash-item-view-btn {
+                display: none;
+            }
+        }
+        /* ▲▲▲ 結束新增 ▲▲▲ */
     </style>
 
 
@@ -1934,6 +1943,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         <li class="settings-nav-item p-3 rounded-md" data-section="model-management" data-lang-key="modelManagement">模型管理</li>
                         <li class="settings-nav-item p-3 rounded-md" data-section="data-management" data-lang-key="dataManagement">資料管理</li>
                         <li class="settings-nav-item p-3 rounded-md" data-section="accessibility" data-lang-key="accessibility">輔助功能</li>
+                        <!-- ▼▼▼ 新增：垃圾桶導航項目 ▼▼▼ -->
+                        <li class="settings-nav-item p-3 rounded-md" data-section="trash" data-lang-key="trash">垃圾桶</li>
+                        <!-- ▲▲▲ 結束新增 ▲▲▲ -->
                         <li class="settings-nav-item p-3 rounded-md" data-section="about" data-lang-key="about">關於</li>
                     </ul>
                 </nav>
@@ -2121,6 +2133,37 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             </div>
                         </div>
                     </div>
+                    <!-- ▼▼▼ 新增：垃圾桶區塊 ▼▼▼ -->
+                    <div id="trash-section" class="settings-section">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold" data-lang-key="trash">垃圾桶</h3>
+                            <div class="flex gap-2">
+                                <button id="trash-batch-select-btn" class="text-sm px-3 py-1.5 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] hover:bg-[var(--hover-bg)]" data-lang-key="batchSelect">
+                                    批次選取
+                                </button>
+                                <button id="empty-trash-btn" class="text-sm px-3 py-1.5 rounded-md bg-red-100 text-red-800 hover:bg-red-200" data-lang-key="emptyTrash">
+                                    清空垃圾桶
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Batch Action Bar for Trash -->
+                        <div id="trash-batch-action-bar" class="hidden mb-4 p-2 rounded-md bg-[var(--sidebar-bg)] border border-[var(--border-color)]">
+                            <div class="flex justify-between items-center text-xs mb-1 px-1">
+                                <span id="trash-selection-count" class="font-medium text-[var(--text-secondary)]"></span>
+                                <button id="trash-cancel-selection-btn" class="text-blue-600 hover:underline font-semibold" data-lang-key="done">完成</button>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button id="trash-batch-restore-btn" class="p-2 text-sm rounded-md bg-green-500 text-white disabled:bg-green-300" disabled data-lang-key="restore">復原</button>
+                                <button id="trash-batch-delete-btn" class="p-2 text-sm rounded-md bg-red-500 text-white disabled:bg-red-300" disabled data-lang-key="permanentlyDelete">永久刪除</button>
+                            </div>
+                        </div>
+                    
+                        <div id="trash-list-container" class="space-y-2">
+                            <!-- Deleted items will be rendered here -->
+                        </div>
+                    </div>
+                    <!-- ▲▲▲ 結束新增 ▲▲▲ -->
                     <!-- 關於 -->
                     <div id="about-section" class="settings-section">
                         <h3 class="text-lg font-semibold mb-3" data-lang-key="helpCenter">協助中心</h3>
@@ -2307,6 +2350,22 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         </div>
     </div>
     <!-- ▲▲▲ 【需求 1 結束】 ▲▲▲ -->
+    <!-- ▼▼▼ 新增：垃圾桶檢視 Modal ▼▼▼ -->
+    <div id="trash-view-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[51]">
+        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-3xl flex flex-col" style="max-height: 90vh;">
+            <div class="p-6 border-b border-[var(--border-color)] flex justify-between items-center flex-shrink-0">
+                <h2 id="trash-view-title" class="text-2xl font-bold truncate" data-lang-key="viewTrashItem">檢視已刪除項目</h2>
+                <button id="close-trash-view-modal-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
+            </div>
+            <div id="trash-view-content" class="p-6 overflow-y-auto space-y-4 scroll-area flex-1">
+                <!-- Conversation messages will be dynamically inserted here -->
+            </div>
+            <div class="p-4 bg-[var(--sidebar-bg)] border-t border-[var(--border-color)] flex justify-end gap-3 flex-shrink-0">
+                <button id="trash-view-close-btn" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]" data-lang-key="close">關閉</button>
+            </div>
+        </div>
+    </div>
+    <!-- ▲▲▲ 結束新增 ▲▲▲ -->
     <div id="notification-container"></div>
     <div id="custom-dialog-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
         <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl p-6 w-full max-w-sm">
@@ -2771,6 +2830,22 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             closeLatestUpdateModalBtn: document.getElementById('close-latest-update-modal-btn'),
             latestUpdateContent: document.getElementById('latest-update-content'),
             // ▲▲▲ 結束新增 ▲▲▲
+            // ▼▼▼ 新增：垃圾桶相關元素 ▼▼▼
+            trashSection: document.getElementById('trash-section'),
+            trashBatchSelectBtn: document.getElementById('trash-batch-select-btn'),
+            emptyTrashBtn: document.getElementById('empty-trash-btn'),
+            trashBatchActionBar: document.getElementById('trash-batch-action-bar'),
+            trashSelectionCount: document.getElementById('trash-selection-count'),
+            trashCancelSelectionBtn: document.getElementById('trash-cancel-selection-btn'),
+            trashBatchRestoreBtn: document.getElementById('trash-batch-restore-btn'),
+            trashBatchDeleteBtn: document.getElementById('trash-batch-delete-btn'),
+            trashListContainer: document.getElementById('trash-list-container'),
+            trashViewModal: document.getElementById('trash-view-modal'),
+            trashViewTitle: document.getElementById('trash-view-title'),
+            trashViewContent: document.getElementById('trash-view-content'),
+            closeTrashViewModalBtn: document.getElementById('close-trash-view-modal-btn'),
+            trashViewCloseBtn: document.getElementById('trash-view-close-btn'),
+            // ▲▲▲ 結束新增 ▲▲▲
         };
         // 修正: 模型ID更新為最新的公開版本
         const MODELS = [
@@ -2887,6 +2962,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         // ▼▼▼ 【需求實現】滾動按鈕狀態變數 ▼▼▼
         let isAutoScrolling = false;
         // ▲▲▲ 【需求實現】結束 ▲▲▲
+        // ▼▼▼ 新增：垃圾桶批次選取狀態 ▼▼▼
+        let isTrashSelectionMode = false;
+        let selectedTrashIds = new Set();
+        // ▲▲▲ 結束新增 ▲▲▲
         
         // IndexedDB 配置
         const DB_NAME = 'ChatAppDB';
@@ -3149,7 +3228,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     const data = JSON.parse(saved);
                     folders = (data.folders || []).map(f => ({...getDefaultFolder(), ...f}));
                     conversations = (data.conversations || []).map(c => ({
-                        archived: false, summary: '', folderId: null, isWebSearchEnabled: false, astrasId: null, pinned: false, ...c,
+                        archived: false, summary: '', folderId: null, isWebSearchEnabled: false, astrasId: null, pinned: false, deletedAt: null, ...c,
                         genConfig: c.genConfig || getDefaultGenConfig(),
                         // ▼▼▼ 【排序修正】新增 lastUpdatedAt 屬性並進行資料遷移 ▼▼▼
                         lastUpdatedAt: c.lastUpdatedAt || (c.messages && c.messages.length > 0 ? c.messages[c.messages.length - 1].createdAt : c.createdAt),
@@ -3200,7 +3279,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 isWebSearchEnabled: false,
                 pinned: false,
                 isTemporary: true, // <--- 新增此行
-                isNaming: false
+                isNaming: false,
+                deletedAt: null // 新增：垃圾桶屬性
             };
         };
         const startNewChat = () => {
@@ -3245,31 +3325,29 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         const deleteChat = async (id, event) => {
             event?.stopPropagation();
-            if (!(await showCustomConfirm('您確定要永久刪除此對話嗎？此操作無法復原。'))) return;
-
-            const convIndex = conversations.findIndex(c => c.id === id);
-            if (convIndex > -1) {
-                const conv = conversations[convIndex];
+            const conv = conversations.find(c => c.id === id);
+            if (conv) {
+                conv.deletedAt = new Date().toISOString();
+                // 從資料夾中移除
                 if (conv.folderId) {
                     const folder = folders.find(f => f.id === conv.folderId);
                     if (folder) {
                         folder.conversationIds = folder.conversationIds.filter(cid => cid !== id);
                     }
+                    conv.folderId = null;
                 }
-                conversations.splice(convIndex, 1);
+                await saveAppData();
+        
+                if (activeConversationId === id) {
+                    const nextConv = conversations.find(c => !c.archived && !c.deletedAt);
+                    activeConversationId = nextConv ? nextConv.id : null;
+                    if (!activeConversationId) startNewChat();
+                    else loadChat(activeConversationId);
+                } else {
+                    renderAll();
+                }
+                showNotification(i18n[config.uiLanguage].chatMovedToTrash || '對話已移至垃圾桶。', 'success');
             }
-            
-            await saveAppData();
-
-            // ▼▼▼ 【刪除優化】修改此處邏輯 ▼▼▼
-            if (activeConversationId === id) {
-                // 根據使用者需求，立即跳轉到新對話頁面
-                startNewChat();
-            } else {
-                // 如果刪除的不是當前對話，只需重新渲染介面
-                renderAll();
-            }
-            // ▲▲▲ 結束修改 ▲▲▲
         };
         const archiveChat = async (id, event) => {
             event?.stopPropagation();
@@ -3277,7 +3355,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if(conv) conv.archived = true;
             await saveAppData();
             if (activeConversationId === id) {
-                const nextConv = conversations.find(c => !c.archived);
+                const nextConv = conversations.find(c => !c.archived && !c.deletedAt);
                 activeConversationId = nextConv ? nextConv.id : null;
                 if (!activeConversationId) startNewChat();
                 else loadChat(activeConversationId);
@@ -3416,7 +3494,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         
             // 正常排序所有非資料夾內的對話
             const sortedConversations = conversations
-                .filter(c => !c.archived && !c.folderId)
+                .filter(c => !c.archived && !c.folderId && !c.deletedAt)
                 .sort((a, b) => {
                     if (a.pinned && !b.pinned) return -1;
                     if (!a.pinned && b.pinned) return 1;
@@ -3526,7 +3604,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             folders.forEach(folder => {
                 const folderConvs = folder.conversationIds
                     .map(id => conversations.find(c => c.id === id))
-                    .filter(c => c && !c.archived)
+                    .filter(c => c && !c.archived && !c.deletedAt)
                     // ▼▼▼ 【排序修正】使用 lastUpdatedAt 進行排序 ▼▼▼
                     .sort((a,b) => {
                         if (a.pinned && !b.pinned) return -1;
@@ -3739,7 +3817,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         <div class="flex gap-2 flex-shrink-0">
                             <button data-id="${conv.id}" class="view-archived-btn text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded hover:bg-blue-200">${i18n[config.uiLanguage].view || '檢視'}</button>
                             <button data-id="${conv.id}" class="unarchive-btn text-xs bg-green-100 text-green-800 px-2 py-1 rounded hover:bg-green-200">${i18n[config.uiLanguage].restore || '還原'}</button>
-                            <button data-id="${conv.id}" class="delete-archived-btn text-xs bg-red-100 text-red-800 px-2 py-1 roundedhover:bg-red-200">${i18n[config.uiLanguage].delete || '刪除'}</button>
+                            <button data-id="${conv.id}" class="delete-btn text-xs bg-red-100 text-red-800 px-2 py-1 rounded hover:bg-red-200">${i18n[config.uiLanguage].delete || '刪除'}</button>
                         </div>
                     </div>
                     ${conv.summary ? `<p class="text-xs text-[var(--text-secondary)] mt-2">${conv.summary}</p>` : ''}
@@ -3748,7 +3826,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
             ALL_ELEMENTS.archivedChatsContainer.querySelectorAll('.view-archived-btn').forEach(btn => btn.addEventListener('click', (e) => showArchivedChatPreview(e.target.dataset.id, e)));
             ALL_ELEMENTS.archivedChatsContainer.querySelectorAll('.unarchive-btn').forEach(btn => btn.addEventListener('click', (e) => unarchiveChat(e.target.dataset.id, e)));
-            ALL_ELEMENTS.archivedChatsContainer.querySelectorAll('.delete-archived-btn').forEach(btn => btn.addEventListener('click', (e) => deleteChat(e.target.dataset.id, e)));
+            ALL_ELEMENTS.archivedChatsContainer.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', (e) => deleteChat(e.target.dataset.id, e)));
         };
         const renderChat = () => {
             const conv = getActiveConversation();
@@ -4107,7 +4185,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     mediaPartsContent.forEach(media => {
                         const src = `data:${media.mimeType};base64,${media.data}`;
                         if (media.mimeType.startsWith('image/')) {
-                            mediaHTML += `<imgsrc="${src}" class="max-w-xs max-h-48 rounded-lg object-cover border border-[var(--border-color)]">`;
+                            mediaHTML += `<img src="${src}" class="max-w-xs max-h-48 rounded-lg object-cover border border-[var(--border-color)]">`;
                         } else {
                             mediaHTML += `<div class="p-2 bg-[var(--hover-bg)] rounded-lg text-sm flex items-center gap-2 border border-[var(--border-color)]">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
@@ -4848,6 +4926,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderAiBubbleColorDropdown();
             renderUserBubbleColorDropdown();
             renderUiColorOptions();
+            // ▼▼▼ 新增：渲染垃圾桶 ▼▼▼
+            renderTrash();
+            // ▲▲▲ 結束新增 ▲▲▲
             const navItems = ALL_ELEMENTS.settingsNav.querySelectorAll('.settings-nav-item');
             navItems.forEach(item => {
                 item.addEventListener('click', () => {
@@ -5442,21 +5523,23 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const handleBatchDelete = async () => {
             const count = selectedConversationIds.size;
             if (count === 0) return;
-            if (!(await showCustomConfirm(`${i18n[config.uiLanguage].confirmBatchDelete || '您確定要永久刪除這'} ${count} ${i18n[config.uiLanguage].conversations || '個對話嗎？'}`))) return;
-            for (const id of selectedConversationIds) {
-                const convIndex = conversations.findIndex(c => c.id === id);
-                if (convIndex > -1) {
-                    conversations.splice(convIndex, 1);
+            if (!(await showCustomConfirm(`${i18n[config.uiLanguage].confirmBatchMoveToTrash || '您確定要將這'} ${count} ${i18n[config.uiLanguage].conversations || '個對話'} ${i18n[config.uiLanguage].moveToTrashConfirmText || '移至垃圾桶嗎？'}`))) return;
+            
+            selectedConversationIds.forEach(id => {
+                const conv = conversations.find(c => c.id === id);
+                if (conv) {
+                    conv.deletedAt = new Date().toISOString();
                 }
-            }
+            });
+        
             if (selectedConversationIds.has(activeConversationId)) {
-                const nextConv = conversations.find(c => !c.archived);
+                const nextConv = conversations.find(c => !c.archived && !c.deletedAt);
                 activeConversationId = nextConv ? nextConv.id : null;
                 if (!activeConversationId) startNewChat();
             }
             await saveAppData();
             toggleSelectionMode();
-            showNotification(`${i18n[config.uiLanguage].batchDeleteSuccess || '已成功刪除'} ${count} ${i18n[config.uiLanguage].conversations || '個對話。'}`, 'success');
+            showNotification(`${i18n[config.uiLanguage].batchMoveToTrashSuccess || '已成功將'} ${count} ${i18n[config.uiLanguage].conversations || '個對話'} ${i18n[config.uiLanguage].movedToTrashText || '移至垃圾桶。'}`, 'success');
         };
         const handleBatchArchive = async () => {
             const count = selectedConversationIds.size;
@@ -5468,7 +5551,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             });
             if (selectedConversationIds.has(activeConversationId)) {
-                const nextConv = conversations.find(c => !c.archived);
+                const nextConv = conversations.find(c => !c.archived && !c.deletedAt);
                 activeConversationId = nextConv ? nextConv.id : null;
                 if (!activeConversationId) startNewChat();
             }
@@ -6060,7 +6143,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     applyLanguage(config.uiLanguage); // 匯入後應用語言
                     setupSettingsModal(); // 重新整理設定頁面以顯示新值
                     
-                    const firstConv = conversations.find(c => !c.archived);
+                    const firstConv = conversations.find(c => !c.archived && !c.deletedAt);
                     if (firstConv) {
                         loadChat(firstConv.id);
                     } else {
@@ -6581,7 +6664,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         
         const renderDashboardStats = () => {
-            ALL_ELEMENTS.totalConvStat.textContent = conversations.length;
+            ALL_ELEMENTS.totalConvStat.textContent = conversations.filter(c => !c.deletedAt).length;
             ALL_ELEMENTS.totalFolderStat.textContent = folders.length;
             
             const modelCounts = conversations.reduce((acc, conv) => {
@@ -7733,6 +7816,182 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         };
         // ▲▲▲ 結束新增 ▲▲▲
+        
+        // ▼▼▼ 新增：垃圾桶功能相關函式 ▼▼▼
+        const renderTrash = () => {
+            const container = ALL_ELEMENTS.trashListContainer;
+            const deletedConvs = conversations.filter(c => c.deletedAt).sort((a,b) => new Date(b.deletedAt) - new Date(a.deletedAt));
+        
+            container.innerHTML = '';
+        
+            if (deletedConvs.length === 0) {
+                container.innerHTML = `<p class="text-center text-[var(--text-secondary)] py-4">${i18n[config.uiLanguage].trashIsEmpty || '垃圾桶是空的。'}</p>`;
+                ALL_ELEMENTS.emptyTrashBtn.disabled = true;
+                ALL_ELEMENTS.trashBatchSelectBtn.disabled = true;
+                return;
+            }
+        
+            ALL_ELEMENTS.emptyTrashBtn.disabled = false;
+            ALL_ELEMENTS.trashBatchSelectBtn.disabled = false;
+        
+            deletedConvs.forEach(conv => {
+                const item = document.createElement('div');
+                item.className = 'trash-item flex items-center p-2 rounded-lg bg-[var(--hover-bg)] border border-[var(--border-color)]';
+                item.dataset.id = conv.id;
+        
+                const checkboxHTML = isTrashSelectionMode
+                    ? `<input type="checkbox" class="trash-select-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3 flex-shrink-0" data-id="${conv.id}" ${selectedTrashIds.has(conv.id) ? 'checked' : ''}>`
+                    : '';
+        
+                item.innerHTML = `
+                    ${checkboxHTML}
+                    <div class="flex-1 min-w-0">
+                        <p class="font-medium truncate">${conv.title}</p>
+                        <p class="text-xs text-[var(--text-secondary)]">${i18n[config.uiLanguage].deletedOn || '刪除於'}: ${formatFullTimestamp(conv.deletedAt)}</p>
+                    </div>
+                    <div class="flex gap-2 flex-shrink-0 ml-2">
+                        <button data-id="${conv.id}" class="trash-item-view-btn text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded hover:bg-blue-200">${i18n[config.uiLanguage].view || '檢視'}</button>
+                        <button data-id="${conv.id}" class="trash-item-restore-btn text-xs bg-green-100 text-green-800 px-2 py-1 rounded hover:bg-green-200">${i18n[config.uiLanguage].restore || '還原'}</button>
+                        <button data-id="${conv.id}" class="trash-item-delete-btn text-xs bg-red-100 text-red-800 px-2 py-1 rounded hover:bg-red-200">${i18n[config.uiLanguage].delete || '刪除'}</button>
+                    </div>
+                `;
+                container.appendChild(item);
+
+                // 為整個項目（非按鈕部分）添加長按事件
+                let pressTimer = null;
+                item.addEventListener('touchstart', (e) => {
+                    if (e.target.closest('button')) return; // 如果點擊的是按鈕，則不觸發
+                    pressTimer = setTimeout(() => {
+                        e.preventDefault();
+                        showTrashItemInViewModal(conv.id);
+                    }, 500);
+                }, { passive: false });
+                item.addEventListener('touchend', () => clearTimeout(pressTimer));
+                item.addEventListener('touchmove', () => clearTimeout(pressTimer));
+
+                if (isTrashSelectionMode) {
+                    item.addEventListener('click', (e) => {
+                        if (e.target.closest('button')) return; // 如果點擊的是按鈕，則不觸發
+                        const checkbox = item.querySelector('.trash-select-checkbox');
+                        if (checkbox) {
+                            checkbox.checked = !checkbox.checked;
+                            checkbox.dispatchEvent(new Event('change'));
+                        }
+                    });
+                }
+            });
+        
+            // 綁定事件
+            container.querySelectorAll('.trash-item-view-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); showTrashItemInViewModal(e.currentTarget.dataset.id); }));
+            container.querySelectorAll('.trash-item-restore-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); handleRestoreTrashItem(e.currentTarget.dataset.id); }));
+            container.querySelectorAll('.trash-item-delete-btn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); handleDeleteTrashItemPermanently(e.currentTarget.dataset.id); }));
+            container.querySelectorAll('.trash-select-checkbox').forEach(checkbox => checkbox.addEventListener('change', (e) => {
+                const id = e.target.dataset.id;
+                if (e.target.checked) {
+                    selectedTrashIds.add(id);
+                } else {
+                    selectedTrashIds.delete(id);
+                }
+                renderTrashBatchActionBar();
+            }));
+        };
+        
+        const handleRestoreTrashItem = async (convId) => {
+            const conv = conversations.find(c => c.id === convId);
+            if (conv) {
+                conv.deletedAt = null;
+                await saveAppData();
+                renderTrash();
+                showNotification(i18n[config.uiLanguage].itemRestored || '項目已還原。', 'success');
+            }
+        };
+        
+        const handleDeleteTrashItemPermanently = async (convId) => {
+            if (!(await showCustomConfirm(i18n[config.uiLanguage].confirmPermanentDelete || '此操作將永久刪除此對話，無法復原。您確定嗎？', i18n[config.uiLanguage].permanentDeleteTitle || '永久刪除確認'))) return;
+            
+            conversations = conversations.filter(c => c.id !== convId);
+            await saveAppData();
+            renderTrash();
+            showNotification(i18n[config.uiLanguage].itemPermanentlyDeleted || '項目已永久刪除。', 'success');
+        };
+
+        const showTrashItemInViewModal = (convId) => {
+            const conv = conversations.find(c => c.id === convId);
+            if (!conv) return;
+
+            ALL_ELEMENTS.trashViewTitle.textContent = conv.title;
+            const contentContainer = ALL_ELEMENTS.trashViewContent;
+            contentContainer.innerHTML = '';
+
+            if (conv.messages.length === 0) {
+                contentContainer.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].noMessages || '此對話沒有訊息。'}</p>`;
+            } else {
+                 conv.messages.forEach(msg => {
+                    const isUser = msg.role === 'user';
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = `flex items-start gap-2 md:gap-4 ${isUser ? 'justify-end user-message' : 'model-message'}`;
+                    const icon = isUser ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser.username.charAt(0).toUpperCase()}</div>` : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
+                    let contentHTML = msg.parts.map(p => p.text ? (isUser ? p.text.replace(/\n/g, '<br>') : renderMarkdown(p.text)) : '').join('');
+                    const messageBubble = `<div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble"><div class="prose prose-sm max-w-none message-content ${isUser ? 'text-white' : 'text-[var(--text-primary)]'}">${contentHTML}</div></div>`;
+                    messageDiv.innerHTML = isUser ? `${messageBubble}${icon}` : `${icon}${messageBubble}`;
+                    contentContainer.appendChild(messageDiv);
+                });
+            }
+            toggleModal(ALL_ELEMENTS.trashViewModal, true);
+        };
+
+        const toggleTrashSelectionMode = () => {
+            isTrashSelectionMode = !isTrashSelectionMode;
+            selectedTrashIds.clear();
+            renderTrash();
+            renderTrashBatchActionBar();
+        };
+
+        const renderTrashBatchActionBar = () => {
+            const { trashBatchActionBar, trashSelectionCount, trashBatchRestoreBtn, trashBatchDeleteBtn } = ALL_ELEMENTS;
+            if (isTrashSelectionMode) {
+                trashBatchActionBar.classList.remove('hidden');
+                const count = selectedTrashIds.size;
+                trashSelectionCount.textContent = `${i18n[config.uiLanguage].selected || '已選取'} ${count} ${i18n[config.uiLanguage].items || '個項目'}`;
+                const hasSelection = count > 0;
+                trashBatchRestoreBtn.disabled = !hasSelection;
+                trashBatchDeleteBtn.disabled = !hasSelection;
+            } else {
+                trashBatchActionBar.classList.add('hidden');
+            }
+        };
+
+        const handleBatchRestoreFromTrash = async () => {
+            const count = selectedTrashIds.size;
+            if (count === 0) return;
+            selectedTrashIds.forEach(id => {
+                const conv = conversations.find(c => c.id === id);
+                if (conv) conv.deletedAt = null;
+            });
+            await saveAppData();
+            toggleTrashSelectionMode();
+            showNotification(`${i18n[config.uiLanguage].batchRestoredSuccess || '已成功還原'} ${count} ${i18n[config.uiLanguage].items || '個項目'}。`, 'success');
+        };
+
+        const handleBatchDeleteFromTrash = async () => {
+            const count = selectedTrashIds.size;
+            if (count === 0) return;
+            if (!(await showCustomConfirm(`${i18n[config.uiLanguage].confirmBatchPermanentDelete || '您確定要永久刪除這'} ${count} ${i18n[config.uiLanguage].items || '個項目嗎？'}`, i18n[config.uiLanguage].permanentDeleteTitle || '永久刪除確認'))) return;
+            conversations = conversations.filter(c => !selectedTrashIds.has(c.id));
+            await saveAppData();
+            toggleTrashSelectionMode();
+            showNotification(`${i18n[config.uiLanguage].batchPermanentlyDeletedSuccess || '已成功永久刪除'} ${count} ${i18n[config.uiLanguage].items || '個項目'}。`, 'success');
+        };
+
+        const handleEmptyTrash = async () => {
+            if (!(await showCustomConfirm(i18n[config.uiLanguage].confirmEmptyTrash || '您確定要清空垃圾桶嗎？此操作無法復原。', i18n[config.uiLanguage].emptyTrashConfirmationTitle || '清空垃圾桶確認'))) return;
+            const count = conversations.filter(c => c.deletedAt).length;
+            conversations = conversations.filter(c => !c.deletedAt);
+            await saveAppData();
+            renderTrash();
+            showNotification(`${i18n[config.uiLanguage].trashEmptiedSuccess || '已成功清空垃圾桶，刪除了'} ${count} ${i18n[config.uiLanguage].items || '個項目'}。`, 'success');
+        };
+        // ▲▲▲ 結束新增 ▲▲▲
 
 
         async function initChatApp() {
@@ -7742,7 +8001,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             applyUiTheme();
             setTheme(config.theme); 
             ALL_ELEMENTS.usernameDisplay.textContent = currentUser.username;
-            if (!conversations.find(c => !c.archived)) startNewChat();
+            if (!conversations.find(c => !c.archived && !c.deletedAt)) startNewChat();
             renderAll();
             updateInputState();
             setupVoiceInput();
@@ -7790,6 +8049,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             });
             // ▲▲▲ 【需求 1 結束】 ▲▲▲
+            // ▼▼▼ 新增：垃圾桶檢視 Modal 的事件綁定 ▼▼▼
+            const closeTrashView = () => toggleModal(ALL_ELEMENTS.trashViewModal, false);
+            ALL_ELEMENTS.closeTrashViewModalBtn.addEventListener('click', closeTrashView);
+            ALL_ELEMENTS.trashViewCloseBtn.addEventListener('click', closeTrashView);
+            // ▲▲▲ 結束新增 ▲▲▲
             
             ALL_ELEMENTS.settingsBtn.addEventListener('click', () => { setupSettingsModal(); toggleModal(ALL_ELEMENTS.settingsModal, true); });
             ALL_ELEMENTS.closeSettingsBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.settingsModal, false));
@@ -8022,6 +8286,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.updateInfoBtn.addEventListener('click', showUpdateHistory);
             ALL_ELEMENTS.closeUpdateInfoModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.updateInfoModal, false));
             ALL_ELEMENTS.closeLatestUpdateModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.latestUpdateModal, false));
+            // ▲▲▲ 結束新增 ▲▲▲
+
+            // ▼▼▼ 新增：垃圾桶功能事件綁定 ▼▼▼
+            ALL_ELEMENTS.trashBatchSelectBtn.addEventListener('click', toggleTrashSelectionMode);
+            ALL_ELEMENTS.trashCancelSelectionBtn.addEventListener('click', toggleTrashSelectionMode);
+            ALL_ELEMENTS.trashBatchRestoreBtn.addEventListener('click', handleBatchRestoreFromTrash);
+            ALL_ELEMENTS.trashBatchDeleteBtn.addEventListener('click', handleBatchDeleteFromTrash);
+            ALL_ELEMENTS.emptyTrashBtn.addEventListener('click', handleEmptyTrash);
             // ▲▲▲ 結束新增 ▲▲▲
 
             updateFileInputUI();
