@@ -1,6 +1,6 @@
 const updateLogs = [
     {
-        version: "14.8.8",
+        version: "14.8.8.0",
         date: "2025-09-17",
         content: [
             "<strong>新增：</strong>在「關於」頁面新增了版本更新資訊入口，方便使用者查看所有版本的更新日誌。",
