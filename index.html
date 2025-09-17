@@ -413,19 +413,16 @@
 
 
 
-        /* ▼▼▼ 【優化】後續追問區塊樣式 ▼▼▼ */
+        /* 後續追問區塊動畫 */
         #follow-up-prompts-list {
-            max-height: 200px;
-            overflow-y: auto;
-            transition: max-height 0.3s ease-out, margin-top 0.3s ease-out;
-            margin-top: 0.5rem; /* 取代 header 的 mb-2 */
-        }
+  max-height: 200px;
+  overflow-y: auto;
+  transition: max-height 0.3s ease-out;
+}
         #follow-up-prompts-list.collapsed {
             max-height: 0;
-            margin-top: 0; /* 收合時移除上方間距 */
-            overflow: hidden;
+            margin-bottom: 0;
         }
-        /* ▲▲▲ 結束優化 ▲▲▲ */
         #follow-up-toggle-btn.rotate-180 {
             transform: rotate(-180deg);
         }
@@ -1533,6 +1530,22 @@
             }
         }
         /* ▲▲▲ 【需求 1 結束】 ▲▲▲ */
+        /* ▼▼▼ 【需求實現】垃圾桶相關樣式 ▼▼▼ */
+        .trash-item-view-btn {
+            display: inline-flex;
+        }
+        .trash-item-container {
+            transition: background-color 0.2s;
+        }
+        .trash-item-container.selected {
+            background-color: var(--active-bg);
+        }
+        @media (max-width: 768px) {
+            .trash-item-view-btn {
+                display: none;
+            }
+        }
+        /* ▲▲▲ 【需求實現】結束 ▲▲▲ */
     </style>
 
 
@@ -1809,9 +1822,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 <!-- 新增：後續追問功能區塊 -->
                 <div id="follow-up-container" class="p-2 md:p-4 bg-[var(--input-bar-bg)] border-t border-[var(--border-color)] hidden">
                     <div class="max-w-4xl mx-auto">
-                        <!-- ▼▼▼ 【優化】移除 mb-2 ▼▼▼ -->
-                        <div class="flex items-center justify-between">
-                        <!-- ▲▲▲ 結束優化 ▲▲▲ -->
+                        <div class="flex items-center justify-between mb-2">
                             <h4 class="text-sm font-semibold text-[var(--text-secondary)]" data-lang-key="followUp">後續追問</h4>
                             <button id="follow-up-toggle-btn" class="p-1 rounded-md hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] transition-transform duration-300">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
@@ -1902,9 +1913,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         <li class="settings-nav-item p-3 rounded-md" data-section="memory" data-lang-key="memoryManagement">記憶管理</li>
                         <li class="settings-nav-item p-3 rounded-md" data-section="model-management" data-lang-key="modelManagement">模型管理</li>
                         <li class="settings-nav-item p-3 rounded-md" data-section="data-management" data-lang-key="dataManagement">資料管理</li>
-                        <!-- ▼▼▼ 【新增】垃圾桶導覽項目 ▼▼▼ -->
+                        <!-- ▼▼▼ 【需求實現】新增垃圾桶導航項目 ▼▼▼ -->
                         <li class="settings-nav-item p-3 rounded-md" data-section="trash" data-lang-key="trash">垃圾桶</li>
-                        <!-- ▲▲▲ 結束新增 ▲▲▲ -->
+                        <!-- ▲▲▲ 【需求實現】結束 ▲▲▲ -->
                         <li class="settings-nav-item p-3 rounded-md" data-section="accessibility" data-lang-key="accessibility">輔助功能</li>
                         <li class="settings-nav-item p-3 rounded-md" data-section="about" data-lang-key="about">關於</li>
                     </ul>
@@ -2068,30 +2079,20 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         </div>
                         <!-- ▲▲▲ 結束新增 ▲▲▲ -->
                     </div>
-                    <!-- ▼▼▼ 【新增】垃圾桶區塊 ▼▼▼ -->
+                    <!-- ▼▼▼ 【需求實現】新增垃圾桶區塊 ▼▼▼ -->
                     <div id="trash-section" class="settings-section">
                         <h3 class="text-lg font-semibold mb-3" data-lang-key="trash">垃圾桶</h3>
                         <p class="text-sm text-[var(--text-secondary)] mb-4" data-lang-key="trashDesc">
-                            移至垃圾桶的對話將在此處保留。您可以選擇復原或永久刪除它們。
+                            已刪除的對話會暫時保留在此處。您可以檢視、復原或永久刪除它們。手機版可長按項目以檢視內容。
                         </p>
-                        <!-- Batch Action Bar -->
-                        <div id="trash-batch-action-bar" class="hidden mb-4 p-2 bg-[var(--hover-bg)] rounded-lg flex items-center justify-between">
-                            <div>
-                                <input type="checkbox" id="trash-select-all-checkbox" class="h-4 w-4 mr-2 align-middle">
-                                <label for="trash-select-all-checkbox" class="text-sm font-medium" data-lang-key="selectAll">全選</label>
-                                <span id="trash-selection-count" class="ml-4 text-sm text-[var(--text-secondary)]"></span>
-                            </div>
-                            <div>
-                                <button id="trash-batch-restore-btn" class="px-3 py-1 text-sm rounded-md bg-green-500 text-white disabled:bg-green-300" disabled data-lang-key="restoreSelected">復原選取項目</button>
-                                <button id="trash-batch-delete-btn" class="ml-2 px-3 py-1 text-sm rounded-md bg-red-500 text-white disabled:bg-red-300" disabled data-lang-key="deleteSelectedPermanently">永久刪除選取項目</button>
-                            </div>
+                        <div id="trash-action-bar" class="flex justify-between items-center mb-3 p-2 bg-[var(--hover-bg)] rounded-lg">
+                            <!-- This bar will toggle between normal and batch mode, rendered by JS -->
                         </div>
-                        <!-- Trash List Container -->
-                        <div id="trash-list-container" class="space-y-2">
-                            <!-- Trashed conversations will be rendered here by JS -->
+                        <div id="trash-list-container" class="space-y-2 overflow-y-auto scroll-area" style="max-height: 45vh;">
+                            <!-- Deleted items will be rendered here by JS -->
                         </div>
                     </div>
-                    <!-- ▲▲▲ 結束新增 ▲▲▲ -->
+                    <!-- ▲▲▲ 【需求實現】結束 ▲▲▲ -->
                     <!-- 輔助功能 -->
                     <div id="accessibility-section" class="settings-section">
                         <h3 class="text-lg font-semibold mb-3" data-lang-key="accessibility">輔助功能</h3>
@@ -2214,22 +2215,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         </div>
     </div>
     <!-- ▲▲▲ 結束新增 ▲▲▲ -->
-    <!-- ▼▼▼ 【新增】垃圾桶檢視 Modal ▼▼▼ -->
-    <div id="view-trash-chat-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[51]">
-        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-3xl flex flex-col" style="max-height: 90vh;">
-            <div class="p-6 border-b border-[var(--border-color)] flex justify-between items-center flex-shrink-0">
-                <h2 id="view-trash-title" class="text-2xl font-bold truncate" data-lang-key="viewTrashedChat">檢視已刪除的對話</h2>
-                <button id="close-view-trash-modal-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
-            </div>
-            <div id="view-trash-content" class="p-6 overflow-y-auto space-y-4 scroll-area flex-1">
-                <!-- Trashed messages will be dynamically inserted here -->
-            </div>
-            <div class="p-4 bg-[var(--sidebar-bg)] border-t border-[var(--border-color)] flex justify-end gap-3 flex-shrink-0">
-                <button id="close-view-trash-modal-btn-footer" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]" data-lang-key="close">關閉</button>
-            </div>
-        </div>
-    </div>
-    <!-- ▲▲▲ 結束新增 ▲▲▲ -->
     <div id="rename-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
         <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl p-6 w-full max-w-md">
             <h2 class="text-xl font-bold mb-4" data-lang-key="rename">重新命名</h2>
@@ -2303,6 +2288,22 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         </div>
     </div>
     <!-- ▲▲▲ 【需求 1 結束】 ▲▲▲ -->
+    <!-- ▼▼▼ 【需求實現】垃圾桶檢視 Modal ▼▼▼ -->
+    <div id="trash-view-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[51]">
+        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-3xl flex flex-col" style="max-height: 90vh;">
+            <div class="p-6 border-b border-[var(--border-color)] flex justify-between items-center flex-shrink-0">
+                <h2 id="trash-view-title" class="text-2xl font-bold truncate">檢視對話</h2>
+                <button id="close-trash-view-modal-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
+            </div>
+            <div id="trash-view-content" class="p-6 overflow-y-auto space-y-4 scroll-area flex-1" style="-webkit-user-select: none; user-select: none; touch-action: pan-y;">
+                <!-- Conversation messages will be dynamically inserted here -->
+            </div>
+            <div class="p-4 bg-[var(--sidebar-bg)] border-t border-[var(--border-color)] flex justify-end gap-3 flex-shrink-0">
+                <button id="trash-view-close-btn-footer" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]" data-lang-key="close">關閉</button>
+            </div>
+        </div>
+    </div>
+    <!-- ▲▲▲ 【需求實現】結束 ▲▲▲ -->
     <div id="notification-container"></div>
     <div id="custom-dialog-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
         <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl p-6 w-full max-w-sm">
@@ -2557,11 +2558,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             archivedChatsModal: document.getElementById('archived-chats-modal'),
             closeArchivedModalBtn: document.getElementById('close-archived-modal-btn'),
             archivedChatsContainer: document.getElementById('archived-chats-container'),
+            // ▼▼▼ 新增：封存對話檢視相關元素 ▼▼▼
             viewArchivedChatModal: document.getElementById('view-archived-chat-modal'),
             viewArchivedTitle: document.getElementById('view-archived-title'),
             viewArchivedContent: document.getElementById('view-archived-content'),
             closeViewArchivedModalBtn: document.getElementById('close-view-archived-modal-btn'),
             closeViewArchivedModalBtnFooter: document.getElementById('close-view-archived-modal-btn-footer'),
+            // ▲▲▲ 結束新增 ▲▲▲
             renameModal: document.getElementById('rename-modal'),
             renameInput: document.getElementById('rename-input'),
             saveRenameBtn: document.getElementById('save-rename-btn'),
@@ -2623,7 +2626,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             sidebar: document.getElementById('sidebar'),
             sidebarOverlay: document.getElementById('sidebar-overlay'),
             menuToggleBtn: document.getElementById('menu-toggle-btn'),
-            sidebarOpenHandle: document.getElementById('sidebar-open-handle'),
+            sidebarOpenHandle: document.getElementById('sidebar-open-handle'), // 新增：側邊欄開啟熱區
             // 新增: 後續追問相關元素
             followUpContainer: document.getElementById('follow-up-container'),
             followUpToggleBtn: document.getElementById('follow-up-toggle-btn'),
@@ -2655,7 +2658,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             personalMemoryList: document.getElementById('personal-memory-list'),
             addPersonalMemoryBtn: document.getElementById('add-personal-memory-btn'),
             autoMemoryToggleSwitch: document.getElementById('auto-memory-toggle-switch'),
+            // 需求四: 新增關閉 Astras 的按鈕
             closeAstrasBtn: document.getElementById('close-astras-btn'),
+            // ▼▼▼ 新增：自訂桌布 & UI 顏色相關元素 ▼▼▼
             wallpaperContainer: document.getElementById('wallpaper-container'),
             uploadWallpaperBtn: document.getElementById('upload-wallpaper-btn'),
             restoreWallpaperBtn: document.getElementById('restore-wallpaper-btn'),
@@ -2666,7 +2671,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             buttonStyleContainer: document.getElementById('button-style-container'),
             gradientPickerContainer: document.getElementById('gradient-picker-container'),
             gradientSwatches: document.getElementById('gradient-swatches'),
+            // ▲▲▲ 新增：自訂桌布 & UI 顏色相關元素 ▲▲▲
             apiKeyWarningBadge: document.getElementById('api-key-warning-badge'),
+            // ▼▼▼ 需求 1 新增：數據儀表板元素 ▼▼▼
             userProfileBtn: document.getElementById('user-profile-btn'),
             dataDashboardModal: document.getElementById('data-dashboard-modal'),
             closeDashboardBtn: document.getElementById('close-dashboard-btn'),
@@ -2675,18 +2682,26 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             mostUsedModelStat: document.getElementById('most-used-model-stat'),
             timeAnalysisYearSelect: document.getElementById('time-analysis-year-select'),
             timeAnalysisMonthSelect: document.getElementById('time-analysis-month-select'),
-            timeAnalysisDaySelect: document.getElementById('time-analysis-day-select'),
+            timeAnalysisDaySelect: document.getElementById('time-analysis-day-select'), // 新增日選擇器
+            // ▲▲▲ 結束新增 ▲▲▲
+            // ▼▼▼ 新增：桌布裁切 Modal 元素 ▼▼▼
             wallpaperCropModal: document.getElementById('wallpaper-crop-modal'),
             wallpaperCropImage: document.getElementById('wallpaper-crop-image'),
             cancelCropBtn: document.getElementById('cancel-crop-btn'),
             confirmCropBtn: document.getElementById('confirm-crop-btn'),
+            // ▲▲▲ 結束新增 ▲▲▲
+            // ▼▼▼ 新增：清除資料按鈕 ▼▼▼
             deleteAllDataBtn: document.getElementById('delete-all-data-btn'),
+            // ▲▲▲ 結束新增 ▲▲▲
+            // ▼▼▼ 新增：語言切換相關元素 ▼▼▼
             loginLanguageSwitcher: document.getElementById('login-language-switcher'),
             loginLangBtn: document.getElementById('login-lang-btn'),
             loginLangMenu: document.getElementById('login-lang-menu'),
             loginLangLabel: document.getElementById('login-lang-label'),
             uiLanguageSelect: document.getElementById('ui-language-select'),
             aiLanguageSelect: document.getElementById('ai-language-select'),
+            // ▲▲▲ 結束新增 ▲▲▲
+            // ▼▼▼ 新增：商店與頭像相關元素 ▼▼▼
             storeContainer: document.getElementById('store-container'),
             openStoreBtn: document.getElementById('open-store-btn'),
             backToChatBtn: document.getElementById('back-to-chat-btn'),
@@ -2697,27 +2712,28 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             confirmAvatarCropBtn: document.getElementById('confirm-avatar-crop-btn'),
             cancelAvatarCropBtn: document.getElementById('cancel-avatar-crop-btn'),
             astrasAvatarInput: document.getElementById('astras-avatar-input'),
+            // ▲▲▲ 結束新增 ▲▲▲
+            // ▼▼▼ 【需求實現】滾動按鈕與其定位參考元素 ▼▼▼
             scrollToBottomBtn: document.getElementById('scroll-to-bottom-btn'),
             inputBarContainer: document.getElementById('input-bar-container'),
+            // ▲▲▲ 【需求實現】結束 ▲▲▲
+            // ▼▼▼ 【需求 1 新增】搜尋檢視 Modal 元素 ▼▼▼
             searchViewModal: document.getElementById('search-view-modal'),
             searchViewTitle: document.getElementById('search-view-title'),
             searchViewContent: document.getElementById('search-view-content'),
             closeSearchViewModalBtn: document.getElementById('close-search-view-modal-btn'),
             searchViewCloseBtn: document.getElementById('search-view-close-btn'),
             searchViewConfirmBtn: document.getElementById('search-view-confirm-btn'),
-            // ▼▼▼ 【新增】垃圾桶相關元素 ▼▼▼
+            // ▲▲▲ 【需求 1 結束】 ▲▲▲
+            // ▼▼▼ 【需求實現】垃圾桶相關元素 ▼▼▼
             trashListContainer: document.getElementById('trash-list-container'),
-            trashBatchActionBar: document.getElementById('trash-batch-action-bar'),
-            trashSelectAllCheckbox: document.getElementById('trash-select-all-checkbox'),
-            trashSelectionCount: document.getElementById('trash-selection-count'),
-            trashBatchRestoreBtn: document.getElementById('trash-batch-restore-btn'),
-            trashBatchDeleteBtn: document.getElementById('trash-batch-delete-btn'),
-            viewTrashChatModal: document.getElementById('view-trash-chat-modal'),
-            viewTrashTitle: document.getElementById('view-trash-title'),
-            viewTrashContent: document.getElementById('view-trash-content'),
-            closeViewTrashModalBtn: document.getElementById('close-view-trash-modal-btn'),
-            closeViewTrashModalBtnFooter: document.getElementById('close-view-trash-modal-btn-footer'),
-            // ▲▲▲ 結束新增 ▲▲▲
+            trashActionBar: document.getElementById('trash-action-bar'),
+            trashViewModal: document.getElementById('trash-view-modal'),
+            trashViewTitle: document.getElementById('trash-view-title'),
+            trashViewContent: document.getElementById('trash-view-content'),
+            closeTrashViewModalBtn: document.getElementById('close-trash-view-modal-btn'),
+            trashViewCloseBtnFooter: document.getElementById('trash-view-close-btn-footer'),
+            // ▲▲▲ 【需求實現】結束 ▲▲▲
         };
         // 修正: 模型ID更新為最新的公開版本
         const MODELS = [
@@ -2775,12 +2791,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let personalMemories = []; // 第一類記憶: 陣列 of {id, content, enabled}
         let activeConversationId = null;
         let config = {
+            // ▼▼▼ 需求 2 修正：將 openrouter 的結構從物件改為字串 ▼▼▼
             apiKeys: { gemini: '', openrouter: '' },
+            // ▲▲▲ 結束修正 ▲▲▲
             defaultModel: MODELS[0].id,
             theme: 'light',
             modelSettings: [],
             enableFollowUp: true,
-            enableAutoWebSearch: false,
+            enableAutoWebSearch: false, // 新增: 自動連網搜尋開關
             aiBubbleColor: 'default',
             userBubbleColor: 'default',
             autoNaming: true,
@@ -2789,16 +2807,20 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             enableAutoMemory: true, 
             customWallpaper: null, 
             wallpaperBrightness: 'light', 
+            // ▼▼▼ 修改：UI 主題顏色設定 (新增漸變相關) ▼▼▼
             uiTheme: {
-                mode: 'default',
-                style: 'single',
+                mode: 'default', // 'default', 'adaptive', 'custom'
+                style: 'single', // 'single' or 'gradient'
                 customColor: '#3b82f6',
                 adaptiveColor: '#3b82f6',
-                adaptivePalette: [],
-                adaptiveGradient: ''
+                adaptivePalette: [], // stores palette from wallpaper
+                adaptiveGradient: '' // stores selected gradient value
             },
+            // ▲▲▲ 結束：UI 主題顏色設定 ▲▲▲
+            // ▼▼▼ 新增：語言設定 ▼▼▼
             uiLanguage: 'zh-TW',
             aiDefaultLanguage: 'zh-TW',
+            // ▲▲▲ 結束新增 ▲▲▲
         };
         let itemToRename = { id: null, type: null };
         let folderToCustomize = null;
@@ -2809,16 +2831,25 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let uploadedFiles = [];
         let sidebarOpen = false;
         let sendConfirmed = false;
-        let isFollowUpExpanded = true;
+        let isFollowUpExpanded = true; // 新增: 後續追問提示的收合狀態
         let editingAstrasId = null;
         let currentSpeechRecognition = null;
         let currentVoiceTarget = null;
+        // ▼▼▼ 需求 1 新增：圖表實例變數 ▼▼▼
         let modelPieChart = null;
         let timeDistChart = null;
+        // ▲▲▲ 結束新增 ▲▲▲
+        // ▼▼▼ 新增：桌布與頭像裁切實例變數 ▼▼▼
         let cropperInstance = null;
         let editingAstraForAvatarId = null;
+        // ▲▲▲ 結束新增 ▲▲▲
+        // ▼▼▼ 【需求實現】滾動按鈕狀態變數 ▼▼▼
         let isAutoScrolling = false;
-        let selectedTrashIds = new Set(); // ▼▼▼ 【新增】垃圾桶選取狀態 ▼▼▼
+        // ▲▲▲ 【需求實現】結束 ▲▲▲
+        // ▼▼▼ 【需求實現】垃圾桶狀態變數 ▼▼▼
+        let isTrashSelectionMode = false;
+        let selectedTrashIds = new Set();
+        // ▲▲▲ 【需求實現】結束 ▲▲▲
         
         // IndexedDB 配置
         const DB_NAME = 'ChatAppDB';
@@ -2878,8 +2909,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
 
 
+        // ▼▼▼ 新增：顏色轉換輔助函式 ▼▼▼
         const hexToRgba = (hex, alpha = 1) => {
-            if (!hex) return `rgba(255, 255, 255, ${alpha})`;
+            if (!hex) return `rgba(255, 255, 255, ${alpha})`; // 為無效的 hex 提供備用
             const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
             if (!result) return `rgba(255, 255, 255, ${alpha})`;
             const r = parseInt(result[1], 16);
@@ -2887,7 +2919,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const b = parseInt(result[3], 16);
             return `rgba(${r}, ${g}, ${b}, ${alpha})`;
         };
+        // ▲▲▲ 結束：顏色轉換輔助函式 ▲▲▲
         
+        // ▼▼▼ 需求 2 新增：完整時間戳格式化函式 ▼▼▼
         const formatFullTimestamp = (isoString) => {
             if (!isoString) return '';
             const date = new Date(isoString);
@@ -2898,6 +2932,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const minutes = String(date.getMinutes()).padStart(2, '0');
             return `${year}-${month}-${day} ${hours}:${minutes}`;
         };
+        // ▲▲▲ 結束新增 ▲▲▲
 
 
         const getConfigKey = () => `chatConfig_v_v8.6_${currentUser.username}`;
@@ -2913,13 +2948,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const toggleModal = (modalElement, show) => {
             if (!modalElement) return;
             if (show) {
+                // ▼▼▼ 【第二步 修改】開啟彈窗時，在 body 新增 class 以鎖定背景 ▼▼▼
                 document.body.classList.add('modal-open');
+                // ▲▲▲ 【第二步 結束】 ▲▲▲
                 modalElement.classList.remove('hidden');
                 requestAnimationFrame(() => {
                     modalElement.classList.add('visible');
                 });
             } else {
+                // ▼▼▼ 【第二步 修改】關閉彈窗時，從 body 移除 class 以恢復背景滾動 ▼▼▼
                 document.body.classList.remove('modal-open');
+                // ▲▲▲ 【第二步 結束】 ▲▲▲
                 modalElement.classList.remove('visible');
                 const onTransitionEnd = () => {
                     modalElement.classList.add('hidden');
@@ -2975,6 +3014,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const showCustomPrompt = (message, title = '請輸入', inputType = 'text') => showCustomDialog({ title, message, input: { type: inputType, placeholder: '請在此輸入...' }, buttons: [{ text: '取消', class: 'bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]', value: () => null }, { text: '確定', class: 'px-4 py-2 rounded-md btn-primary', value: (val) => val }] });
 
 
+        // ▼▼▼ 新增：滾動事件節流函式 ▼▼▼
         const throttle = (func, limit) => {
             let inThrottle;
             return function() {
@@ -2987,13 +3027,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             };
         };
+        // ▲▲▲ 結束新增 ▲▲▲
 
 
+        // ▼▼▼ 修改：使用 marked.js 解析後，再用 DOMPurify 消毒以防止 XSS ▼▼▼
         const renderMarkdown = (text) => {
             const dirty = marked.parse(text);
             const clean = DOMPurify.sanitize(dirty);
             return clean;
         };
+        // ▲▲▲ 結束修改 ▲▲▲
         const saveConfig = async () => { if (currentUser) await setItem(getConfigKey(), JSON.stringify(config)); };
         const loadConfig = async () => {
             if (!currentUser) return;
@@ -3001,45 +3044,58 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (saved) {
                 const savedConfig = JSON.parse(saved);
                 
+                // ▼▼▼ 需求 2 修正：處理舊版 OpenRouter 金鑰格式的遷移 ▼▼▼
                 let openrouterKey = '';
                 if (savedConfig.apiKeys && typeof savedConfig.apiKeys.openrouter === 'object' && savedConfig.apiKeys.openrouter !== null) {
+                    // 如果是舊的物件格式，取第一個找到的金鑰
                     openrouterKey = Object.values(savedConfig.apiKeys.openrouter)[0] || '';
                 } else if (savedConfig.apiKeys && typeof savedConfig.apiKeys.openrouter === 'string') {
+                    // 如果是新的字串格式，直接使用
                     openrouterKey = savedConfig.apiKeys.openrouter;
                 }
+                // ▲▲▲ 結束修正 ▲▲▲
                 
                 const savedOpenrouterKeys = savedConfig.apiKeys?.openrouter || {};
+                // 合併設定，確保新版本的預設值能被加入
                 const defaultConfig = {
-                    ...config,
-                    ...savedConfig,
+                    ...config, // Keep new default values
+                    ...savedConfig, // Overwrite with saved values
+                    // ▼▼▼ 需求 2 修正：確保 apiKeys 結構正確 ▼▼▼
                     apiKeys: { 
                         ...config.apiKeys, 
                         ...savedConfig.apiKeys, 
-                        openrouter: openrouterKey
+                        openrouter: openrouterKey // 使用新的單一金鑰字串
                     },
-                     uiTheme: { ...config.uiTheme, ...(savedConfig.uiTheme || {}) }
+                     // ▲▲▲ 結束修正 ▲▲▲
+                    uiTheme: { ...config.uiTheme, ...(savedConfig.uiTheme || {}) } // Merge uiTheme object
                 };
+                 // 確保舊版本設定檔升級時，新屬性不會是 undefined
                 defaultConfig.uiTheme.style = defaultConfig.uiTheme.style || 'single';
                 defaultConfig.uiTheme.adaptivePalette = defaultConfig.uiTheme.adaptivePalette || [];
                 defaultConfig.uiTheme.adaptiveGradient = defaultConfig.uiTheme.adaptiveGradient || '';
                 
                 config = defaultConfig;
             }
+            // Initialize or merge model settings
             const savedModelSettings = config.modelSettings || [];
             const allModelIds = new Set(MODELS.map(m => m.id));
             const savedSettingIds = new Set(savedModelSettings.map(s => s.id));
+            // Add new models from MODELS constant not present in saved settings
             MODELS.forEach((model, index) => {
                 if (!savedSettingIds.has(model.id)) {
                     savedModelSettings.push({ id: model.id, hidden: false, order: savedModelSettings.length });
                 }
             });
+            // Remove models from settings that no longer exist in MODELS constant
             config.modelSettings = savedModelSettings.filter(s => allModelIds.has(s.id));
 
 
 
 
+            // Ensure order is contiguous
             config.modelSettings.sort((a, b) => a.order - b.order);
             config.modelSettings.forEach((s, index) => s.order = index);
+            // If the removed model was the default or last used, switch to a new one
             if (!allModelIds.has(config.defaultModel)) {
                 config.defaultModel = MODELS[0].id;
             }
@@ -3058,13 +3114,15 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     conversations = (data.conversations || []).map(c => ({
                         archived: false, summary: '', folderId: null, isWebSearchEnabled: false, astrasId: null, pinned: false, deletedAt: null, ...c,
                         genConfig: c.genConfig || getDefaultGenConfig(),
+                        // ▼▼▼ 【排序修正】新增 lastUpdatedAt 屬性並進行資料遷移 ▼▼▼
                         lastUpdatedAt: c.lastUpdatedAt || (c.messages && c.messages.length > 0 ? c.messages[c.messages.length - 1].createdAt : c.createdAt),
                         messages: (c.messages || []).map(m => ({
                             ...m,
-                            createdAt: m.createdAt || c.createdAt,
-                            parts: m.parts || [{ text: m.content }]
+                            createdAt: m.createdAt || c.createdAt, // 修正：為舊版訊息補上時間戳
+                            parts: m.parts || [{ text: m.content }] // Compatibility for old format
                         }))
                     }));
+                    // ▼▼▼ 修改：確保舊資料能相容 avatarUrl ▼▼▼
                     astras = (data.astras || []).map(a => ({ avatarUrl: null, officialId: null, ...a }));
                     personalMemories = data.personalMemories || [];
                 } catch (e) {
@@ -3074,7 +3132,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     folders = [];
                     astras = [];
                     personalMemories = [];
-                    await removeItem(getAppDataKey());
+                    await removeItem(getAppDataKey()); // Clear corrupted data
                 }
             } else {
                 conversations = [];
@@ -3097,27 +3155,29 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 provider: defaultModelInfo.provider,
                 archived: false,
                 createdAt: now,
-                lastUpdatedAt: now,
+                lastUpdatedAt: now, // 【排序修正】建立新對話時即設定
                 genConfig: getDefaultGenConfig(),
                 isRenamed: false,
                 folderId: null,
                 astrasId: null,
                 isWebSearchEnabled: false,
                 pinned: false,
-                isTemporary: true,
+                isTemporary: true, // <--- 新增此行
                 isNaming: false,
-                deletedAt: null, // ▼▼▼ 【新增】垃圾桶屬性 ▼▼▼
+                deletedAt: null, // 【需求實現】新增垃圾桶屬性
             };
         };
         const startNewChat = () => {
+            // 清除任何先前未使用的臨時對話
             const oldTempChatCount = conversations.length;
             conversations = conversations.filter(c => !c.isTemporary || c.messages.length > 0);
             if (conversations.length < oldTempChatCount) {
-                 saveAppData();
+                 saveAppData(); // 如果有清除，就儲存一次
             }
 
             uploadedFiles = [];
         
+            // 創建一個新的臨時對話
             const newConv = createBaseConversation('新對話');
             conversations.unshift(newConv);
             activeConversationId = newConv.id;
@@ -3131,6 +3191,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         const loadChat = (id) => {
             if (id !== activeConversationId) {
+                // 如果我們正從一個空的臨時對話切換出去，就將其刪除
                 const previousConv = getActiveConversation();
                 if (previousConv && previousConv.isTemporary && previousConv.messages.length === 0) {
                     conversations = conversations.filter(c => c.id !== previousConv.id);
@@ -3143,38 +3204,39 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             sendConfirmed = false;
             updateInputState();
             updateApiKeyWarningBadge();
+            // 重新載入對話時，清除追問提示
             renderFollowUpPrompts([]);
         };
-        // ▼▼▼ 【修改】deleteChat 邏輯，改為移至垃圾桶 ▼▼▼
+        // ▼▼▼ 【需求實現】修改刪除邏輯為移入垃圾桶 ▼▼▼
         const deleteChat = async (id, event) => {
             event?.stopPropagation();
             const conv = conversations.find(c => c.id === id);
-            if (!conv) return;
-
-            if (!(await showCustomConfirm(i18n[config.uiLanguage].confirmMoveToTrash || '您確定要將此對話移至垃圾桶嗎？'))) return;
-
-            conv.deletedAt = new Date().toISOString();
-            
-            await saveAppData();
-
-            if (activeConversationId === id) {
-                const nextConv = conversations.find(c => !c.archived && !c.deletedAt);
-                activeConversationId = nextConv ? nextConv.id : null;
-                if (!activeConversationId) {
-                    startNewChat();
-                } else {
-                    loadChat(activeConversationId);
+            if (conv) {
+                conv.deletedAt = new Date().toISOString();
+                if (conv.pinned) {
+                    conv.pinned = false;
                 }
-            } else {
-                renderAll();
+                await saveAppData();
+
+                if (activeConversationId === id) {
+                    const nextConv = conversations.find(c => !c.archived && !c.deletedAt);
+                    activeConversationId = nextConv ? nextConv.id : null;
+                    if (!activeConversationId) {
+                        startNewChat();
+                    } else {
+                        loadChat(activeConversationId);
+                    }
+                } else {
+                    renderAll();
+                }
+                showNotification(i18n[config.uiLanguage].chatMovedToTrash || '對話已移至垃圾桶。', 'success');
             }
-            showNotification(i18n[config.uiLanguage].moveToTrashSuccess || '對話已移至垃圾桶。', 'success');
         };
-        // ▲▲▲ 結束修改 ▲▲▲
+        // ▲▲▲ 【需求實現】結束修改 ▲▲▲
         const archiveChat = async (id, event) => {
             event?.stopPropagation();
             const conv = conversations.find(c => c.id === id);
-            if(conv) conv.archived = true;
+            if(conv && !conv.deletedAt) conv.archived = true; // 確保不在垃圾桶中
             await saveAppData();
             if (activeConversationId === id) {
                 const nextConv = conversations.find(c => !c.archived && !c.deletedAt);
@@ -3200,7 +3262,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
             ALL_ELEMENTS.viewArchivedTitle.textContent = conv.title;
             const contentContainer = ALL_ELEMENTS.viewArchivedContent;
-            contentContainer.innerHTML = '';
+            contentContainer.innerHTML = ''; // Clear previous content
 
 
             if (conv.messages.length === 0) {
@@ -3209,6 +3271,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 conv.messages.forEach(msg => {
                     const isUser = msg.role === 'user';
                     const messageDiv = document.createElement('div');
+                    // Match the structure from addMessageToUI for styling
                     messageDiv.className = `flex items-start gap-2 md:gap-4 ${isUser ? 'justify-end user-message' : 'model-message'}`;
                     const icon = isUser 
                         ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>` 
@@ -3246,7 +3309,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const togglePinChat = async (id, event) => {
             event?.stopPropagation();
             const conv = conversations.find(c => c.id === id);
-            if (conv) {
+            if (conv && !conv.deletedAt) {
                 conv.pinned = !conv.pinned;
                 await saveAppData();
                 renderAll();
@@ -3306,13 +3369,18 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderArchivedChats();
             renderBatchActionBar();
             renderFilePreviews();
-            updateFollowUpUI();
-            applyLanguage(config.uiLanguage);
+            updateFollowUpUI(); // 新增: 渲染後續追問介面
+            applyLanguage(config.uiLanguage); // 新增：每次渲染時都應用語言
+            // 如果設定頁面已開啟，則同時更新垃圾桶列表
+            if (!ALL_ELEMENTS.settingsModal.classList.contains('hidden') && document.getElementById('trash-section').classList.contains('active')) {
+                renderTrashSection();
+            }
         };
 
         const renderHistorySidebar = () => {
             ALL_ELEMENTS.historyList.innerHTML = '';
         
+            // 正常排序所有非資料夾、未封存、未刪除的對話
             const sortedConversations = conversations
                 .filter(c => !c.archived && !c.folderId && !c.deletedAt)
                 .sort((a, b) => {
@@ -3324,10 +3392,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 });
 
             sortedConversations.forEach(conv => {
+                // 1. 如果是對話是臨時的 (使用者還沒發送第一句話)，則完全不顯示在列表
                 if (conv.isTemporary) {
-                    return;
+                    return; // 跳過此對話
                 }
 
+                // 2. 如果對話正在命名中，顯示 "AI思考中..." 的動畫
                 if (conv.isNaming) {
                     const thinkingPlaceholder = document.createElement('div');
                     thinkingPlaceholder.className = 'sidebar-item p-3 rounded-lg flex items-center gap-3 text-[var(--text-secondary)] italic';
@@ -3339,12 +3409,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         <span data-lang-key="naming">${i18n[config.uiLanguage].naming || 'AI思考中...'}</span>
                     `;
                     ALL_ELEMENTS.historyList.appendChild(thinkingPlaceholder);
-                    return;
+                    return; // 顯示完動畫後，跳過此對話的正常渲染
                 }
 
+                // 3. 對於所有其他正常的對話，正常渲染
                 ALL_ELEMENTS.historyList.appendChild(createConversationElement(conv));
             });
         };
+        // ▼▼▼ 【需求實現】修改 renderAstras，為手機版增加長按功能 ▼▼▼
         const renderAstras = () => {
             ALL_ELEMENTS.astrasList.innerHTML = '';
             astras.forEach(ast => {
@@ -3369,6 +3441,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     </button>
                 `;
 
+                // --- 長按邏輯開始 ---
                 let pressTimer = null;
                 let touchMoved = false;
 
@@ -3402,6 +3475,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 item.addEventListener('mouseup', cancelPress);
                 item.addEventListener('mouseleave', cancelPress);
                 item.addEventListener('click', handleClick);
+                // --- 長按邏輯結束 ---
                 
                 const optionsBtn = item.querySelector('.astras-options-btn');
                 optionsBtn.addEventListener('click', (e) => {
@@ -3411,12 +3485,15 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 ALL_ELEMENTS.astrasList.appendChild(item);
             });
         };
+        // ▲▲▲ 【需求實現】結束 ▲▲▲
+        // ▼▼▼ 修改：重構 renderFolders 以使用 div 和自訂點擊邏輯 ▼▼▼
         const renderFolders = () => {
             ALL_ELEMENTS.folderList.innerHTML = '';
             folders.forEach(folder => {
                 const folderConvs = folder.conversationIds
                     .map(id => conversations.find(c => c.id === id))
                     .filter(c => c && !c.archived && !c.deletedAt)
+                    // ▼▼▼ 【排序修正】使用 lastUpdatedAt 進行排序 ▼▼▼
                     .sort((a,b) => {
                         if (a.pinned && !b.pinned) return -1;
                         if (!a.pinned && b.pinned) return 1;
@@ -3451,6 +3528,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
                 const folderSummary = folderElement.querySelector('.folder-summary');
 
+                // --- 長按邏輯開始 (為資料夾新增) ---
                 let pressTimer = null;
                 let touchMoved = false;
 
@@ -3459,7 +3537,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     touchMoved = false;
                     pressTimer = setTimeout(() => {
                         e.preventDefault();
-                        showMobileContextMenuForFolder(folder.id);
+                        showMobileContextMenuForFolder(folder.id); // 呼叫新的資料夾選單函式
                         pressTimer = null;
                     }, 500);
                 };
@@ -3491,6 +3569,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 folderSummary.addEventListener('mouseup', cancelPress);
                 folderSummary.addEventListener('mouseleave', cancelPress);
                 folderSummary.addEventListener('click', handleClick);
+                // --- 長按邏輯結束 ---
 
 
                 const folderOptionsBtn = folderElement.querySelector('.folder-options-btn');
@@ -3503,6 +3582,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 ALL_ELEMENTS.folderList.appendChild(folderElement);
             });
         };
+        // ▲▲▲ 結束修改 ▲▲▲
+        // ▼▼▼ 【需求 1 & 2 修改】同時實現長按檢視與點擊後收合側邊欄 ▼▼▼
         const createConversationElement = (conv) => {
             const item = document.createElement('div');
             item.className = `sidebar-item w-full text-left p-3 rounded-lg flex items-center justify-between cursor-pointer ${conv.id === activeConversationId && !isSelectionMode ? 'active' : ''}`;
@@ -3544,17 +3625,20 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
             item.appendChild(contentWrapper);
 
+            // --- 長按邏輯開始 ---
             let pressTimer = null;
             let touchMoved = false;
 
             const startPress = (e) => {
+                // 只在手機寬度且非選取模式下作用
                 if (window.innerWidth >= 768 || isSelectionMode) return;
                 touchMoved = false;
                 pressTimer = setTimeout(() => {
-                    e.preventDefault();
+                    // 長按觸發
+                    e.preventDefault(); // 防止觸發點擊或預設選單
                     showMobileContextMenu(conv.id, e.currentTarget);
-                    pressTimer = null;
-                }, 500);
+                    pressTimer = null; // 清除計時器以防萬一
+                }, 500); // 500毫秒視為長按
             };
 
             const cancelPress = () => {
@@ -3563,6 +3647,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             };
 
             const handleClick = () => {
+                // 如果計時器還在 (表示不構成長按)，且觸摸沒有移動
                 if (pressTimer || !touchMoved) {
                     cancelPress();
                     if (isSelectionMode) {
@@ -3573,22 +3658,26 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         }
                     } else {
                         loadChat(conv.id);
-                        toggleSidebar(false);
+                        toggleSidebar(false); // 【需求 2 實現】
                     }
                 }
             };
             
+            // 綁定事件
             item.addEventListener('touchstart', startPress, { passive: true });
             item.addEventListener('touchend', cancelPress);
             item.addEventListener('touchmove', () => { 
                 touchMoved = true;
                 cancelPress();
             }, { passive: true });
+            // 為非觸控設備提供備用(例如開發者工具模擬)
             item.addEventListener('mousedown', startPress);
             item.addEventListener('mouseup', cancelPress);
             item.addEventListener('mouseleave', cancelPress);
 
+            // 將原本的點擊事件改為處理短按
             item.addEventListener('click', handleClick);
+            // --- 長按邏輯結束 ---
             
             const chatOptionsBtn = contentWrapper.querySelector('.chat-options-btn');
             if (chatOptionsBtn) {
@@ -3599,9 +3688,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
             return item;
         };
+        // ▲▲▲ 【需求 1 & 2 結束】 ▲▲▲
         const renderArchivedChats = () => {
             ALL_ELEMENTS.archivedChatsContainer.innerHTML = '';
-            const archived = conversations.filter(c => c.archived && !c.deletedAt).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+            const archived = conversations.filter(c => c.archived).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
             if (archived.length === 0) {
                 ALL_ELEMENTS.archivedChatsContainer.innerHTML = `<p class="text-sm text-[var(--text-secondary)] text-center p-4">${i18n[config.uiLanguage].noArchivedChats || '沒有已封存的對話。'}</p>`;
                 return;
@@ -3630,6 +3720,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const conv = getActiveConversation();
             
             const messageList = ALL_ELEMENTS.messageList;
+            // 為確保動畫重播，先移除 class
             messageList.classList.remove('chat-view-transition');
 
 
@@ -3645,17 +3736,21 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             updateWebSearchUI();
             updateAstrasIndicator();
             
-            messageList.innerHTML = '';
+            messageList.innerHTML = ''; // 清空內容
             if (conv.messages.length === 0) {
                 const greeting = `${currentUser.username}, ${i18n[config.uiLanguage].howCanIHelp || '有什麼可以為您服務的嗎？'}`;
                 messageList.innerHTML = `<div class="text-center text-[var(--text-secondary)] mt-16"><p class="text-lg">${greeting}</p></div>`;
             } else {
+                // ▼▼▼ 程式碼修正 ▼▼▼
                 conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
+                // ▲▲▲ 程式碼修正 ▲▲▲
             }
             
+            // 強制瀏覽器重繪，為動畫做準備
             void messageList.offsetWidth; 
 
 
+            // 添加 class 以觸發淡入動畫
             messageList.classList.add('chat-view-transition');
             
             updateInputState();
@@ -3728,8 +3823,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     name,
                     description,
                     instructions,
-                    avatarUrl: null,
-                    officialId: null,
+                    avatarUrl: null, // 新增屬性
+                    officialId: null, // 新增屬性
                 };
                 astras.unshift(newAstras);
                 showNotification(i18n[config.uiLanguage].astrasCreated ||'Astras 已創建');
@@ -3752,6 +3847,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderAll();
             showNotification(i18n[config.uiLanguage].astrasDeleted || 'Astras 已刪除');
         };
+        // ▼▼▼ 程式碼修正：限制官方 Astras 的編輯權限 ▼▼▼
         const createAstrasMenu = (astrasId, targetButton) => {
             const existingPopover = document.getElementById('history-popover');
             if (existingPopover) {
@@ -3780,11 +3876,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             let menuHTML = '';
 
             if (astra && astra.officialId) {
+                // 官方商店訂閱的 Astra：只提供編輯頭像和刪除功能
                 menuHTML = `
                     <button data-id="${astrasId}" class="edit-avatar-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].editAvatar || '編輯頭像'}</button>
                     <button data-id="${astrasId}" class="delete-astras-btn w-full text-left px-4 py-2 text-red-600 hover:bg-red-500/10 text-sm">${i18n[config.uiLanguage].delete || '刪除'}</button>
                 `;
             } else {
+                // 使用者自訂的 Astra：提供完整功能
                 menuHTML = `
                     <button data-id="${astrasId}" class="edit-astras-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].edit || '編輯'}</button>
                     <button data-id="${astrasId}" class="edit-avatar-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].editAvatar || '編輯頭像'}</button>
@@ -3818,10 +3916,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
             popover.querySelector('.delete-astras-btn').addEventListener('click', () => { deleteAstras(astrasId); popover.remove(); });
         };
+        // ▲▲▲ 結束修正 ▲▲▲
         const updateWebSearchUI = () => {
             const conv = getActiveConversation();
             const { webSearchBtn } = ALL_ELEMENTS;
-            if (!conv || conv.provider !== 'gemini' || conv.deletedAt) { // 檢查是否已刪除
+            if (!conv || conv.provider !== 'gemini') {
                 webSearchBtn.classList.add('hidden');
                 return;
             }
@@ -3856,25 +3955,27 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 .map(s => MODELS.find(m => m.id === s.id))
                 .filter(Boolean);
             const currentModel = MODELS.find(m => m.id === conv.model) || MODELS[0];
-            const isArchivedOrDeleted = conv.archived || conv.deletedAt;
+            const isArchived = conv.archived || conv.deletedAt; // 同時檢查是否在垃圾桶中
             let optionsHTML = '';
-            const translations = i18n[config.uiLanguage] || i18n['zh-TW'];
+            const translations = i18n[config.uiLanguage] || i18n['zh-TW']; // 取得目前的語言包
 
 
             visibleModels.forEach(m => {
+                // 從語言包中讀取描述和限制，如果找不到則顯示空字串
                 const description = translations[m.descriptionKey] || '';
                 const limits = translations[m.limitsKey] || '';
 
 
                 optionsHTML += `
-                    <div data-model="${m.id}" class="model-option-btn-container ${isArchivedOrDeleted ? 'cursor-not-allowed opacity-50' : ''}">
+                    <div data-model="${m.id}" class="model-option-btn-container ${isArchived ? 'cursor-not-allowed opacity-50' : ''}">
                         <h4 class="font-semibold">${m.name}</h4>
                         <p class="model-description">${description}<span class="whitespace-nowrap"> (${limits})</span></p>
                     </div>
                 `;
             });
+            {/* <!-- ▼▼▼ 修正 #1：提升 z-index ▼▼▼ --> */}
             ALL_ELEMENTS.modelSwitcherContainer.innerHTML = `
-                <button id="current-model-btn" class="flex items-center gap-2 text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] px-2 py-1 md:px-3 rounded-md ${isArchivedOrDeleted ? 'cursor-not-allowed' : ''}" ${isArchivedOrDeleted ? 'disabled' : ''}>
+                <button id="current-model-btn" class="flex items-center gap-2 text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] px-2 py-1 md:px-3 rounded-md ${isArchived ? 'cursor-not-allowed' : ''}" ${isArchived ? 'disabled' : ''}>
                     <span class="font-semibold text-sm md:text-base text-[var(--text-primary)]">${currentModel.name}</span>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </button>
@@ -3882,9 +3983,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     ${optionsHTML}
                 </div>
             `;
+            {/* <!-- ▲▲▲ 結束修正 ▲▲▲ --> */}
 
 
-            if (!isArchivedOrDeleted) {
+            if (!isArchived) {
                 document.getElementById('current-model-btn').addEventListener('click', () => {
                     const popover = document.getElementById('model-options-popover');
                     if (popover.classList.contains('visible')) {
@@ -3907,25 +4009,29 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             renderModelSwitcher();
                             updateInputState();
                             updateWebSearchUI();
-                            updateFileInputUI();
+                            updateFileInputUI(); // Update file input on model change
                         }
                         document.getElementById('model-options-popover').classList.remove('visible');
                     });
                 });
             }
-            updateFileInputUI();
+            updateFileInputUI(); // Initial check
             updateApiKeyWarningBadge();
         };
         
+        // ▼▼▼ 程式碼修改 ▼▼▼
         const addMessageToUI = (msg, index, shouldSave = true, shouldScroll = true) => {
             const conv = getActiveConversation();
             if (shouldSave) {
                  conv.messages.push(msg);
+                // 只有當這是一個臨時對話的第一條訊息時，才觸發自動命名
                 if (conv.messages.length === 1 && msg.role === 'user' && conv.isTemporary && !conv.isRenamed && config.autoNaming) {
                     const textPart = msg.parts.find(p => p.text);
                     if (textPart) {
                         conv.title = textPart.text.substring(0, 30) || i18n[config.uiLanguage].newChat || '新對話';
                         ALL_ELEMENTS.headerTitle.textContent = conv.title;
+                        // 不再由這裡觸發命名，交給 handleFormSubmit 統一處理
+                        // generateTitleAndSummary(conv);
                     }
                 }
                 saveAppData();
@@ -3967,7 +4073,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     mediaPartsContent.forEach(media => {
                         const src = `data:${media.mimeType};base64,${media.data}`;
                         if (media.mimeType.startsWith('image/')) {
-                            mediaHTML += `<img src="${src}" class="max-w-xs max-h-48 rounded-lg object-cover border border-[var(--border-color)]">`;
+                            mediaHTML += `<imgsrc="${src}" class="max-w-xs max-h-48 rounded-lg object-cover border border-[var(--border-color)]">`;
                         } else {
                             mediaHTML += `<div class="p-2 bg-[var(--hover-bg)] rounded-lg text-sm flex items-center gap-2 border border-[var(--border-color)]">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
@@ -4018,14 +4124,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
             ALL_ELEMENTS.messageList.appendChild(messageDiv);
             if (shouldScroll) {
+                // ▼▼▼ 【需求實現】修改：如果不是自動滾動，就不強制滾動，以便讓滾動按鈕出現 ▼▼▼
                 if (isAutoScrolling) {
                     ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
                 }
+                // ▲▲▲ 【需求實現】結束 ▲▲▲
             }
 
 
             return messageDiv;
         };
+        // ▲▲▲ 程式碼修改 ▲▲▲
 
 
         const handleFormSubmit = async (e) => {
@@ -4037,7 +4146,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderFollowUpPrompts([]);
 
             const conv = getActiveConversation();
-            if (conv.archived || conv.deletedAt) return; // 檢查是否已刪除
+            if (conv.archived || conv.deletedAt) return; // 不允許在封存或已刪除的對話中發送
 
             abortController = new AbortController();
             updateSubmitButtonState(true);
@@ -4061,23 +4170,25 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 });
             });
 
+            // 正確的邏輯：只新增一次使用者訊息
             const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
             addMessageToUI(userMessageObject, conv.messages.length, true);
             conv.lastUpdatedAt = new Date().toISOString();
 
+            // 將臨時對話轉為永久，並觸發命名狀態
             if (conv.isTemporary) {
                 conv.isTemporary = false;
                 conv.isNaming = true;
                 
-                renderHistorySidebar();
+                renderHistorySidebar(); // 立即更新側邊欄以顯示 "AI思考中..."
                 
                 if (config.autoNaming) {
-                    generateTitleAndSummary(conv);
+                    generateTitleAndSummary(conv); // 非同步執行命名
                 } else {
-                    conv.isNaming = false;
+                    conv.isNaming = false; // 如果關閉自動命名，直接結束狀態
                 }
                 
-                await saveAppData();
+                await saveAppData(); // 儲存狀態變更
             }
 
             if (config.enableAutoWebSearch && conv.provider === 'gemini' && !conv.isWebSearchEnabled) {
@@ -4188,6 +4299,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         function cleanGeminiHistory(history) {
             const cleaned = []; let lastRole = null;
             history.forEach(msg => {
+                // 修正重點：
+                // 創建一個只包含 API 所需的 role 和 parts 欄位的新物件，
+                // 藉此移除如 createdAt 等自訂的額外屬性。
                 const sanitizedMsg = { role: msg.role, parts: msg.parts };
 
 
@@ -4215,9 +4329,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             let apiKey;
             if (provider === 'gemini') {
                 apiKey = config.apiKeys.gemini;
+            // ▼▼▼ 需求 2 修正：所有 OpenRouter 模型共用一個金鑰 ▼▼▼
             } else if (provider === 'openrouter') {
                 apiKey = config.apiKeys.openrouter;
             }
+            // ▲▲▲ 結束修正 ▲▲▲
 
 
 
@@ -4232,6 +4348,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             let url, payload, headers;
             let systemInstruction = null;
             
+            // ▼▼▼ 新增：語言指令 ▼▼▼
             let languageInstruction = '';
             const langMap = {
                 'zh-TW': '請用繁體中文回覆，除非使用者有特別要求。',
@@ -4239,6 +4356,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 'fr': 'Veuillez répondre en français, sauf si l\'utilisateur demande spécifiquement le contraire.'
             };
             languageInstruction = langMap[config.aiDefaultLanguage] || '';
+            // ▲▲▲ 結束新增 ▲▲▲
 
 
             if (conv.astrasId) {
@@ -4460,15 +4578,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (data && data.title && data.summary) {
                 conv.title = data.title;
                 conv.summary = data.summary;
-                conv.isNaming = false;
+                conv.isNaming = false; // <--- 新增此行，結束命名狀態
                 await saveAppData();
                 renderHistorySidebar();
                 if (conv.id === activeConversationId) { ALL_ELEMENTS.headerTitle.textContent = conv.title; }
                 showNotification(i18n[config.uiLanguage].autoNamed || '對話已自動命名', 'success');
             } else {
-                conv.isNaming = false;
+                // 如果命名失敗，也要結束命名狀態
+                conv.isNaming = false; // <--- 在 else 區塊也新增此行
                 await saveAppData();
-                renderHistorySidebar();
+                renderHistorySidebar(); // 重新渲染以移除 spinner
                 console.error("Auto-naming failed: No valid JSON found in the response.");
             }
         };
@@ -4557,7 +4676,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     const btn = document.createElement('button');
                     btn.className = 'follow-up-prompt-btn';
                     btn.textContent = p;
-                    btn.style.setProperty('--animation-delay', `${index * 70}ms`);
+                    btn.style.setProperty('--animation-delay', `${index * 70}ms`); // 為每個按鈕設置動畫延遲
                     btn.onclick = () => {
                         ALL_ELEMENTS.messageInput.value = p;
                         ALL_ELEMENTS.messageInput.focus();
@@ -4632,10 +4751,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
                 return;
             }
-            if (conv.archived || conv.deletedAt) { // 檢查是否已刪除
+            if (conv.archived || conv.deletedAt) { // 檢查是否在垃圾桶中
                 ALL_ELEMENTS.messageInput.disabled = true;
                 submitButton.disabled = true;
-                ALL_ELEMENTS.messageInput.placeholder = i18n[config.uiLanguage].viewingArchived || '正在檢視封存的對話，無法傳送訊息。';
+                ALL_ELEMENTS.messageInput.placeholder = conv.archived 
+                    ? i18n[config.uiLanguage].viewingArchived 
+                    : i18n[config.uiLanguage].viewingTrash;
                 return;
             }
 
@@ -4648,7 +4769,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (provider === 'gemini') {
                 hasApiKey = !!config.apiKeys.gemini;
             } else if (provider === 'openrouter') {
-                hasApiKey = !!config.apiKeys.openrouter;
+                hasApiKey = !!config.apiKeys.openrouter; // ▼▼▼ 需求 2 修正：檢查單一金鑰 ▼▼▼
             }
 
 
@@ -4674,16 +4795,19 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
         const setupSettingsModal = () => {
             ALL_ELEMENTS.geminiApiKeyInput.value = config.apiKeys.gemini;
+            // ▼▼▼ 需求 2 修正：設定單一 OpenRouter 金鑰輸入框的值 ▼▼▼
             ALL_ELEMENTS.openrouterApiKeyInputAll.value = config.apiKeys.openrouter;
+             // ▲▲▲ 結束修正 ▲▲▲
             ALL_ELEMENTS.followUpToggleSwitch.checked = config.enableFollowUp;
             ALL_ELEMENTS.autoNamingToggleSwitch.checked = config.autoNaming;
             ALL_ELEMENTS.autoWebSearchToggleSwitch.checked = config.enableAutoWebSearch;
             ALL_ELEMENTS.memoryToggle1.checked = config.memoryEnabled1;
             ALL_ELEMENTS.autoMemoryToggleSwitch.checked = config.enableAutoMemory;
+            // ▼▼▼ 新增：設定語言下拉選單的初始值 ▼▼▼
             ALL_ELEMENTS.uiLanguageSelect.value = config.uiLanguage;
             ALL_ELEMENTS.aiLanguageSelect.value = config.aiDefaultLanguage;
+            // ▲▲▲ 結束新增 ▲▲▲
             renderPersonalMemoryList();
-            renderTrashList(); // ▼▼▼ 【新增】渲染垃圾桶 ▼▼▼
             updateThemeButtons();
             renderModelManagementUI();
             renderAiBubbleColorDropdown();
@@ -4697,6 +4821,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     const sectionId = item.dataset.section + '-section';
                     document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
                     document.getElementById(sectionId).classList.add('active');
+                    // ▼▼▼ 【需求實現】如果點擊的是垃圾桶，則渲染其內容 ▼▼▼
+                    if (item.dataset.section === 'trash') {
+                        renderTrashSection();
+                    }
+                    // ▲▲▲ 【需求實現】結束 ▲▲▲
                 });
             });
         };
@@ -4706,7 +4835,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
         const saveSettings = async () => {
             config.apiKeys.gemini = ALL_ELEMENTS.geminiApiKeyInput.value.trim();
+            // ▼▼▼ 需求 2 修正：儲存單一 OpenRouter 金鑰 ▼▼▼
             config.apiKeys.openrouter = ALL_ELEMENTS.openrouterApiKeyInputAll.value.trim();
+            // ▲▲▲ 結束修正 ▲▲▲
             config.enableFollowUp = ALL_ELEMENTS.followUpToggleSwitch.checked;
             config.enableAutoWebSearch = ALL_ELEMENTS.autoWebSearchToggleSwitch.checked;
             config.aiBubbleColor = ALL_ELEMENTS.aiBubbleColorDropdown.querySelector('.color-dropdown-btn')?.dataset.color || 'default';
@@ -4714,9 +4845,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             config.autoNaming = ALL_ELEMENTS.autoNamingToggleSwitch.checked;
             config.memoryEnabled1 = ALL_ELEMENTS.memoryToggle1.checked;
             config.enableAutoMemory = ALL_ELEMENTS.autoMemoryToggleSwitch.checked;
+            // ▼▼▼ 新增：儲存語言設定 ▼▼▼
             config.uiLanguage = ALL_ELEMENTS.uiLanguageSelect.value;
             config.aiDefaultLanguage = ALL_ELEMENTS.aiLanguageSelect.value;
+            // ▲▲▲ 結束新增 ▲▲▲
             
+            // ▼▼▼ 新增：儲存 UI 顏色設定 ▼▼▼
             const selectedThemeMode = document.querySelector('input[name="color-theme"]:checked').value;
             const selectedCustomColor = ALL_ELEMENTS.customColorSwatches.querySelector('.selected')?.dataset.color || config.uiTheme.customColor;
             const selectedStyle = document.querySelector('input[name="color-style"]:checked')?.value || 'single';
@@ -4730,13 +4864,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             config.uiTheme.customColor = selectedCustomColor;
             config.uiTheme.style = selectedStyle;
             config.uiTheme.adaptiveGradient = selectedGradient;
+            // ▲▲▲ 結束：儲存 UI 顏色設定 ▲▲▲
             
             setAiBubbleColor();
             setUserBubbleColor();
-            applyUiTheme();
+            applyUiTheme(); // ▼▼▼ 新增呼叫 ▼▼▼
             
             await saveConfig();
-            applyLanguage(config.uiLanguage);
+            applyLanguage(config.uiLanguage); // 儲存後立即應用新語言
             renderModelSwitcher();
             renderChat();
             renderStore();
@@ -4747,6 +4882,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             showNotification(i18n[config.uiLanguage].settingsSaved || '設定已儲存！');
         };
         
+        // ▼▼▼ 修正：設定 AI 泡泡顏色函式 ▼▼▼
         const setAiBubbleColor = () => {
             const root = document.documentElement;
             const isWallpaperActive = document.body.classList.contains('custom-wallpaper-active');
@@ -4756,14 +4892,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
             if (isWallpaperActive) {
+                // 桌布模式下，套用帶透明度的玻璃效果
                 const rgbaColor = hexToRgba(hexColor, 0.75);
                 root.style.setProperty('--ai-bubble-bg', rgbaColor);
             } else {
+                // 一般模式下，套用原始顏色
                 root.style.setProperty('--ai-bubble-bg', hexColor);
             }
         };
 
 
+        // ▼▼▼ 修正：設定使用者泡泡顏色函式 ▼▼▼
         const setUserBubbleColor = () => {
             const root = document.documentElement;
             const isWallpaperActive = document.body.classList.contains('custom-wallpaper-active');
@@ -4773,9 +4912,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
             if (isWallpaperActive) {
+                // 桌布模式下，套用帶透明度的玻璃效果
                 const rgbaColor = hexToRgba(hexColor, 0.7);
                 root.style.setProperty('--user-bubble-bg', rgbaColor);
             } else {
+                // 一般模式下，套用原始顏色
                 root.style.setProperty('--user-bubble-bg', hexColor);
             }
         };
@@ -4883,6 +5024,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const existingPopover = document.getElementById('history-popover');
             if (existingPopover) {
                 existingPopover.remove();
+                 // 如果點擊同一個按鈕，則僅關閉，不重新打開
                 if (existingPopover.dataset.targetId === targetButton.id) return;
             }
 
@@ -5005,14 +5147,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const userKey = getUserKey(username);
             const savedUser = await getItem(userKey);
             const passwordHash = await hashString(password);
-            if (savedUser) {
+            if (savedUser) { // Login
                 const parsedUser = JSON.parse(savedUser);
                 if (parsedUser.passwordHash !== passwordHash) {
                     showNotification(i18n[config.uiLanguage].passwordIncorrect || '密碼錯誤。', 'error');
                     return;
                 }
                 currentUser = parsedUser;
-            } else {
+            } else { // Register
                 currentUser = { username, passwordHash };
                 await setItem(userKey, JSON.stringify(currentUser));
             }
@@ -5023,15 +5165,18 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             await setItem('chat_lastUser', username);
 
 
+            // 觸發登出動畫
             ALL_ELEMENTS.authContainer.classList.add('fade-out');
             ALL_ELEMENTS.appContainer.classList.remove('hidden');
 
 
+            // 確保瀏覽器在添加下一個 class 前有時間反應
             requestAnimationFrame(() => {
                 ALL_ELEMENTS.appContainer.classList.add('visible');
             });
 
 
+            // 動畫結束後徹底隱藏登入畫面
             ALL_ELEMENTS.authContainer.addEventListener('transitionend', () => {
                 ALL_ELEMENTS.authContainer.style.display = 'none';
             }, { once: true });
@@ -5047,6 +5192,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
 
 
+        // ▼▼▼ 新增：清除所有資料的函式 ▼▼▼
         const handleDeleteAllData = async () => {
             const confirmation = await showCustomDialog({
                 title: i18n[config.uiLanguage].deleteAllDataTitle || '永久刪除所有資料',
@@ -5086,6 +5232,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 showNotification(i18n[config.uiLanguage].incorrectInput || '輸入錯誤，操作已取消。', 'warning');
             }
         };
+        // ▲▲▲ 結束新增 ▲▲▲
 
 
 
@@ -5264,18 +5411,23 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (count === 0) return;
             if (!(await showCustomConfirm(`${i18n[config.uiLanguage].confirmBatchMoveToTrash || '您確定要將這'} ${count} ${i18n[config.uiLanguage].conversations || '個對話移至垃圾桶嗎？'}`))) return;
             
+            let isActiveChatDeleted = false;
             for (const id of selectedConversationIds) {
                 const conv = conversations.find(c => c.id === id);
                 if (conv) {
                     conv.deletedAt = new Date().toISOString();
+                    if (conv.id === activeConversationId) {
+                        isActiveChatDeleted = true;
+                    }
                 }
             }
 
-            if (selectedConversationIds.has(activeConversationId)) {
+            if (isActiveChatDeleted) {
                 const nextConv = conversations.find(c => !c.archived && !c.deletedAt);
                 activeConversationId = nextConv ? nextConv.id : null;
                 if (!activeConversationId) startNewChat();
             }
+            
             await saveAppData();
             toggleSelectionMode();
             showNotification(`${i18n[config.uiLanguage].batchMoveToTrashSuccess || '已成功將'} ${count} ${i18n[config.uiLanguage].conversations || '個對話移至垃圾桶。'}`, 'success');
@@ -5285,7 +5437,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (count === 0) return;
             
             conversations.forEach(c => {
-                if (selectedConversationIds.has(c.id)) {
+                if (selectedConversationIds.has(c.id) && !c.deletedAt) {
                     c.archived = true;
                 }
             });
@@ -5305,6 +5457,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         const renderBatchMoveModal = (singleConvId = null) => {
             const container = ALL_ELEMENTS.batchMoveFolderList;
+            // 儲存是哪個對話觸發了移動（如果有的話）
             container.dataset.singleConvId = singleConvId || ''; 
             container.innerHTML = `
                 <button class="w-full text-left p-2 rounded-md hover:bg-[var(--hover-bg)]" data-folder-id="none">
@@ -5318,6 +5471,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 btn.textContent = folder.name;
                 container.appendChild(btn);
             });
+            // 新增資料夾選項
             const newFolderOption = document.createElement('button');
             newFolderOption.className = 'w-full text-left p-2 rounded-md hover:bg-[var(--hover-bg)] flex items-center gap-2 border-t border-[var(--border-color)] mt-2';
             newFolderOption.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path><line x1="12" y1="10" x2="12" y2="16"></line><line x1="9" y1="13" x2="15" y2="13"></line></svg>${i18n[config.uiLanguage].createNewFolder || '建立新資料夾'}`;
@@ -5330,6 +5484,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             });
             container.appendChild(newFolderOption);
+            // 綁定點擊事件
             container.querySelectorAll('button[data-folder-id]').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const folderId = btn.dataset.folderId === 'none' ? null : btn.dataset.folderId;
@@ -5354,7 +5509,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             toggleModal(ALL_ELEMENTS.batchMoveModal, false);
 
             if (!singleConvId) {
-                toggleSelectionMode();
+                toggleSelectionMode(); // 只有在批次模式下才退出
             }
 
             showNotification(`${i18n[config.uiLanguage].moved || '已移動'} ${count} ${i18n[config.uiLanguage].conversations || '個對話。'}`);
@@ -5362,15 +5517,18 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const highlightText = (text, query) => {
             if (!query || !text) return text;
             try {
+                // 將多關鍵字查詢（用 | 分隔）轉換為正規表示式
                 const safeQuery = query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
                 const regex = new RegExp(`(${safeQuery})`, 'gi');
                 return text.replace(regex, '<mark class="bg-yellow-300 dark:bg-yellow-500 rounded px-1">$1</mark>');
             } catch (e) {
+                // 如果正規表示式創建失敗，返回原始文本
                 console.error("Highlight regex error:", e);
                 return text;
             }
         };
 
+        // ▼▼▼ 【需求 1 修改】重構搜尋函式以整合檢視功能 ▼▼▼
         const performSearchAndRenderResults = async () => {
             const query = ALL_ELEMENTS.modalSearchInput.value.trim();
             const scope = ALL_ELEMENTS.modalSearchScopeSelect.value;
@@ -5384,15 +5542,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
             let results = [];
             
-            const searchableConversations = conversations.filter(c => !c.deletedAt); // 只搜尋未刪除的對話
-
             if (scope === 'natural') {
                 try {
                     const weightedKeywords = await generateSearchKeywords(query);
                     if (!weightedKeywords || weightedKeywords.length === 0) {
                         throw new Error(i18n[config.uiLanguage].keywordGenerationFailed || '無法從您的查詢中提取關鍵字。');
                     }
-                    results = calculateRelevanceScores(weightedKeywords, searchableConversations);
+                    results = calculateRelevanceScores(weightedKeywords);
                 } catch (error) {
                     container.innerHTML = `<p class="text-center text-red-500">${error.message}</p>`;
                     return;
@@ -5400,7 +5556,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             } else {
                 const lowerCaseQuery = query.toLowerCase();
                 const searchIn = scope === 'keyword-title' ? ['title'] : ['title', 'content'];
-                searchableConversations.forEach(conv => {
+                conversations.filter(c => !c.deletedAt).forEach(conv => { // 過濾掉垃圾桶中的對話
                     let matchFound = false;
                     let titleHTML = conv.title;
                     let snippetHTML = '';
@@ -5476,14 +5632,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 const viewBtn = item.querySelector('.search-view-btn');
                 viewBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    showConversationInViewModal(conv.id, ALL_ELEMENTS.searchViewModal, ALL_ELEMENTS.searchViewTitle, ALL_ELEMENTS.searchViewContent);
+                    showConversationInViewModal(conv.id);
                 });
 
                 let pressTimer = null;
                 item.addEventListener('touchstart', (e) => {
                     pressTimer = setTimeout(() => {
                         e.preventDefault();
-                        showConversationInViewModal(conv.id, ALL_ELEMENTS.searchViewModal, ALL_ELEMENTS.searchViewTitle, ALL_ELEMENTS.searchViewContent);
+                        showConversationInViewModal(conv.id);
                     }, 500);
                 }, { passive: true });
                 item.addEventListener('touchend', () => clearTimeout(pressTimer));
@@ -5494,17 +5650,20 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
         };
         
-        const showConversationInViewModal = (convId, modalElement, titleElement, contentElement) => {
+        // 【需求 1 實現】顯示對話檢視彈窗的函式
+        const showConversationInViewModal = (convId) => {
             const conv = conversations.find(c => c.id === convId);
             if (!conv) return;
 
-            titleElement.textContent = conv.title;
-            contentElement.innerHTML = ''; 
+            ALL_ELEMENTS.searchViewTitle.textContent = conv.title;
+            const contentContainer = ALL_ELEMENTS.searchViewContent;
+            contentContainer.innerHTML = ''; 
 
             if (conv.messages.length === 0) {
-                contentElement.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].noMessages || '此對話沒有訊息。'}</p>`;
+                contentContainer.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].noMessages || '此對話沒有訊息。'}</p>`;
             } else {
                  conv.messages.forEach(msg => {
+                    // 這段渲染邏輯與 addMessageToUI / showArchivedChatPreview 相同
                     const isUser = msg.role === 'user';
                     const messageDiv = document.createElement('div');
                     messageDiv.className = `flex items-start gap-2 md:gap-4 ${isUser ? 'justify-end user-message' : 'model-message'}`;
@@ -5514,16 +5673,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     let contentHTML = msg.parts.map(p => p.text ? (isUser ? p.text.replace(/\n/g, '<br>') : renderMarkdown(p.text)) : '').join('');
                     const messageBubble = `<div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble"><div class="prose prose-sm max-w-none message-content ${isUser ? 'text-white' : 'text-[var(--text-primary)]'}">${contentHTML}</div></div>`;
                     messageDiv.innerHTML = isUser ? `${messageBubble}${icon}` : `${icon}${messageBubble}`;
-                    contentElement.appendChild(messageDiv);
+                    contentContainer.appendChild(messageDiv);
                 });
             }
             
-            if (modalElement === ALL_ELEMENTS.searchViewModal) {
-                ALL_ELEMENTS.searchViewConfirmBtn.dataset.id = convId;
-            }
-            toggleModal(modalElement, true);
+            ALL_ELEMENTS.searchViewConfirmBtn.dataset.id = convId; // 將 ID 存儲到確認按鈕上
+            toggleModal(ALL_ELEMENTS.searchViewModal, true);
         };
+        // ▲▲▲ 【需求 1 結束】 ▲▲▲
 
+        // 新增: 使用AI生成自然語言搜索的關鍵字 (帶權重)
         const generateSearchKeywords = async (naturalQuery) => {
             const prompt = `分析以下自然語言查詢，提取 5-10 個最相關的核心關鍵字。對於每個關鍵字，根據其在查詢中的重要性，給予一個 1 到 10 的權重分數（10為最重要）。請嚴格按照以下 JSON 格式輸出，不要有任何額外的文字或解釋。
 範例:
@@ -5547,7 +5706,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             return await callApiWithSchema(prompt, responseSchema);
         };
         
-        const calculateRelevanceScores = (weightedKeywords, conversationList) => {
+        // 新增: 計算相關性分數的複雜邏輯
+        const calculateRelevanceScores = (weightedKeywords) => {
             let results = [];
             let processedConvIds = new Set();
 
@@ -5555,7 +5715,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const totalWeightSum = weightedKeywords.reduce((sum, kw) => sum + kw.weight, 0);
 
 
-            conversationList.forEach(conv => {
+            conversations.filter(c => !c.deletedAt).forEach(conv => {
                 if (processedConvIds.has(conv.id)) return;
 
 
@@ -5569,34 +5729,40 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
                 weightedKeywords.forEach(kw => {
                     const keywordLower = kw.keyword.toLowerCase();
-                    maxPossibleScore += kw.weight * 10;
+                    maxPossibleScore += kw.weight * 10; // 理論上的最高分，用於歸一化
 
 
+                    // 1. 檢查標題
                     if (conv.title.toLowerCase().includes(keywordLower)) {
-                        totalScore += kw.weight * 10;
+                        totalScore += kw.weight * 10; // 在標題中找到，權重最高
                         foundKeywords.add(keywordLower);
                         titleHTML = highlightText(titleHTML, kw.keyword);
                     }
 
 
+                    // 2. 檢查內文
                     conv.messages.forEach((msg, msgIndex) => {
                         msg.parts.forEach(part => {
                             if (part.text && part.text.toLowerCase().includes(keywordLower)) {
                                 foundKeywords.add(keywordLower);
 
 
+                                // 2a. 頻率加權
                                 const occurrences = (part.text.toLowerCase().match(new RegExp(keywordLower, 'g')) || []).length;
-                                totalScore += kw.weight * occurrences * 0.5;
+                                totalScore += kw.weight * occurrences * 0.5; // 每次出現增加基礎分
 
 
+                                // 2b. 時效性加權 (越新的訊息分數越高)
                                 const recencyWeight = (msgIndex + 1) / totalMessages;
                                 totalScore += kw.weight * recencyWeight * 2;
 
 
+                                // 2c. 角色加權 (使用者提問更重要)
                                 const roleWeight = msg.role === 'user' ? 1.5 : 1;
                                 totalScore += kw.weight * roleWeight;
 
 
+                                // 產生程式碼片段
                                 if (!bestSnippet) {
                                     const text = part.text;
                                     const matchIndex = text.toLowerCase().indexOf(keywordLower);
@@ -5611,14 +5777,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
                 if (foundKeywords.size > 0) {
+                    // 3. 關鍵字覆蓋率加權
                     const coverageRatio = foundKeywords.size / weightedKeywords.length;
-                    totalScore *= (1 + coverageRatio);
+                    totalScore *= (1 + coverageRatio); // 覆蓋率越高，總分加成越多
 
 
-                    let finalScore = Math.min(100, Math.round((totalScore / maxPossibleScore) * 100 * 3));
-                    finalScore = Math.min(99, finalScore);
+                    // 4. 分數歸一化到 0-100
+                    let finalScore = Math.min(100, Math.round((totalScore / maxPossibleScore) * 100 * 3)); // *3 是放大係數，讓分數更有區別度
+                    finalScore = Math.min(99, finalScore); // 避免輕易達到100分
 
 
+                    // 組合所有關鍵字用於高亮顯示
                     const allKeywordsQuery = weightedKeywords.map(kw => kw.keyword).join('|');
                     const highlightedSnippet = highlightText(bestSnippet, allKeywordsQuery);
 
@@ -5686,7 +5855,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderFilePreviews();
         };
         
+        // ▼▼▼ 程式碼修正 v2：增強匯出功能的穩健性 ▼▼▼
         const handleExport = async () => {
+            // Step 1: Gather and prepare the data. This part is synchronous and safe.
             const dataToExport = {
                 user_credentials: {
                     username: currentUser.username,
@@ -5716,7 +5887,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const fileName = `chatbot_backup_${currentUser.username}_${new Date().toISOString().split('T')[0]}.json`;
             const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
 
+            // Step 2: Attempt the download using a prioritized sequence of methods.
             try {
+                // Method 1: File System Access API (Most reliable for modern desktops)
                 if ('showSaveFilePicker' in window) {
                     console.log("Attempting export with: File System Access API");
                     const handle = await window.showSaveFilePicker({
@@ -5732,9 +5905,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     
                     toggleModal(ALL_ELEMENTS.exportDataModal, false);
                     showNotification(i18n[config.uiLanguage].exportSuccess || '資料匯出成功！', 'success');
-                    return;
+                    return; // Success, exit the function
                 }
 
+                // Method 2: Web Share API (For mobile devices)
                 const shareFile = new File([blob], fileName, {type: blob.type});
                 if (navigator.share && navigator.canShare && navigator.canShare({ files: [shareFile] })) {
                     console.log("Attempting export with: Web Share API");
@@ -5745,19 +5919,22 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     });
                     
                     toggleModal(ALL_ELEMENTS.exportDataModal, false);
-                    return;
+                    // No success notification here, as the user might cancel, which is not an error.
+                    return; // Success (or user cancellation), exit the function
                 }
 
+                // Method 3: Traditional <a> tag download (Fallback for older browsers)
                 console.log("Attempting export with: Fallback <a> tag method");
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
-                a.style.display = 'none';
+                a.style.display = 'none'; // Hide the element
                 a.href = url;
                 a.download = fileName;
                 
                 document.body.appendChild(a);
-                a.click();
+                a.click(); // This is the line that might fail
                 
+                // Clean up
                 URL.revokeObjectURL(url);
                 document.body.removeChild(a);
 
@@ -5765,8 +5942,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 showNotification(i18n[config.uiLanguage].exportSuccess || '資料匯出成功！', 'success');
 
             } catch (error) {
+                // Ignore errors caused by the user cancelling the action
                 if (error.name !== 'AbortError') { 
-                    console.error("Export failed with error:", error);
+                    console.error("Export failed with error:", error); // Log the full error for debugging
+                    // Provide a more specific error message if possible
                     let errorMessage = i18n[config.uiLanguage].exportFailed || '匯出失敗';
                     if (error.name === 'SecurityError' || error.message.toLowerCase().includes('permission denied')) {
                        errorMessage = i18n[config.uiLanguage].exportPermissionError || "瀏覽器阻止了下載。請檢查您的瀏覽器設定，或手動啟用彈出視窗/下載權限。";
@@ -5777,6 +5956,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             }
         };
+        // ▲▲▲ 結束修正 ▲▲▲
 
 
         const performImport = async (data) => {
@@ -5830,6 +6010,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     toggleModal(ALL_ELEMENTS.importDataModal, false);
                     showNotification(i18n[config.uiLanguage].importSuccess, 'success');
 
+                    // ▼▼▼ 修正：移除此處不必要的重新載入，保留匯入的設定 ▼▼▼
+                    // await loadConfig(); 
+                    // await loadAppData();
+                    // ▲▲▲ 結束修正 ▲▲▲
                     
                     if (config.customWallpaper) {
                         try {
@@ -5847,8 +6031,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     applyUiTheme();
                     setAiBubbleColor();
                     setUserBubbleColor();
-                    applyLanguage(config.uiLanguage);
-                    setupSettingsModal();
+                    applyLanguage(config.uiLanguage); // 匯入後應用語言
+                    setupSettingsModal(); // 重新整理設定頁面以顯示新值
                     
                     const firstConv = conversations.find(c => !c.archived && !c.deletedAt);
                     if (firstConv) {
@@ -5901,9 +6085,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         }
 
 
+                        // 驗證通過
                         const userKey = getUserKey(username);
                         const savedUser = await getItem(userKey);
-                        if (!savedUser) {
+                        if (!savedUser) { // 如果使用者在此裝置上不存在，則建立
                            await setItem(userKey, JSON.stringify({ username, passwordHash }));
                         }
                         currentUser = { username, passwordHash };
@@ -5913,6 +6098,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         await performImport(data);
 
 
+                        // 轉場到主應用
                         ALL_ELEMENTS.authContainer.classList.add('fade-out');
                         ALL_ELEMENTS.appContainer.classList.remove('hidden');
                         requestAnimationFrame(() => {
@@ -6042,20 +6228,25 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
         }
         
+        // ▼▼▼ 新增：具備備用方案的複製文字函式 ▼▼▼
         async function copyTextToClipboard(text) {
+            // 優先嘗試現代的 Clipboard API
             if (navigator.clipboard && window.isSecureContext) {
                 try {
                     await navigator.clipboard.writeText(text);
-                    return;
+                    return; // 成功後直接返回
                 } catch (err) {
                     console.warn('Clipboard API 失敗，改用備用方案。', err);
+                    // 如果失敗，則繼續執行下方的備用方案
                 }
             }
 
 
+            // 備用方案：使用 document.execCommand
             const textArea = document.createElement("textarea");
             textArea.value = text;
             
+            // 讓 textarea 在畫面上看不見
             textArea.style.position = "fixed";
             textArea.style.top = "-9999px";
             textArea.style.left = "-9999px";
@@ -6071,11 +6262,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             } catch (err) {
                 document.body.removeChild(textArea);
-                throw err;
+                throw err; // 如果備用方案也失敗，則拋出錯誤
             }
             
             document.body.removeChild(textArea);
         }
+        // ▲▲▲ 結束新增 ▲▲▲
 
 
         const setupVoiceInput = () => {
@@ -6169,6 +6361,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const refineAndStoreMemories = async (potentialMemories) => {
             if (potentialMemories.length === 0) return;
             if (personalMemories.length === 0) {
+                // 如果沒有現有記憶，直接新增所有潛在記憶。
                 potentialMemories.forEach(content => {
                     personalMemories.push({ id: crypto.randomUUID(), content, enabled: true });
                 });
@@ -6257,11 +6450,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                 }
                                 break;
                             case 'IGNORE':
+                                // Do nothing
                                 break;
                         }
                     });
                     if (memoriesChanged) {
                         await saveAppData();
+                        // 只在設定頁面開啟時才重新渲染列表
                         if (!ALL_ELEMENTS.settingsModal.classList.contains('hidden')) {
                            renderPersonalMemoryList();
                         }
@@ -6327,6 +6522,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             };
             const extracted = await callApiWithSchema(prompt, responseSchema);
             if (extracted && extracted.length > 0) {
+                // 將提取的潛在記憶交給新的整理函式處理
                 await refineAndStoreMemories(extracted);
             }
         };
@@ -6343,13 +6539,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (modelInfo) {
                 if (modelInfo.provider === 'gemini' && !config.apiKeys.gemini) {
                     needsKey = true;
-                } else if (modelInfo.provider === 'openrouter' && !config.apiKeys.openrouter) {
+                } else if (modelInfo.provider === 'openrouter' && !config.apiKeys.openrouter) { // ▼▼▼ 需求 2 修正：檢查單一金鑰 ▼▼▼
                     needsKey = true;
                 }
             }
             ALL_ELEMENTS.apiKeyWarningBadge.classList.toggle('hidden', !needsKey);
         };
         
+        // ▼▼▼ 需求 1 修改：數據儀表板相關函式 (增加日檢視) ▼▼▼
         const openDashboard = () => {
             renderDashboardStats();
             renderModelUsageChart();
@@ -6358,11 +6555,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         
         const renderDashboardStats = () => {
-            const activeConversations = conversations.filter(c => !c.deletedAt);
-            ALL_ELEMENTS.totalConvStat.textContent = activeConversations.length;
+            ALL_ELEMENTS.totalConvStat.textContent = conversations.filter(c => !c.deletedAt).length;
             ALL_ELEMENTS.totalFolderStat.textContent = folders.length;
             
-            const modelCounts = activeConversations.reduce((acc, conv) => {
+            const modelCounts = conversations.filter(c => !c.deletedAt).reduce((acc, conv) => {
                 const modelName = MODELS.find(m => m.id === conv.model)?.name || '未知模型';
                 acc[modelName] = (acc[modelName] || 0) + 1;
                 return acc;
@@ -6423,7 +6619,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         
         const setupTimeAnalysis = () => {
             const { timeAnalysisYearSelect, timeAnalysisMonthSelect, timeAnalysisDaySelect } = ALL_ELEMENTS;
-            const allMessages = conversations.filter(c => !c.deletedAt).flatMap(c => c.messages.map(m => new Date(m.createdAt)));
+            const allMessages = conversations.flatMap(c => c.messages.map(m => new Date(m.createdAt)));
             const years = [...new Set(allMessages.map(d => d.getFullYear()))].sort((a,b) => b-a);
 
 
@@ -6490,11 +6686,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
             let labels, data, chartType, label;
             
-            const allMessages = conversations.filter(c => !c.deletedAt).flatMap(c => c.messages);
+            const allMessages = conversations.flatMap(c => c.messages);
             const lang = config.uiLanguage;
 
 
-            if (year && month && day) {
+            if (year && month && day) { // Hourly view
                 chartType = 'line';
                 label = `${year}${i18n[lang].yearSuffix || '年'}${month}${i18n[lang].monthSuffix || '月'}${day}${i18n[lang].daySuffix || '日'} ${i18n[lang].hourlyMessageCount || '每小時訊息數'}`;
                 labels = Array.from({length: 24}, (_, i) => `${i}:00`);
@@ -6506,7 +6702,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         data[msgDate.getHours()]++;
                     }
                 });
-            } else if (year && month) {
+            } else if (year && month) { // Daily view
                 chartType = 'bar';
                 label = `${year}${i18n[lang].yearSuffix || '年'}${month}${i18n[lang].monthSuffix || '月'} ${i18n[lang].dailyMessageCount || '每日訊息數'}`;
                 const daysInMonth = new Date(year, month, 0).getDate();
@@ -6519,7 +6715,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         data[msgDate.getDate() - 1]++;
                     }
                 });
-            } else if (year) {
+            } else if (year) { // Monthly view
                 chartType = 'line';
                 label = `${year}${i18n[lang].yearSuffix || '年'} ${i18n[lang].monthlyMessageCount || '每月訊息數'}`;
                 labels = i18n[lang].months || ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
@@ -6532,7 +6728,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         data[msgDate.getMonth()]++;
                     }
                 });
-            } else {
+            } else { // Yearly view
                 chartType = 'bar';
                 label = i18n[lang].yearlyMessageCount || '每年訊息數';
                 const years = [...new Set(allMessages.map(d => new Date(d.createdAt).getFullYear()))].sort();
@@ -6572,10 +6768,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             });
         };
+        // ▲▲▲ 結束修改 ▲▲▲
 
 
 
 
+        // ▼▼▼ 修改/新增：自訂桌布 & UI 顏色功能相關函式 (優化取色邏輯) ▼▼▼
         const getDominantColorPalette = (imageDataUrl) => {
             return new Promise((resolve, reject) => {
                 const img = new Image();
@@ -6591,20 +6789,22 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     const colorCount = {};
 
 
-                    for (let i = 0; i < imageData.length; i += 4 * 5) {
+                    for (let i = 0; i < imageData.length; i += 4 * 5) { // Sample every 5th pixel
                         const r = imageData[i];
                         const g = imageData[i + 1];
                         const b = imageData[i + 2];
                         const a = imageData[i + 3];
 
 
-                        if (a < 125) continue;
+                        if (a < 125) continue; // Skip transparent pixels
 
 
+                        // Filter out grayscale colors
                         const max = Math.max(r, g, b);
                         const min = Math.min(r, g, b);
                         if (max - min < 20) continue; 
                         
+                        // Round colors to reduce the number of unique colors
                         const r_round = Math.round(r / 10) * 10;
                         const g_round = Math.round(g / 10) * 10;
                         const b_round = Math.round(b / 10) * 10;
@@ -6616,10 +6816,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
                     const sortedColors = Object.keys(colorCount)
                         .sort((a, b) => colorCount[b] - colorCount[a])
-                        .slice(0, 5)
+                        .slice(0, 5) // Get top 5 colors
                         .map(rgbStr => `#${rgbStr.split(',').map(c => parseInt(c).toString(16).padStart(2, '0')).join('')}`);
                     
-                    resolve(sortedColors.length > 0 ? sortedColors : ['#3b82f6']);
+                    resolve(sortedColors.length > 0 ? sortedColors : ['#3b82f6']); // Fallback
                 };
                 img.onerror = reject;
             });
@@ -6665,12 +6865,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     break;
             }
             
+            // For single color, determine text color, for gradient, default to white
             const textColor = config.uiTheme.style === 'gradient' ? '#ffffff' : getTextColorForBackground(primaryBg);
 
 
             root.style.setProperty('--button-primary-bg', primaryBg);
             root.style.setProperty('--button-primary-text', textColor);
-            updateThemeButtons();
+            updateThemeButtons(); // Re-apply active styles for theme buttons
         };
         
         const renderUiColorOptions = () => {
@@ -6680,12 +6881,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const currentStyle = config.uiTheme.style;
 
 
+            // Set radio button state
             uiColorOptions.querySelector(`input[value="${currentMode}"]`).checked = true;
             buttonStyleContainer.querySelector(`input[value="${currentStyle}"]`).checked = true;
 
 
 
 
+            // Render custom color swatches
             customColorSwatches.innerHTML = '';
             Object.entries(UI_THEME_COLORS).forEach(([name, hex]) => {
                 const swatch = document.createElement('div');
@@ -6703,6 +6906,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
 
 
+            // Render gradient swatches
             gradientSwatches.innerHTML = '';
             if(config.uiTheme.adaptivePalette && config.uiTheme.adaptivePalette.length > 1) {
                 const palette = config.uiTheme.adaptivePalette;
@@ -6733,6 +6937,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
 
+            // Toggle visibility of sections
             const updateVisibility = () => {
                 const mode = document.querySelector('input[name="color-theme"]:checked').value;
                 const style = document.querySelector('input[name="color-style"]:checked').value;
@@ -6743,6 +6948,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 gradientPickerContainer.classList.toggle('hidden', !(mode === 'adaptive' && style === 'gradient'));
             };
             
+            // Add event listeners
             uiColorOptions.querySelectorAll('input[name="color-theme"]').forEach(radio => {
                 radio.addEventListener('change', updateVisibility);
             });
@@ -6798,6 +7004,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 document.body.classList.remove('custom-wallpaper-active', 'wallpaper-is-dark');
                 setTheme(config.theme);
             }
+            // 無論是否啟用桌布，都需要重新計算泡泡顏色
             setAiBubbleColor();
             setUserBubbleColor();
         };
@@ -6829,6 +7036,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 });
             };
             reader.readAsDataURL(file);
+             // 清空 input 的值，以便下次可以選擇同一個檔案
             event.target.value = '';
         };
         
@@ -6837,12 +7045,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
             const canvas = cropperInstance.getCroppedCanvas({
+                // 為了效能，設定一個最大寬度，避免產生過大的圖片
                 maxWidth: 1920, 
                 imageSmoothingEnabled: true,
                 imageSmoothingQuality: 'high',
             });
             
-            const imageDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+            const imageDataUrl = canvas.toDataURL('image/jpeg', 0.9); // 轉換為高質量的 JPEG
 
 
             try {
@@ -6881,7 +7090,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             applyUiTheme();
             showNotification(i18n[config.uiLanguage].defaultAppearanceRestored, 'success');
         };
+        // ▲▲▲ 結束：自訂桌布 & UI 顏色功能相關函式 ▲▲▲
         
+        // ▼▼▼ 新增：Astras 商店與頭像功能相關函式 ▼▼▼
         const openStore = () => {
             ALL_ELEMENTS.appContainer.classList.remove('visible');
             ALL_ELEMENTS.storeContainer.classList.remove('hidden');
@@ -6911,15 +7122,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     const grid = ALL_ELEMENTS.storeGrid;
     grid.innerHTML = '';
     
+    // 取得當前語言的翻譯
     const translations = i18n[config.uiLanguage] || i18n['zh-TW'];
 
 
+    // 將官方 Astras 的資料轉換成使用翻譯鍵的版本
     const translatedOfficialAstras = OFFICIAL_ASTRAS.map(ast => {
         const keyBase = 'astras_' + ast.id.replace(/-/g, '_');
         return {
             ...ast,
-            name: translations[keyBase + '_name'] || ast.name,
-            description: translations[keyBase + '_desc'] || ast.description
+            name: translations[keyBase + '_name'] || ast.name, // 如果找不到翻譯，則使用原始名稱
+            description: translations[keyBase + '_desc'] || ast.description // 如果找不到翻譯，則使用原始描述
         };
     });
 
@@ -6930,6 +7143,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const card = document.createElement('div');
         card.className = 'astras-store-card';
         
+        // 判斷訂閱狀態時，要用原始的 officialId
         const originalId = ast.officialId || ast.id;
         const isSubscribed = astras.some(userAstra => userAstra.officialId === originalId);
         const isUserCreated = !ast.officialId && astras.some(userAstra => userAstra.id === originalId);
@@ -6985,8 +7199,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 if (officialAstra) {
                     const newAstra = {
                         ...officialAstra,
-                        id: crypto.randomUUID(),
-                        officialId: officialAstra.id,
+                        id: crypto.randomUUID(), // Create a new unique ID for the user's copy
+                        officialId: officialAstra.id, // Link to the original
                     };
                     astras.unshift(newAstra);
                     showNotification(i18n[config.uiLanguage].subscribed || '訂閱成功！', 'success');
@@ -7055,7 +7269,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             toggleModal(ALL_ELEMENTS.astrasAvatarModal, false);
             editingAstraForAvatarId = null;
         };
+        // ▲▲▲ 結束新增 ▲▲▲
         
+        // ▼▼▼ 新增：語言切換功能 ▼▼▼
         const applyLanguage = (lang) => {
             const translations = i18n[lang] || i18n['zh-TW'];
             document.querySelectorAll('[data-lang-key]').forEach(el => {
@@ -7076,12 +7292,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     el.title = translations[key];
                 }
             });
+            // 更新登入頁面語言顯示
             if(ALL_ELEMENTS.loginLangLabel) {
                 ALL_ELEMENTS.loginLangLabel.textContent = translations.currentLanguageName || '繁體中文';
             }
+            // 更新根元素 lang 屬性
             document.documentElement.lang = lang;
         };
+        // ▲▲▲ 結束新增 ▲▲▲
 
+        // ▼▼▼ 【需求實現】手機版長按選單相關函式 (含滑動關閉) ▼▼▼
         const showMobileContextMenu = (convId) => {
             const oldMenu = document.getElementById('mobile-context-menu-wrapper');
             if (oldMenu) oldMenu.remove();
@@ -7134,6 +7354,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
             overlay.addEventListener('click', closeMenu);
 
+            // 【新增】滑動關閉邏輯
             let touchStartY = 0;
             let touchMoveY = 0;
             menu.addEventListener('touchstart', (e) => {
@@ -7142,20 +7363,21 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             menu.addEventListener('touchmove', (e) => {
                 touchMoveY = e.touches[0].clientY;
                 const deltaY = touchMoveY - touchStartY;
-                if (deltaY > 0) {
+                if (deltaY > 0) { // 只在向下滑動時作用
                     menu.style.transform = `translateY(${deltaY}px)`;
                 }
             }, { passive: true });
             menu.addEventListener('touchend', () => {
                 const deltaY = touchMoveY - touchStartY;
-                if (deltaY > 100) {
+                if (deltaY > 100) { // 滑動超過 100px 則觸發關閉
                     closeMenu();
-                } else {
+                } else { // 否則彈回原位
                     menu.style.transform = '';
                 }
                 touchStartY = 0;
                 touchMoveY = 0;
             });
+            // 【結束】滑動關閉邏輯
 
             menu.addEventListener('click', (e) => {
                 const actionTarget = e.target.closest('.menu-item');
@@ -7230,6 +7452,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
             overlay.addEventListener('click', closeMenu);
             
+            // 【新增】滑動關閉邏輯
             let touchStartY = 0;
             let touchMoveY = 0;
             menu.addEventListener('touchstart', (e) => {
@@ -7252,6 +7475,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 touchStartY = 0;
                 touchMoveY = 0;
             });
+            // 【結束】滑動關閉邏輯
 
             menu.addEventListener('click', (e) => {
                 const actionTarget = e.target.closest('.menu-item');
@@ -7275,6 +7499,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }, 300);
             });
         };
+        // ▼▼▼ 【需求實現】新增：Astras 的手機長按選單 ▼▼▼
         const showMobileContextMenuForAstras = (astrasId) => {
             const oldMenu = document.getElementById('mobile-context-menu-wrapper');
             if (oldMenu) oldMenu.remove();
@@ -7290,6 +7515,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             menu.id = 'mobile-context-menu';
 
             let menuOptions = '';
+            // 根據是否為官方商店訂閱的 Astra，顯示不同選項
             if (astra.officialId) {
                 menuOptions = `
                     <div class="menu-item" data-action="edit-avatar"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg><span>${i18n[config.uiLanguage].editAvatar || '編輯頭像'}</span></div>
@@ -7325,6 +7551,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
             overlay.addEventListener('click', closeMenu);
             
+            // 滑動關閉邏輯
             let touchStartY = 0;
             let touchMoveY = 0;
             menu.addEventListener('touchstart', (e) => { touchStartY = e.touches[0].clientY; }, { passive: true });
@@ -7367,10 +7594,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }, 300);
             });
         };
-        
+        // ▲▲▲ 【需求實現】結束 ▲▲▲
+
+        // ▼▼▼ 【需求實現】滾動到底部按鈕邏輯 ▼▼▼
         const setupScrollToBottomButton = () => {
             const { scrollToBottomBtn, chatContainer } = ALL_ELEMENTS;
 
+            // 處理按鈕點擊
             scrollToBottomBtn.addEventListener('click', () => {
                 isAutoScrolling = true;
                 scrollToBottomBtn.classList.remove('visible');
@@ -7384,13 +7614,15 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     behavior: 'smooth'
                 });
 
+                // 設置一個計時器，如果在滾動結束前沒有被用戶中斷，則將 isAutoScrolling 設回 false
                 const scrollEndTimer = setTimeout(() => {
                     isAutoScrolling = false;
-                }, 1000);
+                }, 1000); // 1秒是通常平滑滾動所需的最大時間
 
+                // 監聽手動中斷事件，如果中斷則清除計時器
                 const interruptHandler = () => {
                     clearTimeout(scrollEndTimer);
-                    isAutoScrolling = false;
+                    isAutoScrolling = false; // 立即設定
                     chatContainer.removeEventListener('wheel', interruptHandler);
                     chatContainer.removeEventListener('touchstart', interruptHandler);
                 };
@@ -7398,7 +7630,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 chatContainer.addEventListener('touchstart', interruptHandler, { once: true });
             });
 
+            // 監聽聊天容器的滾動事件
             const handleScroll = () => {
+                // 如果是程式觸發的自動滾動，則不執行任何操作
                 if (isAutoScrolling) return;
 
                 const isAtBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight < 100;
@@ -7411,112 +7645,246 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             };
             chatContainer.addEventListener('scroll', throttle(handleScroll, 100));
 
+            // 監聽視窗和元件尺寸變化，動態更新按鈕位置
             const updateButtonPosition = () => {
                 const { inputBarContainer, followUpContainer, scrollToBottomBtn } = ALL_ELEMENTS;
                 const inputBarHeight = inputBarContainer.offsetHeight;
                 const followUpHeight = followUpContainer.classList.contains('hidden') ? 0 : followUpContainer.offsetHeight;
-                const totalBottomOffset = inputBarHeight + followUpHeight + 16;
+                const totalBottomOffset = inputBarHeight + followUpHeight + 16; // 16px (1rem) 的間距
                 scrollToBottomBtn.style.bottom = `${totalBottomOffset}px`;
             };
             
+            // 使用 ResizeObserver 監聽高度變化
             const resizeObserver = new ResizeObserver(updateButtonPosition);
             resizeObserver.observe(ALL_ELEMENTS.inputBarContainer);
             resizeObserver.observe(ALL_ELEMENTS.followUpContainer);
 
+            // 初始調用
             updateButtonPosition();
         };
-
-        const handleDeleteMessagePair = async (index) => {
-            const confirmed = await showCustomDialog({
-                title: i18n[config.uiLanguage].deleteConfirmationTitle || '刪除確認',
-                message: i18n[config.uiLanguage].deleteConfirmationMessage || '確定刪除此條對話？',
-                dialogClass: 'dialog-warning-border',
-                buttons: [
-                    { text: i18n[config.uiLanguage].cancel || '取消', class: 'bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]', value: () => false },
-                    { text: i18n[config.uiLanguage].confirmDelete || '確定', class: 'bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600', value: () => true }
-                ]
-            });
-            if (confirmed) {
-                const conv = getActiveConversation();
-                if (conv && conv.messages[index] && conv.messages[index + 1]) {
-                    conv.messages.splice(index, 2);
-                    await saveAppData();
-                    renderChat();
-                    showNotification(i18n[config.uiLanguage].messageDeleted || '對話已刪除。', 'success');
-                }
-            }
+        // ▲▲▲ 【需求實現】結束 ▲▲▲
+        // ▼▼▼ 【需求實現】垃圾桶功能相關函式 ▼▼▼
+        const renderTrashSection = () => {
+            renderTrashActionBar();
+            renderTrashList();
         };
 
-        // ▼▼▼ 【新增】垃圾桶相關功能函式 ▼▼▼
-        const renderTrashList = () => {
-            const { trashListContainer, trashBatchActionBar } = ALL_ELEMENTS;
-            const trashedConversations = conversations.filter(c => c.deletedAt).sort((a, b) => new Date(b.deletedAt) - new Date(a.deletedAt));
-            trashListContainer.innerHTML = '';
+        const renderTrashActionBar = () => {
+            const { trashActionBar } = ALL_ELEMENTS;
+            const trashItems = conversations.filter(c => c.deletedAt);
+            let content = '';
 
-            if (trashedConversations.length === 0) {
-                trashListContainer.innerHTML = `<p class="text-sm text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].trashEmpty || '垃圾桶是空的。'}</p>`;
-                trashBatchActionBar.classList.add('hidden');
+            if (isTrashSelectionMode) {
+                const count = selectedTrashIds.size;
+                content = `
+                    <span class="text-sm font-medium">${i18n[config.uiLanguage].selected || '已選取'} ${count} ${i18n[config.uiLanguage].items || '個項目'}</span>
+                    <div class="flex items-center gap-2">
+                        <button id="trash-batch-restore-btn" class="px-3 py-1 text-xs rounded-md btn-primary" ${count === 0 ? 'disabled' : ''}>${i18n[config.uiLanguage].restore || '復原'}</button>
+                        <button id="trash-batch-delete-btn" class="px-3 py-1 text-xs rounded-md bg-red-500 text-white" ${count === 0 ? 'disabled' : ''}>${i18n[config.uiLanguage].deletePermanently || '永久刪除'}</button>
+                        <button id="trash-cancel-selection-btn" class="text-blue-600 hover:underline text-sm font-semibold">${i18n[config.uiLanguage].done || '完成'}</button>
+                    </div>
+                `;
+            } else {
+                content = `
+                    <span class="text-sm text-[var(--text-secondary)]">${i18n[config.uiLanguage].trashItemsCount.replace('{count}', trashItems.length)}</span>
+                    <button id="trash-selection-mode-btn" class="px-3 py-1 text-xs rounded-md border border-[var(--border-color)] hover:bg-[var(--active-bg)]" ${trashItems.length === 0 ? 'disabled' : ''}>${i18n[config.uiLanguage].batchSelect || '批次選取'}</button>
+                `;
+            }
+
+            trashActionBar.innerHTML = content;
+            // Re-bind events
+            document.getElementById('trash-selection-mode-btn')?.addEventListener('click', toggleTrashSelectionMode);
+            document.getElementById('trash-cancel-selection-btn')?.addEventListener('click', toggleTrashSelectionMode);
+            document.getElementById('trash-batch-restore-btn')?.addEventListener('click', handleTrashBatchRestore);
+            document.getElementById('trash-batch-delete-btn')?.addEventListener('click', handleTrashBatchDelete);
+        };
+
+        const renderTrashList = () => {
+            const { trashListContainer } = ALL_ELEMENTS;
+            trashListContainer.innerHTML = '';
+            const trashItems = conversations.filter(c => c.deletedAt).sort((a, b) => new Date(b.deletedAt) - new Date(a.deletedAt));
+
+            if (trashItems.length === 0) {
+                trashListContainer.innerHTML = `<p class="text-center text-sm text-[var(--text-secondary)] p-4">${i18n[config.uiLanguage].trashEmpty || '垃圾桶是空的。'}</p>`;
                 return;
             }
 
-            trashBatchActionBar.classList.remove('hidden');
-
-            trashedConversations.forEach(conv => {
+            trashItems.forEach(conv => {
                 const item = document.createElement('div');
-                item.className = 'flex items-center p-2 bg-[var(--sidebar-bg)] rounded-md border border-[var(--border-color)]';
-                item.innerHTML = `
-                    <input type="checkbox" class="trash-item-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3 flex-shrink-0" data-id="${conv.id}">
+                item.className = 'trash-item-container flex items-center p-2 rounded-lg cursor-pointer';
+                if (isTrashSelectionMode && selectedTrashIds.has(conv.id)) {
+                    item.classList.add('selected');
+                }
+                item.dataset.id = conv.id;
+
+                let contentHTML = `
                     <div class="flex-1 min-w-0">
-                        <div class="font-medium truncate">${conv.title}</div>
-                        <p class="text-xs text-[var(--text-secondary)] mt-1">${i18n[config.uiLanguage].deletedOn || '刪除於'}: ${formatFullTimestamp(conv.deletedAt)}</p>
+                        <p class="font-medium truncate">${conv.title}</p>
+                        <p class="text-xs text-[var(--text-secondary)] mt-1">${i18n[config.uiLanguage].deletedAt || '刪除於'}: ${formatFullTimestamp(conv.deletedAt)}</p>
                     </div>
-                    <div class="flex-shrink-0 ml-2">
-                        <button data-id="${conv.id}" class="view-trash-btn text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded hover:bg-blue-200 mr-1">${i18n[config.uiLanguage].view || '檢視'}</button>
-                        <button data-id="${conv.id}" class="restore-trash-btn text-xs bg-green-100 text-green-800 px-2 py-1 rounded hover:bg-green-200 mr-1">${i18n[config.uiLanguage].restore || '還原'}</button>
-                        <button data-id="${conv.id}" class="delete-trash-permanently-btn text-xs bg-red-100 text-red-800 px-2 py-1 rounded hover:bg-red-200">${i18n[config.uiLanguage].deletePermanently || '永久刪除'}</button>
+                    <div class="flex-shrink-0 flex items-center gap-2 ml-2">
+                        <button class="trash-item-view-btn text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded hover:bg-blue-200">${i18n[config.uiLanguage].view || '檢視'}</button>
+                        <button class="trash-item-restore-btn text-xs bg-green-100 text-green-800 px-2 py-1 rounded hover:bg-green-200">${i18n[config.uiLanguage].restore || '復原'}</button>
+                        <button class="trash-item-delete-btn text-xs bg-red-100 text-red-800 px-2 py-1 rounded hover:bg-red-200">${i18n[config.uiLanguage].deletePermanently || '永久刪除'}</button>
                     </div>
                 `;
+
+                if (isTrashSelectionMode) {
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.className = 'h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3 flex-shrink-0';
+                    checkbox.checked = selectedTrashIds.has(conv.id);
+                    item.innerHTML = '';
+                    item.appendChild(checkbox);
+                    item.innerHTML += contentHTML;
+                } else {
+                    item.innerHTML = contentHTML;
+                }
+                
                 trashListContainer.appendChild(item);
             });
+            
+            // Re-bind events for list items
+            trashListContainer.querySelectorAll('.trash-item-container').forEach(item => {
+                const id = item.dataset.id;
+                
+                if (isTrashSelectionMode) {
+                    item.addEventListener('click', () => {
+                        const checkbox = item.querySelector('input[type="checkbox"]');
+                        checkbox.checked = !checkbox.checked;
+                        if (checkbox.checked) {
+                            selectedTrashIds.add(id);
+                            item.classList.add('selected');
+                        } else {
+                            selectedTrashIds.delete(id);
+                            item.classList.remove('selected');
+                        }
+                        renderTrashActionBar();
+                    });
+                } else {
+                     // Add long press event for mobile view
+                    let pressTimer = null;
+                    item.addEventListener('touchstart', (e) => {
+                         if (window.innerWidth < 768) {
+                            pressTimer = setTimeout(() => {
+                                e.preventDefault();
+                                showTrashItemInViewModal(id);
+                            }, 500);
+                         }
+                    }, { passive: true });
+                    item.addEventListener('touchend', () => clearTimeout(pressTimer));
+                    item.addEventListener('touchmove', () => clearTimeout(pressTimer), { passive: true });
+                }
 
-            updateTrashBatchActionBar();
+                item.querySelector('.trash-item-view-btn')?.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    showTrashItemInViewModal(id);
+                });
+                item.querySelector('.trash-item-restore-btn')?.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    handleTrashRestore(id);
+                });
+                item.querySelector('.trash-item-delete-btn')?.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    handleTrashPermanentDelete(id);
+                });
+            });
         };
 
-        const updateTrashBatchActionBar = () => {
-            const { trashSelectAllCheckbox, trashSelectionCount, trashBatchRestoreBtn, trashBatchDeleteBtn } = ALL_ELEMENTS;
-            const trashedCount = conversations.filter(c => c.deletedAt).length;
-            const selectedCount = selectedTrashIds.size;
-
-            trashSelectionCount.textContent = `${i18n[config.uiLanguage].selected || '已選取'} ${selectedCount} / ${trashedCount}`;
-            trashSelectAllCheckbox.checked = selectedCount > 0 && selectedCount === trashedCount;
-            trashSelectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < trashedCount;
-
-            trashBatchRestoreBtn.disabled = selectedCount === 0;
-            trashBatchDeleteBtn.disabled = selectedCount === 0;
+        const toggleTrashSelectionMode = () => {
+            isTrashSelectionMode = !isTrashSelectionMode;
+            selectedTrashIds.clear();
+            renderTrashSection();
         };
 
-        const handleRestoreFromTrash = async (id) => {
+        const handleTrashRestore = async (id) => {
             const conv = conversations.find(c => c.id === id);
             if (conv) {
                 conv.deletedAt = null;
                 await saveAppData();
-                renderTrashList();
-                renderHistorySidebar();
-                showNotification(`"${conv.title}" ${i18n[config.uiLanguage].restoredSuccess || '已成功復原。'}`, 'success');
+                renderTrashSection();
+                renderHistorySidebar(); // Refresh sidebar as item is restored
+                showNotification(i18n[config.uiLanguage].chatRestored || '對話已復原。', 'success');
             }
         };
 
-        const handleDeletePermanently = async (id) => {
-            const conv = conversations.find(c => c.id === id);
-            if (conv && await showCustomConfirm(i18n[config.uiLanguage].confirmPermanentDelete || '此操作將永久刪除對話，無法復原。您確定嗎？', i18n[config.uiLanguage].permanentDeleteTitle || '永久刪除確認')) {
+        const handleTrashPermanentDelete = async (id) => {
+            const confirmed = await showCustomDialog({
+                title: i18n[config.uiLanguage].permanentDeleteTitle || '永久刪除確認',
+                message: i18n[config.uiLanguage].permanentDeleteMessage || '此操作將永久刪除此對話，且無法復原。您確定要繼續嗎？',
+                dialogClass: 'dialog-warning-border',
+                buttons: [
+                    { text: i18n[config.uiLanguage].cancel || '取消', class: 'bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]', value: () => false },
+                    { text: i18n[config.uiLanguage].confirmDelete || '確認刪除', class: 'bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700', value: () => true }
+                ]
+            });
+            if (confirmed) {
                 conversations = conversations.filter(c => c.id !== id);
                 await saveAppData();
-                renderTrashList();
-                showNotification(`"${conv.title}" ${i18n[config.uiLanguage].permanentDeleteSuccess || '已永久刪除。'}`, 'success');
+                renderTrashSection();
+                showNotification(i18n[config.uiLanguage].chatPermanentlyDeleted || '對話已永久刪除。', 'success');
             }
         };
-        // ▲▲▲ 結束新增 ▲▲▲
         
+        const handleTrashBatchRestore = async () => {
+            const count = selectedTrashIds.size;
+            if (count === 0) return;
+
+            selectedTrashIds.forEach(id => {
+                const conv = conversations.find(c => c.id === id);
+                if (conv) {
+                    conv.deletedAt = null;
+                }
+            });
+
+            await saveAppData();
+            toggleTrashSelectionMode();
+            renderHistorySidebar();
+            showNotification(i18n[config.uiLanguage].batchRestoreSuccess.replace('{count}', count), 'success');
+        };
+
+        const handleTrashBatchDelete = async () => {
+            const count = selectedTrashIds.size;
+            if (count === 0) return;
+
+            const confirmed = await showCustomConfirm(i18n[config.uiLanguage].batchDeleteMessage.replace('{count}', count), i18n[config.uiLanguage].permanentDeleteTitle);
+            
+            if (confirmed) {
+                conversations = conversations.filter(c => !selectedTrashIds.has(c.id));
+                await saveAppData();
+                toggleTrashSelectionMode();
+                showNotification(i18n[config.uiLanguage].batchDeleteSuccess.replace('{count}', count), 'success');
+            }
+        };
+
+        const showTrashItemInViewModal = (convId) => {
+            const conv = conversations.find(c => c.id === convId);
+            if (!conv) return;
+
+            ALL_ELEMENTS.trashViewTitle.textContent = conv.title;
+            const contentContainer = ALL_ELEMENTS.trashViewContent;
+            contentContainer.innerHTML = ''; 
+
+            if (conv.messages.length === 0) {
+                contentContainer.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].noMessages || '此對話沒有訊息。'}</p>`;
+            } else {
+                 conv.messages.forEach(msg => {
+                    const isUser = msg.role === 'user';
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = `flex items-start gap-2 md:gap-4 ${isUser ? 'justify-end user-message' : 'model-message'}`;
+                    const icon = isUser 
+                        ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>` 
+                        : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
+                    let contentHTML = msg.parts.map(p => p.text ? (isUser ? p.text.replace(/\n/g, '<br>') : renderMarkdown(p.text)) : '').join('');
+                    const messageBubble = `<div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble"><div class="prose prose-sm max-w-none message-content ${isUser ? 'text-white' : 'text-[var(--text-primary)]'}">${contentHTML}</div></div>`;
+                    messageDiv.innerHTML = isUser ? `${messageBubble}${icon}` : `${icon}${messageBubble}`;
+                    contentContainer.appendChild(messageDiv);
+                });
+            }
+            toggleModal(ALL_ELEMENTS.trashViewModal, true);
+        };
+        // ▲▲▲ 【需求實現】結束 ▲▲▲
+
         async function initChatApp() {
             await loadConfig();
             await loadAppData();
@@ -7528,7 +7896,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderAll();
             updateInputState();
             setupVoiceInput();
-            setupScrollToBottomButton();
+            setupScrollToBottomButton(); // 【需求實現】初始化滾動按鈕
             ALL_ELEMENTS.menuToggleBtn.addEventListener('click', () => toggleSidebar());
             ALL_ELEMENTS.sidebarOverlay.addEventListener('click', () => toggleSidebar(false));
             ALL_ELEMENTS.newChatBtn.addEventListener('click', () => startNewChat());
@@ -7541,6 +7909,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.apiKeyWarningBadge.addEventListener('click', () => {
                 setupSettingsModal();
                 toggleModal(ALL_ELEMENTS.settingsModal, true);
+                // 直接切換到模型管理頁面
                 const navItems = ALL_ELEMENTS.settingsNav.querySelectorAll('.settings-nav-item');
                 navItems.forEach(i => i.classList.remove('active'));
                 document.querySelector('.settings-nav-item[data-section="model-management"]').classList.add('active');
@@ -7556,6 +7925,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
             ALL_ELEMENTS.modalSearchScopeSelect.addEventListener('change', performSearchAndRenderResults);
             
+            // ▼▼▼ 【需求 1 新增】搜尋檢視 Modal 的事件綁定 ▼▼▼
             const closeSearchView = () => toggleModal(ALL_ELEMENTS.searchViewModal, false);
             ALL_ELEMENTS.closeSearchViewModalBtn.addEventListener('click', closeSearchView);
             ALL_ELEMENTS.searchViewCloseBtn.addEventListener('click', closeSearchView);
@@ -7563,11 +7933,18 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 const convId = e.currentTarget.dataset.id;
                 if (convId) {
                     loadChat(convId);
-                    toggleSidebar(false);
+                    toggleSidebar(false); // 【需求 2 實現】
                     closeSearchView();
                     toggleModal(ALL_ELEMENTS.searchModal, false);
                 }
             });
+            // ▲▲▲ 【需求 1 結束】 ▲▲▲
+
+            // ▼▼▼ 【需求實現】垃圾桶檢視 Modal 事件綁定 ▼▼▼
+            const closeTrashView = () => toggleModal(ALL_ELEMENTS.trashViewModal, false);
+            ALL_ELEMENTS.closeTrashViewModalBtn.addEventListener('click', closeTrashView);
+            ALL_ELEMENTS.trashViewCloseBtnFooter.addEventListener('click', closeTrashView);
+            // ▲▲▲ 【需求實現】結束 ▲▲▲
             
             ALL_ELEMENTS.settingsBtn.addEventListener('click', () => { setupSettingsModal(); toggleModal(ALL_ELEMENTS.settingsModal, true); });
             ALL_ELEMENTS.closeSettingsBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.settingsModal, false));
@@ -7576,9 +7953,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.themeDarkBtn.addEventListener('click', () => setTheme('dark'));
             ALL_ELEMENTS.openArchivedModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.archivedChatsModal, true));
             ALL_ELEMENTS.closeArchivedModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.archivedChatsModal, false));
+            // ▼▼▼ 新增：封存對話檢視 Modal 的關閉事件 ▼▼▼
             const closeViewArchivedModal = () => toggleModal(ALL_ELEMENTS.viewArchivedChatModal, false);
             ALL_ELEMENTS.closeViewArchivedModalBtn.addEventListener('click', closeViewArchivedModal);
             ALL_ELEMENTS.closeViewArchivedModalBtnFooter.addEventListener('click', closeViewArchivedModal);
+            // ▲▲▲ 結束新增 ▲▲▲
             ALL_ELEMENTS.saveRenameBtn.addEventListener('click', handleRename);
             ALL_ELEMENTS.cancelRenameBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.renameModal, false));
             ALL_ELEMENTS.saveFolderSettingsBtn.addEventListener('click', handleSaveFolderSettings);
@@ -7662,7 +8041,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.batchMoveConfirmBtn.addEventListener('click', () => { /* Logic moved to option clicks */ });
             ALL_ELEMENTS.webSearchBtn.addEventListener('click', async () => {
                 const conv = getActiveConversation();
-                if (!conv || conv.provider !== 'gemini' || conv.archived) return;
+                if (!conv || conv.provider !== 'gemini' || conv.archived || conv.deletedAt) return;
                 conv.isWebSearchEnabled = !conv.isWebSearchEnabled;
                 updateWebSearchUI();
                 await saveAppData();
