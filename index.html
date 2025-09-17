@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-14.8.2</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.8.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -6225,6 +6225,115 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 });
             });
         };
+        const refineAndStoreMemories = async (potentialMemories) => {
+            if (potentialMemories.length === 0) return;
+            if (personalMemories.length === 0) {
+                // 如果沒有現有記憶，直接新增所有潛在記憶。
+                potentialMemories.forEach(content => {
+                    personalMemories.push({ id: crypto.randomUUID(), content, enabled: true });
+                });
+                await saveAppData();
+                renderPersonalMemoryList();
+                showNotification('已自動添加新的個人記憶。', 'success');
+                return;
+            }
+        
+            const prompt = `# 你的核心任務：記憶庫管理員
+        你是一個高度精確的AI記憶庫管理員。你的任務是分析 "潛在的新記憶" 列表，並與 "現有的記憶庫" 進行比對。你的目標是保持記憶庫的精簡、準確且無冗餘。
+        
+        # 處理原則 (必須嚴格遵守)
+        1.  **相似性判斷**: 你需要理解語意上的相似性，而不僅僅是文字上的。例如，「用戶喜歡爬山」和「用戶的愛好是登山」是相似的。
+        2.  **合併與升級**: 當一個新記憶是對現有記憶的補充或更具體的描述時，你應該合併它們，而不是簡單地新增。例如，現有記憶是「用戶是開發者」，新記憶是「用戶使用 Python」，那麼應該將現有記憶更新為「用戶是使用 Python 的開發者」。
+        3.  **消除冗餘**: 如果新記憶與現有記憶完全相同或只是換句話說，則應忽略新記憶。
+        4.  **保留新資訊**: 如果新記憶是全新的、與現有記憶庫完全無關的資訊，則應添加它。
+        
+        # 你的行動指令
+        對於每一條 "潛在的新記憶"，你必須做出以下三種判斷之一：
+        
+        1.  **"ADD"**: 如果這是一條全新的、不重複的資訊。
+        2.  **"UPDATE"**: 如果這條資訊可以更新或合併到一條現有的記憶中，使其更完整或更精確。
+        3.  **"IGNORE"**: 如果這條資訊是重複的、無關緊要的，或者與現有記憶相比沒有提供更多價值。
+        
+        # 最終輸出格式
+        你必須嚴格地以一個 JSON 陣列的形式回覆，陣列中包含多個物件，每個物件代表一個行動。不要包含任何 JSON 以外的解釋或文字。
+        
+        格式如下:
+        \`\`\`json
+        [
+          {
+            "action": "ADD",
+            "content": "新的記憶內容"
+          },
+          {
+            "action": "UPDATE",
+            "id": "要更新的現有記憶的ID",
+            "content": "更新後的完整記憶內容"
+          },
+          {
+            "action": "IGNORE",
+            "content": "要忽略的新記憶內容"
+          }
+        ]
+        \`\`\`
+        
+        # 待處理的資料
+        【現有的記憶庫 (包含 ID)】:
+        ${JSON.stringify(personalMemories, null, 2)}
+        
+        【潛在的新記憶】:
+        ${JSON.stringify(potentialMemories, null, 2)}
+        `;
+        
+            const responseSchema = {
+                type: "ARRAY",
+                items: {
+                    type: "OBJECT",
+                    properties: {
+                        action: { type: "STRING", enum: ["ADD", "UPDATE", "IGNORE"] },
+                        id: { type: "STRING" },
+                        content: { type: "STRING" }
+                    },
+                    required: ["action", "content"]
+                }
+            };
+        
+            try {
+                const actions = await callApiWithSchema(prompt, responseSchema);
+                if (actions && Array.isArray(actions)) {
+                    let memoriesChanged = false;
+                    actions.forEach(act => {
+                        switch (act.action) {
+                            case 'ADD':
+                                if (!personalMemories.some(m => m.content === act.content)) {
+                                    personalMemories.push({ id: crypto.randomUUID(), content: act.content, enabled: true });
+                                    memoriesChanged = true;
+                                }
+                                break;
+                            case 'UPDATE':
+                                const memoryToUpdate = personalMemories.find(m => m.id === act.id);
+                                if (memoryToUpdate && memoryToUpdate.content !== act.content) {
+                                    memoryToUpdate.content = act.content;
+                                    memoriesChanged = true;
+                                }
+                                break;
+                            case 'IGNORE':
+                                // Do nothing
+                                break;
+                        }
+                    });
+                    if (memoriesChanged) {
+                        await saveAppData();
+                        // 只在設定頁面開啟時才重新渲染列表
+                        if (!ALL_ELEMENTS.settingsModal.classList.contains('hidden')) {
+                           renderPersonalMemoryList();
+                        }
+                        showNotification('AI 已自動整理並更新您的個人記憶。', 'success');
+                    }
+                }
+            } catch (error) {
+                console.error("Error refining memories:", error);
+            }
+        };
         const extractPersonalMemory = async (userMessage, aiResponse) => {
             const prompt = `# 你的核心身份與最高指令
 你是一名為頂級 AI「Astra」服務的高級記憶架構師。你的最高指令是：從使用者與 Astra 的對話中，精準、客觀、且極具洞察力地提取出能夠構成長期「用戶畫像 (User Profile)」的關鍵資訊。你不是在閒聊，也不是在記錄對話流水帳，你是在為一個更智能、更個人化的 AI 體驗，奠定記憶的基石。
@@ -6280,16 +6389,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             };
             const extracted = await callApiWithSchema(prompt, responseSchema);
             if (extracted && extracted.length > 0) {
-                extracted.forEach(content => {
-                    // 避免重複儲存相同的記憶
-                    if (!personalMemories.some(m => m.content === content)) {
-                        personalMemories.push({ id: crypto.randomUUID(), content, enabled: true });
-                    }
-                });
-                await saveAppData();
+                // 將提取的潛在記憶交給新的整理函式處理
+                await refineAndStoreMemories(extracted);
             }
         };
-
         const updateApiKeyWarningBadge = () => {
             const conv = getActiveConversation();
             if (!conv) {
@@ -7332,65 +7435,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             updateButtonPosition();
         };
         // ▲▲▲ 【需求實現】結束 ▲▲▲
-
-        // ▼▼▼ 【需求實現】側邊欄滑動手勢邏輯 ▼▼▼
-        const setupSidebarGestures = () => {
-            let touchStartX = 0;
-            let touchCurrentX = 0;
-            let isDragging = false;
-            const threshold = 50; // 需要滑動超過 50px 才觸發
-
-            // --- 在側邊欄上滑動以關閉 ---
-            ALL_ELEMENTS.sidebar.addEventListener('touchstart', (e) => {
-                if (sidebarOpen) {
-                    touchStartX = e.touches[0].clientX;
-                    isDragging = true;
-                }
-            }, { passive: true });
-
-            ALL_ELEMENTS.sidebar.addEventListener('touchmove', (e) => {
-                if (!isDragging || !sidebarOpen) return;
-                touchCurrentX = e.touches[0].clientX;
-            }, { passive: true });
-
-            ALL_ELEMENTS.sidebar.addEventListener('touchend', () => {
-                if (!isDragging || !sidebarOpen) return;
-                isDragging = false;
-                const deltaX = touchCurrentX - touchStartX;
-                if (deltaX < -threshold) { // 向左滑動超過閾值
-                    toggleSidebar(false);
-                }
-                touchStartX = 0;
-                touchCurrentX = 0;
-            });
-
-            // --- 在螢幕邊緣滑動以開啟 ---
-            ALL_ELEMENTS.sidebarOpenHandle.addEventListener('touchstart', (e) => {
-                if (!sidebarOpen) {
-                    touchStartX = e.touches[0].clientX;
-                    isDragging = true;
-                }
-            }, { passive: true });
-
-            ALL_ELEMENTS.sidebarOpenHandle.addEventListener('touchmove', (e) => {
-                if (!isDragging || sidebarOpen) return;
-                touchCurrentX = e.touches[0].clientX;
-            }, { passive: true });
-
-            ALL_ELEMENTS.sidebarOpenHandle.addEventListener('touchend', () => {
-                if (!isDragging || sidebarOpen) return;
-                isDragging = false;
-                const deltaX = touchCurrentX - touchStartX;
-                if (deltaX > threshold) { // 向右滑動超過閾值
-                    toggleSidebar(true);
-                }
-                touchStartX = 0;
-                touchCurrentX = 0;
-            });
-        };
-        // ▲▲▲ 【需求實現】結束 ▲▲▲
-
-
         async function initChatApp() {
             await loadConfig();
             await loadAppData();
@@ -7403,15 +7447,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             updateInputState();
             setupVoiceInput();
             setupScrollToBottomButton(); // 【需求實現】初始化滾動按鈕
-            setupSidebarGestures(); // 【需求實現】初始化側邊欄手勢
             ALL_ELEMENTS.menuToggleBtn.addEventListener('click', () => toggleSidebar());
             ALL_ELEMENTS.sidebarOverlay.addEventListener('click', () => toggleSidebar(false));
-            ALL_ELEMENTS.chatContainer.addEventListener('click', (e) => {
-                // 如果點擊的不是互動元素，且側邊欄是開啟的，則關閉
-                if (!e.target.closest('button, a, input, select, textarea') && sidebarOpen) {
-                    toggleSidebar(false);
-                }
-            });
             ALL_ELEMENTS.newChatBtn.addEventListener('click', () => startNewChat());
             ALL_ELEMENTS.openSearchBtn.addEventListener('click', () => {
                 toggleModal(ALL_ELEMENTS.searchModal, true);
