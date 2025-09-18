@@ -1,5 +1,26 @@
 const updateLogs = [
     {
+        version: "14.9.2",
+        date: "2025-09-18",
+        content: [
+            "<strong>優化：</strong>Astras商店跳轉問題",
+        ]
+    },
+    {
+        version: "14.9.1",
+        date: "2025-09-18",
+        content: [
+            "<strong>優化：</strong>Astras商店字體顏色",
+        ]
+    },
+    {
+        version: "14.9.0",
+        date: "2025-09-18",
+        content: [
+            "<strong>增加：</strong>Astras商店整合自定義桌部，增加凝膠玻璃效果",
+        ]
+    },
+    {
         version: "14.8.17",
         date: "2025-09-18",
         content: [
