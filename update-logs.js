@@ -1,5 +1,26 @@
 const updateLogs = [
     {
+        version: "14.9.5",
+        date: "2025-09-18",
+        content: [
+            "<strong>修正：</strong>按鈕顏色無法填充漸變色的問題",
+        ]
+    },
+    {
+        version: "14.9.4",
+        date: "2025-09-18",
+        content: [
+            "<strong>優化：</strong>輸入欄位附加內容背景顏色透明度更動",
+        ]
+    },
+    {
+        version: "14.9.3",
+        date: "2025-09-18",
+        content: [
+            "<strong>修正：</strong>輸入欄位附加內容彈出被覆蓋的問題",
+        ]
+    },
+    {
         version: "14.9.2",
         date: "2025-09-18",
         content: [
