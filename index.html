@@ -1936,19 +1936,19 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 </button>
                 <!-- ▲▲▲ 【需求實現】結束 ▲▲▲ -->
                 
-                <!-- 新增：後續追問功能區塊 -->
-<div id="follow-up-container" class="p-2 md:p-4 bg-[var(--input-bar-bg)] border-t border-[var(--border-color)] hidden">
-    <div id="follow-up-content-wrapper" class="max-w-4xl mx-auto">
-    <!-- 新增 id="follow-up-header" 和 cursor-pointer class -->
-    <div id="follow-up-header" class="flex items-center justify-between cursor-pointer">
-        <h4 class="text-sm font-semibold text-[var(--text-secondary)]" data-lang-key="followUp">後續追問</h4>
-        <!-- 箭頭按鈕已被刪除 -->
-    </div>
-    <div id="follow-up-prompts-list" class="flex flex-wrap gap-2 transition-all duration-300 overflow-hidden">
-        <!-- 提示會被動態插入此處 -->
-    </div>
-</div>
-</div>
+                <!-- ▼▼▼ 修改後的程式碼 ▼▼▼ -->
+                <div id="follow-up-container" class="p-2 md:p-4 bg-[var(--input-bar-bg)] border-t border-[var(--border-color)] hidden">
+                    <div id="follow-up-content-wrapper" class="max-w-4xl mx-auto">
+                        <div id="follow-up-header" class="flex items-center justify-between cursor-pointer">
+                            <h4 class="text-sm font-semibold text-[var(--text-secondary)]" data-lang-key="followUp">後續追問</h4>
+                        </div>
+                        <div id="follow-up-prompts-list" class="flex flex-wrap gap-2 transition-all duration-300 overflow-hidden">
+                            <!-- 提示會被動態插入此處 -->
+                        </div>
+                    </div>
+                </div>
+                <!-- ▲▲▲ 結束修改 ▲▲▲ -->
+
                 <div id="input-bar-container" class="p-2 md:p-4 bg-[var(--input-bar-bg)] border-t border-[var(--border-color)]">
                     <div class="max-w-4xl mx-auto">
                         <!-- File Preview Container -->
@@ -2809,11 +2809,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             sidebarOverlay: document.getElementById('sidebar-overlay'),
             menuToggleBtn: document.getElementById('menu-toggle-btn'),
             sidebarOpenHandle: document.getElementById('sidebar-open-handle'), // 新增：側邊欄開啟熱區
-            // 新增: 後續追問相關元素
+            // ▼▼▼ 修改後的程式碼 ▼▼▼
             followUpContainer: document.getElementById('follow-up-container'),
             followUpHeader: document.getElementById('follow-up-header'),
-            followUpHeader: document.getElementById('follow-up-header'),
             followUpPromptsList: document.getElementById('follow-up-prompts-list'),
+            // ▲▲▲ 結束修改 ▲▲▲
             followUpToggleSwitch: document.getElementById('follow-up-toggle-switch'),
             autoNamingToggleSwitch: document.getElementById('auto-naming-toggle-switch'),
             // 新增：智慧連網搜尋開關
@@ -3809,7 +3809,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 <div class="flex-1 flex items-center gap-2 truncate">
                     <span class="truncate">${conv.title}${conv.pinned ? ' <span class="pinned-icon">📌</span>' : ''}</span>
                     ${modelNameSuffix}
-                </div>
+                 </div>
                 <button class="chat-options-btn flex-shrink-0 w-6 h-6 rounded-md hover:bg-[var(--hover-bg)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>
             `;
 
@@ -4880,34 +4880,28 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         };
         const renderFollowUpPrompts = (prompts) => {
-    const { followUpContainer, followUpPromptsList } = ALL_ELEMENTS;
-    
-    // 清空舊的提示按鈕
-    followUpPromptsList.innerHTML = '';
-
-    // 核心邏輯判斷：只有當 prompts 陣列有內容 且 功能開關是開啟的，才顯示
-    if (prompts && prompts.length > 0 && config.enableFollowUp) {
-        prompts.forEach((p, index) => {
-            const btn = document.createElement('button');
-            btn.className = 'follow-up-prompt-btn';
-            btn.textContent = p;
-            btn.style.setProperty('--animation-delay', `${index * 70}ms`);
-            btn.onclick = () => {
-                ALL_ELEMENTS.messageInput.value = p;
-                ALL_ELEMENTS.messageInput.focus();
-                sendConfirmed = true;
-                updateInputState();
-                ALL_ELEMENTS.messageInput.scrollIntoView({ behavior: 'smooth', block: 'end' });
-            };
-            followUpPromptsList.appendChild(btn);
-        });
-        // 滿足條件，移除 hidden class 來顯示整個容器
-        followUpContainer.classList.remove('hidden');
-    } else {
-        // 不滿足條件，添加 hidden class 來隱藏整個容器
-        followUpContainer.classList.add('hidden');
-    }
-};
+            const { followUpContainer, followUpPromptsList } = ALL_ELEMENTS;
+            followUpPromptsList.innerHTML = '';
+            if (prompts.length > 0 && config.enableFollowUp) {
+                prompts.forEach((p, index) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'follow-up-prompt-btn';
+                    btn.textContent = p;
+                    btn.style.setProperty('--animation-delay', `${index * 70}ms`); // 為每個按鈕設置動畫延遲
+                    btn.onclick = () => {
+                        ALL_ELEMENTS.messageInput.value = p;
+                        ALL_ELEMENTS.messageInput.focus();
+                        sendConfirmed = true;
+                        updateInputState();
+                        ALL_ELEMENTS.messageInput.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    };
+                    followUpPromptsList.appendChild(btn);
+                });
+                followUpContainer.classList.remove('hidden');
+            } else {
+                followUpContainer.classList.add('hidden');
+            }
+        };
         const toggleFollowUpPrompts = () => {
             isFollowUpExpanded = !isFollowUpExpanded;
             ALL_ELEMENTS.followUpPromptsList.classList.toggle('collapsed', !isFollowUpExpanded);
@@ -4919,10 +4913,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 ALL_ELEMENTS.followUpContainer.classList.add('hidden');
             }
             ALL_ELEMENTS.followUpPromptsList.classList.toggle('collapsed', !isFollowUpExpanded);
-            ALL_ELEMENTS.followUpToggleBtn.classList.toggle('rotate-180', !isFollowUpExpanded);
-
-
-
 
             const conv = getActiveConversation();
             if (conv && conv.messages.length > 0 && conv.messages[conv.messages.length-1].role === 'model') {
@@ -8259,7 +8249,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 updateWebSearchUI();
                 await saveAppData();
             });
+            // ▼▼▼ 修改後的程式碼 ▼▼▼
             ALL_ELEMENTS.followUpHeader.addEventListener('click', toggleFollowUpPrompts);
+            // ▲▲▲ 結束修改 ▲▲▲
             
             ALL_ELEMENTS.messageInput.addEventListener('input', (e) => {
                 sendConfirmed = false;
@@ -8405,6 +8397,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.trashBatchDeleteBtn.addEventListener('click', handleBatchDeleteFromTrash);
             ALL_ELEMENTS.emptyTrashBtn.addEventListener('click', handleEmptyTrash);
             // ▲▲▲ 結束新增 ▲▲▲
+
 
             updateFileInputUI();
             
