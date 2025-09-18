@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-14.8.14</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.8.13</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -464,6 +464,9 @@ body.custom-wallpaper-active.wallpaper-is-dark .sidebar {
     /* 新增 overflow: hidden，確保在高度變化動畫中，內部元件不會溢出，使動畫更平滑 */
     overflow: hidden;
 }
+        #follow-up-toggle-btn.rotate-180 {
+            transform: rotate(-180deg);
+        }
         .follow-up-prompt-btn {
             background-color: var(--hover-bg);
             color: var(--text-secondary);
@@ -1937,17 +1940,15 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 <!-- ▲▲▲ 【需求實現】結束 ▲▲▲ -->
                 
                 <!-- 新增：後續追問功能區塊 -->
-<!-- 後續追問區塊（移除箭頭按鈕） -->
 <div id="follow-up-container" class="p-2 md:p-4 bg-[var(--input-bar-bg)] border-t border-[var(--border-color)] hidden">
-  <div id="follow-up-content-wrapper" class="max-w-4xl mx-auto">
-    <div class="flex items-center justify-between cursor-pointer select-none">
-      <h4 class="text-sm font-semibold text-[var(--text-secondary)]" data-lang-key="followUp">後續追問</h4>
-      <!-- （刪除）#follow-up-toggle-btn -->
+    <div id="follow-up-content-wrapper" class="max-w-4xl mx-auto">
+        <div id="follow-up-header" class="flex items-center justify-between cursor-pointer">
+            <h4 class="text-sm font-semibold text-[var(--text-secondary)]" data-lang-key="followUp">後續追問</h4>
+        </div>
+        <div id="follow-up-prompts-list" class="flex flex-wrap gap-2 transition-all duration-300 overflow-hidden">
+            <!-- 提示會被動態插入此處 -->
+        </div>
     </div>
-    <div id="follow-up-prompts-list" class="flex flex-wrap gap-2 transition-all duration-300 overflow-hidden">
-      <!-- 提示會被動態插入此處 -->
-    </div>
-  </div>
 </div>
                 <div id="input-bar-container" class="p-2 md:p-4 bg-[var(--input-bar-bg)] border-t border-[var(--border-color)]">
                     <div class="max-w-4xl mx-auto">
@@ -2811,6 +2812,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             sidebarOpenHandle: document.getElementById('sidebar-open-handle'), // 新增：側邊欄開啟熱區
             // 新增: 後續追問相關元素
             followUpContainer: document.getElementById('follow-up-container'),
+            followUpHeader: document.getElementById('follow-up-header'),
             followUpPromptsList: document.getElementById('follow-up-prompts-list'),
             followUpToggleSwitch: document.getElementById('follow-up-toggle-switch'),
             autoNamingToggleSwitch: document.getElementById('auto-naming-toggle-switch'),
@@ -4901,14 +4903,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         };
         const toggleFollowUpPrompts = () => {
-  isFollowUpExpanded = !isFollowUpExpanded;
-  ALL_ELEMENTS.followUpPromptsList.classList.toggle('collapsed', !isFollowUpExpanded);
-};
-
-const updateFollowUpUI = () => {
-  // ...
-  ALL_ELEMENTS.followUpPromptsList.classList.toggle('collapsed', !isFollowUpExpanded);
-};
+            isFollowUpExpanded = !isFollowUpExpanded;
+            ALL_ELEMENTS.followUpPromptsList.classList.toggle('collapsed', !isFollowUpExpanded);
+        };
+        const updateFollowUpUI = () => {
+            if (config.enableFollowUp) {
+                ALL_ELEMENTS.followUpContainer.classList.remove('hidden');
+            } else {
+                ALL_ELEMENTS.followUpContainer.classList.add('hidden');
+            }
+            ALL_ELEMENTS.followUpPromptsList.classList.toggle('collapsed', !isFollowUpExpanded);
+            ALL_ELEMENTS.followUpToggleBtn.classList.toggle('rotate-180', !isFollowUpExpanded);
 
 
 
@@ -8248,10 +8253,7 @@ const updateFollowUpUI = () => {
                 updateWebSearchUI();
                 await saveAppData();
             });
-            ALL_ELEMENTS.followUpContainer.addEventListener('click', (e) => {
-  const isPromptBtn = e.target.closest('.follow-up-prompt-btn');
-  if (!isPromptBtn) toggleFollowUpPrompts();
-});
+           ALL_ELEMENTS.followUpHeader.addEventListener('click', toggleFollowUpPrompts);
             
             ALL_ELEMENTS.messageInput.addEventListener('input', (e) => {
                 sendConfirmed = false;
