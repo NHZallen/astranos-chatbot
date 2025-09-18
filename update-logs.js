@@ -1,5 +1,26 @@
 const updateLogs = [
     {
+        version: "14.8.17",
+        date: "2025-09-18",
+        content: [
+            "<strong>增加：</strong>聊天室輸入欄與後續追問模塊互動特效",
+        ]
+    },
+    {
+        version: "14.8.16",
+        date: "2025-09-18",
+        content: [
+            "<strong>優化：</strong>移除移動端雙指縮放與雙擊放大的功能",
+        ]
+    },
+    {
+        version: "14.8.15",
+        date: "2025-09-18",
+        content: [
+            "<strong>優化：</strong>優化現有動畫",
+        ]
+    },
+    {
         version: "14.8.14",
         date: "2025-09-18",
         content: [
