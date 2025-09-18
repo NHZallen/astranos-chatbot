@@ -1637,6 +1637,31 @@ body.custom-wallpaper-active .store-category-btn.active {
     );
 }
 /* ▲▲▲ 【結束新增】 ▲▲▲ */
+    /* ▼▼▼ 新增：顏色吸管(滴管) Modal 相關樣式 ▼▼▼ */
+#eyedropper-loupe-canvas {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -webkit-crisp-edges;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+#eyedropper-loupe::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 12px; /* 放大鏡中心十字的大小 */
+    height: 12px;
+    transform: translate(-50%, -50%);
+    border: 2px solid rgba(255, 0, 0, 0.7); /* 十字顏色 */
+    box-sizing: border-box;
+}
+/* ▲▲▲ 結束新增 ▲▲▲ */
     #custom-color-input {
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -2651,6 +2676,33 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         </div>
     </div>
     <!-- ▲▲▲ 結束新增 ▲▲▲ -->
+    <!-- ▼▼▼ 新增：顏色吸管(滴管) Modal ▼▼▼ -->
+    <div id="eyedropper-modal" class="modal fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-[55]">
+        <div class="relative w-full h-full flex flex-col items-center justify-center">
+            <!-- Canvas for drawing the wallpaper -->
+            <canvas id="eyedropper-canvas" class="max-w-full max-h-full object-contain cursor-crosshair"></canvas>
+
+            <!-- Interactive UI elements on top of the canvas -->
+            <div class="absolute top-4 right-4 flex flex-col items-end gap-3 text-white">
+                <div class="flex items-center gap-3 bg-gray-900/80 p-2 rounded-lg border border-white/20">
+                    <div id="eyedropper-preview" class="w-12 h-12 rounded-md border-2 border-white shadow-lg"></div>
+                    <span id="eyedropper-hex" class="text-lg font-mono">#000000</span>
+                </div>
+                <div class="flex gap-2">
+                    <button id="cancel-eyedropper-btn" class="bg-gray-600/80 px-4 py-2 rounded-md hover:bg-gray-500/80" data-lang-key="cancel">取消</button>
+                    <button id="confirm-eyedropper-btn" class="px-4 py-2 rounded-md btn-primary" data-lang-key="confirmAndApply">確認並套用</button>
+                </div>
+            </div>
+            
+            <p class="absolute bottom-4 text-white/80 bg-black/50 px-3 py-1 rounded-full text-sm" data-lang-key="eyedropperInstructions">移動並點擊以選取顏色</p>
+
+            <!-- Magnifying Loupe -->
+            <div id="eyedropper-loupe" class="absolute w-28 h-28 rounded-full border-4 border-white shadow-2xl pointer-events-none hidden overflow-hidden">
+                <canvas id="eyedropper-loupe-canvas" width="100" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+    <!-- ▲▲▲ 結束新增 ▲▲▲ -->
 
 
     <!-- ▼▼▼ 新增：版本更新資訊 Modal ▼▼▼ -->
@@ -3006,6 +3058,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             trashViewContent: document.getElementById('trash-view-content'),
             closeTrashViewModalBtn: document.getElementById('close-trash-view-modal-btn'),
             trashViewCloseBtn: document.getElementById('trash-view-close-btn'),
+            eyedropperModal: document.getElementById('eyedropper-modal'),
+            eyedropperCanvas: document.getElementById('eyedropper-canvas'),
+            eyedropperLoupe: document.getElementById('eyedropper-loupe'),
+            eyedropperLoupeCanvas: document.getElementById('eyedropper-loupe-canvas'),
+            eyedropperPreview: document.getElementById('eyedropper-preview'),
+            eyedropperHex: document.getElementById('eyedropper-hex'),
+            cancelEyedropperBtn: document.getElementById('cancel-eyedropper-btn'),
+            confirmEyedropperBtn: document.getElementById('confirm-eyedropper-btn'),
             // ▲▲▲ 結束新增 ▲▲▲
             // ▼▼▼ 新增：顏色吸取器 Modal 元素 ▼▼▼
             colorPickerModal: document.getElementById('color-picker-modal'),
@@ -5332,15 +5392,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             // ▼▼▼ 新增：儲存版本更新開關狀態 ▼▼▼
             config.enableUpdateNotifications = ALL_ELEMENTS.enableUpdateNotificationsToggle.checked;
             // ▲▲▲ 結束新增 ▲▲▲
-            
-            // ▼▼▼ 修改：儲存 UI 顏色設定 (僅儲存模式與自訂顏色) ▼▼▼
-            const selectedThemeMode = document.querySelector('input[name="color-theme"]:checked').value;
-            const selectedCustomColor = ALL_ELEMENTS.customColorInput.value;
-            
             config.uiTheme.mode = selectedThemeMode;
             config.uiTheme.customColor = selectedCustomColor;
-            // 注意：自適應顏色是在其他地方動態設定的，這裡不儲存
-            // ▲▲▲ 結束修改 ▲▲▲
             
             setAiBubbleColor();
             setUserBubbleColor();
@@ -7774,7 +7827,118 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderUiColorOptions(); // 重新渲染設定
             showNotification(i18n[config.uiLanguage].defaultAppearanceRestored, 'success');
         };
+            const openEyedropper = () => {
+            if (!config.customWallpaper) {
+                showNotification(i18n[config.uiLanguage].noWallpaperForPicker || '請先上傳自訂桌布才能使用吸色功能。', 'warning');
+                return;
+            }
 
+            const {
+                eyedropperModal, eyedropperCanvas, eyedropperLoupe, eyedropperLoupeCanvas,
+                eyedropperPreview, eyedropperHex, confirmEyedropperBtn, cancelEyedropperBtn
+            } = ALL_ELEMENTS;
+
+            const ctx = eyedropperCanvas.getContext('2d');
+            const loupeCtx = eyedropperLoupeCanvas.getContext('2d');
+            let selectedColor = null;
+
+            const img = new Image();
+            img.onload = () => {
+                // 調整 canvas 尺寸以符合圖片比例，並限制在視窗內
+                const viewportAspectRatio = window.innerWidth / window.innerHeight;
+                const imageAspectRatio = img.width / img.height;
+
+                let canvasWidth, canvasHeight;
+                if (imageAspectRatio > viewportAspectRatio) {
+                    canvasWidth = window.innerWidth * 0.9;
+                    canvasHeight = canvasWidth / imageAspectRatio;
+                } else {
+                    canvasHeight = window.innerHeight * 0.9;
+                    canvasWidth = canvasHeight * imageAspectRatio;
+                }
+
+                eyedropperCanvas.width = canvasWidth;
+                eyedropperCanvas.height = canvasHeight;
+                ctx.drawImage(img, 0, 0, canvasWidth, canvasHeight);
+                toggleModal(eyedropperModal, true);
+            };
+            img.src = config.customWallpaper;
+
+            const toHex = (c) => c.toString(16).padStart(2, '0');
+
+            function updateLoupeAndPreview(e) {
+                const rect = eyedropperCanvas.getBoundingClientRect();
+                const x = Math.round(e.clientX - rect.left);
+                const y = Math.round(e.clientY - rect.top);
+
+                if (x < 0 || x >= eyedropperCanvas.width || y < 0 || y >= eyedropperCanvas.height) {
+                    eyedropperLoupe.classList.add('hidden');
+                    return;
+                }
+                
+                eyedropperLoupe.classList.remove('hidden');
+                
+                const pixel = ctx.getImageData(x, y, 1, 1).data;
+                const hex = `#${toHex(pixel[0])}${toHex(pixel[1])}${toHex(pixel[2])}`;
+
+                eyedropperPreview.style.backgroundColor = hex;
+                eyedropperHex.textContent = hex.toUpperCase();
+
+                // 更新放大鏡位置
+                eyedropperLoupe.style.left = `${e.clientX}px`;
+                eyedropperLoupe.style.top = `${e.clientY}px`;
+                
+                // 繪製放大鏡內容
+                const zoomFactor = 10;
+                loupeCtx.imageSmoothingEnabled = false;
+                loupeCtx.clearRect(0, 0, eyedropperLoupeCanvas.width, eyedropperLoupeCanvas.height);
+                loupeCtx.drawImage(
+                    eyedropperCanvas,
+                    x - (eyedropperLoupeCanvas.width / zoomFactor / 2),
+                    y - (eyedropperLoupeCanvas.height / zoomFactor / 2),
+                    eyedropperLoupeCanvas.width / zoomFactor,
+                    eyedropperLoupeCanvas.height / zoomFactor,
+                    0, 0,
+                    eyedropperLoupeCanvas.width,
+                    eyedropperLoupeCanvas.height
+                );
+            }
+
+            function selectColor(e) {
+                const rect = eyedropperCanvas.getBoundingClientRect();
+                const x = Math.round(e.clientX - rect.left);
+                const y = Math.round(e.clientY - rect.top);
+                if (x < 0 || x >= eyedropperCanvas.width || y < 0 || y >= eyedropperCanvas.height) return;
+
+                const pixel = ctx.getImageData(x, y, 1, 1).data;
+                selectedColor = `#${toHex(pixel[0])}${toHex(pixel[1])}${toHex(pixel[2])}`;
+                confirmEyedropperBtn.click(); // 直接觸發確認
+            }
+
+            const closeEyedropper = () => {
+                eyedropperCanvas.removeEventListener('mousemove', updateLoupeAndPreview);
+                eyedropperCanvas.removeEventListener('click', selectColor);
+                toggleModal(eyedropperModal, false);
+            };
+
+            // 綁定事件
+            eyedropperCanvas.addEventListener('mousemove', updateLoupeAndPreview);
+            eyedropperCanvas.addEventListener('click', selectColor);
+            cancelEyedropperBtn.onclick = closeEyedropper;
+            confirmEyedropperBtn.onclick = async () => {
+                if (!selectedColor) {
+                    showNotification(i18n[config.uiLanguage].noColorSelected || '您尚未選擇顏色。', 'warning');
+                    return;
+                }
+                config.uiTheme.style = 'single'; // 吸色模式強制為單色
+                config.uiTheme.adaptiveColor = selectedColor;
+                config.uiTheme.adaptiveGradient = '';
+                await saveConfig();
+                applyUiTheme();
+                closeEyedropper();
+                showNotification(i18n[config.uiLanguage].buttonColorUpdated || '按鈕顏色已更新', 'success');
+            };
+        };
         // ▼▼▼ 新增：顏色吸取彈窗相關函式 ▼▼▼
         const openColorPicker = () => {
             const { wallpaperPaletteContainer, colorPickerInstructions, colorPickerPreview } = ALL_ELEMENTS;
@@ -9064,7 +9228,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
             // ▲▲▲ 結束新增 ▲▲▲
             // ▼▼▼ 新增：顏色吸取 Modal 事件 ▼▼▼
-            ALL_ELEMENTS.pickColorBtn.addEventListener('click', openColorPicker);
+            ALL_ELEMENTS.pickColorBtn.addEventListener('click', openEyedropper);
             ALL_ELEMENTS.cancelColorPickerBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.colorPickerModal, false));
             // ▲▲▲ 結束新增 ▲▲▲
             // ▼▼▼ 新增：清除資料按鈕事件 ▼▼▼
