@@ -387,17 +387,30 @@ body.custom-wallpaper-active.wallpaper-is-dark .sidebar {
         body.sidebar-is-open #sidebar {
     transform: translateX(0);
 }
-        #sidebar-overlay {
-    opacity: 0;
-    visibility: hidden;
-    /* ▼▼▼ 【修改重點】增加 left 的過渡動畫，讓位移動畫更平滑 ▼▼▼ */
-    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out, left 0.3s ease-in-out;
-    /* ▲▲▲ 【修改結束】 ▲▲▲ */
+        #app-container > main {
+    transition: transform 0.3s ease-in-out;
 }
-        body.sidebar-is-open #sidebar-overlay {
+
+/* 2. 創造遮罩本體 (main::before) */
+#app-container > main::before {
+    content: '';
+    position: absolute;
+    inset: 0; /* 填滿整個 main 元素 */
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 25; /* z-index 比側邊欄(z-40)低即可 */
+
+    /* 預設為透明且不可點擊 */
+    opacity: 0;
+    pointer-events: none; 
+
+    /* 設定平滑的過渡動畫 */
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* 3. 當側邊欄開啟時 (body 有 .sidebar-is-open)，顯示遮罩 */
+body.sidebar-is-open #app-container > main::before {
     opacity: 1;
-    visibility: visible;
-    left: 16rem; /* 手機版側邊欄寬度 w-64 */
+    pointer-events: auto; /* 讓遮罩可以被點擊 (用於關閉側邊欄) */
 }
         .theme-button-group {
             display: grid;
@@ -1810,7 +1823,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     <div id="app-container" class="hidden h-screen"> <!-- 新增 h-screen -->
         <div class="relative flex h-screen w-full bg-[var(--chat-bg)]">
             <!-- Sidebar Overlay (for mobile) -->
-            <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 opacity-0"></div>
 
             <!-- ▼▼▼ 【需求實現】新增：側邊欄開啟手勢熱區 ▼▼▼ -->
             <div id="sidebar-open-handle" class="fixed top-0 left-0 h-full z-20" style="width: 20px; touch-action: pan-y;"></div>
@@ -2809,7 +2821,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             importFileInput: document.getElementById('import-file-input'),
             // Mobile specific
             sidebar: document.getElementById('sidebar'),
-            sidebarOverlay: document.getElementById('sidebar-overlay'),
             menuToggleBtn: document.getElementById('menu-toggle-btn'),
             sidebarOpenHandle: document.getElementById('sidebar-open-handle'), // 新增：側邊欄開啟熱區
             // 新增: 後續追問相關元素
@@ -6420,14 +6431,15 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
         function toggleSidebar(show) {
-    const { sidebar, sidebarOverlay } = ALL_ELEMENTS;
+    // ▼▼▼ 【修改重點】 ▼▼▼
+    // 移除所有對 sidebarOverlay 的引用和操作
+    const { sidebar } = ALL_ELEMENTS; 
     sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
 
-    // ▼▼▼ 【修改重點】 ▼▼▼
-    // 我們在這裡為 body 元素加上或移除一個 class，
-    // 而不是直接控制 transform，這樣 CSS 的控制力更強。
+    // 現在這個函式只做一件事：切換 body 上的 class
     document.body.classList.toggle('sidebar-is-open', sidebarOpen);
     // ▲▲▲ 【修改結束】 ▲▲▲
+}
 
     if (sidebarOpen) {
         sidebarOverlay.classList.add('visible');
