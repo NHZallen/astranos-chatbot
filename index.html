@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-14.8.17</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.9.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -20,6 +20,40 @@
     body {
     touch-action: manipulation;
 }
+    /* --- 新增：商店分類篩選器樣式 --- */
+#store-category-list {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+    -webkit-overflow-scrolling: touch; /* 為了在行動裝置上有更好的滾動體驗 */
+}
+/* 隱藏滾動條 */
+#store-category-list::-webkit-scrollbar {
+    display: none;
+}
+.store-category-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background-color: transparent;
+    cursor: pointer;
+    white-space: nowrap; /* 確保按鈕文字不換行 */
+    transition: all 0.2s ease-in-out;
+}
+.store-category-btn:hover {
+    color: var(--text-primary);
+    background-color: var(--hover-bg);
+    border-color: var(--text-primary);
+}
+.store-category-btn.active {
+    color: var(--button-primary-text);
+    background-color: var(--button-primary-bg);
+    border-color: transparent;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+}
+/* --- 結束新增 --- */
     :root {
         --chat-bg: #ffffff;
         --sidebar-bg: #f7f7f8;
@@ -1061,18 +1095,32 @@
         border-radius: 50%;
     }
     body.custom-wallpaper-active .astras-store-card {
-        background-color: rgba(255, 255, 255, 0.75) !important;
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border-color: rgba(200, 200, 200, 0.5) !important;
-    }
-    body.custom-wallpaper-active #store-container header h1,
-    body.custom-wallpaper-active #store-container header #back-to-chat-btn,
-    body.custom-wallpaper-active .astras-card-name,
-    body.custom-wallpaper-active .astras-card-desc,
-    body.custom-wallpaper-active .astras-card-avatar {
-        color: #000000 !important;
-    }
+    background-color: rgba(255, 255, 255, 0.65) !important; /* 半透明背景 */
+    backdrop-filter: blur(16px) !important; /* 模糊效果，這是玻璃材質的核心 */
+    -webkit-backdrop-filter: blur(16px) !important; /* 兼容 Safari */
+    border: 1px solid rgba(255, 255, 255, 0.4) !important; /* 輕微的邊框增加立體感 */
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1) !important; /* 柔和的陰影 */
+}
+/* ▲▲▲ 替換結束 ▲▲▲ */
+
+/* ▼▼▼ 在附近新增以下規則，讓分類篩選器和按鈕也套用效果 ▼▼▼ */
+body.custom-wallpaper-active #store-container .border-b {
+    border-color: rgba(255, 255, 255, 0.2) !important; /* 讓分隔線也變透明 */
+}
+body.custom-wallpaper-active .store-category-btn {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.4);
+    color: #111827; /* 在亮色桌布上，深色文字更清晰 */
+}
+body.custom-wallpaper-active .store-category-btn:hover {
+    background-color: rgba(255, 255, 255, 0.5);
+    border-color: rgba(255, 255, 255, 0.8);
+}
+body.custom-wallpaper-active .store-category-btn.active {
+    border-color: transparent !important;
+    color: var(--button-primary-text) !important;
+    background: var(--button-primary-bg) !important;
+}
     #mobile-context-menu-overlay {
         position: fixed;
         inset: 0;
@@ -1790,6 +1838,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             </button>
             <h1 class="text-xl font-semibold" data-lang-key="astrasStore">Astras 商店</h1>
         </header>
+        <div id="store-category-filter" class="flex-shrink-0 px-4 md:px-6 lg:px-8 pt-4 border-b border-[var(--border-color)]">
+        <div id="store-category-list" class="flex items-center gap-2 pb-3 overflow-x-auto">
+            <!-- 分類按鈕將由 JavaScript 動態生成於此 -->
+        </div>
+    </div>
         <!-- Store Main Content -->
         <main class="flex-1 overflow-y-auto scroll-area p-4 md:p-6 lg:p-8">
             <div id="store-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
@@ -2833,6 +2886,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         // ▲▲▲ 結束新增 ▲▲▲
         // ▼▼▼ 新增：桌布與頭像裁切實例變數 ▼▼▼
         let cropperInstance = null;
+        let currentStoreCategory = '全部';
         let editingAstraForAvatarId = null;
         // ▲▲▲ 結束新增 ▲▲▲
         // ▼▼▼ 【需求實現】滾動按鈕狀態變數 ▼▼▼
@@ -7111,43 +7165,59 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
         const renderStore = () => {
     const grid = ALL_ELEMENTS.storeGrid;
+    const categoryList = document.getElementById('store-category-list');
     grid.innerHTML = '';
-    
-    // 取得當前語言的翻譯
+    categoryList.innerHTML = '';
+
     const translations = i18n[config.uiLanguage] || i18n['zh-TW'];
 
+    // 1. 取得所有官方和使用者自訂的 Astras
+    const translatedOfficialAstras = OFFICIAL_ASTRAS.map(ast => ({
+        ...ast,
+        name: translations['astras_' + ast.id.replace(/-/g, '_') + '_name'] || ast.name,
+        description: translations['astras_' + ast.id.replace(/-/g, '_') + '_desc'] || ast.description
+    }));
+    const userCreatedAstras = astras.filter(a => !a.officialId);
 
-    // 將官方 Astras 的資料轉換成使用翻譯鍵的版本
-    const translatedOfficialAstras = OFFICIAL_ASTRAS.map(ast => {
-        const keyBase = 'astras_' + ast.id.replace(/-/g, '_');
-        return {
-            ...ast,
-            name: translations[keyBase + '_name'] || ast.name, // 如果找不到翻譯，則使用原始名稱
-            description: translations[keyBase + '_desc'] || ast.description // 如果找不到翻譯，則使用原始描述
-        };
+    // 2. 提取所有唯一的分類
+    const allCategories = ['全部', ...new Set([
+        ...translatedOfficialAstras.map(a => a.category),
+        ...userCreatedAstras.map(a => a.category)
+    ].filter(Boolean))]; // filter(Boolean) 用來過濾掉 undefined 或空字串的分類
+
+    // 3. 渲染分類按鈕
+    allCategories.forEach(category => {
+        const btn = document.createElement('button');
+        btn.className = 'store-category-btn';
+        btn.textContent = category;
+        if (category === currentStoreCategory) {
+            btn.classList.add('active');
+        }
+        btn.addEventListener('click', () => {
+            currentStoreCategory = category; // 更新當前選中的分類
+            renderStore(); // 重新渲染整個商店
+        });
+        categoryList.appendChild(btn);
     });
-
-
-    const allStoreAstras = [...translatedOfficialAstras, ...astras.filter(a => !a.officialId)];
     
-    allStoreAstras.forEach(ast => {
+    // 4. 根據當前分類篩選要顯示的 Astras
+    const allStoreAstras = [...translatedOfficialAstras, ...userCreatedAstras];
+    const filteredAstras = currentStoreCategory === '全部'
+        ? allStoreAstras
+        : allStoreAstras.filter(a => a.category === currentStoreCategory);
+
+    // 5. 渲染卡片 (與舊版邏輯相同，但使用篩選後的資料)
+    filteredAstras.forEach(ast => {
         const card = document.createElement('div');
         card.className = 'astras-store-card';
         
-        // 判斷訂閱狀態時，要用原始的 officialId
         const originalId = ast.officialId || ast.id;
         const isSubscribed = astras.some(userAstra => userAstra.officialId === originalId);
         const isUserCreated = !ast.officialId && astras.some(userAstra => userAstra.id === originalId);
 
-
         const avatarUrl = ast.avatarUrl;
         const initials = ast.name.charAt(0);
-        const avatarElement = `
-            <div class="astras-card-avatar">
-                ${avatarUrl ? `<img src="${avatarUrl}" alt="${ast.name}">` : initials}
-            </div>
-        `;
-
+        const avatarElement = `<div class="astras-card-avatar">${avatarUrl ? `<img src="${avatarUrl}" alt="${ast.name}">` : initials}</div>`;
 
         card.innerHTML = `
             ${avatarElement}
@@ -7155,7 +7225,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             <p class="astras-card-desc">${ast.description}</p>
             <button class="subscribe-btn btn-primary" data-id="${originalId}"></button>
         `;
-
 
         const btn = card.querySelector('.subscribe-btn');
         if (isSubscribed) {
@@ -7169,12 +7238,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             btn.textContent = translations.subscribe || '訂閱';
         }
 
-
         btn.addEventListener('click', () => {
             handleSubscription(originalId);
         });
-
-
         grid.appendChild(card);
     });
 };
