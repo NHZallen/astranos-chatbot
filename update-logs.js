@@ -1,5 +1,12 @@
 const updateLogs = [
     {
+        version: "14.8.14",
+        date: "2025-09-18",
+        content: [
+            "<strong>優化：</strong>後續追問展開與關閉邏輯更改",
+        ]
+    },
+    {
         version: "14.8.13",
         date: "2025-09-18",
         content: [
