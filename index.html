@@ -244,13 +244,51 @@ button:not(.btn-primary):active:not(:disabled) { /* <--- 修改這裡 */
         transform: scale(1) translateY(0);
     }
     #model-options-popover { transform-origin: top right; }
+
+    /* ▼▼▼ 【重構後】凝膠玻璃彈出視窗樣式 ▼▼▼ */
     #file-options-popover {
+        /* 1. 核心玻璃效果 */
+        backdrop-filter: blur(16px) saturate(180%);
+        -webkit-backdrop-filter: blur(16px) saturate(180%);
+        background-image: linear-gradient(to top right, rgba(255, 255, 255, 0.5), rgba(255, 255, 0.3));
+        
+        /* 2. 柔和陰影與邊框 */
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        
+        /* 3. 初始動畫狀態 */
         transform-origin: bottom left;
         transform: scale(0.95) translateY(10px);
     }
+    /* 深色模式下的微調 */
+    .dark #file-options-popover {
+        background-image: linear-gradient(to top right, rgba(30, 30, 30, 0.6), rgba(30, 30, 30, 0.4));
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* 彈出視窗顯示時的動畫 */
     #file-options-popover.visible {
         transform: scale(1) translateY(0);
     }
+
+    /* 統一修改內部按鈕的樣式 */
+    #file-options-popover button {
+        color: #111827; /* 預設文字為深色 */
+    }
+    .dark #file-options-popover button {
+        color: #f9fafb; /* 深色模式文字為淺色 */
+    }
+    #file-options-popover button svg {
+        color: inherit;
+        opacity: 0.7;
+    }
+    #file-options-popover button:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+    }
+    .dark #file-options-popover button:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+    /* ▲▲▲ 【重構後】結束 ▲▲▲ */
     /* ▲▲▲ 第五步：結束修改/新增 ▲▲▲ */
 
     /* ... (您原有的 notification 樣式，它們已經包含動畫) ... */
@@ -1562,67 +1600,6 @@ body.custom-wallpaper-active .store-category-btn.active {
     );
 }
 /* ▲▲▲ 【結束新增】 ▲▲▲ */
-    /* ▼▼▼ 【凝膠玻璃材質】彈出視窗樣式 - 新增/修改 ▼▼▼ */
-
-/* --- 主要樣式 (同時適用於淺色與深色模式) --- */
-#file-options-popover {
-    /* 1. 核心玻璃效果：半透明背景 + 背景模糊濾鏡 */
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
-    
-    /* 2. 移除原本的實色背景，改用透明色 */
-    background-color: transparent !important;
-    
-    /* 3. 柔和的陰影，讓物件浮起來 */
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15) !important;
-}
-
-/* --- 淺色模式下的外觀 --- */
-#file-options-popover {
-    /* 半透明的白色背景，營造明亮的凝膠感 */
-    background-image: linear-gradient(to top right, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.3));
-    
-    /* 輕微的邊框增加立體感 */
-    border: 1px solid rgba(255, 255, 255, 0.6) !important;
-
-    /* 確保裡面的按鈕文字是深色，方便閱讀 */
-    color: #111827 !important;
-}
-
-/* --- 深色模式下的外觀 --- */
-.dark #file-options-popover {
-    /* 半透明的深色背景 */
-    background-image: linear-gradient(to top right, rgba(30, 30, 30, 0.6), rgba(30, 30, 30, 0.4));
-
-    /* 在深色模式下，邊框用半透明白色 */
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-
-    /* 確保裡面的按鈕文字是淺色，方便閱讀 */
-    color: #f9fafb !important;
-}
-
-/* --- 統一修改內部按鈕的樣式 --- */
-#file-options-popover button {
-    /* 讓按鈕文字顏色繼承自 #file-options-popover */
-    color: inherit !important;
-}
-
-/* 按鈕的 SVG 圖示也要繼承顏色 */
-#file-options-popover button svg {
-    color: inherit !important;
-    opacity: 0.7; /* 讓圖示稍微柔和一點 */
-}
-
-/* 按鈕懸停(hover)時的效果 */
-#file-options-popover button:hover {
-    /* 懸停時給一個半透明的背景，而不是繼承主題的實色 */
-    background-color: rgba(255, 255, 255, 0.2) !important;
-}
-.dark #file-options-popover button:hover {
-    background-color: rgba(255, 255, 255, 0.1) !important;
-}
-
-/* ▲▲▲ 【凝膠玻璃材質】結束 ▲▲▲ */
 </style>
 
 
@@ -1920,7 +1897,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                                 </button>
                                 <!-- ▼▼▼ 程式碼修正 ▼▼▼ -->
-                                <div id="file-options-popover" class="popover absolute bottom-full left-0 mb-2 w-56 rounded-lg border border-[var(--border-color)] z-20">
+                                <div id="file-options-popover" class="popover absolute bottom-full left-0 mb-2 w-56 z-20">
                                     <button id="camera-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>
                                         <span data-lang-key="camera">相機</span>
