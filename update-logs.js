@@ -1,5 +1,28 @@
 const updateLogs = [
     {
+        version: "14.8.13",
+        date: "2025-09-18",
+        content: [
+            "<strong>優化：</strong>電腦版後續追問模塊尺寸過大的問題",
+            "<strong>刪除：</strong>側邊欄位展開灰色遮罩疊加",
+        ]
+    },
+    {
+        version: "14.8.12",
+        date: "2025-09-18",
+        content: [
+            "<strong>優化：</strong>側邊欄、後續追問欄位以及訊息泡泡的凝膠玻璃材質",
+        ]
+    },
+    {
+        version: "14.8.11",
+        date: "2025-09-18",
+        content: [
+            "<strong>優化：</strong>後續追問背景改為浮標樣式",
+            "<strong>修正：</strong>聊天室窗名稱不會自適應改變的問題",
+        ]
+    },
+    {
         version: "14.8.10",
         date: "2025-09-18",
         content: [
