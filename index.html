@@ -1637,6 +1637,25 @@ body.custom-wallpaper-active .store-category-btn.active {
     );
 }
 /* ▲▲▲ 【結束新增】 ▲▲▲ */
+    #custom-color-input {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-color: transparent;
+}
+/* 隱藏 Chrome/Edge 的預設邊框 */
+#custom-color-input::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+#custom-color-input::-webkit-color-swatch {
+    border: none;
+    border-radius: 0.375rem; /* rounded-md */
+}
+/* 隱藏 Firefox 的預設邊框 */
+#custom-color-input::-moz-color-swatch {
+    border: none;
+    border-radius: 0.375rem; /* rounded-md */
+}
 </style>
 
 
@@ -2086,11 +2105,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                 <label for="color-theme-custom" data-lang-key="colorCustom">自訂</label>
                             </div>
                                                         
-                            <div id="custom-color-picker-container" class="hidden pl-6 pt-2">
-                                <div id="custom-color-swatches" class="grid grid-cols-8 gap-2">
-                                    <!-- Color swatches will be inserted by JS -->
-                                </div>
+                            <div id="custom-color-picker-container" class="hidden pl-6 pt-3 space-y-2">
+                            <label for="custom-color-input" class="block text-sm font-medium" data-lang-key="selectCustomColor">選擇自訂顏色</label>
+                            <div class="flex items-center gap-3">
+                                <input type="color" id="custom-color-input" class="p-0 w-10 h-10 border-0 rounded-md cursor-pointer">
+                                <span id="custom-color-preview" class="w-full h-10 rounded-md border border-[var(--border-color)]"></span>
                             </div>
+                        </div>
                         </div>
                         <!-- ▲▲▲ 結束修改 ▲▲▲ -->
                         <h3 class="text-lg font-semibold mb-3 mt-6" data-lang-key="aiBubbleColor">AI 回覆泡泡底色</h3>
@@ -2903,6 +2924,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             uiColorOptions: document.getElementById('ui-color-options'),
             customColorPickerContainer: document.getElementById('custom-color-picker-container'),
             customColorSwatches: document.getElementById('custom-color-swatches'),
+            customColorInput: document.getElementById('custom-color-input'),
+            customColorPreview: document.getElementById('custom-color-preview'),
             pickColorBtn: document.getElementById('pick-color-btn'),
             // ▲▲▲ 結束修改 ▲▲▲
             apiKeyWarningBadge: document.getElementById('api-key-warning-badge'),
@@ -3033,16 +3056,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             pink: {light: '#ec4899', dark: '#be185d'},
             teal: {light: '#14b8a6', dark: '#0f766e'},
         };
-        // ▼▼▼ 新增：UI 顏色主題調色盤 ▼▼▼
-        const UI_THEME_COLORS = {
-            Red: '#ef4444', Orange: '#f97316', Amber: '#f59e0b',
-            Yellow: '#eab308', Lime: '#84cc16', Green: '#22c55e',
-            Emerald: '#10b981', Teal: '#14b8a6', Cyan: '#06b6d4',
-            Sky: '#0ea5e9', Blue: '#3b82f6', Indigo: '#6366f1',
-            Violet: '#8b5cf6', Purple: '#a855f7', Fuchsia: '#d946ef',
-            Pink: '#ec4899', Rose: '#f43f5e', Slate: '#64748b'
-        };
-        // ▲▲▲ 結束：UI 顏色主題調色盤 ▲▲▲
         let conversations = [];
         let folders = [];
         let astras = [];
@@ -5322,7 +5335,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             
             // ▼▼▼ 修改：儲存 UI 顏色設定 (僅儲存模式與自訂顏色) ▼▼▼
             const selectedThemeMode = document.querySelector('input[name="color-theme"]:checked').value;
-            const selectedCustomColor = ALL_ELEMENTS.customColorSwatches.querySelector('.selected')?.dataset.color || config.uiTheme.customColor;
+            const selectedCustomColor = ALL_ELEMENTS.customColorInput.value;
             
             config.uiTheme.mode = selectedThemeMode;
             config.uiTheme.customColor = selectedCustomColor;
@@ -7578,45 +7591,37 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         
         const renderUiColorOptions = () => {
-            const { uiColorOptions, customColorPickerContainer, customColorSwatches, pickColorBtn } = ALL_ELEMENTS;
+            const { uiColorOptions, customColorPickerContainer, customColorInput, customColorPreview, pickColorBtn } = ALL_ELEMENTS;
             
             const currentMode = config.uiTheme.mode;
 
-
-            // Set radio button state
+            // 1. 設定選項按鈕的初始狀態
             uiColorOptions.querySelector(`input[value="${currentMode}"]`).checked = true;
 
+            // 2. 設定顏色選擇器和預覽的初始值
+            customColorInput.value = config.uiTheme.customColor;
+            customColorPreview.style.backgroundColor = config.uiTheme.customColor;
 
-            // Render custom color swatches
-            customColorSwatches.innerHTML = '';
-            Object.entries(UI_THEME_COLORS).forEach(([name, hex]) => {
-                const swatch = document.createElement('div');
-                swatch.className = `color-swatch w-8 h-8 rounded-full cursor-pointer`;
-                swatch.style.backgroundColor = hex;
-                swatch.dataset.color = hex;
-                if (config.uiTheme.customColor === hex) {
-                    swatch.classList.add('selected');
-                }
-                swatch.addEventListener('click', () => {
-                    customColorSwatches.querySelector('.selected')?.classList.remove('selected');
-                    swatch.classList.add('selected');
-                });
-                customColorSwatches.appendChild(swatch);
+            // 3. 移除舊的事件監聽器以防重複綁定
+            const newColorInput = customColorInput.cloneNode(true);
+            customColorInput.parentNode.replaceChild(newColorInput, customColorInput);
+            ALL_ELEMENTS.customColorInput = newColorInput; // 更新 ALL_ELEMENTS 中的引用
+
+            // 4. 為顏色選擇器新增即時預覽的事件監聽器
+            newColorInput.addEventListener('input', () => {
+                customColorPreview.style.backgroundColor = newColorInput.value;
             });
-
-
-            // Toggle visibility of sections
+            
+            // 5. 控制各區塊的顯示/隱藏
             const updateVisibility = () => {
                 const mode = document.querySelector('input[name="color-theme"]:checked').value;
                 customColorPickerContainer.classList.toggle('hidden', mode !== 'custom');
                 pickColorBtn.classList.toggle('hidden', mode !== 'adaptive' || !config.customWallpaper);
             };
             
-            // Add event listeners
             uiColorOptions.querySelectorAll('input[name="color-theme"]').forEach(radio => {
                 radio.addEventListener('change', updateVisibility);
             });
-
 
             updateVisibility();
         };
