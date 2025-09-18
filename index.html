@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-14.8.12</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.8.11</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -384,33 +384,28 @@ body.custom-wallpaper-active.wallpaper-is-dark .sidebar {
 }
 
         /* Mobile Sidebar Styles */
-        body.sidebar-is-open #sidebar {
-    transform: translateX(0);
-}
-        #app-container > main {
-    transition: transform 0.3s ease-in-out;
-}
-
-/* 2. 創造遮罩本體 (main::before) */
-#app-container > main::before {
-    content: '';
-    position: absolute;
-    inset: 0; /* 填滿整個 main 元素 */
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 25; /* z-index 比側邊欄(z-40)低即可 */
-
-    /* 預設為透明且不可點擊 */
+        #sidebar.open {
+            transform: translateX(0);
+        }
+        #sidebar-overlay {
     opacity: 0;
-    pointer-events: none; 
-
-    /* 設定平滑的過渡動畫 */
-    transition: opacity 0.3s ease-in-out;
+    visibility: hidden;
+    /* ▼▼▼ 修改：為 left 屬性也加上過渡動畫 ▼▼▼ */
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out, left 0.3s ease-in-out;
+    /* ▲▲▲ 結束修改 ▲▲▲ */
+}
+        #sidebar-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+    /* ▼▼▼ 修改：設定手機版的預設起始位置 ▼▼▼ */
+    left: 256px; /* 這是 w-64 的寬度 */
 }
 
-/* 3. 當側邊欄開啟時 (body 有 .sidebar-is-open)，顯示遮罩 */
-body.sidebar-is-open #app-container > main::before {
-    opacity: 1;
-    pointer-events: auto; /* 讓遮罩可以被點擊 (用於關閉側邊欄) */
+/* ▼▼▼ 新增：針對電腦版(lg)調整遮罩起始位置 ▼▼▼ */
+@media (min-width: 1024px) { /* 1024px 是 Tailwind "lg" 的斷點 */
+    #sidebar-overlay.visible {
+        left: 288px; /* 這是 w-72 的寬度 */
+    }
 }
         .theme-button-group {
             display: grid;
@@ -1823,6 +1818,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     <div id="app-container" class="hidden h-screen"> <!-- 新增 h-screen -->
         <div class="relative flex h-screen w-full bg-[var(--chat-bg)]">
             <!-- Sidebar Overlay (for mobile) -->
+            <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 opacity-0"></div>
 
             <!-- ▼▼▼ 【需求實現】新增：側邊欄開啟手勢熱區 ▼▼▼ -->
             <div id="sidebar-open-handle" class="fixed top-0 left-0 h-full z-20" style="width: 20px; touch-action: pan-y;"></div>
@@ -2821,6 +2817,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             importFileInput: document.getElementById('import-file-input'),
             // Mobile specific
             sidebar: document.getElementById('sidebar'),
+            sidebarOverlay: document.getElementById('sidebar-overlay'),
             menuToggleBtn: document.getElementById('menu-toggle-btn'),
             sidebarOpenHandle: document.getElementById('sidebar-open-handle'), // 新增：側邊欄開啟熱區
             // 新增: 後續追問相關元素
@@ -6431,20 +6428,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
         function toggleSidebar(show) {
-    // 移除所有對 sidebarOverlay 的引用和操作
-    const { sidebar } = ALL_ELEMENTS; 
-    sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
-
-    // 現在這個函式只做一件事：切換 body 上的 class
-    document.body.classList.toggle('sidebar-is-open', sidebarOpen);
-}
-
-    if (sidebarOpen) {
-        sidebarOverlay.classList.add('visible');
-    } else {
-        sidebarOverlay.classList.remove('visible');
-    }
-}
+            const { sidebar, sidebarOverlay } = ALL_ELEMENTS;
+            sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
+            if (sidebarOpen) {
+                sidebar.style.transform = 'translateX(0)';
+                sidebarOverlay.classList.add('visible');
+            } else {
+                sidebar.style.transform = 'translateX(-100%)';
+                sidebarOverlay.classList.remove('visible');
+            }
+        }
 
 
         function closeAllPopovers() {
@@ -8124,14 +8117,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             setupScrollToBottomButton(); // 【需求實現】初始化滾動按鈕
             checkAndShowLatestUpdate(); // ▼▼▼ 新增：初始化時檢查更新 ▼▼▼
             ALL_ELEMENTS.menuToggleBtn.addEventListener('click', () => toggleSidebar());
-            const mainContentArea = document.querySelector('#app-container > main');
-if (mainContentArea) {
-    mainContentArea.addEventListener('click', () => {
-        if (sidebarOpen) {
-            toggleSidebar(false);
-        }
-    });
-}
             ALL_ELEMENTS.sidebarOverlay.addEventListener('click', () => toggleSidebar(false));
             ALL_ELEMENTS.newChatBtn.addEventListener('click', () => startNewChat());
             ALL_ELEMENTS.openSearchBtn.addEventListener('click', () => {
