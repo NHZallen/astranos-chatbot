@@ -1,5 +1,13 @@
 const updateLogs = [
     {
+        version: "14.8.10",
+        date: "2025-09-18",
+        content: [
+            "<strong>優化：</strong>減少頁面可選取文字範圍，優化使用體驗",
+            "<strong>新增：</strong>新增訊息佔留功能，切換對話為傳送出的訊息皆能保留",
+        ]
+    },
+    {
         version: "14.8.9",
         date: "2025-09-18",
         content: [
