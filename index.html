@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-14.8.11</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.8.12</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -388,14 +388,19 @@ body.custom-wallpaper-active.wallpaper-is-dark .sidebar {
             transform: translateX(0);
         }
         #sidebar-overlay {
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
-        }
+    opacity: 0;
+    visibility: hidden;
+    /* ▼▼▼ 【修改重點】增加 left 的過渡動畫，讓位移動畫更平滑 ▼▼▼ */
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out, left 0.3s ease-in-out;
+    /* ▲▲▲ 【修改結束】 ▲▲▲ */
+}
         #sidebar-overlay.visible {
             opacity: 1;
             visibility: visible;
         }
+        body.sidebar-is-open #sidebar-overlay {
+    left: 16rem; /* 16rem = 256px, 對應到 Tailwind 的 w-64 */
+}
         .theme-button-group {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -6417,16 +6422,22 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
         function toggleSidebar(show) {
-            const { sidebar, sidebarOverlay } = ALL_ELEMENTS;
-            sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
-            if (sidebarOpen) {
-                sidebar.style.transform = 'translateX(0)';
-                sidebarOverlay.classList.add('visible');
-            } else {
-                sidebar.style.transform = 'translateX(-100%)';
-                sidebarOverlay.classList.remove('visible');
-            }
-        }
+    const { sidebar, sidebarOverlay } = ALL_ELEMENTS;
+    sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
+
+    // ▼▼▼ 【修改重點】 ▼▼▼
+    // 我們在這裡為 body 元素加上或移除一個 class，
+    // 而不是直接控制 transform，這樣 CSS 的控制力更強。
+    document.body.classList.toggle('sidebar-is-open', sidebarOpen);
+    sidebar.classList.toggle('open', sidebarOpen); // 也改用 class 控制 sidebar
+    // ▲▲▲ 【修改結束】 ▲▲▲
+
+    if (sidebarOpen) {
+        sidebarOverlay.classList.add('visible');
+    } else {
+        sidebarOverlay.classList.remove('visible');
+    }
+}
 
 
         function closeAllPopovers() {
