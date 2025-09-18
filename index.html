@@ -437,26 +437,33 @@
         overflow: hidden;
     }
     .follow-up-prompt-btn {
-        background-color: var(--hover-bg);
-        color: var(--text-secondary);
-        border: 1px solid var(--border-color);
-        padding: 0.5rem 1rem;
-        border-radius: 9999px;
-        font-size: 0.875rem;
-        cursor: pointer;
-        white-space: normal;
-        overflow: hidden;
-        text-overflow: unset;
-        max-width: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        word-break: break-word;
-        opacity: 0;
-        transform: translateY(10px);
-        animation: subtleFadeInUp 0.4s ease-out forwards;
-        animation-delay: var(--animation-delay, 0s);
-    }
+    background-color: var(--hover-bg);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: unset;
+    max-width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    word-break: break-word;
+    /* 動畫設定 */
+    opacity: 0;
+    transform: translateY(10px);
+    animation: subtleFadeInUp 0.4s ease-out forwards;
+    animation-delay: var(--animation-delay, 0s);
+    
+    /* ▼▼▼ 【新增】禁止文字選取 ▼▼▼ */
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none;     /* IE 10+ */
+    user-select: none;         /* Standard syntax */
+    /* ▲▲▲ 【結束新增】 ▲▲▲ */
+}
     .follow-up-prompt-btn:hover {
         background-color: var(--active-bg);
         color: var(--text-primary);
@@ -1386,7 +1393,6 @@
 .spotlight-effect::before {
     content: '';
     position: absolute;
-    /* 讓偽元素完全覆蓋父元素 */
     left: 0;
     top: 0;
     right: 0;
@@ -1394,12 +1400,34 @@
 
     /* 核心：定義高光效果的漸變 */
     background-image: radial-gradient(
-        /* 漸變形狀為圓形，大小為 200px */
-        circle 200px at var(--spotlight-x) var(--spotlight-y),
-        /* 漸變顏色：從非常淡的半透明白色到完全透明 */
-        rgba(255, 255, 255, 0.08) 0%,
+        /* 
+          修改 1：將漸變圓形的大小從 200px 縮小到 150px，讓光暈更集中。
+        */
+        circle 150px at var(--spotlight-x) var(--spotlight-y),
+        /* 
+          修改 2：將起始顏色透明度從 0.08 提升到 0.15，讓光暈更明亮。
+        */
+        rgba(255, 255, 255, 0.15) 0%,
         rgba(255, 255, 255, 0) 100%
     );
+    
+    opacity: 0;
+    transition: opacity 0.3s ease-out;
+    pointer-events: none; 
+}
+
+.spotlight-effect:hover::before {
+    opacity: 1;
+}
+
+.dark .spotlight-effect::before {
+    background-image: radial-gradient(
+        circle 150px at var(--spotlight-x) var(--spotlight-y),
+        /* 修改 3：深色模式下也同步增強亮度 */
+        rgba(255, 255, 255, 0.2) 0%, 
+        rgba(255, 255, 255, 0) 100%
+    );
+}
     
     /* 預設隱藏高光 */
     opacity: 0;
