@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-14.8.16</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.8.17</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -1377,6 +1377,52 @@
         #follow-up-container #follow-up-header h4 {
     color: #111827 !important; /* 使用 --text-primary 的淺色模式顏色，即近黑色 */
 }
+/* ▼▼▼ 【新增】滑鼠高光追蹤效果 ▼▼▼ */
+.spotlight-effect {
+    position: relative; /* 必須，為了讓偽元素定位 */
+    overflow: hidden;   /* 必須，將高光限制在元素邊界內 */
+}
+
+.spotlight-effect::before {
+    content: '';
+    position: absolute;
+    /* 讓偽元素完全覆蓋父元素 */
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+
+    /* 核心：定義高光效果的漸變 */
+    background-image: radial-gradient(
+        /* 漸變形狀為圓形，大小為 200px */
+        circle 200px at var(--spotlight-x) var(--spotlight-y),
+        /* 漸變顏色：從非常淡的半透明白色到完全透明 */
+        rgba(255, 255, 255, 0.08) 0%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    
+    /* 預設隱藏高光 */
+    opacity: 0;
+    /* 讓高光的出現和消失有平滑的過渡效果 */
+    transition: opacity 0.3s ease-out;
+    /* 確保高光不會擋住下方的點擊事件 */
+    pointer-events: none; 
+}
+
+/* 當滑鼠懸停在元素上時，顯示高光 */
+.spotlight-effect:hover::before {
+    opacity: 1;
+}
+
+/* 在深色模式下，讓高光稍微亮一點以突顯效果 */
+.dark .spotlight-effect::before {
+    background-image: radial-gradient(
+        circle 200px at var(--spotlight-x) var(--spotlight-y),
+        rgba(255, 255, 255, 0.12) 0%,
+        rgba(255, 255, 255, 0) 100%
+    );
+}
+/* ▲▲▲ 【結束新增】 ▲▲▲ */
 </style>
 
 
@@ -1652,7 +1698,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 
                 <!-- ▼▼▼ 修改後的程式碼 ▼▼▼ -->
                 <div id="follow-up-container" class="p-2 md:p-4 bg-[var(--input-bar-bg)] border-t border-[var(--border-color)] hidden">
-                    <div id="follow-up-content-wrapper" class="max-w-4xl mx-auto">
+                    <div id="follow-up-content-wrapper" class="max-w-4xl mx-auto spotlight-effect">
                         <div id="follow-up-header" class="flex items-center justify-between cursor-pointer">
                             <h4 class="text-sm font-semibold text-[var(--text-secondary)]" data-lang-key="followUp">後續追問</h4>
                         </div>
@@ -1667,7 +1713,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     <div class="max-w-4xl mx-auto">
                         <!-- File Preview Container -->
                         <div id="file-preview-container" class="w-full flex flex-wrap gap-2 mb-2 px-2 empty:hidden"></div>
-                        <div class="input-wrapper w-full flex items-end gap-2 p-2 rounded-2xl bg-[var(--input-field-bg)] border border-[var(--border-color)] shadow-sm">
+                        <div class="input-wrapper w-full flex items-end gap-2 p-2 rounded-2xl bg-[var(--input-field-bg)] border border-[var(--border-color)] shadow-sm spotlight-effect">
                             <!-- File Input Button and Popover -->
                             <div id="file-input-container" class="relative">
                                 <button id="add-file-btn" title="附加檔案" class="flex-shrink:0 h-10 w-10 rounded-full flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 transition-colors" data-lang-key-title="attachFile">
@@ -8116,6 +8162,31 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             updateFileInputUI();
             
             startNewChat();
+
+        // ▼▼▼ 【新增】初始化高光追蹤效果 ▼▼▼
+        const initializeSpotlightEffect = () => {
+            const spotlightElements = document.querySelectorAll('.spotlight-effect');
+
+            spotlightElements.forEach(el => {
+                // 處理滑鼠和手指移動
+                const handleMove = (e) => {
+                    const rect = el.getBoundingClientRect();
+                    // 根據事件類型取得 x, y 座標
+                    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+                    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+
+                    el.style.setProperty('--spotlight-x', `${x}px`);
+                    el.style.setProperty('--spotlight-y', `${y}px`);
+                };
+
+                // 電腦版：滑鼠移動
+                el.addEventListener('mousemove', handleMove);
+                // 手機版：手指移動
+                el.addEventListener('touchmove', handleMove, { passive: true });
+            });
+        };
+        initializeSpotlightEffect();
+        // ▲▲▲ 【結束新增】 ▲▲▲
         }
 
 
