@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-14.8.9</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.8.10</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -3241,6 +3241,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     folders = (data.folders || []).map(f => ({...getDefaultFolder(), ...f}));
                     conversations = (data.conversations || []).map(c => ({
                         archived: false, summary: '', folderId: null, isWebSearchEnabled: false, astrasId: null, pinned: false, deletedAt: null, ...c,
+                        unsentMessage: c.unsentMessage || '', // +++ 新增此行 +++
                         genConfig: c.genConfig || getDefaultGenConfig(),
                         // ▼▼▼ 【排序修正】新增 lastUpdatedAt 屬性並進行資料遷移 ▼▼▼
                         lastUpdatedAt: c.lastUpdatedAt || (c.messages && c.messages.length > 0 ? c.messages[c.messages.length - 1].createdAt : c.createdAt),
@@ -3293,6 +3294,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 isTemporary: true, // <--- 新增此行
                 isNaming: false,
                 deletedAt: null // 新增：垃圾桶屬性
+                 unsentMessage: ''
             };
         };
         const startNewChat = () => {
@@ -3311,6 +3313,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             activeConversationId = newConv.id;
             
             renderAll();
+            ALL_ELEMENTS.messageInput.value = '';
             toggleSidebar(false);
             sendConfirmed = false;
             updateInputState();
@@ -3329,6 +3332,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 uploadedFiles = [];
                 renderAll();
             }
+            const conv = getActiveConversation();
+            ALL_ELEMENTS.messageInput.value = conv ? conv.unsentMessage || '' : '';
             sendConfirmed = false;
             updateInputState();
             updateApiKeyWarningBadge();
@@ -4298,6 +4303,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
             addMessageToUI(userMessageObject, conv.messages.length, true);
             conv.lastUpdatedAt = new Date().toISOString();
+            conv.unsentMessage = '';
 
             // 將臨時對話轉為永久，並觸發命名狀態
             if (conv.isTemporary) {
@@ -8186,6 +8192,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     ALL_ELEMENTS.submitButton.click();
+                }
+            });
+            ALL_ELEMENTS.messageInput.addEventListener('input', () => {
+                const conv = getActiveConversation();
+                if (conv) {
+                    conv.unsentMessage = ALL_ELEMENTS.messageInput.value;
                 }
             });
             ALL_ELEMENTS.submitButton.addEventListener('click', (e) => {
