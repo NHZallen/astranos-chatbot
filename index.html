@@ -3328,15 +3328,22 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             conversations = conversations.filter(c => c.id !== previousConv.id);
         }
 
-        // 1. 【順序正確】先更新 ID
+        // 1. 首先更新全域的 activeConversationId
         activeConversationId = id;
         uploadedFiles = [];
         
-        // 2. 【順序正確】在有了新的 ID 之後，才更新整個畫面 (包含標題)
+        // 2. 【強制修正】立即根據新的 ID 找到對話物件
+        const newConv = getActiveConversation();
+        if (newConv) {
+            // 3. 【強制修正】直接手動更新標題文字，確保它在第一時間被更改
+            ALL_ELEMENTS.headerTitle.textContent = newConv.title;
+        }
+
+        // 4. 執行完整的介面渲染
         renderAll();
 
-        // 3. 【順序正確】最後才根據新的 ID 處理輸入框
-        const conv = getActiveConversation();
+        // 5. 處理輸入框等其他元素
+        const conv = getActiveConversation(); // 此處再次獲取是為了確保資料同步
         ALL_ELEMENTS.messageInput.value = conv ? conv.unsentMessage || '' : '';
     }
     
