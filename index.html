@@ -1824,7 +1824,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         <button id="menu-toggle-btn" class="p-2 rounded-md hover:bg-[var(--hover-bg)]">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                         </button>
-                        <h1 id="header-title" class="text-xl font-semibold truncate" data-lang-key="newChat">新對話</h1>
+                        <h1 id="header-title" class="text-xl font-semibold truncate">新對話</h1>
                         <div id="astras-indicator" class="hidden items-center gap-2 ml-2">
                             <div class="flex items-center gap-1 bg-[var(--hover-bg)] px-2 py-1 rounded-full">
                                 <span id="current-astras-name" class="text-sm font-medium text-[var(--text-primary)]"></span>
@@ -3311,7 +3311,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const newConv = createBaseConversation('新對話');
             conversations.unshift(newConv);
             activeConversationId = newConv.id;
-            updateHeaderTitle();
             
             renderAll();
             ALL_ELEMENTS.messageInput.value = '';
@@ -3322,31 +3321,30 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderFollowUpPrompts([]);
         };
         const loadChat = (id) => {
-    if (id !== activeConversationId) {
-        const previousConv = getActiveConversation();
-        if (previousConv && previousConv.isTemporary && previousConv.messages.length === 0) {
-            conversations = conversations.filter(c => c.id !== previousConv.id);
-        }
+            if (id !== activeConversationId) {
+                // 如果我們正從一個空的臨時對話切換出去，就將其刪除
+                const previousConv = getActiveConversation();
+                if (previousConv && previousConv.isTemporary && previousConv.messages.length === 0) {
+                    conversations = conversations.filter(c => c.id !== previousConv.id);
+                }
 
-        // 1. 更新 ID
-        activeConversationId = id;
-        uploadedFiles = [];
-        
-        // 2. 【核心修正】第一時間呼叫專門的函式更新標題
-        updateHeaderTitle(); 
+                // 1. 先更新 ID
+                activeConversationId = id;
+                uploadedFiles = [];
+                
+                // 2. 再更新整個畫面 (包含標題)
+                renderAll();
 
-        // 3. 渲染畫面的其餘部分
-        renderAll(); 
-
-        const conv = getActiveConversation();
-        ALL_ELEMENTS.messageInput.value = conv ? conv.unsentMessage || '' : '';
-    }
-    
-    sendConfirmed = false;
-    updateInputState();
-    updateApiKeyWarningBadge();
-    renderFollowUpPrompts([]);
-};
+                // 3. 最後才根據新的 ID 處理輸入框
+                const conv = getActiveConversation();
+                ALL_ELEMENTS.messageInput.value = conv ? conv.unsentMessage || '' : '';
+            }
+            sendConfirmed = false;
+            updateInputState();
+            updateApiKeyWarningBadge();
+            // 重新載入對話時，清除追問提示
+            renderFollowUpPrompts([]);
+        };
         const deleteChat = async (id, event) => {
             event?.stopPropagation();
             const conv = conversations.find(c => c.id === id);
@@ -3512,14 +3510,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             updateFollowUpUI(); // 新增: 渲染後續追問介面
             applyLanguage(config.uiLanguage); // 新增：每次渲染時都應用語言
         };
-        const updateHeaderTitle = () => {
-    const conv = getActiveConversation();
-    if (conv) {
-    } else {
-        // 如果找不到（例如剛初始化），就顯示預設文字
-        ALL_ELEMENTS.headerTitle.textContent = i18n[config.uiLanguage].newChat || '新對話';
-    }
-};
 
         const renderHistorySidebar = () => {
             ALL_ELEMENTS.historyList.innerHTML = '';
