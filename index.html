@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-14.8.14</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.8.15</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -17,667 +17,602 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <!-- ▲▲▲ 結束新增 ▲▲▲ -->
     <style>
-        :root {
-            --chat-bg: #ffffff;
-            --sidebar-bg: #f7f7f8;
-            --input-bar-bg: #ffffff;
-            --input-field-bg: #f9fafb;
-            --text-primary: #111827;
-            --text-secondary: #6b7280;
-            --border-color: #e5e7eb;
-            --hover-bg: #f3f4f6;
-            --active-bg: #e5e7eb;
-            --modal-bg: #ffffff;
-            --shadow-color: rgba(0, 0, 0, 0.1);
-            --ai-bubble-bg: var(--sidebar-bg);
-            --user-bubble-bg: #3b82f6;
-            
-            /* ▼▼▼ 新增：UI 主題顏色變數 ▼▼▼ */
-            --button-primary-bg: #3b82f6;
-            --button-primary-hover-bg: #2563eb;
-            --button-primary-text: #ffffff;
-            /* ▲▲▲ 結束：UI 主題顏色變數 ▲▲▲ */
-        }
-        .dark {
-            --chat-bg: #111111;
-            --sidebar-bg: #1c1c1c;
-            --input-bar-bg: #1c1c1c;
-            --input-field-bg: #2d2d2d;
-            --text-primary: #f9fafb;
-            --text-secondary: #9ca3af;
-            --border-color: #374151;
-            --hover-bg: #374151;
-            --active-bg: #4b5563;
-            --modal-bg: #1f2937;
-            --shadow-color: rgba(0, 0, 0, 0.4);
-            --ai-bubble-bg: var(--sidebar-bg);
-            --user-bubble-bg: #2563eb;
-        }
-
-
-        /* --- 全局動畫與過渡效果 --- */
-        @keyframes subtleFadeInUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes subtleScaleIn {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
-
-
-        /* 為常用互動元素增加平滑過渡 */
-        button, .sidebar-item, .settings-nav-item, .theme-btn, .voice-input-btn, .model-option-btn-container, .color-option {
-            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out;
-        }
-
-
-        /* 增強按鈕的懸停與點擊反饋 */
-        button:hover:not(:disabled) {
-            transform: translateY(-1px);
-        }
-        button:active:not(:disabled) {
-            transform: translateY(0px);
-            box-shadow: none;
-        }
-        /* --- 結束 全局動畫 --- */
-
-
-
-
-        body { background-color: var(--chat-bg); color: var(--text-primary); } /* 移除 height: 100vh; overflow: hidden; */
-        
-        /* ▼▼▼ 【第一步 新增】滾動優化與背景鎖定 ▼▼▼ */
-        .scroll-area {
-            /* 在 iOS 和其他觸控裝置上啟用基於動量的慣性滾動 */
-            -webkit-overflow-scrolling: touch;
-            /* 防止容器內的滾動影響到父元素（如 body），有效抑制滾動穿透和過度的橡皮筋效果 */
-            overscroll-behavior-y: contain;
-        }
-        
-        /* 當彈窗開啟時，應用於 body 以鎖定背景滾動 */
-        body.modal-open {
-            overflow: hidden;
-        }
-        /* ▲▲▲ 【第一步 結束】 ▲▲▲ */
-
-        .sidebar { background-color: var(--sidebar-bg); border-right: 1px solid var(--border-color); /* ▼▼▼ 修改：使用更平滑的動畫曲線 ▼▼▼ */ transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1); /* ▲▲▲ 結束修改 ▲▲▲ */ }
-        .scroll-area::-webkit-scrollbar { width: 8px; }
-        .scroll-area::-webkit-scrollbar-track { background: transparent; }
-        .scroll-area::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
-        .scroll-area::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
-
-
-        /* Modal 動畫 (已有) */
-        .modal {
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
-        }
-        .modal.visible { opacity: 1; visibility: visible; }
-        .modal > div {
-            transform: scale(0.95);
-            transition: transform 0.2s ease-in-out;
-        }
-        .modal.visible > div { transform: scale(1); }
-        
-        /* ▼▼▼ 新增/修改的程式碼 ▼▼▼ */
-        /* --- 登入/App 轉場動畫 --- */
-        #auth-container {
-            transition: opacity 0.4s ease-out, transform 0.4s ease-out;
-        }
-        #auth-container.fade-out {
-            opacity: 0;
-            transform: scale(0.95);
-            pointer-events: none; /* 避免在淡出時被點擊 */
-        }
-        #app-container, #store-container {
-            /* 初始狀態 */
-            opacity: 0;
-            transform: scale(1.05);
-            transition: opacity 0.4s ease-in 0.2s, transform 0.4s ease-in 0.2s;
-        }
-        #app-container.visible, #store-container.visible {
-            /* 結束狀態 */
-            opacity: 1;
-            transform: scale(1);
-        }
-        
-        /* 聊天視窗切換動畫 */
-        @keyframes chatFadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .chat-view-transition {
-            animation: chatFadeIn 0.3s ease-out forwards;
-        }
-        
-        /* ▼▼▼ 修改：資料夾開合動畫 (使用 data-open 屬性) ▼▼▼ */
-        .folder-item > .folder-content-container {
-            overflow-y: hidden;
-            transition: max-height 0.35s cubic-bezier(0.2, 1, 0.3, 1);
-            max-height: 0;
-        }
-        .folder-item[data-open="true"] > .folder-content-container {
-            max-height: 100vh; /* 一個足夠大的值以容納內容 */
-            transition: max-height 0.5s cubic-bezier(0.2, 1, 0.3, 1);
-        }
-        .folder-item[data-open="true"] > .folder-summary {
-            margin-bottom: 4px; /* 開啟時增加一點間距 */
-        }
-        /* ▲▲▲ 結束修改 ▲▲▲ */
-        
-        /* 輸入框容器焦點動畫 */
-        @keyframes pulse-glow {
-            from { box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4); }
-            to   { box-shadow: 0 0 0 0px rgba(59, 130, 246, 0); }
-        }
-        .input-wrapper {
-            transition: box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out;
-            position: relative;
-        }
-        .input-wrapper.pulse-glow {
-            animation: pulse-glow 0.5s ease-out;
-        }
-        
-        #auth-container .auth-form-container {
-            animation: subtleFadeInUp 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-        }
-
-
-        /* --- 側邊欄主體 - 幻彩玻璃風格 --- */
-        .sidebar {
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            background-color: rgba(255, 255, 255, 0.55);
-            border-right: 1px solid rgba(255, 255, 255, 0.6);
-            box-shadow: 4px 0px 15px rgba(0, 0, 0, 0.05);
-            --border-color: rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease-in-out;
-        }
-
-
-        .dark .sidebar {
-            background-color: rgba(30, 30, 30, 0.5);
-            border-right: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 4px 0px 20px rgba(0, 0, 0, 0.2);
-            --border-color: rgba(255, 255, 255, 0.1);
-        }
-        body.custom-wallpaper-active .sidebar {
-    /* 基底：使用更透明的半透明白色作為基底，達到「無色」效果 */
-    background-color: rgba(255, 255, 255, 0.25) !important;
-    
-    /* 核心：柔和的背景模糊效果 */
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
-
-    /* 邊緣：使用更亮的半透明白色描邊，營造晶瑩高光感 */
-    border-right: 1px solid rgba(255, 255, 255, 0.4) !important;
-
-    /* 陰影：柔和的陰影以增加立體感 */
-    box-shadow: 4px 0px 20px rgba(0, 0, 0, 0.1) !important;
-}
-
-/* 當桌布被判斷為深色時，使用一個稍微不透明的背景以確保可讀性 */
-body.custom-wallpaper-active.wallpaper-is-dark .sidebar {
-    background-color: rgba(255, 255, 255, 0.15) !important;
-    border-right: 1px solid rgba(255, 255, 255, 0.25) !important;
-}
-        
-        /* --- 側邊欄內部項目 - 融入玻璃風格 & 動畫 --- */
-        .sidebar-item:hover {
-           background-color: rgba(255, 255, 255, 0.3);
-        }
-        .dark .sidebar-item:hover {
-           background-color: rgba(255, 255, 255, 0.08);
-        }
-
-
-        /* 選中項目時增加更明顯的動畫效果 */
-        .sidebar-item.active {
-            background-color: rgba(255, 255, 255, 0.5);
-            transform: scale(1.02);
-            box-shadow: 0 0 15px -3px rgba(59, 130, 246, 0.3);
-        }
-        .dark .sidebar-item.active {
-            background-color: rgba(255, 255, 255, 0.12);
-        }
-
-
-        /* Popover 選單動畫 */
-        .popover {
-            box-shadow: 0 10px 15px -3px var(--shadow-color), 0 4px 6px -2px var(--shadow-color);
-            background-color: var(--modal-bg);
-            opacity: 0;
-            visibility: hidden;
-            transform: scale(0.95) translateY(-10px);
-            transition: opacity 0.15s ease-out, transform 0.15s ease-out, visibility 0.15s;
-            transform-origin: top; /* 預設從頂部展開 */
-        }
-        .popover.visible {
-            opacity: 1;
-            visibility: visible;
-            transform: scale(1) translateY(0);
-        }
-        /* 針對不同位置的 Popover 調整動畫原點 */
-        #model-options-popover { transform-origin: top right; }
-        #file-options-popover {
-            transform-origin: bottom left;
-            /* 調整初始狀態以實現向上動畫 */
-            transform: scale(0.95) translateY(10px);
-        }
-        #file-options-popover.visible {
-            transform: scale(1) translateY(0);
-        }
-
-        #notification-container {
-            position: fixed;
-            top: 1.5rem;
-            right: 1.5rem;
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-        .notification {
-            padding: 1rem 1.5rem;
-            border-radius: 1rem;
-            font-weight: 500;
-            animation: fadeInRight 0.3s ease, fadeOutRight 0.3s ease 2.7s forwards;
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            background-color: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.2);
-            color: var(--text-primary);
-        }
-        .dark .notification {
-            background-color: rgba(20, 20, 20, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-        }
-        .notification.success { color: #22c55e; }
-        .notification.error { color: #ef4444; }
-        .notification.warning { color: #f97316; }
-
-
-        /* 訊息進入動畫 (已有) */
-        .message-item { animation: slideInUp 0.4s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes fadeInRight { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes fadeOutRight { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(100%); } }
-        @keyframes slideInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
-
-
-
-        /* AI 正在運行中的動畫效果 (已有) */
-        .loading-dots { display: flex; align-items: center; justify-content: center; height: 1.25rem; }
-        .loading-dots span { display: inline-block; width: 8px; height: 8px; margin: 0 2px; background-color: var(--text-secondary); border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both; }
-        .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
-        .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
-        .loading-dots span:nth-child(3) { animation-delay: 0s; }
-        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
-
-
-
-
-        .prose code:not(pre *) { background-color: var(--hover-bg); padding: 0.2em 0.4em; margin: 0; font-size: 85%; border-radius: 6px; color: var(--text-primary); border: 1px solid var(--border-color); }
-        .prose pre { background-color: #111827; color: #f3f4f6; padding: 1em; border-radius: 0.5em; overflow-x: auto; }
-        .prose pre code { background-color: transparent; padding: 0; color: inherit; border: none; }
-        .prose h1, .prose h2, .prose h3 { margin-top: 1.5em; margin-bottom: 0.5em; font-weight: bold; }
-        .prose h1 { font-size: 1.875rem; }
-        .prose h2 { font-size: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
-        .prose h3 { font-size: 1.25rem; }
-        .prose p { margin-bottom: 1em; }
-        .prose table { width: 100%; border-collapse: collapse; margin-bottom: 1em; }
-        .prose table th, .prose table td { border: 1px solid var(--border-color); padding: 0.75rem; text-align: left; }
-        .prose table thead { background-color: var(--hover-bg); }
-        .prose table tr:nth-child(even) { background-color: var(--hover-bg); }
-        .prose ul, .prose ol { margin-bottom: 1em; padding-left: 1.5em; }
-        .prose ul li, .prose ol li { margin-bottom: 0.5em; }
-
-
-
-
-        /* ▼▼▼ 修改：資料夾箭頭動畫 (使用 data-open 屬性) ▼▼▼ */
-        .folder-summary { 
-            cursor: pointer;
-        }
-        .folder-summary .folder-arrow { 
-            transition: transform 0.2s; 
-        }
-        .folder-item[data-open="true"] .folder-summary .folder-arrow { 
-            transform: rotate(90deg); 
-        }
-        /* ▲▲▲ 結束修改 ▲▲▲ */
-
-
-
-
-        .color-swatch, .icon-option { transition: transform 0.2s; border: 2px solid transparent; }
-        .color-swatch:hover, .icon-option:hover { transform: scale(1.1); }
-        .color-swatch.selected { border-color: #3b82f6; }
-        .icon-option.selected { background-color: var(--active-bg); border-color: #3b82f6; }
-        #web-search-btn.active { color: #3b82f6; }
-        
-        /* 批次操作欄動畫 */
-        #batch-action-bar {
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-        #batch-action-bar.hidden {
-            opacity: 0;
-            transform: translateY(20px);
-            pointer-events: none;
-        }
-
-
-        /* Astras 提示列動畫 */
-        #astras-indicator {
-     transition: opacity 0.3s ease, transform 0.3s ease;
-     transform-origin: left;
-}
-#astras-indicator.hidden {
-    opacity: 0;
-    transform: scale(0.9);
-    pointer-events: none;
-}
-
-        /* Mobile Sidebar Styles */
-        #sidebar.open {
-            transform: translateX(0);
-        }
-        #sidebar-overlay {
-    opacity: 0;
-    visibility: hidden;
-    /* ▼▼▼ 修改：與側邊欄使用完全相同的動畫曲線 ▼▼▼ */
-    transition: opacity 0.3s cubic-bezier(0.4, 0.0, 0.2, 1), visibility 0.3s cubic-bezier(0.4, 0.0, 0.2, 1), left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-    /* ▲▲▲ 結束修改 ▲▲▲ */
-}
-        #sidebar-overlay.visible {
-    opacity: 1;
-    visibility: visible;
-    /* ▼▼▼ 修改：設定手機版的預設起始位置 ▼▼▼ */
-    left: 256px; /* 這是 w-64 的寬度 */
-}
-
-/* ▼▼▼ 新增：針對電腦版(lg)調整遮罩起始位置 ▼▼▼ */
-@media (min-width: 1024px) { /* 1024px 是 Tailwind "lg" 的斷點 */
-    #sidebar-overlay.visible {
-        left: 288px; /* 這是 w-72 的寬度 */
+    :root {
+        --chat-bg: #ffffff;
+        --sidebar-bg: #f7f7f8;
+        --input-bar-bg: #ffffff;
+        --input-field-bg: #f9fafb;
+        --text-primary: #111827;
+        --text-secondary: #6b7280;
+        --border-color: #e5e7eb;
+        --hover-bg: #f3f4f6;
+        --active-bg: #e5e7eb;
+        --modal-bg: #ffffff;
+        --shadow-color: rgba(0, 0, 0, 0.1);
+        --ai-bubble-bg: var(--sidebar-bg);
+        --user-bubble-bg: #3b82f6;
+        --button-primary-bg: #3b82f6;
+        --button-primary-hover-bg: #2563eb;
+        --button-primary-text: #ffffff;
     }
-}
-        .theme-button-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.5rem;
-            padding: 0.25rem;
-            background-color: var(--sidebar-bg);
-            border-radius: 0.5rem;
-        }
-        .theme-btn {
-            padding: 0.5rem 0.75rem;
-            border-radius: 0.375rem;
-            font-size: 0.875rem;
-            font-weight: 500;
-            text-align: center;
-            transition: background-color 0.2s;
-        }
-        
-        /* ▼▼▼ 修改：主要按鈕樣式 (支援漸變) ▼▼▼ */
-        .btn-primary {
-            background: var(--button-primary-bg); /* Use background instead of background-color */
-            color: var(--button-primary-text);
-            transition: filter 0.2s ease-in-out, transform 0.2s ease-in-out;
-        }
-        .btn-primary:hover:not(:disabled) {
-            filter: brightness(90%);
-            /* Unset the old property to avoid conflicts */
-            background-color: transparent; 
-        }
-        .theme-btn.active {
-            background: var(--button-primary-bg);
-            color: var(--button-primary-text);
-        }
-        /* ▲▲▲ 結束：主要按鈕樣式 ▲▲▲ */
+    .dark {
+        --chat-bg: #111111;
+        --sidebar-bg: #1c1c1c;
+        --input-bar-bg: #1c1c1c;
+        --input-field-bg: #2d2d2d;
+        --text-primary: #f9fafb;
+        --text-secondary: #9ca3af;
+        --border-color: #374151;
+        --hover-bg: #374151;
+        --active-bg: #4b5563;
+        --modal-bg: #1f2937;
+        --shadow-color: rgba(0, 0, 0, 0.4);
+        --ai-bubble-bg: var(--sidebar-bg);
+        --user-bubble-bg: #2563eb;
+    }
 
+    /* --- 全局動畫與過渡效果 --- */
+    @keyframes subtleFadeInUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes subtleScaleIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+    }
 
+    /* ▼▼▼ 第一步：修改/新增 ▼▼▼ */
+    /* 為常用互動元素增加平滑過渡 */
+    button, .sidebar-item, .settings-nav-item, .theme-btn, .voice-input-btn, .model-option-btn-container, .color-option {
+        transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out;
+    }
 
+    /* 增強按鈕的懸停與點擊反饋 */
+    button:hover:not(:disabled) {
+        transform: translateY(-1px); /* 滑鼠懸停時輕微上浮 */
+        filter: brightness(95%); /* 讓按鈕稍微變亮或變暗，增加質感 */
+    }
+    button:active:not(:disabled) {
+        transform: translateY(0px); /* 點擊時恢復原位，製造按下去的感覺 */
+        box-shadow: none; /* 移除陰影 */
+        filter: brightness(90%);
+    }
+    /* ▲▲▲ 第一步：結束修改/新增 ▲▲▲ */
+    /* --- 結束 全局動畫 --- */
 
-        /* 後續追問區塊動畫 (優化版) */
-#follow-up-prompts-list {
-  max-height: 200px;
-  overflow-y: auto;
-  /* 新增 margin-top 至 transition，讓間距變化也產生動畫效果 */
-  transition: max-height 0.3s ease-out, margin-top 0.3s ease-out;
-}
+    body { background-color: var(--chat-bg); color: var(--text-primary); }
+    .scroll-area {
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
+    }
+    body.modal-open {
+        overflow: hidden;
+    }
 
-/* 當列表「沒有」.collapsed class (即展開時)，才為其加上上邊距，製造與標題的間隔 */
-#follow-up-prompts-list:not(.collapsed) {
-    margin-top: 0.5rem; /* 0.5rem 等同於 Tailwind 的 mb-2 */
-}
+    /* ▼▼▼ 第二步：修改 ▼▼▼ */
+    .sidebar { 
+        background-color: var(--sidebar-bg); 
+        border-right: 1px solid var(--border-color); 
+        transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1); 
+    }
+    /* ▲▲▲ 第二步：結束修改 ▲▲▲ */
+    .scroll-area::-webkit-scrollbar { width: 8px; }
+    .scroll-area::-webkit-scrollbar-track { background: transparent; }
+    .scroll-area::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+    .scroll-area::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
 
-#follow-up-prompts-list.collapsed {
-    max-height: 0;
-    margin-top: 0; /* 收合時確保沒有任何上邊距 */
-    margin-bottom: 0;
-    /* 新增 overflow: hidden，確保在高度變化動畫中，內部元件不會溢出，使動畫更平滑 */
-    overflow: hidden;
-}
-        .follow-up-prompt-btn {
-            background-color: var(--hover-bg);
-            color: var(--text-secondary);
-            border: 1px solid var(--border-color);
-            padding: 0.5rem 1rem;
-            border-radius: 9999px;
-            font-size: 0.875rem;
-            cursor: pointer;
-            white-space: normal;
-            overflow: hidden;
-            text-overflow: unset;
-            max-width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            word-break: break-word;
-            /* 動畫設定 */
-            opacity: 0;
-            transform: translateY(10px);
-            animation: subtleFadeInUp 0.4s ease-out forwards;
-            animation-delay: var(--animation-delay, 0s);
+    .modal {
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+    }
+    .modal.visible { opacity: 1; visibility: visible; }
+    .modal > div {
+        transform: scale(0.95);
+        transition: transform 0.2s ease-in-out;
+    }
+    .modal.visible > div { transform: scale(1); }
+    
+    #auth-container {
+        transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+    }
+    #auth-container.fade-out {
+        opacity: 0;
+        transform: scale(0.95);
+        pointer-events: none;
+    }
+    #app-container, #store-container {
+        opacity: 0;
+        transform: scale(1.05);
+        transition: opacity 0.4s ease-in 0.2s, transform 0.4s ease-in 0.2s;
+    }
+    #app-container.visible, #store-container.visible {
+        opacity: 1;
+        transform: scale(1);
+    }
+    
+    @keyframes chatFadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .chat-view-transition {
+        animation: chatFadeIn 0.3s ease-out forwards;
+    }
+    
+    /* ▼▼▼ 第三步：修改 ▼▼▼ */
+    .folder-item > .folder-content-container {
+        overflow-y: hidden;
+        transition: max-height 0.35s cubic-bezier(0.4, 0.0, 0.2, 1);
+        max-height: 0;
+    }
+    .folder-item[data-open="true"] > .folder-content-container {
+        max-height: 100vh;
+        transition: max-height 0.5s cubic-bezier(0.4, 0.0, 0.2, 1);
+    }
+    /* ▲▲▲ 第三步：結束修改 ▲▲▲ */
+    
+    /* ▼▼▼ 第四步：新增/修改 ▼▼▼ */
+    @keyframes pulse-glow {
+        from { 
+            box-shadow: 0 0 0 0px rgba(59, 130, 246, 0.4); 
+            border-color: rgba(59, 130, 246, 0.8);
         }
-        .follow-up-prompt-btn:hover {
-            background-color: var(--active-bg);
-            color: var(--text-primary);
+        to   { 
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0); 
+            border-color: var(--border-color);
         }
+    }
+    .input-wrapper {
+        transition: box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out;
+        position: relative;
+    }
+    .input-wrapper.pulse-glow {
+        animation: pulse-glow 0.7s ease-out;
+    }
+    /* ▲▲▲ 第四步：結束新增/修改 ▲▲▲ */
+    
+    #auth-container .auth-form-container {
+        animation: subtleFadeInUp 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    }
 
+    .sidebar {
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        background-color: rgba(255, 255, 255, 0.55);
+        border-right: 1px solid rgba(255, 255, 255, 0.6);
+        box-shadow: 4px 0px 15px rgba(0, 0, 0, 0.05);
+        --border-color: rgba(0, 0, 0, 0.1);
+    }
+    .dark .sidebar {
+        background-color: rgba(30, 30, 30, 0.5);
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 4px 0px 20px rgba(0, 0, 0, 0.2);
+        --border-color: rgba(255, 255, 255, 0.1);
+    }
+    /* ... (您原有的其他 glassmorphism 樣式) ... */
+    
+    /* ▼▼▼ 第五步：修改/新增 ▼▼▼ */
+    .popover {
+        box-shadow: 0 10px 15px -3px var(--shadow-color), 0 4px 6px -2px var(--shadow-color);
+        background-color: var(--modal-bg);
+        opacity: 0;
+        visibility: hidden;
+        transform: scale(0.95) translateY(-10px);
+        transition: opacity 0.15s ease-out, transform 0.15s ease-out, visibility 0.15s;
+        transform-origin: top;
+    }
+    .popover.visible {
+        opacity: 1;
+        visibility: visible;
+        transform: scale(1) translateY(0);
+    }
+    #model-options-popover { transform-origin: top right; }
+    #file-options-popover {
+        transform-origin: bottom left;
+        transform: scale(0.95) translateY(10px);
+    }
+    #file-options-popover.visible {
+        transform: scale(1) translateY(0);
+    }
+    /* ▲▲▲ 第五步：結束修改/新增 ▲▲▲ */
 
+    /* ... (您原有的 notification 樣式，它們已經包含動畫) ... */
 
+    /* ▼▼▼ 第三步：修改 ▼▼▼ */
+    .folder-summary .folder-arrow { 
+        transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1); 
+    }
+    .folder-item[data-open="true"] .folder-summary .folder-arrow { 
+        transform: rotate(90deg); 
+    }
+    /* ▲▲▲ 第三步：結束修改 ▲▲▲ */
 
-        /* Toggle 開關動畫 (增強) */
-        .toggle-checkbox:checked {
-            right: 0;
-            border-color: #3b82f6;
-        }
-        .toggle-checkbox:checked + .toggle-label {
-            background-color: #3b82f6;
-        }
-        .toggle-checkbox:focus + .toggle-label {
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
-        }
-        .toggle-checkbox:checked + .toggle-label:before {
-            transform: translateX(1.5rem);
-        }
-        .toggle-label {
-             transition: background-color 0.2s ease-in-out;
-        }
-        .toggle-label:before {
-            content: '';
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: calc(1.5rem - 4px);
-            height: calc(1.5rem - 4px);
-            border-radius: 9999px;
-            background-color: #fff;
-            /* 增加更有彈性的過渡效果 */
-            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        
-        .model-description {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            line-height: 1.2;
-            margin-top: 0.25rem;
-        }
-        /* ▼▼▼ 需求 1 修正：增加垂直 padding 以提升點擊靈敏度 ▼▼▼ */
-        .model-option-btn-container {
-            display: block;
-            width: 100%;
-            text-align: left;
-            padding: 0.75rem 1rem; /* 從 0.5rem 增加到 0.75rem */
-            cursor: pointer;
-        }
-        /* ▲▲▲ 結束修正 ▲▲▲ */
-        .model-option-btn-container:hover {
-            background-color: var(--hover-bg);
-        }
+    /* ▼▼▼ 第五步：修改/新增 ▼▼▼ */
+    #batch-action-bar {
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        transform: translateY(0);
+        opacity: 1;
+    }
+    #batch-action-bar.hidden {
+        opacity: 0;
+        transform: translateY(20px);
+        pointer-events: none;
+    }
+    #astras-indicator {
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        transform-origin: left;
+        transform: scale(1);
+        opacity: 1;
+    }
+    #astras-indicator.hidden {
+        opacity: 0;
+        transform: scale(0.9);
+        pointer-events: none;
+    }
+    /* ▲▲▲ 第五步：結束修改/新增 ▲▲▲ */
 
+    /* ▼▼▼ 第二步：修改 ▼▼▼ */
+    #sidebar-overlay {
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s cubic-bezier(0.4, 0.0, 0.2, 1), visibility 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+    }
+    /* ▲▲▲ 第二步：結束修改 ▲▲▲ */
+    #sidebar-overlay.visible {
+        opacity: 1;
+        visibility: visible;
+    }
 
+    /* ▼▼▼ 第五步：修改/新增 ▼▼▼ */
+    .settings-section {
+        display: none;
+        animation: subtleFadeInUp 0.4s ease-out;
+    }
+    .settings-section.active {
+        display: block;
+    }
+    /* ▲▲▲ 第五步：結束修改/新增 ▲▲▲ */
+    
+    /* ↓↓↓ 以下是您原有的程式碼，保持不變 ↓↓↓ */
+    
+    :root {
+        --chat-bg: #ffffff;
+        --sidebar-bg: #f7f7f8;
+        --input-bar-bg: #ffffff;
+        --input-field-bg: #f9fafb;
+        --text-primary: #111827;
+        --text-secondary: #6b7280;
+        --border-color: #e5e7eb;
+        --hover-bg: #f3f4f6;
+        --active-bg: #e5e7eb;
+        --modal-bg: #ffffff;
+        --shadow-color: rgba(0, 0, 0, 0.1);
+        --ai-bubble-bg: var(--sidebar-bg);
+        --user-bubble-bg: #3b82f6;
+        --button-primary-bg: #3b82f6;
+        --button-primary-hover-bg: #2563eb;
+        --button-primary-text: #ffffff;
+    }
+    .dark {
+        --chat-bg: #111111;
+        --sidebar-bg: #1c1c1c;
+        --input-bar-bg: #1c1c1c;
+        --input-field-bg: #2d2d2d;
+        --text-primary: #f9fafb;
+        --text-secondary: #9ca3af;
+        --border-color: #374151;
+        --hover-bg: #374151;
+        --active-bg: #4b5563;
+        --modal-bg: #1f2937;
+        --shadow-color: rgba(0, 0, 0, 0.4);
+        --ai-bubble-bg: var(--sidebar-bg);
+        --user-bubble-bg: #2563eb;
+    }
+    body { background-color: var(--chat-bg); color: var(--text-primary); }
+    .scroll-area {
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
+    }
+    body.modal-open {
+        overflow: hidden;
+    }
+    .scroll-area::-webkit-scrollbar { width: 8px; }
+    .scroll-area::-webkit-scrollbar-track { background: transparent; }
+    .scroll-area::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+    .scroll-area::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+    #notification-container {
+        position: fixed;
+        top: 1.5rem;
+        right: 1.5rem;
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    .notification {
+        padding: 1rem 1.5rem;
+        border-radius: 1rem;
+        font-weight: 500;
+        animation: fadeInRight 0.3s ease, fadeOutRight 0.3s ease 2.7s forwards;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        background-color: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+        color: var(--text-primary);
+    }
+    .dark .notification {
+        background-color: rgba(20, 20, 20, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+    }
+    .notification.success { color: #22c55e; }
+    .notification.error { color: #ef4444; }
+    .notification.warning { color: #f97316; }
+    .message-item { animation: slideInUp 0.4s ease-out forwards; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes fadeInRight { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes fadeOutRight { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(100%); } }
+    @keyframes slideInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .loading-dots { display: flex; align-items: center; justify-content: center; height: 1.25rem; }
+    .loading-dots span { display: inline-block; width: 8px; height: 8px; margin: 0 2px; background-color: var(--text-secondary); border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both; }
+    .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+    .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+    .loading-dots span:nth-child(3) { animation-delay: 0s; }
+    @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+    .prose code:not(pre *) { background-color: var(--hover-bg); padding: 0.2em 0.4em; margin: 0; font-size: 85%; border-radius: 6px; color: var(--text-primary); border: 1px solid var(--border-color); }
+    .prose pre { background-color: #111827; color: #f3f4f6; padding: 1em; border-radius: 0.5em; overflow-x: auto; }
+    .prose pre code { background-color: transparent; padding: 0; color: inherit; border: none; }
+    .prose h1, .prose h2, .prose h3 { margin-top: 1.5em; margin-bottom: 0.5em; font-weight: bold; }
+    .prose h1 { font-size: 1.875rem; }
+    .prose h2 { font-size: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+    .prose h3 { font-size: 1.25rem; }
+    .prose p { margin-bottom: 1em; }
+    .prose table { width: 100%; border-collapse: collapse; margin-bottom: 1em; }
+    .prose table th, .prose table td { border: 1px solid var(--border-color); padding: 0.75rem; text-align: left; }
+    .prose table thead { background-color: var(--hover-bg); }
+    .prose table tr:nth-child(even) { background-color: var(--hover-bg); }
+    .prose ul, .prose ol { margin-bottom: 1em; padding-left: 1.5em; }
+    .prose ul li, .prose ol li { margin-bottom: 0.5em; }
+    .folder-summary { 
+        cursor: pointer;
+    }
+    .color-swatch, .icon-option { transition: transform 0.2s; border: 2px solid transparent; }
+    .color-swatch:hover, .icon-option:hover { transform: scale(1.1); }
+    .color-swatch.selected { border-color: #3b82f6; }
+    .icon-option.selected { background-color: var(--active-bg); border-color: #3b82f6; }
+    #web-search-btn.active { color: #3b82f6; }
+    #sidebar.open {
+        transform: translateX(0);
+    }
+    @media (min-width: 1024px) {
+        #sidebar-overlay.visible {
+            left: 288px;
+        }
+    }
+    .theme-button-group {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        padding: 0.25rem;
+        background-color: var(--sidebar-bg);
+        border-radius: 0.5rem;
+    }
+    .theme-btn {
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-align: center;
+        transition: background-color 0.2s;
+    }
+    .btn-primary {
+        background: var(--button-primary-bg);
+        color: var(--button-primary-text);
+        transition: filter 0.2s ease-in-out, transform 0.2s ease-in-out;
+    }
+    .btn-primary:hover:not(:disabled) {
+        filter: brightness(90%);
+        background-color: transparent; 
+    }
+    .theme-btn.active {
+        background: var(--button-primary-bg);
+        color: var(--button-primary-text);
+    }
+    #follow-up-prompts-list {
+      max-height: 200px;
+      overflow-y: auto;
+      transition: max-height 0.3s ease-out, margin-top 0.3s ease-out;
+    }
+    #follow-up-prompts-list:not(.collapsed) {
+        margin-top: 0.5rem;
+    }
+    #follow-up-prompts-list.collapsed {
+        max-height: 0;
+        margin-top: 0;
+        margin-bottom: 0;
+        overflow: hidden;
+    }
+    .follow-up-prompt-btn {
+        background-color: var(--hover-bg);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-color);
+        padding: 0.5rem 1rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        cursor: pointer;
+        white-space: normal;
+        overflow: hidden;
+        text-overflow: unset;
+        max-width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        word-break: break-word;
+        opacity: 0;
+        transform: translateY(10px);
+        animation: subtleFadeInUp 0.4s ease-out forwards;
+        animation-delay: var(--animation-delay, 0s);
+    }
+    .follow-up-prompt-btn:hover {
+        background-color: var(--active-bg);
+        color: var(--text-primary);
+    }
+    .toggle-checkbox:checked {
+        right: 0;
+        border-color: #3b82f6;
+    }
+    .toggle-checkbox:checked + .toggle-label {
+        background-color: #3b82f6;
+    }
+    .toggle-checkbox:focus + .toggle-label {
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+    }
+    .toggle-checkbox:checked + .toggle-label:before {
+        transform: translateX(1.5rem);
+    }
+    .toggle-label {
+         transition: background-color 0.2s ease-in-out;
+    }
+    .toggle-label:before {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: calc(1.5rem - 4px);
+        height: calc(1.5rem - 4px);
+        border-radius: 9999px;
+        background-color: #fff;
+        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .model-description {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        line-height: 1.2;
+        margin-top: 0.25rem;
+    }
+    .model-option-btn-container {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+    }
+    .model-option-btn-container:hover {
+        background-color: var(--hover-bg);
+    }
+    #model-options-popover {
+        max-height: calc(100vh - 150px);
+        overflow-y: auto;
+    }
+    .message-bubble {
+        position: relative;
+        background-color: transparent;
+        z-index: 0;
+    }
+    .message-bubble::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        border-radius: 0.5rem;
+        z-index: -1;
+    }
+    .model-message .message-bubble::before {
+        background-color: var(--ai-bubble-bg);
+    }
+    .user-message .message-content {
+        white-space: pre-line;
+    }
+    .user-message .message-bubble::before {
+        background-color: var(--user-bubble-bg);
+    }
+    .file-preview-item {
+         animation: subtleScaleIn 0.3s ease-out forwards;
+    }
+    .color-dropdown-container {
+        position: relative;
+    }
+    .color-dropdown-btn {
+        width: 100%;
+        padding: 0.5rem 1rem;
+        background-color: var(--input-field-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 0.375rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+    }
+    .color-preview {
+        width: 1.5rem;
+        height: 1.5rem;
+        border-radius: 0.25rem;
+        border: 1px solid var(--border-color);
+    }
+    .color-dropdown-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        max-height: 200px;
+        overflow-y: auto;
+        background-color: var(--modal-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 0.375rem;
+        z-index: 10;
+        display: none;
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .color-dropdown-menu.show {
+        display: block;
+        opacity: 1;
+        transform: translateY(0);
+    }
+    .color-option {
+        padding: 0.5rem 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+    }
+    .color-option:hover {
+        background-color: var(--hover-bg);
+    }
+    .settings-nav-item {
+        cursor: pointer;
+    }
+    .settings-nav-item:hover {
+        background-color: var(--hover-bg);
+    }
+    .settings-nav-item.active {
+        background-color: var(--active-bg);
+        font-weight: bold;
+    }
+    .voice-input-btn {
+        flex-shrink: 0;
+        height: 2.5rem;
+        width: 2.5rem;
+        border-radius: 9999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary);
+    }
+    .voice-input-btn:hover {
+        background-color: var(--hover-bg);
+    }
+    .voice-input-btn.active {
+        color: #ef4444;
+        background-color: var(--hover-bg);
+    }
+    .pinned-icon {
+        color: #fbbf24;
+    }
 
-
-        #model-options-popover {
-            max-height: calc(100vh - 150px);
-            overflow-y: auto;
-        }
-        
-        /* ▼▼▼ 需求 1 修正：修正複製 AI 回覆會憶起把底色也複製的問題 ▼▼▼ */
-        /* AI/User Bubble Colors & Fix for copying background color */
-        .message-bubble {
-            position: relative;
-            background-color: transparent;
-            z-index: 0;
-        }
-        .message-bubble::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            border-radius: 0.5rem; /* Corresponds to Tailwind's rounded-lg */
-            z-index: -1;
-        }
-        .model-message .message-bubble::before {
-            background-color: var(--ai-bubble-bg);
-        }
-        .user-message .message-content {
-            white-space: pre-line;
-        }
-        .user-message .message-bubble::before {
-            background-color: var(--user-bubble-bg);
-        }
-        /* ▲▲▲ 結束修正 ▲▲▲ */
-        
-        /* 檔案預覽動畫 */
-        .file-preview-item {
-             animation: subtleScaleIn 0.3s ease-out forwards;
-        }
-        
-        /* Color dropdown styles */
-        .color-dropdown-container {
-            position: relative;
-        }
-        .color-dropdown-btn {
-            width: 100%;
-            padding: 0.5rem 1rem;
-            background-color: var(--input-field-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 0.375rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            cursor: pointer;
-        }
-        .color-preview {
-            width: 1.5rem;
-            height: 1.5rem;
-            border-radius: 0.25rem;
-            border: 1px solid var(--border-color);
-        }
-        .color-dropdown-menu {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            width: 100%;
-            max-height: 200px;
-            overflow-y: auto;
-            background-color: var(--modal-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 0.375rem;
-            z-index: 10;
-            display: none;
-            /* 為下拉選單增加動畫 */
-            opacity: 0;
-            transform: translateY(-10px);
-            transition: opacity 0.2s ease, transform 0.2s ease;
-        }
-        .color-dropdown-menu.show {
-            display: block;
-            opacity: 1;
-            transform: translateY(0);
-        }
-        .color-option {
-            padding: 0.5rem 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            cursor: pointer;
-        }
-        .color-option:hover {
-            background-color: var(--hover-bg);
-        }
-        /* Settings navigation styles */
-        .settings-nav-item {
-            cursor: pointer;
-        }
-        .settings-nav-item:hover {
-            background-color: var(--hover-bg);
-        }
-        .settings-nav-item.active {
-            background-color: var(--active-bg);
-            font-weight: bold;
-        }
-        /* 設定頁面內容切換動畫 */
-        .settings-section {
-            display: none;
-            animation: subtleFadeInUp 0.4s ease-out;
-        }
-        .settings-section.active {
-            display: block;
-        }
-        /* Voice input button styles */
-        .voice-input-btn {
-            flex-shrink: 0;
-            height: 2.5rem;
-            width: 2.5rem;
-            border-radius: 9999px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-secondary);
-        }
-        .voice-input-btn:hover {
-            background-color: var(--hover-bg);
-        }
-        .voice-input-btn.active {
-            color: #ef4444;
-            background-color: var(--hover-bg);
-        }
-        /* Pinned conversation styles */
-        .pinned-icon {
-            color: #fbbf24; /* Yellow for pinned */
-        }
-
-
-        #wallpaper-container {
+    /* ... 您所有的 .custom-wallpaper-active 樣式 ... */
+    #wallpaper-container {
     position: fixed;
     top: 0;
     left: 0;
@@ -689,981 +624,754 @@ body.custom-wallpaper-active.wallpaper-is-dark .sidebar {
     display: none;
     transition: opacity 0.3s ease-in-out;
     pointer-events: none;
--webkit-touch-callout: none;
-user-select: none;
-}
-
-        body.custom-wallpaper-active #wallpaper-container {
-            display: block;
-        }
-
-
-        /* 當桌布啟用時，覆蓋所有背景為透明或半透明 */
-        body.custom-wallpaper-active {
-            background-color: transparent !important;
-        }
-        body.custom-wallpaper-active #app-container > .bg-\[var\(--chat-bg\)\] {
-            background-color: transparent !important;
-        }
-        body.custom-wallpaper-active .bg-\[var\(--input-bar-bg\)\] {
-            background-color: transparent !important;
-            border-color: transparent !important;
-        }
-        body.custom-wallpaper-active #settings-modal .bg-\[var\(--sidebar-bg\)\] {
-            background-color: transparent !important;
-            border-color: transparent !important;
-        }
-        body.custom-wallpaper-active #settings-modal .border-t {
-            border-color: transparent !important;
-        }
-        
-        /* ▼▼▼ 新增：將指定彈窗背景改為實色 ▼▼▼ */
-body.custom-wallpaper-active #search-modal > div,
-body.custom-wallpaper-active #astras-create-modal > div,
-body.custom-wallpaper-active #data-dashboard-modal > div,
-body.custom-wallpaper-active #settings-modal > div,
-body.custom-wallpaper-active #custom-dialog-modal > div {
-    background-color: var(--modal-bg) !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    border-color: var(--border-color) !important;
-}
-/* ▲▲▲ 結束新增 ▲▲▲ */
-        body.custom-wallpaper-active #update-info-modal > div,
-body.custom-wallpaper-active #latest-update-modal > div {
-    background-color: rgba(255, 255, 255, 0.65) !important;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-color: rgba(200, 200, 200, 0.5) !important;
-}
-
-
-        /* ▼▼▼ 修改的程式碼 ▼▼▼ */
-/* 為模型選單和輸入框設計不同的玻璃效果 */
-body.custom-wallpaper-active #model-options-popover {
-    /* 將背景改為透明以達成使用者需求 */
-    background-color: rgba(255, 255, 255, 0.35) !important; /* <-- 修改此行 */
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
-    border: 1px solid rgba(200, 200, 200, 0.5) !important;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-}
-/* ▲▲▲ 修改的程式碼 ▲▲▲ */
-        
-        body.custom-wallpaper-active .input-wrapper {
-            background-color: rgba(255, 255, 255, 0.2) !important;
-            backdrop-filter: blur(20px) !important;
-            -webkit-backdrop-filter: blur(20px) !important;
-            border: 1px solid rgba(255, 255, 255, 0.3) !important;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-        }
-
-
-        body.custom-wallpaper-active #message-input {
-            background-color: transparent !important;
-        }
-
-
-        /* ▼▼▼ 需求 2 & 3 修正：聊天泡泡在桌布模式下的玻璃效果與文字顏色 (with copy-paste fix) ▼▼▼ */
-        body.custom-wallpaper-active .message-bubble {
-    /* 邊緣：修改為更亮的半透明白色描邊，營造晶瑩高光感 */
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    /* 新增：柔和的陰影以增加立體感 */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-}
-        body.custom-wallpaper-active .message-bubble::before {
-    /* 核心：將模糊效果增強，與側邊欄等元件統一 */
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-}
-        
-        /* 在桌布模式下，AI 泡泡使用變數定義的半透明背景，文字為黑色 */
-        body.custom-wallpaper-active .model-message .message-bubble::before {
-            background-color: var(--ai-bubble-bg); /* Use variable for customizable color */
-        }
-        body.custom-wallpaper-active .model-message .message-bubble {
-            color: #111827 !important; /* Text color stays on the element */
-        }
-        body.custom-wallpaper-active .model-message .message-bubble .prose {
-            color: #111827 !important;
-        }
-        
-        /* 在桌布模式下，使用者泡泡也使用變數定義的半透明背景，文字改為黑色 */
-        body.custom-wallpaper-active .user-message .message-bubble::before {
-            background-color: var(--user-bubble-bg); /* Use variable for customizable color */
-        }
-        body.custom-wallpaper-active .user-message .message-bubble {
-            color: #111827 !important; /* Text color stays on the element */
-        }
-        body.custom-wallpaper-active .user-message .message-bubble .prose {
-            color: #111827 !important;
-        }
-        /* ▲▲▲ 結束修正 ▲▲▲ */
-        
-        /* 確保在桌布模式下，AI泡泡中的程式碼區塊也是淺色底、深色字 */
-        body.custom-wallpaper-active .model-message .message-bubble .prose pre {
-            background-color: rgba(0, 0, 0, 0.05); /* 淺色背景 */
-        }
-        body.custom-wallpaper-active .model-message .message-bubble .prose code,
-        body.custom-wallpaper-active .model-message .message-bubble .prose pre code {
-             color: #111827 !important; /* 確保所有 code 元素都是黑色文字 */
-        }
-        
-        /* 確保文字顏色在桌布模式下為淺色模式的顏色 */
-        body.custom-wallpaper-active {
-            --text-primary: #111827;
-            --text-secondary: #6b7280;
-        }
-        body.custom-wallpaper-active #message-input::placeholder {
-            color: var(--text-secondary);
-        }
-
-
-        /* 禁用深淺色切換按鈕 */
-        body.custom-wallpaper-active .theme-button-group {
-            opacity: 0.5;
-            pointer-events: none;
-        }
-
-
-        /* ▼▼▼ 修改的程式碼 ▼▼▼ */
-        body.custom-wallpaper-active #message-list > div.text-center {
-            background-color: rgba(255, 255, 255, 0.35);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-            padding: 0.5rem 1rem;
-            border-radius: 9999px;
-            max-width: max-content;
-            margin: 4rem auto 0; /* 修正：確保與一般模式的 mt-16 (4rem) 高度一致 */
-        }
-        /* ▲▲▲ 修改的程式碼 ▲▲▲ */
-
-
-        /* ▼▼▼ 新增：針對深色桌布動態調整文字顏色 (此處移除泡泡文字顏色變更，因需求3要求一律黑色) ▼▼▼ */
-        body.custom-wallpaper-active.wallpaper-is-dark {
-            --text-primary: #f9fafb; /* Light text for UI elements, not bubbles */
-            --text-secondary: #9ca3af; /* Light gray text for UI elements */
-        }
-        /* ▲▲▲ 結束：自訂桌布相關樣式 ▲▲▲ */
-        /* ▼▼▼ 新增：修正更新彈窗在自訂桌布下的底部背景 ▼▼▼ */
-body.custom-wallpaper-active #update-info-modal .p-4.bg-\[var\(--sidebar-bg\)\],
-body.custom-wallpaper-active #latest-update-modal .p-4.bg-\[var\(--sidebar-bg\)\] {
-    background-color: transparent !important; /* 將背景設為透明 */
-    border-top-color: rgba(200, 200, 200, 0.5) !important; /* 維持玻璃效果的邊框顏色 */
-}
-/* ▲▲▲ 結束新增 ▲▲▲ */
-
-
-        /* ▼▼▼ 新增：強制設定頁面與側邊攔字體為黑色 ▼▼▼ */
-        /* 強制側邊攔字體顏色 */
-        .sidebar, .sidebar button, .sidebar input, .sidebar h2, .sidebar span {
-            color: #111827;
-        }
-        .sidebar .text-\[var\(--text-secondary\)\] {
-            color: #6b7280 !important;
-        }
-        .dark .sidebar .sidebar-item.active, .sidebar .sidebar-item.active {
-            color: #111827;
-        }
-        .dark .sidebar-item:hover, .sidebar-item:hover {
-            color: #111827;
-        }
-        #logout-btn, .folder-options-btn, .chat-options-btn, .astras-options-btn, #new-folder-btn, #new-astras-btn {
-            color: #6b7280;
-        }
-        #logout-btn:hover, .folder-options-btn:hover, .chat-options-btn:hover, .astras-options-btn:hover, #new-folder-btn:hover, #new-astras-btn:hover {
-            color: #111827;
-        }
-        .pinned-icon { /* 釘選圖示顏色保持不變 */
-            color: #fbbf24;
-        }
-
-
-        /* 強制設定頁面內容字體顏色 */
-        #settings-modal .settings-section {
-            color: #111827;
-        }
-        #settings-modal .settings-section h3, 
-        #settings-modal .settings-section label, 
-        #settings-modal .settings-section p,
-        #settings-modal .settings-section button,
-        #settings-modal .settings-section input,
-        #settings-modal .settings-section select,
-        #settings-modal .settings-section textarea,
-        #settings-modal .settings-section span {
-            color: #111827;
-        }
-        #settings-modal .settings-section .text-\[var\(--text-secondary\)\] {
-            color: #6b7280 !important;
-        }
-        .dark #settings-modal .settings-section input, 
-        .dark #settings-modal .settings-section select, 
-        .dark #settings-modal .settings-section textarea {
-            background-color: #f0f0f0; /* 在深色模式下提供淺色背景以確保可讀性 */
-            border-color: #d1d5db;
-        }
-        /* ▲▲▲ 結束：強制顏色設定 ▲▲▲ */
-
-
-        /* ▼▼▼ 新增：根據使用者要求修改特定文字顏色 ▼▼▼ */
-
-
-        /* --- 改為黑色 --- */
-
-
-        /* 1. 右上角模型選單裡的模型名稱 */
-        #model-options-popover .model-option-btn-container h4,
-        #model-options-popover .model-option-btn-container .model-description {
-            color: #111827 !important;
-        }
-
-
-        /* 2. 設定頁面的最上方{設定}字樣 */
-        #settings-modal .p-6.border-b h2 {
-            color: #111827;
-        }
-
-
-        /* 3. 設定頁面的側邊引導欄字樣 */
-        #settings-modal .settings-nav-item {
-            color: #111827;
-        }
-
-
-        /* 4. 設定頁面中關閉功能的字樣 (關閉按鈕) */
-        #close-settings-btn {
-            color: #111827;
-        }
-
-
-        /* 5. 關閉 Astras 功能的字樣 (X 按鈕) */
-        #close-astras-btn {
-            color: #111827;
-        }
-
-
-        /* --- 改為白色 --- */
-
-
-        /* 1. 自訂義桌布的上傳圖片與還原預設的功能鍵字樣 */
-        /* 為了讓白色文字可見，同時調整背景色 */
-        #upload-wallpaper-btn {
-            background-color: #3b82f6; /* 主藍色 */
-            color: #ffffff !important;
-        }
-        #upload-wallpaper-btn:hover {
-            background-color: #2563eb;
-        }
-        #restore-wallpaper-btn {
-            background-color: #6b7280; /* 主灰色 */
-            color: #ffffff !important;
-        }
-        #restore-wallpaper-btn:hover {
-            background-color: #4b5563;
-        }
-
-
-        /* 2. 資料管理的匯出與匯入功能鍵字樣 */
-        /* 為了讓白色文字可見，同時調整背景色 */
-        #export-data-btn {
-            background-color: #3b82f6; /* 主藍色 */
-            color: #ffffff !important;
-        }
-        #export-data-btn:hover {
-            background-color: #2563eb;
-        }
-        #import-data-btn {
-            background-color: #16a34a; /* 主綠色 */
-            color: #ffffff !important;
-        }
-        #import-data-btn:hover {
-            background-color: #15803d;
-        }
-        /* ▲▲▲ 結束：使用者要求修改 ▲▲▲ */
-
-
-        /* ▼▼▼ 新增：強制彈出視窗字體為黑色 ▼▼▼ */
-        .modal > div, .popover {
-            color: #111827;
-        }
-
-
-        .modal h2, .modal h3, .modal p, .modal label, .modal span,
-        .modal input, .modal select, .modal textarea {
-            color: #111827;
-        }
-        
-        .modal button, .popover button {
-            color: #111827;
-        }
-        
-        .modal .text-\[var\(--text-secondary\)\] {
-            color: #6b7280 !important;
-        }
-        
-        .modal .btn-primary, .modal #confirm-import-btn {
-            color: #ffffff !important;
-        }
-        
-        .modal .text-red-500, .modal .text-red-600, .popover .text-red-600 {
-            color: #ef4444 !important;
-        }
-
-
-        .dark .modal input, .dark .modal select, .dark .modal textarea {
-            background-color: #f0f0f0;
-            border-color: #d1d5db;
-        }
-        /* ▲▲▲ 結束：強制彈出視窗字體為黑色 ▲▲▲ */
-
-
-        /* ▼▼▼ 需求 4 新增：歷史紀錄模型後綴樣式 ▼▼▼ */
-        .model-suffix {
-    display: inline-block;
-    padding: 2px 8px;
-    font-size: 0.6rem;
-    font-weight: 600;
-    line-height: 1.2;
-    border-radius: 9999px;
-    flex-shrink: 0;
-    margin-left: 4px; /* 與標題的間距 */
-
-    /* 透明果凍玻璃質感 */
-    background-color: rgba(0, 0, 0, 0.05);
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-    color: var(--text-secondary);
-}
-.dark .model-suffix {
-    background-color: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.15);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-}
-
-.sidebar-item:hover .model-suffix {
-    display: none;
-}
-/* ▲▲▲ 結束新增 ▲▲▲ */
-        
-        /* ▼▼▼ 新增：刪除對話確認框的警告動畫 ▼▼▼ */
-        @keyframes pulse-red-border {
-            0%, 100% {
-                border-color: #ef4444; /* red-500 */
-                box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.4);
-            }
-            50% {
-                border-color: #f87171; /* red-400 */
-                box-shadow: 0 0 0 0px rgba(239, 68, 68, 0);
-            }
-        }
-        .dialog-warning-border {
-            animation: pulse-red-border 1.5s infinite;
-        }
-        /* ▲▲▲ 結束新增 ▲▲▲ */
-
-
-        /* ▼▼▼ 新增：桌布裁切 Modal 相關樣式 ▼▼▼ */
-        #wallpaper-crop-container {
-            width: 100%;
-            max-height: 60vh;
-            margin-bottom: 1rem;
-        }
-        /* 確保 cropper.js 的圖片不會超出容器 */
-        #wallpaper-crop-container img {
-            max-width: 100%;
-        }
-        /* ▲▲▲ 結束新增 ▲▲▲ */
-
-
-        /* ▼▼▼ 新增：根據要求將深色模式下所有文字改為白色 ▼▼▼ */
-        .dark body,
-        .dark .sidebar *,
-        .dark #settings-modal *,
-        .dark .modal > div *,
-        .dark .popover *,
-        .dark #model-options-popover .model-option-btn-container h4,
-        .dark #model-options-popover .model-option-btn-container .model-description,
-        .dark #header-title,
-        .dark #current-astras-name,
-        .dark .model-message .message-bubble,
-        .dark .model-message .message-bubble .prose,
-        .dark .model-message .message-bubble .prose *,
-        .dark #close-astras-btn,
-        .dark .follow-up-prompt-btn,
-        .dark .color-dropdown-btn span,
-        .dark #message-input::placeholder {
-            color: #ffffff !important;
-        }
-
-
-        /* --- 例外與修正 --- */
-        /* 修正：確保在深色模式下，具有淺色背景的輸入框文字為黑色以保持可讀性 */
-        .dark #settings-modal .settings-section input, 
-        .dark #settings-modal .settings-section select, 
-        .dark #settings-modal .settings-section textarea,
-        .dark .modal input, 
-        .dark .modal select, 
-        .dark .modal textarea {
-            color: #111827 !important;
-        }
-
-
-        /* 修正：確保主要按鈕在深色模式下文字仍為設定的顏色(通常是白色) */
-        .dark .btn-primary, .dark .modal .btn-primary, .dark #confirm-import-btn {
-            color: var(--button-primary-text, #ffffff) !important;
-        }
-
-
-        /* 修正：保持特殊顏色元素的原始顏色 */
-        .dark .text-red-500, .dark .text-red-600, .dark .popover .text-red-600,
-        .dark .notification.error {
-            color: #ef4444 !important;
-        }
-        .dark .notification.success {
-            color: #22c55e !important;
-        }
-        .dark .notification.warning {
-            color: #f97316 !important;
-        }
-        .dark .pinned-icon {
-            color: #fbbf24 !important;
-        }
-        .dark .model-suffix {
-            color: #ffffff !important; /* 模型後綴也改為白色 */
-            background-color: rgba(255, 255, 255, 0.15) !important; /* 微調背景以突顯 */
-            border-color: rgba(255, 255, 255, 0.25) !important;
-        }
-        /* ▲▲▲ 結束：深色模式白色文字設定 ▲▲▲ */
-
-
-        /* ▼▼▼ 新增：登入頁面展示區塊樣式 ▼▼▼ */
-        .demo-model-selector .selector-btn {
-            transition: all 0.3s ease;
-        }
-        .demo-model-selector .selector-btn.active {
-            color: #2563eb;
-            background-color: #eff6ff;
-            border-color: #2563eb;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-        .demo-chat-content {
-            display: none;
-            animation: fadeIn 0.5s ease-in-out;
-        }
-        .demo-chat-content.active {
-            display: block;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        /* ▲▲▲ 結束：登入頁面展示區塊樣式 ▲▲▲ */
-
-
-        /* ▼▼▼ 新增：Astras 商店相關樣式 ▼▼▼ */
-        .astras-store-card {
-            background-color: var(--sidebar-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 1rem;
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            animation: subtleFadeInUp 0.5s ease-out forwards;
-        }
-        .astras-store-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px var(--shadow-color), 0 4px 6px -2px var(--shadow-color);
-        }
-        .astras-card-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-bottom: 1rem;
-            background-color: var(--hover-bg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            font-weight: bold;
-            color: var(--text-secondary);
-            border: 2px solid var(--border-color);
-            flex-shrink: 0;
-        }
-        .astras-card-avatar img {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-        .astras-card-name {
-            font-size: 1.125rem;
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-            color: var(--text-primary);
-        }
-        .astras-card-desc {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
+    -webkit-touch-callout: none;
+    user-select: none;
+    }
+    body.custom-wallpaper-active #wallpaper-container {
+        display: block;
+    }
+    body.custom-wallpaper-active {
+        background-color: transparent !important;
+    }
+    body.custom-wallpaper-active #app-container > .bg-\[var\(--chat-bg\)\] {
+        background-color: transparent !important;
+    }
+    body.custom-wallpaper-active .bg-\[var\(--input-bar-bg\)\] {
+        background-color: transparent !important;
+        border-color: transparent !important;
+    }
+    body.custom-wallpaper-active #settings-modal .bg-\[var\(--sidebar-bg\)\] {
+        background-color: transparent !important;
+        border-color: transparent !important;
+    }
+    body.custom-wallpaper-active #settings-modal .border-t {
+        border-color: transparent !important;
+    }
+    body.custom-wallpaper-active #search-modal > div,
+    body.custom-wallpaper-active #astras-create-modal > div,
+    body.custom-wallpaper-active #data-dashboard-modal > div,
+    body.custom-wallpaper-active #settings-modal > div,
+    body.custom-wallpaper-active #custom-dialog-modal > div {
+        background-color: var(--modal-bg) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border-color: var(--border-color) !important;
+    }
+    body.custom-wallpaper-active #update-info-modal > div,
+    body.custom-wallpaper-active #latest-update-modal > div {
+        background-color: rgba(255, 255, 255, 0.65) !important;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-color: rgba(200, 200, 200, 0.5) !important;
+    }
+    body.custom-wallpaper-active #model-options-popover {
+        background-color: rgba(255, 255, 255, 0.35) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        border: 1px solid rgba(200, 200, 200, 0.5) !important;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    }
+    body.custom-wallpaper-active .input-wrapper {
+        background-color: rgba(255, 255, 255, 0.2) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    }
+    body.custom-wallpaper-active #message-input {
+        background-color: transparent !important;
+    }
+    body.custom-wallpaper-active .message-bubble {
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    body.custom-wallpaper-active .message-bubble::before {
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+    }
+    body.custom-wallpaper-active .model-message .message-bubble::before {
+        background-color: var(--ai-bubble-bg);
+    }
+    body.custom-wallpaper-active .model-message .message-bubble {
+        color: #111827 !important;
+    }
+    body.custom-wallpaper-active .model-message .message-bubble .prose {
+        color: #111827 !important;
+    }
+    body.custom-wallpaper-active .user-message .message-bubble::before {
+        background-color: var(--user-bubble-bg);
+    }
+    body.custom-wallpaper-active .user-message .message-bubble {
+        color: #111827 !important;
+    }
+    body.custom-wallpaper-active .user-message .message-bubble .prose {
+        color: #111827 !important;
+    }
+    body.custom-wallpaper-active .model-message .message-bubble .prose pre {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+    body.custom-wallpaper-active .model-message .message-bubble .prose code,
+    body.custom-wallpaper-active .model-message .message-bubble .prose pre code {
+         color: #111827 !important;
+    }
+    body.custom-wallpaper-active {
+        --text-primary: #111827;
+        --text-secondary: #6b7280;
+    }
+    body.custom-wallpaper-active #message-input::placeholder {
+        color: var(--text-secondary);
+    }
+    body.custom-wallpaper-active .theme-button-group {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+    body.custom-wallpaper-active #message-list > div.text-center {
+        background-color: rgba(255, 255, 255, 0.35);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        padding: 0.5rem 1rem;
+        border-radius: 9999px;
+        max-width: max-content;
+        margin: 4rem auto 0;
+    }
+    body.custom-wallpaper-active.wallpaper-is-dark {
+        --text-primary: #f9fafb;
+        --text-secondary: #9ca3af;
+    }
+    body.custom-wallpaper-active #update-info-modal .p-4.bg-\[var\(--sidebar-bg\)\],
+    body.custom-wallpaper-active #latest-update-modal .p-4.bg-\[var\(--sidebar-bg\)\] {
+        background-color: transparent !important;
+        border-top-color: rgba(200, 200, 200, 0.5) !important;
+    }
+    .sidebar, .sidebar button, .sidebar input, .sidebar h2, .sidebar span {
+        color: #111827;
+    }
+    .sidebar .text-\[var\(--text-secondary\)\] {
+        color: #6b7280 !important;
+    }
+    .dark .sidebar .sidebar-item.active, .sidebar .sidebar-item.active {
+        color: #111827;
+    }
+    .dark .sidebar-item:hover, .sidebar-item:hover {
+        color: #111827;
+    }
+    #logout-btn, .folder-options-btn, .chat-options-btn, .astras-options-btn, #new-folder-btn, #new-astras-btn {
+        color: #6b7280;
+    }
+    #logout-btn:hover, .folder-options-btn:hover, .chat-options-btn:hover, .astras-options-btn:hover, #new-folder-btn:hover, #new-astras-btn:hover {
+        color: #111827;
+    }
+    .pinned-icon {
+        color: #fbbf24;
+    }
+    #settings-modal .settings-section {
+        color: #111827;
+    }
+    #settings-modal .settings-section h3, 
+    #settings-modal .settings-section label, 
+    #settings-modal .settings-section p,
+    #settings-modal .settings-section button,
+    #settings-modal .settings-section input,
+    #settings-modal .settings-section select,
+    #settings-modal .settings-section textarea,
+    #settings-modal .settings-section span {
+        color: #111827;
+    }
+    #settings-modal .settings-section .text-\[var\(--text-secondary\)\] {
+        color: #6b7280 !important;
+    }
+    .dark #settings-modal .settings-section input, 
+    .dark #settings-modal .settings-section select, 
+    .dark #settings-modal .settings-section textarea {
+        background-color: #f0f0f0;
+        border-color: #d1d5db;
+    }
+    #model-options-popover .model-option-btn-container h4,
+    #model-options-popover .model-option-btn-container .model-description {
+        color: #111827 !important;
+    }
+    #settings-modal .p-6.border-b h2 {
+        color: #111827;
+    }
+    #settings-modal .settings-nav-item {
+        color: #111827;
+    }
+    #close-settings-btn {
+        color: #111827;
+    }
+    #close-astras-btn {
+        color: #111827;
+    }
+    #upload-wallpaper-btn {
+        background-color: #3b82f6;
+        color: #ffffff !important;
+    }
+    #upload-wallpaper-btn:hover {
+        background-color: #2563eb;
+    }
+    #restore-wallpaper-btn {
+        background-color: #6b7280;
+        color: #ffffff !important;
+    }
+    #restore-wallpaper-btn:hover {
+        background-color: #4b5563;
+    }
+    #export-data-btn {
+        background-color: #3b82f6;
+        color: #ffffff !important;
+    }
+    #export-data-btn:hover {
+        background-color: #2563eb;
+    }
+    #import-data-btn {
+        background-color: #16a34a;
+        color: #ffffff !important;
+    }
+    #import-data-btn:hover {
+        background-color: #15803d;
+    }
+    .modal > div, .popover {
+        color: #111827;
+    }
+    .modal h2, .modal h3, .modal p, .modal label, .modal span,
+    .modal input, .modal select, .modal textarea {
+        color: #111827;
+    }
+    .modal button, .popover button {
+        color: #111827;
+    }
+    .modal .text-\[var\(--text-secondary\)\] {
+        color: #6b7280 !important;
+    }
+    .modal .btn-primary, .modal #confirm-import-btn {
+        color: #ffffff !important;
+    }
+    .modal .text-red-500, .modal .text-red-600, .popover .text-red-600 {
+        color: #ef4444 !important;
+    }
+    .dark .modal input, .dark .modal select, .dark .modal textarea {
+        background-color: #f0f0f0;
+        border-color: #d1d5db;
+    }
+    .model-suffix {
+        display: inline-block;
+        padding: 2px 8px;
+        font-size: 0.6rem;
+        font-weight: 600;
+        line-height: 1.2;
+        border-radius: 9999px;
+        flex-shrink: 0;
+        margin-left: 4px;
+        background-color: rgba(0, 0, 0, 0.05);
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+        color: var(--text-secondary);
+    }
+    .dark .model-suffix {
+        background-color: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.15);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+    }
+    .sidebar-item:hover .model-suffix {
+        display: none;
+    }
+    @keyframes pulse-red-border {
+        0%, 100% {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.4);
+        }
+        50% {
+            border-color: #f87171;
+            box-shadow: 0 0 0 0px rgba(239, 68, 68, 0);
+        }
+    }
+    .dialog-warning-border {
+        animation: pulse-red-border 1.5s infinite;
+    }
+    #wallpaper-crop-container {
+        width: 100%;
+        max-height: 60vh;
+        margin-bottom: 1rem;
+    }
+    #wallpaper-crop-container img {
+        max-width: 100%;
+    }
+    .dark body,
+    .dark .sidebar *,
+    .dark #settings-modal *,
+    .dark .modal > div *,
+    .dark .popover *,
+    .dark #model-options-popover .model-option-btn-container h4,
+    .dark #model-options-popover .model-option-btn-container .model-description,
+    .dark #header-title,
+    .dark #current-astras-name,
+    .dark .model-message .message-bubble,
+    .dark .model-message .message-bubble .prose,
+    .dark .model-message .message-bubble .prose *,
+    .dark #close-astras-btn,
+    .dark .follow-up-prompt-btn,
+    .dark .color-dropdown-btn span,
+    .dark #message-input::placeholder {
+        color: #ffffff !important;
+    }
+    .dark #settings-modal .settings-section input, 
+    .dark #settings-modal .settings-section select, 
+    .dark #settings-modal .settings-section textarea,
+    .dark .modal input, 
+    .dark .modal select, 
+    .dark .modal textarea {
+        color: #111827 !important;
+    }
+    .dark .btn-primary, .dark .modal .btn-primary, .dark #confirm-import-btn {
+        color: var(--button-primary-text, #ffffff) !important;
+    }
+    .dark .text-red-500, .dark .text-red-600, .dark .popover .text-red-600,
+    .dark .notification.error {
+        color: #ef4444 !important;
+    }
+    .dark .notification.success {
+        color: #22c55e !important;
+    }
+    .dark .notification.warning {
+        color: #f97316 !important;
+    }
+    .dark .pinned-icon {
+        color: #fbbf24 !important;
+    }
+    .dark .model-suffix {
+        color: #ffffff !important;
+        background-color: rgba(255, 255, 255, 0.15) !important;
+        border-color: rgba(255, 255, 255, 0.25) !important;
+    }
+    .demo-model-selector .selector-btn {
+        transition: all 0.3s ease;
+    }
+    .demo-model-selector .selector-btn.active {
+        color: #2563eb;
+        background-color: #eff6ff;
+        border-color: #2563eb;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    .demo-chat-content {
+        display: none;
+        animation: fadeIn 0.5s ease-in-out;
+    }
+    .demo-chat-content.active {
+        display: block;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    .astras-store-card {
+        background-color: var(--sidebar-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        animation: subtleFadeInUp 0.5s ease-out forwards;
+    }
+    .astras-store-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 15px -3px var(--shadow-color), 0 4px 6px -2px var(--shadow-color);
+    }
+    .astras-card-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-bottom: 1rem;
+        background-color: var(--hover-bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        font-weight: bold;
+        color: var(--text-secondary);
+        border: 2px solid var(--border-color);
+        flex-shrink: 0;
+    }
+    .astras-card-avatar img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    .astras-card-name {
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        color: var(--text-primary);
+    }
+    .astras-card-desc {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        flex-grow: 1;
+        margin-bottom: 1.5rem;
+    }
+    .subscribe-btn {
+        width: 100%;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+    }
+    .subscribe-btn.subscribed {
+        background-color: #10b981;
+        color: white;
+    }
+    .subscribe-btn.subscribed:hover {
+        background-color: #059669;
+    }
+    .astras-sidebar-avatar {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 0.75rem;
+        background-color: var(--hover-bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        font-weight: bold;
+        color: var(--text-secondary);
+        flex-shrink: 0;
+    }
+    #avatar-crop-container .cropper-view-box,
+    #avatar-crop-container .cropper-face {
+        border-radius: 50%;
+    }
+    body.custom-wallpaper-active .astras-store-card {
+        background-color: rgba(255, 255, 255, 0.75) !important;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-color: rgba(200, 200, 200, 0.5) !important;
+    }
+    body.custom-wallpaper-active #store-container header h1,
+    body.custom-wallpaper-active #store-container header #back-to-chat-btn,
+    body.custom-wallpaper-active .astras-card-name,
+    body.custom-wallpaper-active .astras-card-desc,
+    body.custom-wallpaper-active .astras-card-avatar {
+        color: #000000 !important;
+    }
+    #mobile-context-menu-overlay {
+        position: fixed;
+        inset: 0;
+        background-color: rgba(0,0,0,0.5);
+        z-index: 99;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    #mobile-context-menu {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background-color: var(--modal-bg);
+        border-top-left-radius: 1.5rem;
+        border-top-right-radius: 1.5rem;
+        z-index: 100;
+        padding: 1rem;
+        transform: translateY(100%);
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        touch-action: none;
+    }
+    #mobile-context-menu.visible {
+        transform: translateY(0);
+    }
+    #mobile-context-menu-overlay.visible {
+        opacity: 1;
+    }
+    #mobile-context-menu .menu-header {
+        padding: 0.5rem 1rem;
+        text-align: center;
+        font-weight: 600;
+        color: var(--text-primary);
+        background-color: var(--sidebar-bg);
+        border-radius: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    #mobile-context-menu .menu-options {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    #mobile-context-menu .menu-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        gap: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        cursor: pointer;
+        font-size: 1rem;
+        color: var(--text-primary);
+    }
+    #mobile-context-menu .menu-item:last-child {
+        border-bottom: none;
+    }
+    #mobile-context-menu .menu-item:hover {
+        background-color: var(--hover-bg);
+    }
+    #mobile-context-menu .menu-item.delete {
+        color: #ef4444;
+    }
+    #mobile-context-menu .menu-item svg {
+        width: 24px;
+        height: 24px;
+        color: var(--text-secondary);
+    }
+     #mobile-context-menu .menu-item.delete svg {
+        color: #ef4444;
+    }
+    .dark #mobile-context-menu .menu-header,
+    .dark #mobile-context-menu .menu-item {
+        color: var(--text-primary);
+    }
+    .dark #mobile-context-menu .menu-item svg {
+        color: var(--text-secondary);
+    }
+    .dark #mobile-context-menu .menu-item.delete {
+        color: #ef4444 !important;
+    }
+    .dark #mobile-context-menu .menu-item.delete svg {
+        color: #ef4444 !important;
+    }
+    body.custom-wallpaper-active #mobile-context-menu {
+        color: #111827 !important;
+        background-color: rgba(255, 255, 255, 0.85) !important;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-color: rgba(200, 200, 200, 0.5) !important;
+    }
+    body.custom-wallpaper-active #mobile-context-menu .menu-header,
+    body.custom-wallpaper-active #mobile-context-menu .menu-item {
+         color: #111827 !important;
+    }
+    body.custom-wallpaper-active #mobile-context-menu .menu-item svg {
+        color: #6b7280 !important;
+    }
+    body.custom-wallpaper-active #mobile-context-menu .menu-item.delete,
+    body.custom-wallpaper-active #mobile-context-menu .menu-item.delete svg {
+        color: #ef4444 !important;
+    }
+    @media (max-width: 768px) {
+      input[type="text"],
+      input[type="search"],
+      input[type="password"],
+      textarea,
+      select {
+        font-size: 16px !important;
+      }
+      .sidebar-item .chat-options-btn,
+      .sidebar-item .astras-options-btn,
+      .folder-summary .folder-options-btn {
+          display: none;
+      }
+    }
+    @media (max-width: 768px) {
+      #settings-modal .flex.flex-1.overflow-hidden {
+        flex-direction: column;
+      }
+      #settings-modal nav.w-1\/4 {
+        display: none;
+      }
+      #settings-modal .flex-1.p-6.overflow-y-auto {
+        width: 100%;
+        border-right: none;
+      }
+      #settings-modal .settings-section {
+        display: block !important;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 1.5rem;
+        margin-bottom: 1.5rem;
+      }
+      #settings-modal .settings-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+      }
+    }
+    @media (max-width: 640px) {
+        #search-modal .p-4.flex.items-center {
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        #modal-search-input {
+            flex-basis: 100%;
+            order: 1;
+        }
+        #modal-search-scope-select {
             flex-grow: 1;
-            margin-bottom: 1.5rem;
+            order: 2;
         }
-        .subscribe-btn {
-            width: 100%;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            font-weight: 500;
+        #perform-search-btn {
+            order: 3;
         }
-        .subscribe-btn.subscribed {
-            background-color: #10b981; /* green-500 */
-            color: white;
+        #voice-input-btn-search {
+            order: 4;
         }
-        .subscribe-btn.subscribed:hover {
-            background-color: #059669; /* green-600 */
-        }
-        /* 側邊欄 Astras 頭像樣式 */
-        .astras-sidebar-avatar {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-right: 0.75rem;
-            background-color: var(--hover-bg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-            font-weight: bold;
-            color: var(--text-secondary);
-            flex-shrink: 0;
-        }
-        /* Cropper.js 圓形裁切框 */
-        #avatar-crop-container .cropper-view-box,
-        #avatar-crop-container .cropper-face {
-            border-radius: 50%;
-        }
-        /* ▲▲▲ 結束：Astras 商店相關樣式 ▲▲▲ */
-
-        /* ▼▼▼ 【問題修正】修正自訂義桌布模式下商店頁面元素顏色 (改為黑色) ▼▼▼ */
-        body.custom-wallpaper-active .astras-store-card {
-            background-color: rgba(255, 255, 255, 0.75) !important; /* 增加白色半透明背景以突顯內容 */
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-color: rgba(200, 200, 200, 0.5) !important;
-        }
-
-        body.custom-wallpaper-active #store-container header h1,
-        body.custom-wallpaper-active #store-container header #back-to-chat-btn,
-        body.custom-wallpaper-active .astras-card-name,
-        body.custom-wallpaper-active .astras-card-desc,
-        body.custom-wallpaper-active .astras-card-avatar {
-            color: #000000 !important; /* 強制所有相關文字/圖示為純黑色 */
-        }
-        /* ▲▲▲ 結束：Astras 商店相關樣式 ▲▲▲ */
-
-        /* ▼▼▼ 【問題修正】修正自訂義桌布模式下商店頁面看不清楚的問題 (文字改為黑色) ▼▼▼ */
-        body.custom-wallpaper-active .astras-store-card {
-            background-color: rgba(255, 255, 255, 0.75) !important; /* 增加白色半透明背景以突顯內容 */
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-color: rgba(200, 200, 200, 0.5) !important;
-        }
-
-        body.custom-wallpaper-active .astras-card-name,
-        body.custom-wallpaper-active .astras-card-desc,
-        body.custom-wallpaper-active .astras-card-avatar {
-            color: #000000 !important; /* 強制所有文字為純黑色 */
-        }
-        /* ▲▲▲ 結束：Astras 商店相關樣式 ▲▲▲ */
-
-        /* ▼▼▼ 【需求實現】手機版長按選單樣式 ▼▼▼ */
-        #mobile-context-menu-overlay {
-            position: fixed;
-            inset: 0;
-            background-color: rgba(0,0,0,0.5);
-            z-index: 99;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        #mobile-context-menu {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background-color: var(--modal-bg);
-            border-top-left-radius: 1.5rem; /* 24px */
-            border-top-right-radius: 1.5rem; /* 24px */
-            z-index: 100;
-            padding: 1rem;
-            transform: translateY(100%);
-            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            max-height: 80vh;
-            display: flex;
-            flex-direction: column;
-            touch-action: none; /* 【新增】防止頁面滾動干擾手勢 */
-        }
-        #mobile-context-menu.visible {
-            transform: translateY(0);
-        }
-        #mobile-context-menu-overlay.visible {
-            opacity: 1;
-        }
-        #mobile-context-menu .menu-header {
-            padding: 0.5rem 1rem;
-            text-align: center;
-            font-weight: 600;
-            color: var(--text-primary);
-            background-color: var(--sidebar-bg);
-            border-radius: 0.75rem; /* 12px */
-            margin-bottom: 1rem;
-        }
-        #mobile-context-menu .menu-options {
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        #mobile-context-menu .menu-item {
-            display: flex;
-            align-items: center;
-            padding: 1rem; /* 16px */
-            gap: 1rem; /* 16px */
-            border-bottom: 1px solid var(--border-color);
-            cursor: pointer;
-            font-size: 1rem; /* 16px */
-            color: var(--text-primary); /* 【修正】使用變數 */
-        }
-        #mobile-context-menu .menu-item:last-child {
-            border-bottom: none;
-        }
-        #mobile-context-menu .menu-item:hover {
-            background-color: var(--hover-bg);
-        }
-        #mobile-context-menu .menu-item.delete {
-            color: #ef4444; /* text-red-500 */
-        }
-        #mobile-context-menu .menu-item svg {
-            width: 24px;
-            height: 24px;
-            color: var(--text-secondary);
-        }
-         #mobile-context-menu .menu-item.delete svg {
-            color: #ef4444;
-        }
-        /* 【修正】深色模式與自訂桌布模式的顏色適配 */
-        .dark #mobile-context-menu .menu-header,
-        .dark #mobile-context-menu .menu-item {
-            color: var(--text-primary);
-        }
-        .dark #mobile-context-menu .menu-item svg {
-            color: var(--text-secondary);
-        }
-        .dark #mobile-context-menu .menu-item.delete {
-            color: #ef4444 !important;
-        }
-        .dark #mobile-context-menu .menu-item.delete svg {
-            color: #ef4444 !important;
-        }
-        body.custom-wallpaper-active #mobile-context-menu {
-            color: #111827 !important;
-            background-color: rgba(255, 255, 255, 0.85) !important;
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-color: rgba(200, 200, 200, 0.5) !important;
-        }
-        body.custom-wallpaper-active #mobile-context-menu .menu-header,
-        body.custom-wallpaper-active #mobile-context-menu .menu-item {
-             color: #111827 !important;
-        }
-        body.custom-wallpaper-active #mobile-context-menu .menu-item svg {
-            color: #6b7280 !important;
-        }
-        body.custom-wallpaper-active #mobile-context-menu .menu-item.delete,
-        body.custom-wallpaper-active #mobile-context-menu .menu-item.delete svg {
-            color: #ef4444 !important;
-        }
-        /* ▲▲▲ 【需求實現】結束 ▲▲▲ */
-
-        @media (max-width: 768px) {
-          input[type="text"],
-          input[type="search"],
-          input[type="password"],
-          textarea,
-          select {
-            font-size: 16px !important;
-          }
-          /* ▼▼▼ 【需求實現】在手機版隱藏原本的選項按鈕 ▼▼▼ */
-          .sidebar-item .chat-options-btn,
-          .sidebar-item .astras-options-btn, /* 新增：隱藏 Astras 的選項按鈕 */
-          .folder-summary .folder-options-btn { /* 新增：也隱藏資料夾的選項按鈕 */
-              display: none;
-          }
-          /* ▲▲▲ 【需求實現】結束 ▲▲▲ */
-        }
-        @media (max-width: 768px) {
-  /* 讓 Modal 內容垂直排列 */
-  #settings-modal .flex.flex-1.overflow-hidden {
-    flex-direction: column;
-  }
-
-  /* 在手機版隱藏側邊導航欄 */
-  #settings-modal nav.w-1\/4 {
-    display: none;
-  }
-
-  /* 讓內容區塊佔滿整個寬度，並移除右邊框 */
-  #settings-modal .flex-1.p-6.overflow-y-auto {
-    width: 100%;
-    border-right: none;
-  }
-
-  /* 預設顯示所有設定區塊，而不是只顯示 active 的那一個 */
-  #settings-modal .settings-section {
-    display: block !important; /* 使用 !important 覆蓋由 JS 添加的 display: none */
-    border-bottom: 1px solid var(--border-color); /* 在每個區塊下方加上分隔線 */
-    padding-bottom: 1.5rem; /* 增加底部間距 */
-    margin-bottom: 1.5rem; /* 增加區塊間距 */
-  }
-  
-  /* 最後一個區塊不需要分隔線和額外間距 */
-  #settings-modal .settings-section:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-  }
-}
-
-        /* 修正問題 1：手機版中搜尋歷史對話彈窗的整體版面過於擁擠的問題
-           透過重新排列彈窗內的元素佈局，讓搜尋框單獨佔據一行，下方再放置選項與按鈕，
-           使其在小螢幕上看起來更清晰、不擁擠。*/
-        @media (max-width: 640px) {
-            /* 選取搜尋彈窗內的 flex 容器 */
-            #search-modal .p-4.flex.items-center {
-                flex-wrap: wrap; /* 允許內容換行 */
-                gap: 0.75rem;    /* 調整元素間距 */
-            }
-
-            /* 讓搜尋輸入框自己佔據第一行 */
-            #modal-search-input {
-                flex-basis: 100%; /* 寬度為 100% */
-                order: 1;         /* 排序在最前面 */
-            }
-
-            /* 讓下拉選單和按鈕在第二行 */
-            #modal-search-scope-select {
-                flex-grow: 1;     /* 佔據剩餘空間 */
-                order: 2;
-            }
-
-            #perform-search-btn {
-                order: 3;
-            }
-
-            #voice-input-btn-search {
-                order: 4;
-            }
-        }
-        .sidebar-item, .folder-summary { /* 新增 .folder-summary */
-            -webkit-user-select: none; /* 適用於 Safari/Chrome 等 WebKit 核心的瀏覽器 */
-            -moz-user-select: none;    /* 適用於 Firefox */
-            -ms-user-select: none;     /* 適用於舊版 IE */
-            user-select: none;         /* CSS 標準語法 */
-        }
-        .model-message .prose {
-    overflow-x: auto;
-    /* 為了在需要時顯示捲軸，同時保持簡潔外觀，可以加上捲軸樣式 */
-    -ms-overflow-style: auto;  /* IE and Edge */
-    scrollbar-width: thin;     /* Firefox */
-    scrollbar-color: var(--border-color) transparent; /* Firefox */
-}
-
-/* 針對 Webkit 核心的瀏覽器 (Chrome, Safari) 設定捲軸樣式 */
-.model-message .prose::-webkit-scrollbar {
-    height: 8px; /* 水平捲軸的高度 */
-}
-
-.model-message .prose::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.model-message .prose::-webkit-scrollbar-thumb {
-    background-color: var(--border-color);
-    border-radius: 10px;
-    border: 2px solid transparent;
-    background-clip: content-box;
-}
-
-.model-message .prose::-webkit-scrollbar-thumb:hover {
-    background-color: var(--text-secondary);
-}
-
-        /* ▼▼▼ 【需求實現】滾動到底部按鈕樣式 ▼▼▼ */
-        @keyframes jelly-bounce {
-            0%, 100% { transform: scale(1) translateX(-50%); }
-            25% { transform: scale(0.9, 1.1) translateX(-50%); }
-            50% { transform: scale(1.1, 0.9) translateX(-50%); }
-            75% { transform: scale(0.95, 1.05) translateX(-50%); }
-        }
-
-        #scroll-to-bottom-btn {
-            position: absolute;
-            left: 50%;
-            /* bottom 由 JS 動態設定 */
-            z-index: 20;
-            width: 40px;
-            height: 40px;
-            border-radius: 9999px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            
-            /* 預設隱藏與動畫 */
-            opacity: 0;
-            transform: translateX(-50%) scale(0.8);
-            pointer-events: none;
-            transition: opacity 0.3s ease, transform 0.3s ease, bottom 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        #scroll-to-bottom-btn.visible {
-            opacity: 1;
-            transform: translateX(-50%) scale(1);
-            pointer-events: auto;
-        }
-
-        #scroll-to-bottom-btn.jelly-animate {
-            animation: jelly-bounce 0.5s ease-out;
-        }
-
-        /* --- 一般模式 (淺色/深色) --- */
-        #scroll-to-bottom-btn {
-            background-color: rgba(255, 255, 255, 0.9);
-            color: #111827;
-            box-shadow: 0 4px 8px var(--shadow-color);
-            border: 1px solid var(--border-color);
-        }
-        .dark #scroll-to-bottom-btn {
-            background-color: rgba(30, 30, 30, 0.9);
-            color: #f9fafb;
-            border: 1px solid var(--border-color);
-        }
-
-        /* --- 自訂桌布模式 (凝膠果凍玻璃材質) --- */
-        body.custom-wallpaper-active #scroll-to-bottom-btn {
-            background-color: var(--button-primary-bg); /* 使用帶透明度的變數 */
-            color: #ffffff; /* 圖示顏色 */
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 
-                0 4px 12px rgba(0, 0, 0, 0.2), /* 外部陰影 */
-                inset 0 1px 2px rgba(255, 255, 255, 0.4); /* 內部高光 */
-            
-            /* 表面光澤效果 */
-            background-image: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 60%);
-            transition: opacity 0.3s ease, transform 0.3s ease, bottom 0.3s ease, background-position 0.4s ease;
-            background-size: 200% 200%;
-            background-position: 50% 100%;
-        }
-
-        body.custom-wallpaper-active #scroll-to-bottom-btn:hover {
-            background-position: 50% 50%; /* 懸停時光澤移動 */
-            transform: translateX(-50%) scale(1.05); /* 稍微放大 */
-        }
-        /* ▲▲▲ 【需求實現】結束 ▲▲▲ */
-        
-        /* ▼▼▼ 【需求 1 新增】搜尋結果檢視按鈕的樣式 ▼▼▼ */
+    }
+    .sidebar-item, .folder-summary {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+    .model-message .prose {
+        overflow-x: auto;
+        -ms-overflow-style: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border-color) transparent;
+    }
+    .model-message .prose::-webkit-scrollbar {
+        height: 8px;
+    }
+    .model-message .prose::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .model-message .prose::-webkit-scrollbar-thumb {
+        background-color: var(--border-color);
+        border-radius: 10px;
+        border: 2px solid transparent;
+        background-clip: content-box;
+    }
+    .model-message .prose::-webkit-scrollbar-thumb:hover {
+        background-color: var(--text-secondary);
+    }
+    @keyframes jelly-bounce {
+        0%, 100% { transform: scale(1) translateX(-50%); }
+        25% { transform: scale(0.9, 1.1) translateX(-50%); }
+        50% { transform: scale(1.1, 0.9) translateX(-50%); }
+        75% { transform: scale(0.95, 1.05) translateX(-50%); }
+    }
+    #scroll-to-bottom-btn {
+        position: absolute;
+        left: 50%;
+        z-index: 20;
+        width: 40px;
+        height: 40px;
+        border-radius: 9999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        opacity: 0;
+        transform: translateX(-50%) scale(0.8);
+        pointer-events: none;
+        transition: opacity 0.3s ease, transform 0.3s ease, bottom 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    #scroll-to-bottom-btn.visible {
+        opacity: 1;
+        transform: translateX(-50%) scale(1);
+        pointer-events: auto;
+    }
+    #scroll-to-bottom-btn.jelly-animate {
+        animation: jelly-bounce 0.5s ease-out;
+    }
+    #scroll-to-bottom-btn {
+        background-color: rgba(255, 255, 255, 0.9);
+        color: #111827;
+        box-shadow: 0 4px 8px var(--shadow-color);
+        border: 1px solid var(--border-color);
+    }
+    .dark #scroll-to-bottom-btn {
+        background-color: rgba(30, 30, 30, 0.9);
+        color: #f9fafb;
+        border: 1px solid var(--border-color);
+    }
+    body.custom-wallpaper-active #scroll-to-bottom-btn {
+        background-color: var(--button-primary-bg);
+        color: #ffffff;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 
+            0 4px 12px rgba(0, 0, 0, 0.2),
+            inset 0 1px 2px rgba(255, 255, 255, 0.4);
+        background-image: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 60%);
+        transition: opacity 0.3s ease, transform 0.3s ease, bottom 0.3s ease, background-position 0.4s ease;
+        background-size: 200% 200%;
+        background-position: 50% 100%;
+    }
+    body.custom-wallpaper-active #scroll-to-bottom-btn:hover {
+        background-position: 50% 50%;
+        transform: translateX(-50%) scale(1.05);
+    }
+    .search-view-btn {
+        display: inline-flex;
+    }
+    @media (max-width: 768px) {
         .search-view-btn {
-             /* 預設在桌面版顯示 */
-            display: inline-flex;
+            display: none;
         }
-        @media (max-width: 768px) {
-            /* 在手機版隱藏檢視按鈕 */
-            .search-view-btn {
-                display: none;
-            }
+    }
+    #sidebar,
+    #header-title,
+    #search-view-modal h2,
+    #search-view-modal button,
+    #mobile-context-menu,
+    #history-popover,
+    #message-list .text-center,
+    #message-input,
+    #model-switcher-container,
+    #chat-container,
+    #search-view-content,
+    #store-container,
+    #search-modal,
+    #settings-modal,
+    #trash-section,
+    #trash-view-modal
+    {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+    @media (max-width: 768px) {
+        .trash-item-view-btn {
+            display: none;
         }
-        /* ▲▲▲ 【需求 1 結束】 ▲▲▲ */
-        #sidebar,
-        #header-title,
-        #search-view-modal h2,
-#search-view-modal button,
-#mobile-context-menu,
-#history-popover,
-#message-list .text-center,
-#message-input,
-#model-switcher-container,
-#chat-container,
-#search-view-content,
-#store-container,
-#search-modal,
-#settings-modal,
-#trash-section, /* 新增：垃圾桶區塊 */
-#trash-view-modal /* 新增：垃圾桶檢視彈窗 */
-{
-    -webkit-user-select: none; /* 適用於 Safari/Chrome 等 WebKit 核心的瀏覽器 */
-    -moz-user-select: none;    /* 適用於 Firefox */
-    -ms-user-select: none;     /* 適用於舊版 IE */
-    user-select: none;         /* CSS 標準語法，禁止使用者選取元素內容 */
-}
-        /* ▼▼▼ 新增：垃圾桶手機版檢視按鈕樣式 ▼▼▼ */
-        @media (max-width: 768px) {
-            .trash-item-view-btn {
-                display: none;
-            }
-        }
-        /* ▲▲▲ 結束新增 ▲▲▲ */
-       body.custom-wallpaper-active #follow-up-container {
-    background-color: transparent !important;
-    border-color: transparent !important;
-    /* 移除原有的 padding，讓內層容器自己控制 */
-    padding-top: 0 !important;
-    padding-bottom: 0.5rem !important; /* 保留與下方輸入框的間距 */
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-}
-
-/* 2. 將玻璃效果精準應用於內層的 wrapper，使其與 input-wrapper 對齊 */
-body.custom-wallpaper-active #follow-up-content-wrapper {
-    background-color: rgba(255, 255, 255, 0.2) !important;
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-    padding: 0.75rem;
-    border-radius: 1rem; /* 16px，使其與輸入框視覺上一致 */
-}
-
-/* 2. 針對後續追問區塊中的「每一個按鈕」 */
-body.custom-wallpaper-active .follow-up-prompt-btn {
-    /* 基底：使用更透明一點的背景，與容器做出區分 */
-    background-color: rgba(255, 255, 255, 0.3) !important;
-    
-    /* 邊緣：同樣擁有晶瑩的描邊 */
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    
-    /* 陰影：更細微的陰影 */
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    
-    /* 文字顏色：確保在任何桌布下都清晰可讀 */
-    color: var(--text-primary) !important; 
-    
-    /* 動畫效果：讓互動更流暢 */
-    transition: all 0.2s ease-in-out;
-}
-
-/* 3. 按鈕的滑鼠懸停效果 */
-body.custom-wallpaper-active .follow-up-prompt-btn:hover {
-    background-color: rgba(255, 255, 255, 0.5) !important;
-    transform: translateY(-2px); /* 輕微上浮 */
-    border-color: rgba(255, 255, 255, 0.6);
-}
-    </style>
+    }
+    body.custom-wallpaper-active #follow-up-container {
+        background-color: transparent !important;
+        border-color: transparent !important;
+        padding-top: 0 !important;
+        padding-bottom: 0.5rem !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+    body.custom-wallpaper-active #follow-up-content-wrapper {
+        background-color: rgba(255, 255, 255, 0.2) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        padding: 0.75rem;
+        border-radius: 1rem;
+    }
+    body.custom-wallpaper-active .follow-up-prompt-btn {
+        background-color: rgba(255, 255, 255, 0.3) !important;
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        color: var(--text-primary) !important; 
+        transition: all 0.2s ease-in-out;
+    }
+    body.custom-wallpaper-active .follow-up-prompt-btn:hover {
+        background-color: rgba(255, 255, 255, 0.5) !important;
+        transform: translateY(-2px);
+        border-color: rgba(255, 255, 255, 0.6);
+    }
+</style>
 
 
 <script>
