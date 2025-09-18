@@ -3311,6 +3311,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const newConv = createBaseConversation('新對話');
             conversations.unshift(newConv);
             activeConversationId = newConv.id;
+            updateHeaderTitle();
             
             renderAll();
             ALL_ELEMENTS.messageInput.value = '';
@@ -3322,30 +3323,30 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         const loadChat = (id) => {
     if (id !== activeConversationId) {
-        // 如果我們正從一個空的臨時對話切換出去，就將其刪除
         const previousConv = getActiveConversation();
         if (previousConv && previousConv.isTemporary && previousConv.messages.length === 0) {
             conversations = conversations.filter(c => c.id !== previousConv.id);
         }
 
-        // 1. 先更新 ID
+        // 1. 更新 ID
         activeConversationId = id;
         uploadedFiles = [];
         
-        // 2. 再更新整個畫面 (包含標題)
-        renderAll();
+        // 2. 【核心修正】第一時間呼叫專門的函式更新標題
+        updateHeaderTitle(); 
 
-        // 3. 最後才根據新的 ID 處理輸入框
+        // 3. 渲染畫面的其餘部分
+        renderAll(); 
+
         const conv = getActiveConversation();
         ALL_ELEMENTS.messageInput.value = conv ? conv.unsentMessage || '' : '';
     }
+    
     sendConfirmed = false;
     updateInputState();
     updateApiKeyWarningBadge();
-    // 重新載入對話時，清除追問提示
     renderFollowUpPrompts([]);
 };
-
         const deleteChat = async (id, event) => {
             event?.stopPropagation();
             const conv = conversations.find(c => c.id === id);
@@ -3511,6 +3512,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             updateFollowUpUI(); // 新增: 渲染後續追問介面
             applyLanguage(config.uiLanguage); // 新增：每次渲染時都應用語言
         };
+        const updateHeaderTitle = () => {
+    const conv = getActiveConversation();
+    if (conv) {
+    } else {
+        // 如果找不到（例如剛初始化），就顯示預設文字
+        ALL_ELEMENTS.headerTitle.textContent = i18n[config.uiLanguage].newChat || '新對話';
+    }
+};
 
         const renderHistorySidebar = () => {
             ALL_ELEMENTS.historyList.innerHTML = '';
