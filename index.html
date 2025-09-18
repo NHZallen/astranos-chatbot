@@ -2812,7 +2812,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             // 新增: 後續追問相關元素
             followUpContainer: document.getElementById('follow-up-container'),
             followUpHeader: document.getElementById('follow-up-header'),
-            followUpToggleBtn: document.getElementById('follow-up-toggle-btn'),
+            followUpHeader: document.getElementById('follow-up-header'),
             followUpPromptsList: document.getElementById('follow-up-prompts-list'),
             followUpToggleSwitch: document.getElementById('follow-up-toggle-switch'),
             autoNamingToggleSwitch: document.getElementById('auto-naming-toggle-switch'),
@@ -4880,28 +4880,34 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         };
         const renderFollowUpPrompts = (prompts) => {
-            const { followUpContainer, followUpPromptsList } = ALL_ELEMENTS;
-            followUpPromptsList.innerHTML = '';
-            if (prompts.length > 0 && config.enableFollowUp) {
-                prompts.forEach((p, index) => {
-                    const btn = document.createElement('button');
-                    btn.className = 'follow-up-prompt-btn';
-                    btn.textContent = p;
-                    btn.style.setProperty('--animation-delay', `${index * 70}ms`); // 為每個按鈕設置動畫延遲
-                    btn.onclick = () => {
-                        ALL_ELEMENTS.messageInput.value = p;
-                        ALL_ELEMENTS.messageInput.focus();
-                        sendConfirmed = true;
-                        updateInputState();
-                        ALL_ELEMENTS.messageInput.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                    };
-                    followUpPromptsList.appendChild(btn);
-                });
-                followUpContainer.classList.remove('hidden');
-            } else {
-                followUpContainer.classList.add('hidden');
-            }
-        };
+    const { followUpContainer, followUpPromptsList } = ALL_ELEMENTS;
+    
+    // 清空舊的提示按鈕
+    followUpPromptsList.innerHTML = '';
+
+    // 核心邏輯判斷：只有當 prompts 陣列有內容 且 功能開關是開啟的，才顯示
+    if (prompts && prompts.length > 0 && config.enableFollowUp) {
+        prompts.forEach((p, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'follow-up-prompt-btn';
+            btn.textContent = p;
+            btn.style.setProperty('--animation-delay', `${index * 70}ms`);
+            btn.onclick = () => {
+                ALL_ELEMENTS.messageInput.value = p;
+                ALL_ELEMENTS.messageInput.focus();
+                sendConfirmed = true;
+                updateInputState();
+                ALL_ELEMENTS.messageInput.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            };
+            followUpPromptsList.appendChild(btn);
+        });
+        // 滿足條件，移除 hidden class 來顯示整個容器
+        followUpContainer.classList.remove('hidden');
+    } else {
+        // 不滿足條件，添加 hidden class 來隱藏整個容器
+        followUpContainer.classList.add('hidden');
+    }
+};
         const toggleFollowUpPrompts = () => {
             isFollowUpExpanded = !isFollowUpExpanded;
             ALL_ELEMENTS.followUpPromptsList.classList.toggle('collapsed', !isFollowUpExpanded);
