@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-14.9.9</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.9.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <style>
@@ -6038,38 +6037,39 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         const getDominantColorPalette = (imageDataUrl) => {
             return new Promise((resolve, reject) => {
-                // 核心改變：使用 Vibrant.from() 來分析圖片
-                Vibrant.from(imageDataUrl).getPalette((err, palette) => {
-                    if (err) {
-                        console.error('Vibrant.js error:', err);
-                        resolve(['#3b82f6']); // 出錯時回傳預設顏色
-                        return;
+                const img = new Image();
+                img.crossOrigin = 'Anonymous';
+                img.src = imageDataUrl;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+                    const colorCount = {};
+                    for (let i = 0; i < imageData.length; i += 4 * 5) {
+                        const r = imageData[i];
+                        const g = imageData[i + 1];
+                        const b = imageData[i + 2];
+                        const a = imageData[i + 3];
+                        if (a < 125) continue;
+                        const max = Math.max(r, g, b);
+                        const min = Math.min(r, g, b);
+                        if (max - min < 20) continue;
+                        const r_round = Math.round(r / 10) * 10;
+                        const g_round = Math.round(g / 10) * 10;
+                        const b_round = Math.round(b / 10) * 10;
+                        const rgb = `${r_round},${g_round},${b_round}`;
+                        colorCount[rgb] = (colorCount[rgb] || 0) + 1;
                     }
-
-                    // 按照優先順序排列顏色
-                    const colors = [
-                        palette.Vibrant,
-                        palette.DarkVibrant,
-                        palette.LightVibrant,
-                        palette.Muted,
-                        palette.DarkMuted,
-                        palette.LightMuted
-                    ];
-
-                    // 過濾掉空值並轉成 HEX 色碼
-                    const hexColors = colors
-                        .filter(swatch => swatch)
-                        .map(swatch => swatch.getHex());
-                    
-                    // 去除重複的顏色
-                    const uniqueHexColors = [...new Set(hexColors)];
-
-                    if (uniqueHexColors.length > 0) {
-                        resolve(uniqueHexColors);
-                    } else {
-                        resolve(['#3b82f6']); // 如果沒取到任何顏色，回傳預設
-                    }
-                });
+                    const sortedColors = Object.keys(colorCount)
+                        .sort((a, b) => colorCount[b] - colorCount[a])
+                        .slice(0, 5)
+                        .map(rgbStr => `#${rgbStr.split(',').map(c => parseInt(c).toString(16).padStart(2, '0')).join('')}`);
+                    resolve(sortedColors.length > 0 ? sortedColors : ['#3b82f6']);
+                };
+                img.onerror = reject;
             });
         };
         const hexToRgb = (hex) => {
@@ -6141,42 +6141,30 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 customColorSwatches.appendChild(swatch);
             });
             gradientSwatches.innerHTML = '';
-            if (config.uiTheme.adaptivePalette && config.uiTheme.adaptivePalette.length >= 2) {
+            if(config.uiTheme.adaptivePalette && config.uiTheme.adaptivePalette.length > 1) {
                 const palette = config.uiTheme.adaptivePalette;
-                const combinations = [];
-                if (palette[0] && palette[1]) combinations.push(`linear-gradient(to right, ${palette[0]}, ${palette[1]})`);
-                if (palette[0] && palette[2]) combinations.push(`linear-gradient(to right, ${palette[0]}, ${palette[2]})`);
-                if (palette[1] && palette[2]) combinations.push(`linear-gradient(to right, ${palette[1]}, ${palette[2]})`);
-                if (palette[0] && palette[3]) combinations.push(`linear-gradient(135deg, ${palette[0]}, ${palette[3]})`);
-
-                const uniqueCombinations = [...new Set(combinations)].slice(0, 4); // 最多只顯示 4 種
-
-                uniqueCombinations.forEach(grad => {
+                const combinations = [
+                    `linear-gradient(to right, ${palette[0]}, ${palette[1]})`,
+                    `linear-gradient(to right, ${palette[0]}, ${palette[2]})`,
+                    `linear-gradient(to right, ${palette[1]}, ${palette[2]})`,
+                    `linear-gradient(135deg, ${palette[0]}, ${palette[1]}, ${palette[2]})`
+                ];
+                combinations.forEach(grad => {
                     const swatch = document.createElement('div');
-                    swatch.className = 'w-full h-10 rounded-md cursor-pointer border-2 border-transparent transition-all duration-200 hover:scale-105 spotlight-effect';
+                    swatch.className = 'w-full h-10 rounded-md cursor-pointer border-2 border-transparent';
                     swatch.style.background = grad;
                     swatch.dataset.gradient = grad;
-
-                    if (config.uiTheme.adaptiveGradient === grad) {
-                        swatch.classList.add('selected-gradient', 'border-blue-500', 'scale-105');
-                        swatch.classList.remove('border-transparent');
+                    if(config.uiTheme.adaptiveGradient === grad) {
+                        swatch.classList.add('selected-gradient', 'border-blue-500');
                     }
-
                     swatch.addEventListener('click', () => {
-                        const currentSelected = gradientSwatches.querySelector('.selected-gradient');
-                        if (currentSelected) {
-                            currentSelected.classList.remove('selected-gradient', 'border-blue-500', 'scale-105');
-                            currentSelected.classList.add('border-transparent');
-                        }
-                        swatch.classList.add('selected-gradient', 'border-blue-500', 'scale-105');
-                        swatch.classList.remove('border-transparent');
-                        config.uiTheme.adaptiveGradient = grad;
+                        gradientSwatches.querySelector('.selected-gradient')?.classList.remove('selected-gradient', 'border-blue-500');
+                        swatch.classList.add('selected-gradient', 'border-blue-500');
                     });
                     gradientSwatches.appendChild(swatch);
                 });
-
             } else {
-                gradientSwatches.innerHTML = `<p class="text-xs col-span-4 text-[var(--text-secondary)]">${i18n[config.uiLanguage].notEnoughColors || '沒有足夠的顏色來生成漸變。請上傳顏色豐富的桌布。'}</p>`;
+                 gradientSwatches.innerHTML = `<p class="text-xs col-span-4 text-[var(--text-secondary)]">${i18n[config.uiLanguage].notEnoughColors || '沒有足夠的顏色來生成漸變。請上傳顏色豐富的桌布。'}</p>`
             }
             const updateVisibility = () => {
                 const mode = document.querySelector('input[name="color-theme"]:checked').value;
@@ -6193,34 +6181,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
             updateVisibility();
         };
-        const getDominantColorPalette = (imageDataUrl) => {
-    return new Promise((resolve, reject) => {
-        Vibrant.from(imageDataUrl).getPalette((err, palette) => {
-            if (err) {
-                console.error('Vibrant.js error:', err);
-                resolve(['#3b82f6']);
-                return;
-            }
-            const colors = [
-                palette.Vibrant,
-                palette.DarkVibrant,
-                palette.LightVibrant,
-                palette.Muted,
-                palette.DarkMuted,
-                palette.LightMuted
-            ];
-            const hexColors = colors
-                .filter(swatch => swatch)
-                .map(swatch => swatch.getHex());
-            const uniqueHexColors = [...new Set(hexColors)];
-            if (uniqueHexColors.length > 0) {
-                resolve(uniqueHexColors);
-            } else {
-                resolve(['#3b82f6']);
-            }
-        });
-    });
-};
         const analyzeImageBrightness = (imageDataUrl) => {
             return new Promise((resolve, reject) => {
                 const img = new Image();
