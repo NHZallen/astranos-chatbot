@@ -14,6 +14,12 @@
     body {
     touch-action: manipulation;
 }
+    #file-options-popover button {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
     @keyframes indicator-enter {
     from {
         opacity: 0;
@@ -35,10 +41,7 @@
         transform: translateY(-10px);
     }
 }
-
-/* 移除舊的 .input-indicator-item 動畫，以 class 控制 */
 .input-indicator-item {
-  /* 如果這裡有 animation 屬性，請將其刪除 */
 }
 
 .input-indicator-item.enter {
@@ -204,13 +207,21 @@ button:not(.btn-primary):active:not(:disabled) {
         }
     }
     .input-wrapper {
-    transition: box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out;
+    transition: box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out, padding-top 0.3s ease-in-out; /* 新增 padding-top 的過渡效果 */
     position: relative;
-    /* ↓↓↓ 新增/修改的樣式 ↓↓↓ */
     flex-direction: column;
+    padding-top: 0; /* ✨ 新增：預設沒有上方內邊距 */
+}
+    .input-wrapper.has-indicators {
+    padding-top: 2.25rem; /* 36px，為指示器留出空間，可微調 */
 }
 
 #input-indicator-container {
+    position: absolute;
+    top: 0.5rem; /* 距離頂部 8px */
+    left: 0.5rem; /* 距離左側 8px */
+    right: 0.5rem; /* 距離右側 8px */
+    
     display: flex;
     overflow-x: auto;
     white-space: nowrap;
@@ -3536,6 +3547,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         }
     });
 };
+        const wrapper = document.querySelector('.input-wrapper');
+    if (container.children.length > 0) {
+        wrapper.classList.add('has-indicators');
+    } else {
+        wrapper.classList.remove('has-indicators');
+    }
         const getActiveAstrasId = () => {
             const conv = getActiveConversation();
             return conv ? conv.astrasId : null;
