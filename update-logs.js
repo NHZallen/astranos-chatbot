@@ -1,5 +1,36 @@
 const updateLogs = [
     {
+        version: "14.9.9",
+        date: "2025-09-18",
+        content: [
+            "<strong>優化：</strong>版本更新推送通知邏輯",
+        ]
+    },
+    {
+        version: "14.9.8",
+        date: "2025-09-18",
+        content: [
+            "<strong>優化：</strong>輸入欄延伸功能動畫",
+            "<strong>優化：</strong>輸入欄字體不清西的問題",
+        ]
+    },
+    {
+        version: "14.9.7",
+        date: "2025-09-18",
+        content: [
+            "<strong>修正：</strong>輸入欄上下寬度沒統一的問題",
+            "<strong>修正：</strong>輸入欄再取消延伸功能後未成功收起的問題",
+            "<strong>優化：</strong>輸入欄延伸功能顯示方式",
+        ]
+    },
+    {
+        version: "14.9.6",
+        date: "2025-09-18",
+        content: [
+            "<strong>新增：</strong>修改聯網搜索及Astras使用中途式的位置",
+        ]
+    },
+    {
         version: "14.9.5",
         date: "2025-09-18",
         content: [
