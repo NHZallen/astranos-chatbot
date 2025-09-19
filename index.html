@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-14.9.8</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.9.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -2633,6 +2633,27 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             trashViewContent: document.getElementById('trash-view-content'),
             closeTrashViewModalBtn: document.getElementById('close-trash-view-modal-btn'),
             trashViewCloseBtn: document.getElementById('trash-view-close-btn'),
+        };
+        * 輔助函式：比較兩個版本號字串。
+         * @param {string} v1 - 第一個版本號
+         * @param {string} v2 - 第二個版本號
+         * @returns {number} 如果 v1 > v2 回傳 1, v1 < v2 回傳 -1, v1 == v2 回傳 0
+         */
+        const compareVersions = (v1, v2) => {
+            // 如果使用者是第一次使用 (v2 為空)，則任何版本都算 "新"
+            if (!v2) return 1;
+
+            const parts1 = v1.split('.').map(Number);
+            const parts2 = v2.split('.').map(Number);
+            const len = Math.max(parts1.length, parts2.length);
+
+            for (let i = 0; i < len; i++) {
+                const p1 = parts1[i] || 0;
+                const p2 = parts2[i] || 0;
+                if (p1 > p2) return 1;
+                if (p1 < p2) return -1;
+            }
+            return 0;
         };
         const MODELS = [
             { id: 'openrouter/sonoma-sky-alpha', name: 'astra-ultra (Beta mod)', provider: 'openrouter', descriptionKey: 'model_ultra_desc', limitsKey: 'model_ultra_limits' },
@@ -6780,17 +6801,41 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (!config.enableUpdateNotifications || typeof updateLogs === 'undefined' || updateLogs.length === 0) {
                 return;
             }
-            const latestLog = updateLogs[0];
-            if (latestLog.version !== config.lastSeenVersion) {
+
+            const lastSeenVersion = config.lastSeenVersion;
+
+            // 1. 使用版本比較函式，找出所有比上次看過的版本還要新的更新
+            const newUpdates = updateLogs.filter(log => compareVersions(log.version, lastSeenVersion) > 0);
+
+            // 2. 如果有找到任何新的更新
+            if (newUpdates.length > 0) {
                 const contentContainer = ALL_ELEMENTS.latestUpdateContent;
-                contentContainer.innerHTML = `
-                    <h4 class="font-bold text-lg">${latestLog.version} <span class="text-sm font-normal text-[var(--text-secondary)]">- ${latestLog.date}</span></h4>
-                    <ul>
-                        ${latestLog.content.map(item => `<li>${item}</li>`).join('')}
-                    </ul>
-                `;
+                const modalTitle = document.querySelector('#latest-update-modal h2');
+
+                // 根據更新數量，更改彈窗標題
+                if (modalTitle) {
+                    modalTitle.textContent = i18n[config.uiLanguage].newVersionsFound || `發現 ${newUpdates.length} 個新版本！`;
+                }
+
+                // 3. 組合所有新版本的 HTML 內容
+                contentContainer.innerHTML = newUpdates.map(log => `
+                    <div class="prose prose-sm max-w-none mb-6 pb-4 border-b border-[var(--border-color)] last:border-b-0 last:mb-0 last:pb-0">
+                        <h4 class="font-bold text-lg">${log.version} <span class="text-sm font-normal text-[var(--text-secondary)]">- ${log.date}</span></h4>
+                        <ul>
+                            ${log.content.map(item => `<li>${item}</li>`).join('')}
+                        </ul>
+                    </div>
+                `).join('');
+
+                // 讓內容區域可以滾動，以防更新日誌太長
+                contentContainer.style.maxHeight = '60vh';
+                contentContainer.style.overflowY = 'auto';
+
                 toggleModal(ALL_ELEMENTS.latestUpdateModal, true);
-                config.lastSeenVersion = latestLog.version;
+
+                // 4. 最重要的一步：將看過的版本號更新到 "絕對最新" 的版本
+                // 這樣下次登入時，就不會再顯示這些已經看過的更新
+                config.lastSeenVersion = updateLogs[0].version;
                 await saveConfig();
             }
         };
