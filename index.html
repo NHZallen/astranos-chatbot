@@ -3469,12 +3469,15 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const renderInputIndicators = () => {
             const container = ALL_ELEMENTS.inputIndicatorContainer;
             const conv = getActiveConversation();
+            
+            const wrapper = document.querySelector('.input-wrapper');
+            if (!wrapper) return;
+
             if (!conv) {
                 if (container.children.length > 0) {
                      container.innerHTML = '';
                 }
-                // ✨ 確保在沒有對話時也移除 class
-                document.querySelector('.input-wrapper').classList.remove('has-indicators');
+                wrapper.classList.remove('has-indicators');
                 return;
             }
         
@@ -3526,7 +3529,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 if (!activeIndicators.has(child.id)) {
                     child.classList.remove('enter');
                     child.classList.add('exit');
-                    child.addEventListener('animationend', () => child.remove(), { once: true });
+                    child.addEventListener('animationend', () => {
+                        child.remove();
+                        // ✨ 當元素動畫結束並被移除後，再次檢查容器是否為空
+                        if (container.children.length === 0) {
+                            wrapper.classList.remove('has-indicators');
+                        }
+                    }, { once: true });
                 }
             });
         
@@ -3541,14 +3550,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             });
             
-            // ✨ 這段程式碼現在已經被正確地移到函式內部 ✨
-            const wrapper = document.querySelector('.input-wrapper');
-            if (container.children.length > 0 || Array.from(container.children).some(c => !c.classList.contains('exit'))) {
+            // ✨ 這是修正後的邏輯 ✨
+            // 如果有任何活動的指示器，就立即添加 class
+            if (activeIndicators.size > 0) {
                 wrapper.classList.add('has-indicators');
-            } else {
+            } 
+            // 如果沒有活動的指示器，且容器已經是空的，也立即移除 class
+            // (這處理了從無到無的情況)
+            else if (container.children.length === 0) {
                 wrapper.classList.remove('has-indicators');
             }
-};
+        };
         const getActiveAstrasId = () => {
             const conv = getActiveConversation();
             return conv ? conv.astrasId : null;
