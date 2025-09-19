@@ -237,9 +237,6 @@ button:not(.btn-primary):active:not(:disabled) {
 #input-indicator-container .input-indicator-item {
     flex-shrink: 0; /* 防止項目被壓縮 */
 }
-    #input-indicator-container:not(:empty) {
-    margin-bottom: 0.5rem; /* 你可以調整這個值，0.5rem (8px) 的效果通常不錯 */
-}
     .input-wrapper.pulse-glow {
         animation: pulse-glow 0.7s ease-out;
     }
@@ -3470,89 +3467,89 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             updateInputState();
         };
         const renderInputIndicators = () => {
-    const container = ALL_ELEMENTS.inputIndicatorContainer;
-    const conv = getActiveConversation();
-    if (!conv) {
-        // 如果沒有對話，且容器內還有東西，就清空
-        if (container.children.length > 0) {
-             container.innerHTML = '';
-        }
-        return;
-    }
-
-    const activeIndicators = new Map();
-    const astrasId = getActiveAstrasId();
-
-    if (astrasId) {
-        const ast = astras.find(a => a.id === astrasId);
-        if (ast) {
-            activeIndicators.set('astras-input-indicator', {
-                id: 'astras-input-indicator',
-                html: `
-                    <span class="flex items-center gap-1">
-                        <span class="astras-sidebar-avatar" style="width: 18px; height: 18px; font-size: 0.7rem; margin-right: 4px;">
-                            ${ast.avatarUrl ? `<img src="${ast.avatarUrl}" class="w-full h-full object-cover rounded-full">` : ast.name.charAt(0)}
+            const container = ALL_ELEMENTS.inputIndicatorContainer;
+            const conv = getActiveConversation();
+            if (!conv) {
+                if (container.children.length > 0) {
+                     container.innerHTML = '';
+                }
+                // ✨ 確保在沒有對話時也移除 class
+                document.querySelector('.input-wrapper').classList.remove('has-indicators');
+                return;
+            }
+        
+            const activeIndicators = new Map();
+            const astrasId = getActiveAstrasId();
+        
+            if (astrasId) {
+                const ast = astras.find(a => a.id === astrasId);
+                if (ast) {
+                    activeIndicators.set('astras-input-indicator', {
+                        id: 'astras-input-indicator',
+                        html: `
+                            <span class="flex items-center gap-1">
+                                <span class="astras-sidebar-avatar" style="width: 18px; height: 18px; font-size: 0.7rem; margin-right: 4px;">
+                                    ${ast.avatarUrl ? `<img src="${ast.avatarUrl}" class="w-full h-full object-cover rounded-full">` : ast.name.charAt(0)}
+                                </span>
+                                <span>${ast.name} ${i18n[config.uiLanguage].astrasActive || '使用中'}</span>
+                            </span>
+                            <button id="close-astras-btn-input" class="ml-2 p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10" title="${i18n[config.uiLanguage].closeAstras || '關閉 Astras'}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </button>
+                        `,
+                        eventListener: (el) => el.querySelector('#close-astras-btn-input').addEventListener('click', deactivateAstras)
+                    });
+                }
+            }
+        
+            if (conv.isWebSearchEnabled) {
+                activeIndicators.set('search-indicator', {
+                    id: 'search-indicator',
+                    html: `
+                        <span class="flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                            <span>${i18n[config.uiLanguage].webSearch || '聯網搜尋'}</span>
                         </span>
-                        <span>${ast.name} ${i18n[config.uiLanguage].astrasActive || '使用中'}</span>
-                    </span>
-                    <button id="close-astras-btn-input" class="ml-2 p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10" title="${i18n[config.uiLanguage].closeAstras || '關閉 Astras'}">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    </button>
-                `,
-                eventListener: (el) => el.querySelector('#close-astras-btn-input').addEventListener('click', deactivateAstras)
+                        <button id="close-search-btn-input" class="ml-2 p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10" title="${i18n[config.uiLanguage].closeSearch || '關閉搜尋'}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    `,
+                    eventListener: (el) => el.querySelector('#close-search-btn-input').addEventListener('click', async () => {
+                        conv.isWebSearchEnabled = false;
+                        await saveAppData();
+                        renderInputIndicators();
+                    })
+                });
+            }
+        
+            Array.from(container.children).forEach(child => {
+                if (!activeIndicators.has(child.id)) {
+                    child.classList.remove('enter');
+                    child.classList.add('exit');
+                    child.addEventListener('animationend', () => child.remove(), { once: true });
+                }
             });
-        }
-    }
-
-    if (conv.isWebSearchEnabled) {
-        activeIndicators.set('search-indicator', {
-            id: 'search-indicator',
-            html: `
-                <span class="flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-                    <span>${i18n[config.uiLanguage].webSearch || '聯網搜尋'}</span>
-                </span>
-                <button id="close-search-btn-input" class="ml-2 p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10" title="${i18n[config.uiLanguage].closeSearch || '關閉搜尋'}">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </button>
-            `,
-            eventListener: (el) => el.querySelector('#close-search-btn-input').addEventListener('click', async () => {
-                conv.isWebSearchEnabled = false;
-                await saveAppData();
-                renderInputIndicators();
-            })
-        });
-    }
-
-    // 步驟 1: 對於現有的、但不再需要的指示器，加上離開動畫
-    Array.from(container.children).forEach(child => {
-        if (!activeIndicators.has(child.id)) {
-            child.classList.remove('enter');
-            child.classList.add('exit');
-            child.addEventListener('animationend', () => child.remove(), { once: true });
-        }
-    });
-
-    // 步驟 2: 對於需要顯示、但目前不在畫面上的指示器，創建並加上進入動畫
-    activeIndicators.forEach((indicatorData, key) => {
-        if (!document.getElementById(indicatorData.id)) {
-            const indicator = document.createElement('div');
-            indicator.id = indicatorData.id;
-            // 注意這裡加上了 enter class
-            indicator.className = 'input-indicator-item flex items-center justify-between text-sm font-medium px-2 py-1 rounded-full enter';
-            indicator.innerHTML = indicatorData.html;
-            container.appendChild(indicator);
-            // 為新元素綁定事件
-            indicatorData.eventListener(indicator);
-        }
+        
+            activeIndicators.forEach((indicatorData, key) => {
+                if (!document.getElementById(indicatorData.id)) {
+                    const indicator = document.createElement('div');
+                    indicator.id = indicatorData.id;
+                    indicator.className = 'input-indicator-item flex items-center justify-between text-sm font-medium px-2 py-1 rounded-full enter';
+                    indicator.innerHTML = indicatorData.html;
+                    container.appendChild(indicator);
+                    indicatorData.eventListener(indicator);
+                }
+            });
+            
+            // ✨ 這段程式碼現在已經被正確地移到函式內部 ✨
+            const wrapper = document.querySelector('.input-wrapper');
+            if (container.children.length > 0 || Array.from(container.children).some(c => !c.classList.contains('exit'))) {
+                wrapper.classList.add('has-indicators');
+            } else {
+                wrapper.classList.remove('has-indicators');
+            }
     });
 };
-        const wrapper = document.querySelector('.input-wrapper');
-    if (container.children.length > 0) {
-        wrapper.classList.add('has-indicators');
-    } else {
-        wrapper.classList.remove('has-indicators');
-    }
         const getActiveAstrasId = () => {
             const conv = getActiveConversation();
             return conv ? conv.astrasId : null;
