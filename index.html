@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -13,16 +13,6 @@
     <style>
     body {
     touch-action: manipulation;
-}
-#single-color-swatches .selected,
-#gradient-color-swatches .selected {
-    border-color: #3b82f6; /* 選中顏色的邊框 */
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
-}
-
-#tab-single-color.border-blue-500,
-#tab-gradient-color.border-blue-500 {
-    font-weight: 600;
 }
 #store-category-list {
     -ms-overflow-style: none;  /* IE and Edge */
@@ -267,17 +257,6 @@ button:not(.btn-primary):active:not(:disabled) {
         transform: translateY(20px);
         pointer-events: none;
     }
-    #astras-indicator {
-        transition: opacity 0.3s ease, transform 0.3s ease;
-        transform-origin: left;
-        transform: scale(1);
-        opacity: 1;
-    }
-    #astras-indicator.hidden {
-        opacity: 0;
-        transform: scale(0.9);
-        pointer-events: none;
-    }
     #sidebar-overlay {
         opacity: 0;
         visibility: hidden;
@@ -400,7 +379,6 @@ button:not(.btn-primary):active:not(:disabled) {
     .color-swatch:hover, .icon-option:hover { transform: scale(1.1); }
     .color-swatch.selected { border-color: #3b82f6; }
     .icon-option.selected { background-color: var(--active-bg); border-color: #3b82f6; }
-    #web-search-btn.active { color: #3b82f6; }
     #sidebar.open {
         transform: translateX(0);
     }
@@ -967,7 +945,6 @@ button:not(.btn-primary):active:not(:disabled) {
     .dark .model-message .message-bubble,
     .dark .model-message .message-bubble .prose,
     .dark .model-message .message-bubble .prose *,
-    .dark #close-astras-btn,
     .dark .follow-up-prompt-btn,
     .dark .color-dropdown-btn span,
     .dark #message-input::placeholder {
@@ -1494,6 +1471,34 @@ body.custom-wallpaper-active .store-category-btn.active {
         rgba(255, 255, 255, 0) 100%
     );
 }
+.input-wrapper {
+    flex-direction: column;
+    gap: 0.25rem;
+}
+.input-indicator-item {
+    color: var(--button-primary-bg);
+    background-color: var(--hover-bg);
+    border: 1px solid var(--border-color);
+    align-self: flex-start;
+}
+.dark .input-indicator-item {
+    background-color: var(--hover-bg);
+    border: 1px solid var(--border-color);
+}
+body.custom-wallpaper-active .input-indicator-item {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    color: var(--button-primary-bg) !important;
+}
+#input-bar-container .input-wrapper > .flex.items-end {
+    width: 100%;
+}
+#input-indicator-container {
+    width: 100%;
+}
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -1678,14 +1683,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                         </button>
                         <h1 id="header-title" class="text-xl font-semibold truncate">新對話</h1>
-                        <div id="astras-indicator" class="hidden items-center gap-2 ml-2">
-                            <div class="flex items-center gap-1 bg-[var(--hover-bg)] px-2 py-1 rounded-full">
-                                <span id="current-astras-name" class="text-sm font-medium text-[var(--text-primary)]"></span>
-                                <button id="close-astras-btn" class="p-1 rounded-full hover:bg-[var(--active-bg)] text-[var(--text-secondary)]" title="關閉 Astras" data-lang-key-title="closeAstras">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                </button>
-                            </div>
-                        </div>
                         <div id="api-key-warning-badge" class="hidden cursor-pointer" title="目前選用的模型需要 API 金鑰，請點此設定" data-lang-key-title="apiKeyWarning">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-500" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.21 3.03-1.742 3.03H4.42c-1.532 0-2.492-1.696-1.742-3.03l5.58-9.92zM10 13a1 1 0 110-2 1 1 0 010 2zm-1-4a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd" />
@@ -1693,9 +1690,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         </div>
                     </div>
                     <div class="flex items-center gap-1 md:gap-2">
-                        <button id="web-search-btn" title="聯網搜尋" class="flex-shrink:0 h-10 w-10 rounded-full flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 transition-colors" data-lang-key-title="webSearch">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-                        </button>
                         <div id="model-switcher-container" class="relative"></div>
                     </div>
                 </header>
@@ -1720,35 +1714,43 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     <div class="max-w-4xl mx-auto">
                         <div id="file-preview-container" class="w-full flex flex-wrap gap-2 mb-2 px-2 empty:hidden"></div>
                         <div class="input-wrapper w-full flex items-end gap-2 p-2 rounded-2xl bg-[var(--input-field-bg)] border border-[var(--border-color)] shadow-sm spotlight-effect">
-                            <div id="file-input-container" class="relative">
-                                <button id="add-file-btn" title="附加檔案" class="flex-shrink:0 h-10 w-10 rounded-full flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 transition-colors" data-lang-key-title="attachFile">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                                </button>
-                                <div id="file-options-popover" class="popover absolute bottom-full left-0 mb-2 w-56 z-20">
-                                    <button id="camera-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>
-                                        <span data-lang-key="camera">相機</span>
-                                    </button>
-                                    <button id="upload-image-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                                        <span data-lang-key="imageVideo">圖片 / 影片</span>
-                                    </button>
-                                    <button id="upload-file-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
-                                        <span data-lang-key="file">檔案</span>
-                                    </button>
-                                </div>
+                            <div id="input-indicator-container" class="w-full flex flex-col gap-1 mb-1 empty:hidden">
                             </div>
-                            <form id="chat-form" class="flex-1 flex items-center">
-                                <input type="text" id="message-input" placeholder="請先在設定中輸入 API 金鑰..." class="flex-1 p-2 bg-transparent border-0 focus:ring-0 disabled:bg-transparent" autocomplete="off" disabled data-lang-key-placeholder="enterApiKeyPlaceholder">
-                            </form>
-                            <button id="voice-input-btn-message" title="語音輸入" class="voice-input-btn" data-lang-key-title="voiceInput">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" x2="12" y1="19" y2="22"></line></svg>
-                            </button>
-                            <button id="submit-btn" class="flex-shrink:0 h-10 w-10 rounded-full flex items-center justify-center disabled:bg-gray-300 dark:disabled:bg-gray-500 disabled:cursor-not-allowed transition-colors btn-primary">
-                                <span id="submit-btn-icon">
-                                </span>
-                            </button>
+                            <div class="w-full flex items-end gap-2">
+                                <div id="file-input-container" class="relative">
+                                    <button id="add-file-btn" title="附加檔案" class="flex-shrink:0 h-10 w-10 rounded-full flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 transition-colors" data-lang-key-title="attachFile">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                    </button>
+                                    <div id="file-options-popover" class="popover absolute bottom-full left-0 mb-2 w-56 z-20">
+                                        <button id="camera-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>
+                                            <span data-lang-key="camera">相機</span>
+                                        </button>
+                                        <button id="web-search-popover-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                                            <span data-lang-key="webSearch">聯網搜尋</span>
+                                        </button>
+                                        <button id="upload-image-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                            <span data-lang-key="imageVideo">圖片 / 影片</span>
+                                        </button>
+                                        <button id="upload-file-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+                                            <span data-lang-key="file">檔案</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <form id="chat-form" class="flex-1 flex items-center">
+                                    <input type="text" id="message-input" placeholder="請先在設定中輸入 API 金鑰..." class="flex-1 p-2 bg-transparent border-0 focus:ring-0 disabled:bg-transparent" autocomplete="off" disabled data-lang-key-placeholder="enterApiKeyPlaceholder">
+                                </form>
+                                <button id="voice-input-btn-message" title="語音輸入" class="voice-input-btn" data-lang-key-title="voiceInput">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" x2="12" y1="19" y2="22"></line></svg>
+                                </button>
+                                <button id="submit-btn" class="flex-shrink:0 h-10 w-10 rounded-full flex items-center justify-center disabled:bg-gray-300 dark:disabled:bg-gray-500 disabled:cursor-not-allowed transition-colors btn-primary">
+                                    <span id="submit-btn-icon">
+                                    </span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1821,36 +1823,44 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             </div>
                         </div>
                         <h3 class="text-lg font-semibold mb-3 mt-6" data-lang-key="primaryButtonColor">主按鈕顏色</h3>
-<div class="border border-[var(--border-color)] rounded-lg p-4">
-    <div class="flex border-b border-[var(--border-color)] mb-4">
-        <button id="tab-single-color" class="px-4 py-2 text-sm font-medium border-b-2 border-transparent" data-lang-key="styleSingle">單色</button>
-        <button id="tab-gradient-color" class="px-4 py-2 text-sm font-medium border-b-2 border-transparent" data-lang-key="styleGradient">漸變</button>
-    </div>
-    <div id="color-picker-content">
-        <div id="single-color-panel">
-            <p class="text-xs text-[var(--text-secondary)] mb-2" data-lang-key="singleColorPickerDesc">請選擇一種顏色。</p>
-            <div id="single-color-swatches" class="grid grid-cols-8 gap-2 mb-4">
-            </div>
-        </div>
-        <div id="gradient-color-panel" class="hidden">
-            <p class="text-xs text-[var(--text-secondary)] mb-2" data-lang-key="gradientPickerDesc">請選擇 2 至 3 種顏色來建立漸變效果。</p>
-            <div id="gradient-selected-colors" class="flex items-center gap-2 mb-4 p-2 bg-[var(--sidebar-bg)] rounded-md h-12">
-                <!-- JavaScript 將會在此動態顯示已選顏色 -->
-            </div>
-            <div id="gradient-color-swatches" class="grid grid-cols-8 gap-2 mb-4">
-                <!-- JavaScript 將會在此動態生成 40 個顏色選項 -->
-            </div>
-        </div>
-    </div>
-    <div>
-        <h4 class="text-sm font-medium mb-2" data-lang-key="preview">預覽</h4>
-        <div class="p-4 bg-[var(--sidebar-bg)] rounded-md flex items-center justify-center">
-            <button id="color-preview-btn" class="px-6 py-2 rounded-md font-semibold text-white transition-all duration-300">
-                預覽按鈕
-            </button>
-        </div>
-    </div>
-</div>
+                        <div id="ui-color-options" class="space-y-3 text-sm">
+                            <div class="flex items-center">
+                                <input type="radio" id="color-theme-default" name="color-theme" value="default" class="w-4 h-4 mr-2">
+                                <label for="color-theme-default" data-lang-key="colorDefault">預設 (藍色)</label>
+                            </div>
+                            <div class="flex items-center">
+                                <input type="radio" id="color-theme-adaptive" name="color-theme" value="adaptive" class="w-4 h-4 mr-2">
+                                <label for="color-theme-adaptive" data-lang-key="colorAdaptive">自適應 (從桌布提取)</label>
+                            </div>
+                            <div class="flex items-center">
+                                <input type="radio" id="color-theme-custom" name="color-theme" value="custom" class="w-4 h-4 mr-2">
+                                <label for="color-theme-custom" data-lang-key="colorCustom">自訂</label>
+                            </div>
+                            <div id="button-style-container" class="hidden pl-6 pt-2">
+                                <label class="block text-sm font-medium" data-lang-key="buttonStyle">按鈕樣式</label>
+                                <div class="flex items-center gap-4 mt-1">
+                                    <div>
+                                        <input type="radio" id="color-style-single" name="color-style" value="single" class="w-4 h-4 mr-2">
+                                        <label for="color-style-single" data-lang-key="styleSingle">單色</label>
+                                    </div>
+                                    <div>
+                                        <input type="radio" id="color-style-gradient" name="color-style" value="gradient" class="w-4 h-4 mr-2">
+                                        <label for="color-style-gradient" data-lang-key="styleGradient">漸變</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="custom-color-picker-container" class="hidden pl-6 pt-2">
+                                <div id="custom-color-swatches" class="grid grid-cols-8 gap-2">
+                                </div>
+                            </div>
+                            <div id="gradient-picker-container" class="hidden pl-6 pt-2">
+                                <p class="text-sm text-[var(--text-secondary)] mb-2" data-lang-key="gradientDesc">
+                                    從桌布提取的顏色組合。
+                                </p>
+                                <div id="gradient-swatches" class="grid grid-cols-4 gap-2">
+                                </div>
+                            </div>
+                        </div>
                         <h3 class="text-lg font-semibold mb-3 mt-6" data-lang-key="aiBubbleColor">AI 回覆泡泡底色</h3>
                         <div id="ai-bubble-color-dropdown" class="color-dropdown-container"></div>
                         <h3 class="text-lg font-semibold mb-3 mt-6" data-lang-key="userBubbleColor">使用者訊息泡泡底色</h3>
@@ -2405,7 +2415,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             customDialogInputContainer: document.getElementById('custom-dialog-input-container'),
             customDialogInput: document.getElementById('custom-dialog-input'),
             customDialogButtons: document.getElementById('custom-dialog-buttons'),
-            webSearchBtn: document.getElementById('web-search-btn'),
+            webSearchPopoverBtn: document.getElementById('web-search-popover-btn'),
+            inputIndicatorContainer: document.getElementById('input-indicator-container'),
             selectionModeBtn: document.getElementById('selection-mode-btn'),
             batchActionBar: document.getElementById('batch-action-bar'),
             selectionCount: document.getElementById('selection-count'),
@@ -2464,9 +2475,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             astrasInstructionsInput: document.getElementById('astras-instructions-input'),
             saveAstrasBtn: document.getElementById('save-astras-btn'),
             cancelAstrasBtn: document.getElementById('cancel-astras-btn'),
-            astrasIndicator: document.getElementById('astras-indicator'),
             currentAstrasName: document.getElementById('current-astras-name'),
-            closeAstrasBtn: document.getElementById('close-astras-btn'),
             aiBubbleColorDropdown: document.getElementById('ai-bubble-color-dropdown'),
             userBubbleColorDropdown: document.getElementById('user-bubble-color-dropdown'),
             settingsNav: document.getElementById('settings-nav'),
@@ -2480,6 +2489,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             uploadWallpaperBtn: document.getElementById('upload-wallpaper-btn'),
             restoreWallpaperBtn: document.getElementById('restore-wallpaper-btn'),
             wallpaperUploadInput: document.getElementById('wallpaper-upload-input'),
+            uiColorOptions: document.getElementById('ui-color-options'),
+            customColorPickerContainer: document.getElementById('custom-color-picker-container'),
+            customColorSwatches: document.getElementById('custom-color-swatches'),
+            buttonStyleContainer: document.getElementById('button-style-container'),
+            gradientPickerContainer: document.getElementById('gradient-picker-container'),
+            gradientSwatches: document.getElementById('gradient-swatches'),
             apiKeyWarningBadge: document.getElementById('api-key-warning-badge'),
             userProfileBtn: document.getElementById('user-profile-btn'),
             dataDashboardModal: document.getElementById('data-dashboard-modal'),
@@ -2645,9 +2660,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const DB_NAME = 'ChatAppDB';
         const STORE_NAME = 'keyValue';
         let db;
-        let selectedSingleColor = '#3b82f6';
-        let selectedGradientColors = [];
-        let currentColorPickerMode = 'single';
         async function openDB() {
             if (db) return db;
             return new Promise((resolve, reject) => {
@@ -3368,13 +3380,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 messageList.innerHTML = '';
                 ALL_ELEMENTS.headerTitle.textContent = i18n[config.uiLanguage].newChat;
                 ALL_ELEMENTS.modelSwitcherContainer.innerHTML = '';
-                ALL_ELEMENTS.astrasIndicator.classList.add('hidden');
+                renderInputIndicators();
                 return;
             }
             ALL_ELEMENTS.headerTitle.textContent = conv.archived ? `(${i18n[config.uiLanguage].archived || '已封存'}) ${conv.title}` : conv.title;
             renderModelSwitcher();
-            updateWebSearchUI();
-            updateAstrasIndicator();
+            renderInputIndicators();
             messageList.innerHTML = '';
             if (conv.messages.length === 0) {
                 const greeting = `${currentUser.username}, ${i18n[config.uiLanguage].howCanIHelp || '有什麼可以為您服務的嗎？'}`;
@@ -3386,17 +3397,54 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             messageList.classList.add('chat-view-transition');
             updateInputState();
         };
-        const updateAstrasIndicator = () => {
+        const renderInputIndicators = () => {
+            const container = ALL_ELEMENTS.inputIndicatorContainer;
+            container.innerHTML = '';
             const conv = getActiveConversation();
-            const astrasId = conv ? conv.astrasId : null;
-            const ast = astras.find(a => a.id === astrasId);
-            const astIndicator = ALL_ELEMENTS.astrasIndicator;
-            const currentAstrasName = ALL_ELEMENTS.currentAstrasName;
-            if (ast) {
-                currentAstrasName.textContent = ast.name;
-                astIndicator.classList.remove('hidden');
-            } else {
-                astIndicator.classList.add('hidden');
+            if (!conv) return;
+
+            const astrasId = getActiveAstrasId();
+            if (astrasId) {
+                const ast = astras.find(a => a.id === astrasId);
+                if (ast) {
+                    const indicator = document.createElement('div');
+                    indicator.id = 'astras-input-indicator';
+                    indicator.className = 'input-indicator-item flex items-center justify-between text-sm font-medium px-2 py-1 rounded-full';
+                    indicator.innerHTML = `
+                        <span class="flex items-center gap-1">
+                            <span class="astras-sidebar-avatar" style="width: 18px; height: 18px; font-size: 0.7rem; margin-right: 4px;">
+                                ${ast.avatarUrl ? `<img src="${ast.avatarUrl}" class="w-full h-full object-cover rounded-full">` : ast.name.charAt(0)}
+                            </span>
+                            <span>${ast.name} ${i18n[config.uiLanguage].astrasActive || '使用中'}</span>
+                        </span>
+                        <button id="close-astras-btn-input" class="ml-2 p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10" title="${i18n[config.uiLanguage].closeAstras || '關閉 Astras'}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    `;
+                    container.appendChild(indicator);
+                    indicator.querySelector('#close-astras-btn-input').addEventListener('click', deactivateAstras);
+                }
+            }
+
+            if (conv.isWebSearchEnabled) {
+                const indicator = document.createElement('div');
+                indicator.id = 'search-indicator';
+                indicator.className = 'input-indicator-item flex items-center justify-between text-sm font-medium px-2 py-1 rounded-full';
+                indicator.innerHTML = `
+                    <span class="flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                        <span>${i18n[config.uiLanguage].webSearch || '聯網搜尋'}</span>
+                    </span>
+                    <button id="close-search-btn-input" class="ml-2 p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10" title="${i18n[config.uiLanguage].closeSearch || '關閉搜尋'}">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                `;
+                container.appendChild(indicator);
+                indicator.querySelector('#close-search-btn-input').addEventListener('click', async () => {
+                    conv.isWebSearchEnabled = false;
+                    await saveAppData();
+                    renderInputIndicators();
+                });
             }
         };
         const getActiveAstrasId = () => {
@@ -3535,16 +3583,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
             popover.querySelector('.delete-astras-btn').addEventListener('click', () => { deleteAstras(astrasId); popover.remove(); });
         };
-        const updateWebSearchUI = () => {
-            const conv = getActiveConversation();
-            const { webSearchBtn } = ALL_ELEMENTS;
-            if (!conv || conv.provider !== 'gemini') {
-                webSearchBtn.classList.add('hidden');
-                return;
-            }
-            webSearchBtn.classList.remove('hidden');
-            webSearchBtn.classList.toggle('active', !!conv.isWebSearchEnabled);
-        };
         const updateFileInputUI = () => {
             const conv = getActiveConversation();
             const modelInfo = MODELS.find(m => m.id === conv?.model);
@@ -3613,7 +3651,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             saveConfig();
                             renderModelSwitcher();
                             updateInputState();
-                            updateWebSearchUI();
+                            renderInputIndicators();
                             updateFileInputUI();
                         }
                         document.getElementById('model-options-popover').classList.remove('visible');
@@ -3765,7 +3803,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         conv.isWebSearchEnabled = true;
                         showNotification(i18n[config.uiLanguage].autoWebSearchNotice || '偵測到問題需要連網搜尋，已自動開啟。', 'warning');
                     }
-                    updateWebSearchUI();
+                    renderInputIndicators();
                 } catch(err) {
                     console.error("Auto web search check failed:", err);
                 }
@@ -4274,6 +4312,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderModelManagementUI();
             renderAiBubbleColorDropdown();
             renderUserBubbleColorDropdown();
+            renderUiColorOptions();
             renderTrash();
             const navItems = ALL_ELEMENTS.settingsNav.querySelectorAll('.settings-nav-item');
             navItems.forEach(item => {
@@ -4299,24 +4338,15 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             config.uiLanguage = ALL_ELEMENTS.uiLanguageSelect.value;
             config.aiDefaultLanguage = ALL_ELEMENTS.aiLanguageSelect.value;
             config.enableUpdateNotifications = ALL_ELEMENTS.enableUpdateNotificationsToggle.checked;
-            config.uiTheme.mode = 'custom'; // 我們現在統一使用自訂模式，因為顏色選擇器本身就是自訂的
-            
-            if (currentColorPickerMode === 'single') {
-                config.uiTheme.style = 'single';
-                config.uiTheme.customColor = selectedSingleColor;
-                config.uiTheme.adaptiveGradient = ''; // 清空漸變設定
-            } else { // 這是漸變模式
-                if (selectedGradientColors.length >= 2) {
-                    config.uiTheme.style = 'gradient';
-                    config.uiTheme.customColor = selectedGradientColors[0]; // 將第一個顏色存為基礎色，用於某些不支援漸變的UI元素
-                    config.uiTheme.adaptiveGradient = `linear-gradient(to right, ${selectedGradientColors.join(', ')})`;
-                } else {
-                    config.uiTheme.style = 'single';
-                    config.uiTheme.customColor = '#3b82f6';
-                    config.uiTheme.adaptiveGradient = '';
-                    showNotification(i18n[config.uiLanguage].gradientColorWarning || '漸變色至少需要選擇兩種顏色，已恢復為預設按鈕顏色。', 'warning');
-                }
-            }
+            const selectedThemeMode = document.querySelector('input[name="color-theme"]:checked').value;
+            const selectedCustomColor = ALL_ELEMENTS.customColorSwatches.querySelector('.selected')?.dataset.color || config.uiTheme.customColor;
+            const selectedStyle = document.querySelector('input[name="color-style"]:checked')?.value || 'single';
+            const selectedGradientSwatch = ALL_ELEMENTS.gradientSwatches.querySelector('.selected-gradient');
+            const selectedGradient = selectedGradientSwatch ? selectedGradientSwatch.dataset.gradient : (config.uiTheme.adaptivePalette?.length > 1 ? `linear-gradient(to right, ${config.uiTheme.adaptivePalette[0]}, ${config.uiTheme.adaptivePalette[1]})` : '');
+            config.uiTheme.mode = selectedThemeMode;
+            config.uiTheme.customColor = selectedCustomColor;
+            config.uiTheme.style = selectedStyle;
+            config.uiTheme.adaptiveGradient = selectedGradient;
             setAiBubbleColor();
             setUserBubbleColor();
             applyUiTheme();
@@ -6792,138 +6822,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderTrash();
             showNotification(`${i18n[config.uiLanguage].trashEmptiedSuccess || '已成功清空垃圾桶，刪除了'} ${count} ${i18n[config.uiLanguage].items || '個項目'}。`, 'success');
         };
-        const setupAdvancedColorPicker = () => {
-            const tabSingle = document.getElementById('tab-single-color');
-            const tabGradient = document.getElementById('tab-gradient-color');
-            const panelSingle = document.getElementById('single-color-panel');
-            const panelGradient = document.getElementById('gradient-color-panel');
-            const swatchesSingle = document.getElementById('single-color-swatches');
-            const swatchesGradient = document.getElementById('gradient-color-swatches');
-            const selectedGradientContainer = document.getElementById('gradient-selected-colors');
-            const previewBtn = document.getElementById('color-preview-btn');
-            selectedSingleColor = '#3b82f6';
-            selectedGradientColors = [];
-            currentColorPickerMode = 'single';
-            const UI_THEME_COLORS_EXTENDED = [
-                '#FF5733', '#FF8D33', '#FFC300', '#FFE600', '#D4FF00', '#A1FF00', '#6DFF00', '#3AFF00',
-                '#00FF87', '#00FFC5', '#00F2FF', '#00B7FF', '#0080FF', '#0047FF', '#3300FF', '#7A00FF',
-                '#B800FF', '#F700FF', '#FF00C5', '#FF0087', '#FF0044', '#FF0000', '#FFFFFF', '#E0E0E0',
-                '#BABABA', '#8F8F8F', '#626262', '#3B3B3B', '#1E1E1E', '#000000', '#8B4513', '#2E8B57',
-                '#4682B4', '#800080', '#FF4500', '#DB7093', '#FFD700', '#ADFF2F', '#40E0D0', '#6A5ACD'
-            ];
-
-            const createSwatch = (color, onClick) => {
-                const swatch = document.createElement('div');
-                swatch.className = 'w-8 h-8 rounded-full cursor-pointer border-2 border-transparent hover:opacity-80 transition-transform transform hover:scale-110';
-                swatch.style.backgroundColor = color;
-                swatch.dataset.color = color;
-                swatch.addEventListener('click', () => onClick(color, swatch));
-                return swatch;
-            };
-
-            const updatePreview = () => {
-                if (currentColorPickerMode === 'single') {
-                    previewBtn.style.background = selectedSingleColor;
-                } else {
-                    if (selectedGradientColors.length >= 2) {
-                        previewBtn.style.background = `linear-gradient(to right, ${selectedGradientColors.join(', ')})`;
-                    } else {
-                        previewBtn.style.background = '#cccccc';
-                    }
-                }
-            };
-            
-            const renderSingleColorPanel = () => {
-                swatchesSingle.innerHTML = '';
-                UI_THEME_COLORS_EXTENDED.forEach(color => {
-                    const swatch = createSwatch(color, (c, el) => {
-                        const currentSelected = swatchesSingle.querySelector('.selected');
-                        if (currentSelected) {
-                            currentSelected.classList.remove('selected', 'border-blue-500', 'scale-110');
-                        }
-                        el.classList.add('selected', 'border-blue-500', 'scale-110');
-                        selectedSingleColor = c;
-                        updatePreview();
-                    });
-                    swatchesSingle.appendChild(swatch);
-                });
-            };
-
-            const renderGradientPanel = () => {
-                swatchesGradient.innerHTML = '';
-                UI_THEME_COLORS_EXTENDED.forEach(color => {
-                    const swatch = createSwatch(color, (c) => {
-                        if (selectedGradientColors.length < 3 && !selectedGradientColors.includes(c)) {
-                            selectedGradientColors.push(c);
-                            updateSelectedGradientColors();
-                            updatePreview();
-                        } else if (selectedGradientColors.includes(c)) {
-                            selectedGradientColors = selectedGradientColors.filter(sc => sc !== c);
-                            updateSelectedGradientColors();
-                            updatePreview();
-                        }
-                    });
-                    swatchesGradient.appendChild(swatch);
-                });
-                updateSelectedGradientColors();
-            };
-
-            const updateSelectedGradientColors = () => {
-                selectedGradientContainer.innerHTML = '';
-                if (selectedGradientColors.length === 0) {
-                    const placeholder = document.createElement('span');
-                    placeholder.className = 'text-xs text-[var(--text-secondary)]';
-                    placeholder.textContent = '請從下方選擇 2-3 種顏色';
-                    selectedGradientContainer.appendChild(placeholder);
-                } else {
-                    selectedGradientColors.forEach(color => {
-                        const selectedDiv = document.createElement('div');
-                        selectedDiv.className = 'w-8 h-8 rounded-full border-2 border-white/50 relative shadow-md';
-                        selectedDiv.style.backgroundColor = color;
-                        selectedDiv.addEventListener('click', () => {
-                            selectedGradientColors = selectedGradientColors.filter(sc => sc !== color);
-                            updateSelectedGradientColors();
-                            updatePreview();
-                        });
-                        selectedGradientContainer.appendChild(selectedDiv);
-                    });
-                }
-                Array.from(swatchesGradient.children).forEach(sw => {
-                    if (selectedGradientColors.includes(sw.dataset.color)) {
-                        sw.classList.add('selected', 'border-blue-500', 'opacity-50');
-                    } else {
-                        sw.classList.remove('selected', 'border-blue-500', 'opacity-50');
-                    }
-                });
-            };
-
-            tabSingle.addEventListener('click', () => {
-                currentMode = 'single';
-                tabSingle.classList.add('border-blue-500', 'text-[var(--text-primary)]');
-                tabSingle.classList.remove('border-transparent', 'text-[var(--text-secondary)]');
-                tabGradient.classList.remove('border-blue-500', 'text-[var(--text-primary)]');
-                tabGradient.classList.add('border-transparent', 'text-[var(--text-secondary)]');
-                panelSingle.classList.remove('hidden');
-                panelGradient.classList.add('hidden');
-                updatePreview();
-            });
-
-            tabGradient.addEventListener('click', () => {
-                currentMode = 'gradient';
-                tabGradient.classList.add('border-blue-500', 'text-[var(--text-primary)]');
-                tabGradient.classList.remove('border-transparent', 'text-[var(--text-secondary)]');
-                tabSingle.classList.remove('border-blue-500', 'text-[var(--text-primary)]');
-                tabSingle.classList.add('border-transparent', 'text-[var(--text-secondary)]');
-                panelGradient.classList.remove('hidden');
-                panelSingle.classList.add('hidden');
-                updatePreview();
-            });
-
-            // 初始化
-            renderSingleColorPanel();
-            renderGradientPanel();
-            tabSingle.click();
-        };
         async function initChatApp() {
             await loadConfig();
             await loadAppData();
@@ -7042,6 +6940,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 ALL_ELEMENTS.imageVideoInput.setAttribute('capture','environment');
                 ALL_ELEMENTS.imageVideoInput.click();
             });
+            ALL_ELEMENTS.webSearchPopoverBtn.addEventListener('click', async () => {
+                ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
+                const conv = getActiveConversation();
+                if (!conv || conv.provider !== 'gemini' || conv.archived) {
+                    showNotification(i18n[config.uiLanguage].webSearchNotAvailable || '當前模型不支援或無法使用聯網搜尋。', 'warning');
+                    return;
+                }
+                conv.isWebSearchEnabled = !conv.isWebSearchEnabled;
+                renderInputIndicators();
+                await saveAppData();
+            });
             ALL_ELEMENTS.uploadImageBtn.addEventListener('click', () => {
                 ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
                 ALL_ELEMENTS.imageVideoInput.removeAttribute('capture');
@@ -7060,13 +6969,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.batchMoveBtn.addEventListener('click', handleBatchMove);
             ALL_ELEMENTS.batchMoveCancelBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.batchMoveModal, false));
             ALL_ELEMENTS.batchMoveConfirmBtn.addEventListener('click', () => { /* Logic moved to option clicks */ });
-            ALL_ELEMENTS.webSearchBtn.addEventListener('click', async () => {
-                const conv = getActiveConversation();
-                if (!conv || conv.provider !== 'gemini' || conv.archived) return;
-                conv.isWebSearchEnabled = !conv.isWebSearchEnabled;
-                updateWebSearchUI();
-                await saveAppData();
-            });
             ALL_ELEMENTS.followUpHeader.addEventListener('click', toggleFollowUpPrompts);
             ALL_ELEMENTS.messageInput.addEventListener('input', (e) => {
                 sendConfirmed = false;
@@ -7139,7 +7041,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.newAstrasBtn.addEventListener('click', createAstras);
             ALL_ELEMENTS.saveAstrasBtn.addEventListener('click', handleSaveAstras);
             ALL_ELEMENTS.cancelAstrasBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.astrasCreateModal, false));
-            ALL_ELEMENTS.closeAstrasBtn.addEventListener('click', deactivateAstras);
             ALL_ELEMENTS.addPersonalMemoryBtn.addEventListener('click', async () => {
                 const content = await showCustomPrompt(i18n[config.uiLanguage].enterNewMemory, i18n[config.uiLanguage].addMemory);
                 if (content) {
@@ -7202,7 +7103,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
         };
         initializeSpotlightEffect();
-        setupAdvancedColorPicker();
         }
         const handleDeleteMessagePair = async (index) => {
             const confirmed = await showCustomDialog({
