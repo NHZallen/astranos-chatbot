@@ -2480,12 +2480,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             uploadWallpaperBtn: document.getElementById('upload-wallpaper-btn'),
             restoreWallpaperBtn: document.getElementById('restore-wallpaper-btn'),
             wallpaperUploadInput: document.getElementById('wallpaper-upload-input'),
-            uiColorOptions: document.getElementById('ui-color-options'),
-            customColorPickerContainer: document.getElementById('custom-color-picker-container'),
-            customColorSwatches: document.getElementById('custom-color-swatches'),
-            buttonStyleContainer: document.getElementById('button-style-container'),
-            gradientPickerContainer: document.getElementById('gradient-picker-container'),
-            gradientSwatches: document.getElementById('gradient-swatches'),
             apiKeyWarningBadge: document.getElementById('api-key-warning-badge'),
             userProfileBtn: document.getElementById('user-profile-btn'),
             dataDashboardModal: document.getElementById('data-dashboard-modal'),
@@ -2651,6 +2645,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const DB_NAME = 'ChatAppDB';
         const STORE_NAME = 'keyValue';
         let db;
+        let selectedSingleColor = '#3b82f6';
+        let selectedGradientColors = [];
+        let currentColorPickerMode = 'single';
         async function openDB() {
             if (db) return db;
             return new Promise((resolve, reject) => {
@@ -4277,7 +4274,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderModelManagementUI();
             renderAiBubbleColorDropdown();
             renderUserBubbleColorDropdown();
-            renderUiColorOptions();
             renderTrash();
             const navItems = ALL_ELEMENTS.settingsNav.querySelectorAll('.settings-nav-item');
             navItems.forEach(item => {
@@ -4303,15 +4299,24 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             config.uiLanguage = ALL_ELEMENTS.uiLanguageSelect.value;
             config.aiDefaultLanguage = ALL_ELEMENTS.aiLanguageSelect.value;
             config.enableUpdateNotifications = ALL_ELEMENTS.enableUpdateNotificationsToggle.checked;
-            const selectedThemeMode = document.querySelector('input[name="color-theme"]:checked').value;
-            const selectedCustomColor = ALL_ELEMENTS.customColorSwatches.querySelector('.selected')?.dataset.color || config.uiTheme.customColor;
-            const selectedStyle = document.querySelector('input[name="color-style"]:checked')?.value || 'single';
-            const selectedGradientSwatch = ALL_ELEMENTS.gradientSwatches.querySelector('.selected-gradient');
-            const selectedGradient = selectedGradientSwatch ? selectedGradientSwatch.dataset.gradient : (config.uiTheme.adaptivePalette?.length > 1 ? `linear-gradient(to right, ${config.uiTheme.adaptivePalette[0]}, ${config.uiTheme.adaptivePalette[1]})` : '');
-            config.uiTheme.mode = selectedThemeMode;
-            config.uiTheme.customColor = selectedCustomColor;
-            config.uiTheme.style = selectedStyle;
-            config.uiTheme.adaptiveGradient = selectedGradient;
+            config.uiTheme.mode = 'custom'; // 我們現在統一使用自訂模式，因為顏色選擇器本身就是自訂的
+            
+            if (currentColorPickerMode === 'single') {
+                config.uiTheme.style = 'single';
+                config.uiTheme.customColor = selectedSingleColor;
+                config.uiTheme.adaptiveGradient = ''; // 清空漸變設定
+            } else { // 這是漸變模式
+                if (selectedGradientColors.length >= 2) {
+                    config.uiTheme.style = 'gradient';
+                    config.uiTheme.customColor = selectedGradientColors[0]; // 將第一個顏色存為基礎色，用於某些不支援漸變的UI元素
+                    config.uiTheme.adaptiveGradient = `linear-gradient(to right, ${selectedGradientColors.join(', ')})`;
+                } else {
+                    config.uiTheme.style = 'single';
+                    config.uiTheme.customColor = '#3b82f6';
+                    config.uiTheme.adaptiveGradient = '';
+                    showNotification(i18n[config.uiLanguage].gradientColorWarning || '漸變色至少需要選擇兩種顏色，已恢復為預設按鈕顏色。', 'warning');
+                }
+            }
             setAiBubbleColor();
             setUserBubbleColor();
             applyUiTheme();
@@ -6796,12 +6801,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const swatchesGradient = document.getElementById('gradient-color-swatches');
             const selectedGradientContainer = document.getElementById('gradient-selected-colors');
             const previewBtn = document.getElementById('color-preview-btn');
-
-            let selectedSingleColor = '#3b82f6'; // 預設顏色
-            let selectedGradientColors = [];
-            let currentMode = 'single'; // 'single' or 'gradient'
-
-            // 擴充的 40 種顏色
+            selectedSingleColor = '#3b82f6';
+            selectedGradientColors = [];
+            currentColorPickerMode = 'single';
             const UI_THEME_COLORS_EXTENDED = [
                 '#FF5733', '#FF8D33', '#FFC300', '#FFE600', '#D4FF00', '#A1FF00', '#6DFF00', '#3AFF00',
                 '#00FF87', '#00FFC5', '#00F2FF', '#00B7FF', '#0080FF', '#0047FF', '#3300FF', '#7A00FF',
@@ -6820,7 +6822,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             };
 
             const updatePreview = () => {
-                if (currentMode === 'single') {
+                if (currentColorPickerMode === 'single') {
                     previewBtn.style.background = selectedSingleColor;
                 } else {
                     if (selectedGradientColors.length >= 2) {
