@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-14.9.5</title>
+    <title>進階 AI 聊天機器人 Astra-nos-14.9.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 新增：引入 marked.js 函式庫以解析 Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -476,6 +476,10 @@ button:not(.btn-primary):active:not(:disabled) { /* <--- 修改這裡 */
     .color-swatch, .icon-option { transition: transform 0.2s; border: 2px solid transparent; }
     .color-swatch:hover, .icon-option:hover { transform: scale(1.1); }
     .color-swatch.selected { border-color: #3b82f6; }
+    .gradient-swatches .selected-gradient {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+}
     .icon-option.selected { background-color: var(--active-bg); border-color: #3b82f6; }
     #web-search-btn.active { color: #3b82f6; }
     #sidebar.open {
@@ -2071,19 +2075,50 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         <!-- ▲▲▲ 結束新增 ▲▲▲ -->
                         <!-- ▼▼▼ 修改：主按鈕顏色設定區塊 (新增漸變選項) ▼▼▼ -->
                         <h3 class="text-lg font-semibold mb-3 mt-6" data-lang-key="primaryButtonColor">主按鈕顏色</h3>
-                        <div id="ui-color-options" class="space-y-3 text-sm">
-                            <div class="flex items-center">
-                                <input type="radio" id="color-theme-default" name="color-theme" value="default" class="w-4 h-4 mr-2">
-                                <label for="color-theme-default" data-lang-key="colorDefault">預設 (藍色)</label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="radio" id="color-theme-adaptive" name="color-theme" value="adaptive" class="w-4 h-4 mr-2">
-                                <label for="color-theme-adaptive" data-lang-key="colorAdaptive">自適應 (從桌布提取)</label>
-                            </div>
-                            <div class="flex items-center">
-                                <input type="radio" id="color-theme-custom" name="color-theme" value="custom" class="w-4 h-4 mr-2">
-                                <label for="color-theme-custom" data-lang-key="colorCustom">自訂</label>
-                            </div>
+<div id="ui-color-options" class="space-y-3 text-sm">
+    <div class="flex items-center">
+        <input type="radio" id="color-theme-default" name="color-theme" value="default" class="w-4 h-4 mr-2">
+        <label for="color-theme-default" data-lang-key="colorDefault">預設 (藍色)</label>
+    </div>
+    <div class="flex items-center">
+        <input type="radio" id="color-theme-adaptive" name="color-theme" value="adaptive" class="w-4 h-4 mr-2">
+        <label for="color-theme-adaptive" data-lang-key="colorAdaptive">自適應 (從桌布提取)</label>
+    </div>
+    <div class="flex items-center">
+        <input type="radio" id="color-theme-custom" name="color-theme" value="custom" class="w-4 h-4 mr-2">
+        <label for="color-theme-custom" data-lang-key="colorCustom">自訂</label>
+    </div>
+    
+    <!-- 當選擇 "自適應" 或 "自訂" 時，會由 JS 控制顯示此區塊 -->
+    <div id="button-style-container" class="hidden pl-6 pt-2">
+        <label class="block text-sm font-medium" data-lang-key="buttonStyle">按鈕樣式</label>
+        <div class="flex items-center gap-4 mt-1">
+            <div>
+                <input type="radio" id="color-style-single" name="color-style" value="single" class="w-4 h-4 mr-2">
+                <label for="color-style-single" data-lang-key="styleSingle">單色</label>
+            </div>
+            <div>
+                <input type="radio" id="color-style-gradient" name="color-style" value="gradient" class="w-4 h-4 mr-2">
+                <label for="color-style-gradient" data-lang-key="styleGradient">漸變</label>
+            </div>
+        </div>
+    </div>
+
+    <!-- 單色選擇器 -->
+    <div id="custom-color-picker-container" class="hidden pl-6 pt-2">
+        <div id="custom-color-swatches" class="grid grid-cols-8 gap-2">
+            <!-- Color swatches will be inserted by JS -->
+        </div>
+    </div>
+    
+    <!-- 漸變選擇器 (包含自適應和自訂) -->
+    <div id="gradient-picker-container" class="hidden pl-6 pt-2">
+        <p id="gradient-picker-desc" class="text-sm text-[var(--text-secondary)] mb-2"></p>
+        <div id="gradient-swatches" class="grid grid-cols-4 gap-2">
+            <!-- Gradient swatches will be inserted by JS -->
+        </div>
+    </div>
+</div>
                             
                             <div id="button-style-container" class="hidden pl-6 pt-2">
                                 <label class="block text-sm font-medium" data-lang-key="buttonStyle">按鈕樣式</label>
@@ -3003,13 +3038,25 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         // ▼▼▼ 新增：UI 顏色主題調色盤 ▼▼▼
         const UI_THEME_COLORS = {
-            Red: '#ef4444', Orange: '#f97316', Amber: '#f59e0b',
-            Yellow: '#eab308', Lime: '#84cc16', Green: '#22c55e',
-            Emerald: '#10b981', Teal: '#14b8a6', Cyan: '#06b6d4',
-            Sky: '#0ea5e9', Blue: '#3b82f6', Indigo: '#6366f1',
-            Violet: '#8b5cf6', Purple: '#a855f7', Fuchsia: '#d946ef',
-            Pink: '#ec4899', Rose: '#f43f5e', Slate: '#64748b'
-        };
+    // Reds & Pinks
+    'Slate': '#64748b', 'Gray': '#6b7280', 'Zinc': '#71717a', 'Stone': '#78716c',
+    'Red': '#ef4444', 'Rose': '#f43f5e', 'Pink': '#ec4899', 'Fuchsia': '#d946ef',
+    // Oranges & Yellows
+    'Orange': '#f97316', 'Amber': '#f59e0b', 'Yellow': '#eab308', 'Lime': '#84cc16',
+    // Greens
+    'Green': '#22c55e', 'Emerald': '#10b981', 'Teal': '#14b8a6', 'Cyan': '#06b6d4',
+    // Blues
+    'Sky': '#0ea5e9', 'Blue': '#3b82f6', 'Indigo': '#6366f1', 'Violet': '#8b5cf6',
+    // Purples
+    'Purple': '#a855f7', 'Magenta': '#c026d3',
+    // Pastel Pinks & Reds
+    'Pastel Pink': '#fecdd3', 'Pastel Red': '#fca5a5', 'Pastel Orange': '#fed7aa', 'Pastel Peach': '#ffedd5',
+    // Pastel Yellows & Greens
+    'Pastel Yellow': '#fef08a', 'Pastel Lime': '#d9f99d', 'Pastel Green': '#bbf7d0', 'Pastel Mint': '#a7f3d0',
+    // Pastel Blues & Purples
+    'Pastel Cyan': '#a5f3fc', 'Pastel Sky': '#bae6fd', 'Pastel Blue': '#bfdbfe', 'Pastel Indigo': '#c7d2fe',
+    'Pastel Violet': '#ddd6fe', 'Pastel Purple': '#e9d5ff', 'Pastel Fuchsia': '#f5d0fe', 'Pastel Rose': '#fbcfe8'
+};
         // ▲▲▲ 結束：UI 顏色主題調色盤 ▲▲▲
         let conversations = [];
         let folders = [];
@@ -3035,13 +3082,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             wallpaperBrightness: 'light', 
             // ▼▼▼ 修改：UI 主題顏色設定 (新增漸變相關) ▼▼▼
             uiTheme: {
-                mode: 'default', // 'default', 'adaptive', 'custom'
-                style: 'single', // 'single' or 'gradient'
-                customColor: '#3b82f6',
-                adaptiveColor: '#3b82f6',
-                adaptivePalette: [], // stores palette from wallpaper
-                adaptiveGradient: '' // stores selected gradient value
-            },
+    mode: 'default',      // 'default', 'adaptive', 'custom'
+    style: 'single',      // 'single' or 'gradient' <--- 新增
+    customColor: '#3b82f6',
+    customGradient: '',   // <--- 新增
+    adaptiveColor: '#3b82f6',
+    adaptivePalette: [],
+    adaptiveGradient: ''
+},
             // ▲▲▲ 結束：UI 主題顏色設定 ▲▲▲
             // ▼▼▼ 新增：語言設定 ▼▼▼
             uiLanguage: 'zh-TW',
@@ -5270,59 +5318,60 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
         const saveSettings = async () => {
             config.apiKeys.gemini = ALL_ELEMENTS.geminiApiKeyInput.value.trim();
-            // ▼▼▼ 需求 2 修正：儲存單一 OpenRouter 金鑰 ▼▼▼
-            config.apiKeys.openrouter = ALL_ELEMENTS.openrouterApiKeyInputAll.value.trim();
-            // ▲▲▲ 結束修正 ▲▲▲
-            config.enableFollowUp = ALL_ELEMENTS.followUpToggleSwitch.checked;
-            config.enableAutoWebSearch = ALL_ELEMENTS.autoWebSearchToggleSwitch.checked;
-            config.aiBubbleColor = ALL_ELEMENTS.aiBubbleColorDropdown.querySelector('.color-dropdown-btn')?.dataset.color || 'default';
-            config.userBubbleColor = ALL_ELEMENTS.userBubbleColorDropdown.querySelector('.color-dropdown-btn')?.dataset.color || 'default';
-            config.autoNaming = ALL_ELEMENTS.autoNamingToggleSwitch.checked;
-            config.memoryEnabled1 = ALL_ELEMENTS.memoryToggle1.checked;
-            config.enableAutoMemory = ALL_ELEMENTS.autoMemoryToggleSwitch.checked;
-            // ▼▼▼ 新增：儲存語言設定 ▼▼▼
-            config.uiLanguage = ALL_ELEMENTS.uiLanguageSelect.value;
-            config.aiDefaultLanguage = ALL_ELEMENTS.aiLanguageSelect.value;
-            // ▲▲▲ 結束新增 ▲▲▲
-            // ▼▼▼ 新增：儲存版本更新開關狀態 ▼▼▼
-            config.enableUpdateNotifications = ALL_ELEMENTS.enableUpdateNotificationsToggle.checked;
-            // ▲▲▲ 結束新增 ▲▲▲
-            
-            // ▼▼▼ 新增：儲存 UI 顏色設定 ▼▼▼
-            const selectedThemeMode = document.querySelector('input[name="color-theme"]:checked').value;
-            const selectedCustomColor = ALL_ELEMENTS.customColorSwatches.querySelector('.selected')?.dataset.color || config.uiTheme.customColor;
-            const selectedStyle = document.querySelector('input[name="color-style"]:checked')?.value || 'single';
+    config.apiKeys.openrouter = ALL_ELEMENTS.openrouterApiKeyInputAll.value.trim();
+    config.enableFollowUp = ALL_ELEMENTS.followUpToggleSwitch.checked;
+    config.enableAutoWebSearch = ALL_ELEMENTS.autoWebSearchToggleSwitch.checked;
+    config.aiBubbleColor = ALL_ELEMENTS.aiBubbleColorDropdown.querySelector('.color-dropdown-btn')?.dataset.color || 'default';
+    config.userBubbleColor = ALL_ELEMENTS.userBubbleColorDropdown.querySelector('.color-dropdown-btn')?.dataset.color || 'default';
+    config.autoNaming = ALL_ELEMENTS.autoNamingToggleSwitch.checked;
+    config.memoryEnabled1 = ALL_ELEMENTS.memoryToggle1.checked;
+    config.enableAutoMemory = ALL_ELEMENTS.autoMemoryToggleSwitch.checked;
+    config.uiLanguage = ALL_ELEMENTS.uiLanguageSelect.value;
+    config.aiDefaultLanguage = ALL_ELEMENTS.aiLanguageSelect.value;
+    config.enableUpdateNotifications = ALL_ELEMENTS.enableUpdateNotificationsToggle.checked;
+    
+    // --- ▼▼▼ 主要修改區域 ▼▼▼ ---
+    const selectedThemeMode = document.querySelector('input[name="color-theme"]:checked').value;
+    const selectedStyle = document.querySelector('input[name="color-style"]:checked')?.value || 'single';
+    
+    config.uiTheme.mode = selectedThemeMode;
+    config.uiTheme.style = selectedStyle;
+
+    // 根據模式和樣式儲存對應的顏色/漸變值
+    if (selectedThemeMode === 'custom') {
+        if (selectedStyle === 'single') {
+            config.uiTheme.customColor = ALL_ELEMENTS.customColorSwatches.querySelector('.selected')?.dataset.color || config.uiTheme.customColor;
+        } else { // gradient
             const selectedGradientSwatch = ALL_ELEMENTS.gradientSwatches.querySelector('.selected-gradient');
-            const selectedGradient = selectedGradientSwatch ? selectedGradientSwatch.dataset.gradient : (config.uiTheme.adaptivePalette?.length > 1 ? `linear-gradient(to right, ${config.uiTheme.adaptivePalette[0]}, ${config.uiTheme.adaptivePalette[1]})` : '');
-
-
-
-
-
-
-
-
-            config.uiTheme.mode = selectedThemeMode;
-            config.uiTheme.customColor = selectedCustomColor;
-            config.uiTheme.style = selectedStyle;
-            config.uiTheme.adaptiveGradient = selectedGradient;
-            // ▲▲▲ 結束：儲存 UI 顏色設定 ▲▲▲
-            
-            setAiBubbleColor();
-            setUserBubbleColor();
-            applyUiTheme(); // ▼▼▼ 新增呼叫 ▼▼▼
-            
-            await saveConfig();
-            applyLanguage(config.uiLanguage); // 儲存後立即應用新語言
-            renderModelSwitcher();
-            renderChat();
-            renderStore();
-            toggleModal(ALL_ELEMENTS.settingsModal, false);
-            updateApiKeyWarningBadge();
-            updateInputState();
-            updateFollowUpUI();
-            showNotification(i18n[config.uiLanguage].settingsSaved || '設定已儲存！');
-        };
+            if (selectedGradientSwatch) {
+                config.uiTheme.customGradient = selectedGradientSwatch.dataset.gradient;
+            }
+        }
+    } else if (selectedThemeMode === 'adaptive') {
+        if (selectedStyle === 'gradient') {
+            const selectedGradientSwatch = ALL_ELEMENTS.gradientSwatches.querySelector('.selected-gradient');
+            if (selectedGradientSwatch) {
+                config.uiTheme.adaptiveGradient = selectedGradientSwatch.dataset.gradient;
+            }
+        }
+    }
+    // --- ▲▲▲ 結束修改 ▲▲▲ ---
+    
+    setAiBubbleColor();
+    setUserBubbleColor();
+    applyUiTheme();
+    
+    await saveConfig();
+    applyLanguage(config.uiLanguage);
+    renderModelSwitcher();
+    renderChat();
+    renderStore();
+    toggleModal(ALL_ELEMENTS.settingsModal, false);
+    updateApiKeyWarningBadge();
+    updateInputState();
+    updateFollowUpUI();
+    showNotification(i18n[config.uiLanguage].settingsSaved || '設定已儲存！');
+};
         
         // ▼▼▼ 修正：設定 AI 泡泡顏色函式 ▼▼▼
         const setAiBubbleColor = () => {
@@ -7508,155 +7557,156 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         
         const applyUiTheme = () => {
-            const root = document.documentElement;
-            let primaryBg; // This will be the variable for single colors or the first color of a gradient
-            let primaryBgOverride = null; // This will hold the full gradient string if applicable
+    const root = document.documentElement;
+    let primaryBg; 
+    let primaryBgOverride = null;
+    let finalStyle = config.uiTheme.style;
 
+    // 如果不是自適應或自訂模式，強制使用單色
+    if (config.uiTheme.mode === 'default') {
+        finalStyle = 'single';
+    }
 
-            switch(config.uiTheme.mode) {
-                case 'adaptive':
-                    if (config.uiTheme.style === 'gradient') {
-                        primaryBgOverride = config.uiTheme.adaptiveGradient || `linear-gradient(to right, ${config.uiTheme.adaptiveColor}, #3b82f6)`;
-                        // For border consistency, use the first color of the palette
-                        primaryBg = config.uiTheme.adaptivePalette[0] || config.uiTheme.adaptiveColor;
-                    } else {
-                        primaryBg = config.uiTheme.adaptiveColor;
-                    }
-                    break;
-                case 'custom':
-                    primaryBg = config.uiTheme.customColor;
-                    break;
-                case 'default':
-                default:
-                    primaryBg = '#3b82f6';
-                    break;
-            }
-            
-            // For single color, determine text color, for gradient, default to white
-            const textColor = (config.uiTheme.style === 'gradient' && config.uiTheme.mode === 'adaptive') 
-                ? '#ffffff' 
-                : getTextColorForBackground(primaryBg);
-
-
-            // Set the base color for borders and single-color backgrounds
-            root.style.setProperty('--button-primary-bg', primaryBg);
-            
-            // Set the text color
-            root.style.setProperty('--button-primary-text', textColor);
-
-
-            // Set or remove the override variable for the background
-            if (primaryBgOverride) {
-                root.style.setProperty('--button-primary-bg-override', primaryBgOverride);
+    switch(config.uiTheme.mode) {
+        case 'adaptive':
+            if (finalStyle === 'gradient') {
+                primaryBgOverride = config.uiTheme.adaptiveGradient || `linear-gradient(to right, ${config.uiTheme.adaptiveColor}, #3b82f6)`;
+                primaryBg = config.uiTheme.adaptivePalette[0] || config.uiTheme.adaptiveColor;
             } else {
-                root.style.removeProperty('--button-primary-bg-override');
+                primaryBg = config.uiTheme.adaptiveColor;
             }
+            break;
+        case 'custom':
+            if (finalStyle === 'gradient') {
+                primaryBgOverride = config.uiTheme.customGradient || `linear-gradient(to right, ${config.uiTheme.customColor}, #3b82f6)`;
+                // 從漸變字串中提取第一個顏色作為邊框色
+                const firstColorMatch = primaryBgOverride.match(/#(?:[0-9a-fA-F]{3}){1,2}/);
+                primaryBg = firstColorMatch ? firstColorMatch[0] : config.uiTheme.customColor;
+            } else {
+                primaryBg = config.uiTheme.customColor;
+            }
+            break;
+        case 'default':
+        default:
+            primaryBg = '#3b82f6';
+            break;
+    }
+    
+    const textColor = (finalStyle === 'gradient') 
+        ? '#ffffff' 
+        : getTextColorForBackground(primaryBg);
 
+    root.style.setProperty('--button-primary-bg', primaryBg);
+    root.style.setProperty('--button-primary-text', textColor);
 
-            updateThemeButtons(); // Re-apply active styles for theme buttons
-        };
+    if (primaryBgOverride) {
+        root.style.setProperty('--button-primary-bg-override', primaryBgOverride);
+    } else {
+        root.style.removeProperty('--button-primary-bg-override');
+    }
+
+    updateThemeButtons();
+};
         
         const renderUiColorOptions = () => {
-            const { uiColorOptions, customColorPickerContainer, customColorSwatches, buttonStyleContainer, gradientPickerContainer, gradientSwatches } = ALL_ELEMENTS;
-            
-            const currentMode = config.uiTheme.mode;
-            const currentStyle = config.uiTheme.style;
+    const { uiColorOptions, customColorPickerContainer, customColorSwatches, buttonStyleContainer, gradientPickerContainer, gradientSwatches, gradientPickerDesc } = ALL_ELEMENTS;
+    
+    const currentMode = config.uiTheme.mode;
+    const currentStyle = config.uiTheme.style;
 
+    // 設定單選按鈕的狀態
+    uiColorOptions.querySelector(`input[value="${currentMode}"]`).checked = true;
+    buttonStyleContainer.querySelector(`input[value="${currentStyle}"]`).checked = true;
 
+    // 渲染 40 種自訂單色色票
+    customColorSwatches.innerHTML = '';
+    Object.entries(UI_THEME_COLORS).forEach(([name, hex]) => {
+        const swatch = document.createElement('div');
+        swatch.className = `color-swatch w-8 h-8 rounded-full cursor-pointer`;
+        swatch.style.backgroundColor = hex;
+        swatch.dataset.color = hex;
+        swatch.title = name; //
+        if (config.uiTheme.customColor === hex) {
+            swatch.classList.add('selected');
+        }
+        swatch.addEventListener('click', () => {
+            customColorSwatches.querySelector('.selected')?.classList.remove('selected');
+            swatch.classList.add('selected');
+        });
+        customColorSwatches.appendChild(swatch);
+    });
 
-
-            // Set radio button state
-            uiColorOptions.querySelector(`input[value="${currentMode}"]`).checked = true;
-            buttonStyleContainer.querySelector(`input[value="${currentStyle}"]`).checked = true;
-
-
-
-
-
-
-
-
-            // Render custom color swatches
-            customColorSwatches.innerHTML = '';
-            Object.entries(UI_THEME_COLORS).forEach(([name, hex]) => {
+    // 渲染漸變色票
+    const renderGradients = (palette, descKey, currentSelection) => {
+        gradientSwatches.innerHTML = '';
+        gradientPickerDesc.textContent = i18n[config.uiLanguage][descKey] || '';
+        if (palette && palette.length > 1) {
+            const combinations = [
+                // 2-color gradients
+                `linear-gradient(to right, ${palette[0]}, ${palette[1]})`,
+                `linear-gradient(to right, ${palette[0]}, ${palette[2 % palette.length]})`,
+                `linear-gradient(to right, ${palette[1]}, ${palette[3 % palette.length]})`,
+                `linear-gradient(135deg, ${palette[0]}, ${palette[2 % palette.length]})`,
+                // 3-color gradients
+                `linear-gradient(135deg, ${palette[0]}, ${palette[1]}, ${palette[2 % palette.length]})`,
+                `linear-gradient(135deg, ${palette[0]}, ${palette[2 % palette.length]}, ${palette[4 % palette.length]})`,
+                `linear-gradient(to bottom right, ${palette[1]}, ${palette[3 % palette.length]}, ${palette[0]})`,
+                `radial-gradient(circle, ${palette[0]}, ${palette[1]})`
+            ];
+            combinations.forEach(grad => {
                 const swatch = document.createElement('div');
-                swatch.className = `color-swatch w-8 h-8 rounded-full cursor-pointer`;
-                swatch.style.backgroundColor = hex;
-                swatch.dataset.color = hex;
-                if (config.uiTheme.customColor === hex) {
-                    swatch.classList.add('selected');
+                swatch.className = 'w-full h-10 rounded-md cursor-pointer border-2 border-transparent hover:border-blue-400';
+                swatch.style.background = grad;
+                swatch.dataset.gradient = grad;
+                if (currentSelection === grad) {
+                    swatch.classList.add('selected-gradient', 'border-blue-500');
                 }
                 swatch.addEventListener('click', () => {
-                    customColorSwatches.querySelector('.selected')?.classList.remove('selected');
-                    swatch.classList.add('selected');
+                    gradientSwatches.querySelector('.selected-gradient')?.classList.remove('selected-gradient', 'border-blue-500');
+                    swatch.classList.add('selected-gradient', 'border-blue-500');
                 });
-                customColorSwatches.appendChild(swatch);
+                gradientSwatches.appendChild(swatch);
             });
+        } else {
+            gradientSwatches.innerHTML = `<p class="text-xs col-span-4 text-[var(--text-secondary)]">${i18n[config.uiLanguage].notEnoughColors || '沒有足夠的顏色來生成漸變。'}</p>`;
+        }
+    };
 
+    // 內部函式，用於根據選項更新各區塊的顯示/隱藏
+    const updateVisibility = () => {
+        const mode = document.querySelector('input[name="color-theme"]:checked').value;
+        const style = document.querySelector('input[name="color-style"]:checked').value;
 
+        buttonStyleContainer.classList.toggle('hidden', mode === 'default');
+        
+        // 只有當模式為 "自訂" 且樣式為 "單色" 時，才顯示單色選擇器
+        customColorPickerContainer.classList.toggle('hidden', !(mode === 'custom' && style === 'single'));
+        
+        // 當模式為 "自適應" 或 ("自訂" 且樣式為 "漸變") 時，顯示漸變選擇器
+        const showGradientPicker = (mode === 'adaptive' && style === 'gradient') || (mode === 'custom' && style === 'gradient');
+        gradientPickerContainer.classList.toggle('hidden', !showGradientPicker);
 
-
-            // Render gradient swatches
-            gradientSwatches.innerHTML = '';
-            if(config.uiTheme.adaptivePalette && config.uiTheme.adaptivePalette.length > 1) {
-                const palette = config.uiTheme.adaptivePalette;
-                const combinations = [
-                    `linear-gradient(to right, ${palette[0]}, ${palette[1]})`,
-                    `linear-gradient(to right, ${palette[0]}, ${palette[2]})`,
-                    `linear-gradient(to right, ${palette[1]}, ${palette[2]})`,
-                    `linear-gradient(135deg, ${palette[0]}, ${palette[1]}, ${palette[2]})`
-                ];
-                combinations.forEach(grad => {
-                    const swatch = document.createElement('div');
-                    swatch.className = 'w-full h-10 rounded-md cursor-pointer border-2 border-transparent';
-                    swatch.style.background = grad;
-                    swatch.dataset.gradient = grad;
-                    if(config.uiTheme.adaptiveGradient === grad) {
-                        swatch.classList.add('selected-gradient', 'border-blue-500');
-                    }
-                    swatch.addEventListener('click', () => {
-                        gradientSwatches.querySelector('.selected-gradient')?.classList.remove('selected-gradient', 'border-blue-500');
-                        swatch.classList.add('selected-gradient', 'border-blue-500');
-                    });
-                    gradientSwatches.appendChild(swatch);
-                });
-            } else {
-                 gradientSwatches.innerHTML = `<p class="text-xs col-span-4 text-[var(--text-secondary)]">${i18n[config.uiLanguage].notEnoughColors || '沒有足夠的顏色來生成漸變。請上傳顏色豐富的桌布。'}</p>`
+        if (showGradientPicker) {
+            if (mode === 'adaptive') {
+                renderGradients(config.uiTheme.adaptivePalette, 'gradientDesc', config.uiTheme.adaptiveGradient);
+            } else { // mode === 'custom'
+                const customPalette = Object.values(UI_THEME_COLORS);
+                renderGradients(customPalette, 'customGradientDesc', config.uiTheme.customGradient);
             }
+        }
+    };
+    
+    // 綁定所有選項的變更事件
+    uiColorOptions.querySelectorAll('input[name="color-theme"]').forEach(radio => {
+        radio.addEventListener('change', updateVisibility);
+    });
+    buttonStyleContainer.querySelectorAll('input[name="color-style"]').forEach(radio => {
+        radio.addEventListener('change', updateVisibility);
+    });
 
-
-
-
-
-
-
-
-            // Toggle visibility of sections
-            const updateVisibility = () => {
-                const mode = document.querySelector('input[name="color-theme"]:checked').value;
-                const style = document.querySelector('input[name="color-style"]:checked').value;
-
-
-
-
-                buttonStyleContainer.classList.toggle('hidden', mode !== 'adaptive');
-                customColorPickerContainer.classList.toggle('hidden', mode !== 'custom');
-                gradientPickerContainer.classList.toggle('hidden', !(mode === 'adaptive' && style === 'gradient'));
-            };
-            
-            // Add event listeners
-            uiColorOptions.querySelectorAll('input[name="color-theme"]').forEach(radio => {
-                radio.addEventListener('change', updateVisibility);
-            });
-             buttonStyleContainer.querySelectorAll('input[name="color-style"]').forEach(radio => {
-                radio.addEventListener('change', updateVisibility);
-            });
-
-
-
-
-            updateVisibility();
-        };
+    // 初始呼叫以設定正確的顯示狀態
+    updateVisibility();
+};
         
         const analyzeImageBrightness = (imageDataUrl) => {
             return new Promise((resolve, reject) => {
