@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.0.0</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.0.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -6995,38 +6995,34 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             toggleModal(ALL_ELEMENTS.updateInfoModal, true);
         };
         const checkAndShowLatestUpdate = async () => {
-            if (!config.enableUpdateNotifications || typeof updateLogs === 'undefined' || updateLogs.length === 0) {
-                return;
-            }
-
-            const lastSeenVersion = config.lastSeenVersion;
-            const newUpdates = updateLogs.filter(log => compareVersions(log.version, lastSeenVersion) > 0);
-
-            if (newUpdates.length > 0) {
-                const contentContainer = ALL_ELEMENTS.latestUpdateContent;
-                const modalTitle = document.querySelector('#latest-update-modal h2');
-
-                if (modalTitle) {
-                    modalTitle.textContent = i18n[config.uiLanguage].newVersionsFound || `發現 ${newUpdates.length} 個新版本！`;
-                }
-
-                contentContainer.innerHTML = newUpdates.map(log => `
-                    <div class="prose prose-sm max-w-none mb-6 pb-4 border-b border-[var(--border-color)] last:border-b-0 last:mb-0 last:pb-0">
-                        <h4 class="font-bold text-lg">${log.version} <span class="text-sm font-normal text-[var(--text-secondary)]">- ${log.date}</span></h4>
-                        <ul>
-                            ${log.content.map(item => `<li>${item}</li>`).join('')}
-                        </ul>
-                    </div>
-                `).join('');
-
-                contentContainer.style.maxHeight = '60vh';
-                contentContainer.style.overflowY = 'auto';
-
-                toggleModal(ALL_ELEMENTS.latestUpdateModal, true);
-                config.lastSeenVersion = updateLogs[0].version;
-                await saveConfig();
-            }
-        };
+    if (!config.enableUpdateNotifications || typeof updateLogs === 'undefined' || updateLogs.length === 0) {
+        return;
+    }
+    const lastSeenVersion = config.lastSeenVersion || '0.0.0'; // 如果從未見過，則設為 '0.0.0'
+    const newUpdates = updateLogs.filter(log => compareVersions(log.version, lastSeenVersion) > 0);
+    if (newUpdates.length > 0) {
+        newUpdates.sort((a, b) => compareVersions(b.version, a.version));
+        const contentContainer = ALL_ELEMENTS.latestUpdateContent;
+        const modalTitle = document.querySelector('#latest-update-modal h2');
+        if (modalTitle) {
+            modalTitle.textContent = i18n[config.uiLanguage].newVersionsFound.replace('{count}', newUpdates.length);
+        }
+        contentContainer.innerHTML = newUpdates.map(log => `
+            <div class="prose prose-sm max-w-none mb-6 pb-4 border-b border-[var(--border-color)] last:border-b-0 last:mb-0 last:pb-0">
+                <h4 class="font-bold text-lg">${log.version} <span class="text-sm font-normal text-[var(--text-secondary)]">- ${log.date}</span></h4>
+                <ul>
+                    ${log.content.map(item => `<li>${item}</li>`).join('')}
+                </ul>
+            </div>
+        `).join('');
+        contentContainer.style.maxHeight = '60vh';
+        contentContainer.style.overflowY = 'auto';
+        toggleModal(ALL_ELEMENTS.latestUpdateModal, true);
+        const latestVersionInLog = newUpdates[0].version; // 因為我們已經排序了，所以 newUpdates[0] 現在是最新版
+        config.lastSeenVersion = latestVersionInLog;
+        await saveConfig();
+    }
+};
         const renderTrash = () => {
             const container = ALL_ELEMENTS.trashListContainer;
             const deletedConvs = conversations.filter(c => c.deletedAt).sort((a,b) => new Date(b.deletedAt) - new Date(a.deletedAt));
@@ -7181,9 +7177,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const updateDisplayedVersion = () => {
     const versionDisplayElement = document.getElementById('version-number-display');
     if (versionDisplayElement && typeof updateLogs !== 'undefined' && updateLogs.length > 0) {
-        const latestVersion = updateLogs[0].version; // 假設 updateLogs[0] 是最新版本
-        versionDisplayElement.textContent = latestVersion;
-        config.lastSeenVersion = latestVersion; // 同步更新已見版本，避免舊用戶看到舊版號的更新彈窗
+        const latestVersionInLog = updateLogs.reduce((max, log) => 
+            compareVersions(log.version, max) > 0 ? log.version : max, '0.0.0');
+        versionDisplayElement.textContent = latestVersionInLog;
     }
 };
         async function initChatApp() {
