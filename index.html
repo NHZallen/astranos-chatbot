@@ -3530,25 +3530,30 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             messageList.classList.add('chat-view-transition');
             updateInputState();
         };
-        const updateFunctionButtonsState = () => {
-            const { cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn } = ALL_ELEMENTS;
-            const conv = getActiveConversation();
-            if (!conv) return; // 如果沒有對話，則不執行任何操作
-            const modelInfo = MODELS.find(m => m.id === conv.model);
-            const provider = modelInfo?.provider;
-            const shouldDisableForLearningMode = config.isLearningMode && provider === 'openrouter';
-            cameraBtn.disabled = shouldDisableForLearningMode;
-            uploadImageBtn.disabled = shouldDisableForLearningMode;
-            uploadFileBtn.disabled = shouldDisableForLearningMode;
-            webSearchPopoverBtn.disabled = shouldDisableForLearningMode;
-            [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn].forEach(btn => {
-                if (btn.disabled) {
+        const conv = getActiveConversation();
+        if (!conv) return;
+        const modelInfo = MODELS.find(m => m.id === conv.model);
+        const provider = modelInfo?.provider;
+        const multimodalButtons = [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn];
+        if (provider === 'openrouter') {
+            multimodalButtons.forEach(btn => btn.classList.add('hidden'));
+            if (separator) separator.classList.add('hidden');
+            learningModeBtn.classList.remove('hidden');
+        } else { // 此處處理 Gemini 或未來可能新增的其他模型
+            multimodalButtons.forEach(btn => btn.classList.remove('hidden'));
+            if (separator) separator.classList.remove('hidden');
+            learningModeBtn.classList.remove('hidden');
+            const shouldBeDisabled = config.isLearningMode;
+            multimodalButtons.forEach(btn => {
+                btn.disabled = shouldBeDisabled;
+                if (shouldBeDisabled) {
                     btn.classList.add('opacity-50', 'cursor-not-allowed');
                 } else {
                     btn.classList.remove('opacity-50', 'cursor-not-allowed');
                 }
             });
-        };
+        }
+    };
         const toggleLearningMode = async () => {
             config.isLearningMode = !config.isLearningMode;
             await saveConfig();
