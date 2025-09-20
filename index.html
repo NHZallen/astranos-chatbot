@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-14.9.12</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.0.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -1967,6 +1967,15 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                     <label for="memory-toggle-1" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
                                 </div>
                             </div>
+                            <!-- START: Added Cross-Dialogue Memory Toggle -->
+                            <div class="flex items-center justify-between">
+                                <label class="flex-1 text-sm font-medium" data-lang-key="crossDialogueMemory">跨對話記憶 (類型2)</label>
+                                <div class="relative inline-block w-12 h-6 mr-2 align-middle select-none transition duration-200 ease-in">
+                                    <input type="checkbox" id="memory-toggle-2" class="toggle-checkbox absolute block w-full, h-full rounded-full opacity-0 appearance-none cursor-pointer"/>
+                                    <label for="memory-toggle-2" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                                </div>
+                            </div>
+                            <!-- END: Added Cross-Dialogue Memory Toggle -->
                             <div class="flex items-center justify-between">
                                 <label for="auto-memory-toggle-switch" class="flex-1 text-sm font-medium" data-lang-key="enableAutoMemory">啟用自動添加記憶</label>
                                 <div class="relative inline-block w-12 h-6 mr-2 align-middle select-none transition duration-200 ease-in">
@@ -2583,6 +2592,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             voiceInputBtnMessage: document.getElementById('voice-input-btn-message'),
             voiceInputBtnSearch: document.getElementById('voice-input-btn-search'),
             memoryToggle1: document.getElementById('memory-toggle-1'),
+            // START: Added element for new toggle
+            memoryToggle2: document.getElementById('memory-toggle-2'),
+            // END: Added element for new toggle
             personalMemoryList: document.getElementById('personal-memory-list'),
             addPersonalMemoryBtn: document.getElementById('add-personal-memory-btn'),
             autoMemoryToggleSwitch: document.getElementById('auto-memory-toggle-switch'),
@@ -2735,6 +2747,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             autoNaming: true,
             lastUsedModel: null,
             memoryEnabled1: true,
+            // START: Added config property for new feature
+            memoryEnabled2: true, // This is the new property for cross-dialogue memory
+            // END: Added config property
             enableAutoMemory: true,
             customWallpaper: null,
             wallpaperBrightness: 'light',
@@ -4087,6 +4102,27 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (cleaned.length > 0 && cleaned[0].role !== 'user') cleaned.shift();
             return cleaned;
         }
+        /**
+         * 計算一個對話摘要與一組關鍵詞的相關性分數
+         * @param {string} summary - 對話的摘要內容
+         * @param {string[]} keywords - 從當前問題中提取的關鍵詞陣列
+         * @returns {number} - 相關性分數
+         */
+        function calculateRelevanceScore(summary, keywords) {
+            if (!summary || !keywords || keywords.length === 0) {
+                return 0;
+            }
+            const summaryLower = summary.toLowerCase();
+            let score = 0;
+            keywords.forEach(keyword => {
+                if (summaryLower.includes(keyword.toLowerCase())) {
+                    score++;
+                }
+            });
+            // 給予覆蓋率一個加權，匹配的關鍵詞越多，分數加成越高
+            const coverageRatio = score / keywords.length;
+            return score * (1 + coverageRatio);
+        }
         async function streamApiCall(parts, onChunk, signal) {
             const conv = getActiveConversation();
             const modelInfo = MODELS.find(m => m.id === conv.model);
@@ -4188,20 +4224,66 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             } else if (baseInstructionText) {
                 systemInstruction = { parts: [{ text: baseInstructionText }] };
             }
+
             let memoryPrompt = '';
+            // START: Logic for Memory Type 1 (Personal Habits)
             if (config.memoryEnabled1) {
                 const enabledMemories = personalMemories.filter(m => m.enabled).map(m => m.content).join('\n');
                 if (enabledMemories) {
                     memoryPrompt += `個人習慣記憶：\n${enabledMemories}\n`;
                 }
             }
+            // END: Logic for Memory Type 1
+
+            // START: Logic for Memory Type 2 (Cross-Dialogue with Semantic Retrieval)
+            if (config.memoryEnabled2 && conv.messages.length > 0) {
+                try {
+                    // 1. 提取當前使用者訊息的關鍵詞
+                    const currentUserMessage = conv.messages[conv.messages.length - 1].parts.map(p => p.text).join(' ');
+                    const keywordPrompt = `從以下句子中提取出 3 到 5 個最重要的核心關鍵詞或主題，並以 JSON 陣列的格式回傳。例如：["關鍵詞1", "關鍵詞2", "關鍵詞3"]。\n\n句子："${currentUserMessage}"`;
+                    const keywordSchema = { type: "ARRAY", items: { type: "STRING" } };
+                    const keywords = await callApiWithSchema(keywordPrompt, keywordSchema);
+
+                    if (keywords && keywords.length > 0) {
+                        // 2. 計算所有歷史對話的相關性分數
+                        const scoredConversations = conversations
+                            .filter(c => c.id !== conv.id && c.summary && !c.archived && !c.deletedAt)
+                            .map(c => ({
+                                ...c,
+                                relevance: calculateRelevanceScore(c.summary, keywords)
+                            }))
+                            .filter(c => c.relevance > 0); // 只保留有相關性的
+
+                        // 3. 排序並選取分數最高的 N 個
+                        const topConversations = scoredConversations
+                            .sort((a, b) => b.relevance - a.relevance)
+                            .slice(0, 15); // << 您可以調整這個數字，例如 10, 15, 20
+
+                        // 4. 組合提示詞
+                        if (topConversations.length > 0) {
+                            const memorySummaries = topConversations
+                                .map(c => `- ${c.title}: ${c.summary}`)
+                                .join('\n');
+                            memoryPrompt += `\n相關歷史對話摘要 (從使用者過往對話中檢索到的相關內容，請作為背景參考):\n${memorySummaries}\n`;
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error retrieving relevant conversation memories:", error);
+                    // 如果檢索失敗，可以選擇不執行任何操作，或者回退到舊的邏輯
+                }
+            }
+            // END: Logic for Memory Type 2
             if (memoryPrompt) {
                 if (systemInstruction && systemInstruction.parts[0].text) {
                     systemInstruction.parts[0].text += `\n\n${memoryPrompt}`;
-                } else {
+                } else if (systemInstruction) {
+                    systemInstruction.parts.push({ text: `\n\n${memoryPrompt}` });
+                }
+                else {
                     systemInstruction = { parts: [{ text: memoryPrompt }] };
                 }
             }
+
             if (provider === 'gemini') {
                 url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?key=${apiKey}`;
                 payload = {
@@ -4223,7 +4305,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 url = 'https://openrouter.ai/api/v1/chat/completions';
                 const messages = [];
                 if (systemInstruction) {
-                    messages.push({ role: 'system', content: systemInstruction.parts[0].text });
+                    messages.push({ role: 'system', content: systemInstruction.parts.map(p => p.text).join('\n') });
                 }
                 messages.push(...[...historyForApi, currentMessageForApi].map(m => ({
                     role: m.role === 'model' ? 'assistant' : m.role,
@@ -4553,6 +4635,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.autoNamingToggleSwitch.checked = config.autoNaming;
             ALL_ELEMENTS.autoWebSearchToggleSwitch.checked = config.enableAutoWebSearch;
             ALL_ELEMENTS.memoryToggle1.checked = config.memoryEnabled1;
+            // START: Set state for the new toggle
+            ALL_ELEMENTS.memoryToggle2.checked = config.memoryEnabled2;
+            // END: Set state for the new toggle
             ALL_ELEMENTS.autoMemoryToggleSwitch.checked = config.enableAutoMemory;
             ALL_ELEMENTS.uiLanguageSelect.value = config.uiLanguage;
             ALL_ELEMENTS.aiLanguageSelect.value = config.aiDefaultLanguage;
@@ -4584,6 +4669,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             config.userBubbleColor = ALL_ELEMENTS.userBubbleColorDropdown.querySelector('.color-dropdown-btn')?.dataset.color || 'default';
             config.autoNaming = ALL_ELEMENTS.autoNamingToggleSwitch.checked;
             config.memoryEnabled1 = ALL_ELEMENTS.memoryToggle1.checked;
+            // START: Save state for the new toggle
+            config.memoryEnabled2 = ALL_ELEMENTS.memoryToggle2.checked;
+            // END: Save state for the new toggle
             config.enableAutoMemory = ALL_ELEMENTS.autoMemoryToggleSwitch.checked;
             config.uiLanguage = ALL_ELEMENTS.uiLanguageSelect.value;
             config.aiDefaultLanguage = ALL_ELEMENTS.aiLanguageSelect.value;
@@ -5416,6 +5504,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     defaultModel: config.defaultModel, theme: config.theme, modelSettings: config.modelSettings,
                     enableFollowUp: config.enableFollowUp, aiBubbleColor: config.aiBubbleColor, userBubbleColor: config.userBubbleColor,
                     autoNaming: config.autoNaming, enableAutoWebSearch: config.enableAutoWebSearch, memoryEnabled1: config.memoryEnabled1,
+                    // START: Include new setting in export
+                    memoryEnabled2: config.memoryEnabled2,
+                    // END: Include new setting in export
                     enableAutoMemory: config.enableAutoMemory, customWallpaper: config.customWallpaper, wallpaperBrightness: config.wallpaperBrightness,
                     uiTheme: config.uiTheme, uiLanguage: config.uiLanguage, aiDefaultLanguage: config.aiDefaultLanguage,
                     isLearningMode: config.isLearningMode
