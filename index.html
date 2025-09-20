@@ -2138,6 +2138,20 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             </div>
         </div>
     </div>
+    <div id="import-data-modal-auth" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
+    <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl p-6 w-full max-w-md">
+        <h2 class="text-xl font-bold mb-4" data-lang-key="importRecords">匯入紀錄</h2>
+        <p class="text-sm text-[var(--text-secondary)] mb-4" data-lang-key="importDataDescAuth">選擇一個之前匯出的 `.json` 檔案。您輸入的帳號密碼將用於驗證備份檔案的所有權。</p>
+        <div class="mb-4">
+            <label for="import-file-input-auth" class="block text-sm font-medium mb-1" data-lang-key="selectFile">選擇檔案</label>
+            <input type="file" id="import-file-input-auth" class="w-full text-sm text-[var(--text-secondary)] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" accept=".json" required>
+        </div>
+        <div class="flex justify-end gap-3">
+            <button id="cancel-import-btn-auth" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]" data-lang-key="cancel">取消</button>
+            <button id="confirm-import-btn-auth" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700" data-lang-key="confirmAndImport">確認並匯入</button>
+        </div>
+    </div>
+</div>
     <div id="archived-chats-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
         <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-2xl flex flex-col" style="max-height: 90vh;">
             <div class="p-6 border-b border-[var(--border-color)] flex justify-between items-center">
@@ -2443,6 +2457,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             usernameInput: document.getElementById('username-input'),
             passwordInput: document.getElementById('password-input'),
             importBtnAuth: document.getElementById('import-btn-auth'),
+            importDataModalAuth: document.getElementById('import-data-modal-auth'),
+            importFileInputAuth: document.getElementById('import-file-input-auth'),
+            cancelImportBtnAuth: document.getElementById('cancel-import-btn-auth'),
+            confirmImportBtnAuth: document.getElementById('confirm-import-btn-auth'),
             logoutBtn: document.getElementById('logout-btn'),
             usernameDisplay: document.getElementById('username-display'),
             newChatBtn: document.getElementById('new-chat-btn'),
@@ -5446,60 +5464,59 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             };
             reader.readAsText(file);
         };
-        const handleImportOnAuth = async () => {
+        const handleImportOnAuth = () => {
+            toggleModal(ALL_ELEMENTS.importDataModalAuth, true);
+        };
+        const processAuthImport = async () => {
             const username = ALL_ELEMENTS.usernameInput.value.trim();
             const password = ALL_ELEMENTS.passwordInput.value;
-            if (!username || !password) {
-                showNotification(i18n[config.uiLanguage].importAuthRequired, 'warning');
+            const file = ALL_ELEMENTS.importFileInputAuth.files[0];
+
+            if (!file) {
+                showNotification(i18n[config.uiLanguage].selectFileError || '請選擇檔案。', 'error');
                 return;
             }
+
             const passwordHash = await hashString(password);
-            const fileInput = document.createElement('input');
-            fileInput.type = 'file';
-            fileInput.accept = '.json';
-            fileInput.style.display = 'none';
-            fileInput.onchange = (e) => {
-                const file = e.target.files[0];
-                if (!file) { document.body.removeChild(fileInput); return; }
-                const reader = new FileReader();
-                reader.onload = async (event) => {
-                    try {
-                        const data = JSON.parse(event.target.result);
-                        if (!data.user_credentials || !data.user_credentials.username || !data.user_credentials.passwordHash) {
-                           throw new Error(i18n[config.uiLanguage].importInvalidFile);
-                        }
-                        if (data.user_credentials.username !== username || data.user_credentials.passwordHash !== passwordHash) {
-                            throw new Error(i18n[config.uiLanguage].importAuthMismatch);
-                        }
-                        const userKey = getUserKey(username);
-                        const savedUser = await getItem(userKey);
-                        if (!savedUser) {
-                           await setItem(userKey, JSON.stringify({ username, passwordHash }));
-                        }
-                        currentUser = { username, passwordHash };
-                        await setItem('chat_lastUser', username);
-                        await performImport(data);
-                        ALL_ELEMENTS.authContainer.classList.add('fade-out');
-                        ALL_ELEMENTS.appContainer.classList.remove('hidden');
-                        requestAnimationFrame(() => {
-                            ALL_ELEMENTS.appContainer.classList.add('visible');
-                        });
-                        ALL_ELEMENTS.authContainer.addEventListener('transitionend', () => {
-                             ALL_ELEMENTS.authContainer.style.display = 'none';
-                        }, { once: true });
-                        initChatApp();
-                        showNotification(i18n[config.uiLanguage].importSuccess, 'success');
-                    } catch (error) {
-                        showNotification(`${i18n[config.uiLanguage].importFailed}: ${error.message}`, 'error');
-                        console.error(error);
-                    } finally {
-                         document.body.removeChild(fileInput);
+            const reader = new FileReader();
+            
+            reader.onload = async (event) => {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    if (!data.user_credentials || !data.user_credentials.username || !data.user_credentials.passwordHash) {
+                        throw new Error(i18n[config.uiLanguage].importInvalidFile || '備份檔案格式無效。');
                     }
-                };
-                reader.readAsText(file);
+                    if (data.user_credentials.username !== username || data.user_credentials.passwordHash !== passwordHash) {
+                        throw new Error(i18n[config.uiLanguage].importAuthMismatch || '帳號或密碼與備份檔案不符。');
+                    }
+
+                    const userKey = getUserKey(username);
+                    const savedUser = await getItem(userKey);
+                    if (!savedUser) {
+                        await setItem(userKey, JSON.stringify({ username, passwordHash }));
+                    }
+                    currentUser = { username, passwordHash };
+                    await setItem('chat_lastUser', username);
+                    await performImport(data);
+
+                    toggleModal(ALL_ELEMENTS.importDataModalAuth, false);
+                    ALL_ELEMENTS.authContainer.classList.add('fade-out');
+                    ALL_ELEMENTS.appContainer.classList.remove('hidden');
+                    requestAnimationFrame(() => {
+                        ALL_ELEMENTS.appContainer.classList.add('visible');
+                    });
+                    ALL_ELEMENTS.authContainer.addEventListener('transitionend', () => {
+                        ALL_ELEMENTS.authContainer.style.display = 'none';
+                    }, { once: true });
+
+                    initChatApp();
+                    showNotification(i18n[config.uiLanguage].importSuccess || '匯入成功！', 'success');
+                } catch (error) {
+                    showNotification(`${i18n[config.uiLanguage].importFailed || '匯入失敗'}: ${error.message}`, 'error');
+                    console.error(error);
+                }
             };
-            document.body.appendChild(fileInput);
-            fileInput.click();
+            reader.readAsText(file);
         };
         const renderModelManagementUI = () => {
             const container = ALL_ELEMENTS.modelManagementList;
@@ -7302,7 +7319,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.usernameInput.addEventListener('input', toggleAuthImportButton);
             ALL_ELEMENTS.passwordInput.addEventListener('input', toggleAuthImportButton);
             ALL_ELEMENTS.importBtnAuth.addEventListener('click', handleImportOnAuth);
-            ALL_ELEMENTS.importBtnAuth.addEventListener('touchend', handleImportOnAuth);
+            ALL_ELEMENTS.confirmImportBtnAuth.addEventListener('click', processAuthImport);
+            ALL_ELEMENTS.cancelImportBtnAuth.addEventListener('click', () => toggleModal(ALL_ELEMENTS.importDataModalAuth, false));
             (async function prefillLastUser() {
                 const last = await getItem('chat_lastUser');
                 if (last) ALL_ELEMENTS.usernameInput.value = last;
