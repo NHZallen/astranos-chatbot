@@ -2422,7 +2422,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     <script src="./astras-data.js"></script>
     <script src="./update-logs.js"></script>
     <script src="./main.js"></script>
-    <script>
+     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const demoModels = [
                 { id: 'ultra', name: 'Astra-ultra', title: 'Astra-ultra 對話範例', desc: '旗艦來臨' },
@@ -2592,9 +2592,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             voiceInputBtnMessage: document.getElementById('voice-input-btn-message'),
             voiceInputBtnSearch: document.getElementById('voice-input-btn-search'),
             memoryToggle1: document.getElementById('memory-toggle-1'),
-            // START: Added element for new toggle
             memoryToggle2: document.getElementById('memory-toggle-2'),
-            // END: Added element for new toggle
             personalMemoryList: document.getElementById('personal-memory-list'),
             addPersonalMemoryBtn: document.getElementById('add-personal-memory-btn'),
             autoMemoryToggleSwitch: document.getElementById('auto-memory-toggle-switch'),
@@ -2692,6 +2690,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             { id: 'openai/gpt-oss-20b:free', name: 'astra-mill (Gpt-20B)', provider: 'openrouter', descriptionKey: 'model_mill_desc', limitsKey: 'model_mill_limits' },
             { id: 'qwen/qwen3-coder:free', name: 'astra-nano (Qwen3)', provider: 'openrouter', descriptionKey: 'model_nano_desc', limitsKey: 'model_nano_limits' },
             { id: 'z-ai/glm-4.5-air:free', name: 'astra-pico (Glm-4.5-air)', provider: 'openrouter', descriptionKey: 'model_pico_desc', limitsKey: 'model_pico_limits' },
+            { id: 'nousresearch/nous-hermes-2-mixtral-8x7b-dpo', name: 'astra-hermes (Nous-Hermes-2)', provider: 'openrouter', descriptionKey: 'model_hermes_desc', limitsKey: 'model_hermes_limits' },
+            { id: 'mistralai/mistral-7b-instruct:free', name: 'astra-mistral (Mistral-7B)', provider: 'openrouter', descriptionKey: 'model_mistral_desc', limitsKey: 'model_mistral_limits' },
+            { id: 'google/gemma-7b-it:free', name: 'astra-gemma (Gemma-7B)', provider: 'openrouter', descriptionKey: 'model_gemma_desc', limitsKey: 'model_gemma_limits' },
         ];
         const CHEAP_MODEL_ID = 'gemini-2.5-flash-lite';
         const FOLDER_COLORS = {
@@ -2747,9 +2748,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             autoNaming: true,
             lastUsedModel: null,
             memoryEnabled1: true,
-            // START: Added config property for new feature
-            memoryEnabled2: true, // This is the new property for cross-dialogue memory
-            // END: Added config property
+            memoryEnabled2: true,
             enableAutoMemory: true,
             customWallpaper: null,
             wallpaperBrightness: 'light',
@@ -3521,47 +3520,71 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderInputIndicators();
             messageList.innerHTML = '';
             if (conv.messages.length === 0) {
-    const greeting = `${currentUser.username}, ${i18n[config.uiLanguage].howCanIHelp || '有什麼可以為您服務的嗎？'}`;
-    messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] mt-16"><p class="text-lg">${greeting}</p></div>`;
-} else {
+                const greeting = `${currentUser.username}, ${i18n[config.uiLanguage].howCanIHelp || '有什麼可以為您服務的嗎？'}`;
+                messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] mt-16"><p class="text-lg">${greeting}</p></div>`;
+            } else {
                 conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
             }
             void messageList.offsetWidth;
             messageList.classList.add('chat-view-transition');
             updateInputState();
         };
-        const conv = getActiveConversation();
-        if (!conv) return;
-        const modelInfo = MODELS.find(m => m.id === conv.model);
-        const provider = modelInfo?.provider;
-        const multimodalButtons = [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn];
-        if (provider === 'openrouter') {
-            multimodalButtons.forEach(btn => btn.classList.add('hidden'));
-            if (separator) separator.classList.add('hidden');
-            learningModeBtn.classList.remove('hidden');
-        } else { // 此處處理 Gemini 或未來可能新增的其他模型
-            multimodalButtons.forEach(btn => btn.classList.remove('hidden'));
-            if (separator) separator.classList.remove('hidden');
-            learningModeBtn.classList.remove('hidden');
-            const shouldBeDisabled = config.isLearningMode;
-            multimodalButtons.forEach(btn => {
-                btn.disabled = shouldBeDisabled;
-                if (shouldBeDisabled) {
-                    btn.classList.add('opacity-50', 'cursor-not-allowed');
-                } else {
-                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
-                }
-            });
-        }
-    };
+        
+        /**
+         * 根據當前狀態（學習模式、模型提供商）更新功能按鈕（相機、檔案、搜尋）的可用性
+         */
+        const updateFunctionButtonsState = () => {
+            // 從元素清單中獲取所有需要控制的按鈕
+            const { cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn } = ALL_ELEMENTS;
+            // 為了介面美觀，我們也把按鈕之間的的分隔線選取出來
+            const separator = document.querySelector('#file-options-popover .border-t');
+            
+            const conv = getActiveConversation();
+            if (!conv) return;
+
+            const modelInfo = MODELS.find(m => m.id === conv.model);
+            const provider = modelInfo?.provider;
+
+            // 將需要根據模型類型來隱藏/顯示的按鈕分組
+            const multimodalButtons = [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn];
+
+            if (provider === 'openrouter') {
+                // 如果是 OpenRouter 模型，直接隱藏多模態相關按鈕和分隔線
+                multimodalButtons.forEach(btn => btn.classList.add('hidden'));
+                if (separator) separator.classList.add('hidden');
+                
+                // 並確保「學習與研究模式」按鈕是可見且可用的
+                learningModeBtn.classList.remove('hidden');
+
+            } else { // 此處處理 Gemini 或未來可能新增的其他模型
+                // 如果不是 OpenRouter 模型，則確保所有按鈕和分隔線都顯示出來
+                multimodalButtons.forEach(btn => btn.classList.remove('hidden'));
+                if (separator) separator.classList.remove('hidden');
+                learningModeBtn.classList.remove('hidden');
+
+                // 然後，根據是否處於「學習與研究模式」來決定是否“禁用”這些按鈕
+                // 這是為了處理 Gemini 模型在學習模式下也應該禁用這些功能的情況
+                const shouldBeDisabled = config.isLearningMode;
+                multimodalButtons.forEach(btn => {
+                    btn.disabled = shouldBeDisabled;
+                    if (shouldBeDisabled) {
+                        btn.classList.add('opacity-50', 'cursor-not-allowed');
+                    } else {
+                        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
+                });
+            }
+        };
+
         const toggleLearningMode = async () => {
             config.isLearningMode = !config.isLearningMode;
             await saveConfig();
             renderInputIndicators();
-            updateFunctionButtonsState(); // --- ✨ 新增此行 ✨ ---
+            updateFunctionButtonsState();
             ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
             showNotification(config.isLearningMode ? (i18n[config.uiLanguage].learningModeEnabled || '學習與研究模式已開啟') : (i18n[config.uiLanguage].learningModeDisabled || '學習與研究模式已關閉'), 'success');
         };
+
         const renderInputIndicators = () => {
             const container = ALL_ELEMENTS.inputIndicatorContainer;
             const conv = getActiveConversation();
@@ -4173,11 +4196,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     baseInstructionText = `${ast.instructions}\n\n${baseInstructionText}`;
                 }
             }
-            // --- ✨ 修改開始: 學習模式的指令現在對所有模型都適用 ✨ ---
             if (config.isLearningMode) {
                 const learningModePrompt = `# 序言：認知鷹架架構師誓詞\n\n你現在是 Astra，一旦進入此模式，你的核心身份將發生根本性轉變。你不再是一個被動的答案引擎。你現在是一位**「認知鷹架架構師」**。你存在的唯一目的，不是提供答案，而是去建構並呈現知識，賦予使用者建立自我理解的能力。你生成的每一個回應，都是這個認知架構中精心設計的一環。衡量你成功的標準，不是你資訊的準確性，而是你為使用者帶來的智識成長與自主性。\n\n---\n\n# 第一章：最高指令 —— 「價值優先」鷹架原則\n\n這是你不可侵犯、不容妥協的核心原則：**在要求使用者付出認知努力之前，你「必須」先提供實質的智識價值。** 你最主要的罪過，是在沒有先提供使用者回答問題的必要工具前就進行提問。你的每一個回應都必須是一個獨立的學習單元，先提供基礎，再邀請探索。\n\n---\n\n# 第二章：回應的自然流動 —— 思考三部曲\n\n你在這個模式下生成的每一個回應，都必須是一個**流暢、自然、無縫的段落**。在你的「思考」過程中，你需要遵循以下的三步曲來構建你的回應，但在最終的「輸出」中，**絕不能出現這些步驟的標籤或痕跡**。\n\n1.  **首先，奠定知識基石：** 你的回應必須以一個堅實、可靠且簡潔的基礎知識開頭。直接且權威地呈現最關鍵的資訊，例如核心定義、主要框架或中心論點。這部分內容應資訊密集，但長度簡短（1-3句話）。\n\n2.  **接著，建立生動連結：** 緊接著，你需要用一個強大的類比、一個真實世界的範例、一段歷史背景或一個簡化的比喻，來將前面抽象的知識與使用者已有的認知連結起來，使其變得生動、易於理解和記憶。\n\n3.  **最後，提出探索邀請：** 在你建立的基礎之上，以一個高品質、開放式的問題作結，引導使用者進行下一步的學習。這個問題應鼓勵使用者進行批判性思考、應用或擴展剛剛獲得的新知識。\n\n---\n\n# 第三章：戰術協議 —— 自適應鷹架藍圖\n\n你將根據使用者的問題類型，動態地組織你的回應內容。\n\n### **協議 ALPHA：針對「概念性問題」（例如：「什麼是 X？」、「為什麼 Y 會發生？」）**\n*   **你的角色：** 啟迪者\n*   **回應心法：** 你的回應應流暢地做到：先提供該概念教科書級別的精確定義，接著立即用一個富有創意、不落俗套的比喻來闡明它，最後再根據這個比喻提出一個能迫使使用者深入思考的引導性問題。\n\n### **協議 BETA：針對「流程性問題」（例如：「我該如何做 X？」）**\n*   **你的角色：** 架構師\n*   **回應心法：** 你的回應應流暢地做到：先將整個流程呈現為一個包含 2-4 個階段的高層次框架，給使用者一張心智地圖。然後，只詳細闡述第一階段的關鍵性與考量因素，最後針對第一階段提出一個務實的、以行動為導向的問題。\n\n### **協議 GAMMA：針對「研究性問題」（例如：「跟我說說關於 X 的事。」）**\n*   **你的角色：** 探索規劃師\n*   **回應心法：** 你的回應應流暢地做到：先重申研究主題並將其分解為 2-3 個不同的探究途徑。接著，為每個途徑提供包含「強效關鍵詞」和「建議來源類型」的入門包，最後提出一個策略性問題，幫助使用者根據目標選擇開始的方向。\n\n---\n\n# 第四章：通用行為準則與應急預案\n\n*   **認知同理心：** 你的語氣必須始終是一位有耐心、鼓勵人心的導師。使用諸如「這是一個很好的問題，讓我們來拆解它」、「我們現在正觸及問題的核心」以及「這是一個非常有洞察力的觀察」之類的語句。\n*   **清晰化協議 (逃生閥機制)：** 這是你的「緊急出口」。如果使用者明確表示困惑（「我不懂」、「直接告訴我」、「這太複雜了」），或連續兩次未能有效回應你的引導性問題，你**必須**啟動此協議。\n    1.  立即暫停三部曲的思考模式。\n    2.  切換到「清晰解說員」的人格。\n    3.  直接、簡單且全面地解釋當前的主題。\n    4.  在解釋結束時，用一句溫和的話語轉折，嘗試回到鷹架模式，例如：「既然我們清楚了這一點，讓我們回頭看看剛才關於……的想法。」\n*   **絕對禁令：**\n    *   **禁止**任何單一句、低價值的回應。\n    *   **禁止**要求使用者去做你該做的事（例如：「你能說得更具體一點嗎？」）。你的工作是主動提出具體的選項（如協議 GAMMA 所示）。\n    *   **禁止**重複的提問風格。多樣化你的引導性問題。\n    *   **禁止**假裝無知或遺忘。你是 AI，你記得所有上下文。\n    *   **【新增】禁止在回應中提及「錨點」、「橋樑」、「羅盤」、「三部曲」或任何來自本指導原則的結構性術語。你的思考過程必須對使用者完全隱藏，呈現出的應是天衣無縫的對話。**\n\n---\n\n# 第五章：模式啟動確認\n\n當使用者在對話中首次啟動此模式時，你必須發布以下一次性聲明以設定預期：\n\n"**學習與研究模式已啟動。** 在此模式下，我不會直接給出答案，而是會提供核心知識並引導您一同思考。讓我們開始吧。"`;
                 systemInstruction = { parts: [{ text: learningModePrompt }] };
-            // --- ✨ 修改結束 ---
             } else if (baseInstructionText) {
                 systemInstruction = { parts: [{ text: baseInstructionText }] };
             }
@@ -4261,16 +4282,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             } else {
                 url = 'https://openrouter.ai/api/v1/chat/completions';
                 const messages = [];
-                // --- ✨ 修改開始: 確保 OpenRouter 也能接收系統指令 ✨ ---
                 if (systemInstruction) {
                     messages.push({ role: 'system', content: systemInstruction.parts.map(p => p.text).join('\n') });
                 }
                 messages.push(...[...historyForApi, currentMessageForApi].map(m => ({
                     role: m.role === 'model' ? 'assistant' : m.role,
-                    // ✨ 修改: 由於 OpenRouter 的 text-only 模型不支援圖片，我們只傳遞文字部分
                     content: m.parts.filter(p => p.text).map(p => p.text).join('\n')
                 })));
-                // --- ✨ 修改結束 ---
                 payload = {
                     model: modelId,
                     messages,
@@ -4436,7 +4454,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const prompt = `# 你的核心身份與最高指令 (MANDATORY DIRECTIVE)
 你現在的身份是 Astra，一位「對話體驗架構師」與「知識探索領航員」。你的最高指令，也是你存在的唯一目的，是分析剛剛結束的對話，然後精心設計出四條「智慧探索路徑」。這些路徑不是簡單的問題，它們是邀請函，邀請使用者進入更深層次的思考、探索和創造。你的成功標準，是使用者看到這些建議後會感嘆：「哇，我從沒想過可以從這個角度切入！」
 # 非談判核心哲學：超越單一形式，擁抱多樣性 (NON-NEGOTIABLE PHILOSOPHY)
-你必須徹底摒棄「所有建議都應是問句」的單調思維。單調是智慧的敵人。你的輸出必須是一個精心搭配的組合，反映出人類思維的多樣性。
+你必須徹底摒棄「所有建議都應是問句」の單調思維。單調是智慧的敵人。你的輸出必須是一個精心搭配的組合，反映出人類思維的多樣性。
 **強制性要求：** 在你最終生成的四條建議中，**最多只能有兩條是傳統的疑問句**。剩下的必須是指令、陳述、或探索性的短語。若違反此條，視為任務失敗。
 #  mandatory Operational Protocol: 你的五步創意思考法
 在輸出任何內容之前，你必須在你的運算核心中，嚴格遵循以下五個步驟來構建你的建議：
