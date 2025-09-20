@@ -310,7 +310,7 @@ window.i18n = {
         learningModeDisabled: '學習與研究模式已關閉',
 
         // Model Descriptions & Limits
-        model_ultra_desc: '新版測試旗艦模型，適合大型研究與實驗探討；請注意!此模型對話內容將被模型提供方檢視。',
+        model_ultra_desc: '新版X-AI模型，適合大型研究與實驗探討，支援200萬token上下文。',
         model_ultra_limits: '20次/分鐘、50次/天',
         model_pro_desc: '高速生成與中高精度，適合長篇內容與綜合分析。',
         model_pro_limits: '10次/分鐘、250次/天',
@@ -654,7 +654,7 @@ window.i18n = {
         learningModeDisabled: 'Learning & Research Mode disabled',
 
         // Model Descriptions & Limits
-        model_ultra_desc: 'New beta flagship model, suitable for large-scale research and experimental exploration; Please note! The content of conversations with this model will be reviewed by the model provider.',
+        model_ultra_desc: 'New version of the X-AI model, suitable for large-scale research and experimental studies, supporting up to 2 million tokens of context.',
         model_ultra_limits: '20 reqs/minute, 50 reqs/day',
         model_pro_desc: 'High-speed generation and medium-high accuracy, suitable for long-form content and comprehensive analysis.',
         model_pro_limits: '10 reqs/min, 250 reqs/day',
@@ -998,7 +998,7 @@ window.i18n = {
         learningModeDisabled: 'Mode Apprentissage & Recherche désactivé',
 
         // Model Descriptions & Limits
-        model_ultra_desc: 'Nouveau modèle phare en bêta, adapté à la recherche à grande échelle et à l\'exploration expérimentale ; Attention ! Le contenu des conversations avec ce modèle sera examiné par le fournisseur du modèle.',
+        model_ultra_desc: 'Nouvelle version du modèle X-AI, adaptée à la recherche et aux études expérimentales à grande échelle, prenant en charge jusqu’à 2 millions de tokens de contexte.',
         model_ultra_limits: '20 reqs/minute, 50 reqs/jour',
         model_pro_desc: 'Génération à grande vitesse et précision moyenne-élevée, adaptée au contenu long et à l\'analyse complète.',
         model_pro_limits: '10 reqs/min, 250 reqs/jour',
