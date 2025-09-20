@@ -207,25 +207,26 @@ button:not(.btn-primary):active:not(:disabled) {
         }
     }
     .input-wrapper {
-    transition: box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out, padding-top 0.3s ease-in-out;
+    transition: box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out;
     position: relative;
-    flex-direction: column;
-    padding-top: 0;
-}
-    .input-wrapper.has-indicators {
-    padding-top: 0.5rem;
+    display: flex; /* ✨ 確保它是 Flex 容器 */
+    flex-direction: column; /* ✨ 確保子元素垂直排列 */
+    gap: 0.5rem; /* ✨ 僅在提示顯示時，自動產生 8px 的間距 */
 }
 
 #input-indicator-container {
     display: flex;
     overflow-x: auto;
     white-space: nowrap;
-    padding-bottom: 0.5rem;
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none;   /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
+    transition: opacity 0.3s ease-in-out; /* ✨ 增加平滑的淡入淡出動畫 */
 }
 
+#input-indicator-container:empty {
+    display: none; /* ✨ 這是關鍵！當容器為空時，徹底從版面中移除它 */
+}
 #input-indicator-container::-webkit-scrollbar {
     display: none; /* 隱藏滾動條 */
 }
@@ -3594,17 +3595,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     indicatorData.eventListener(indicator);
                 }
             });
-            
-            // ✨ 這是修正後的邏輯 ✨
-            // 如果有任何活動的指示器，就立即添加 class
-            if (activeIndicators.size > 0) {
-                wrapper.classList.add('has-indicators');
-            } 
-            // 如果沒有活動的指示器，且容器已經是空的，也立即移除 class
-            // (這處理了從無到無的情況)
-            else if (container.children.length === 0) {
-                wrapper.classList.remove('has-indicators');
-            }
         };
         const getActiveAstrasId = () => {
             const conv = getActiveConversation();
