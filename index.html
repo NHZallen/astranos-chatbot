@@ -2097,7 +2097,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                 </div>
                             </div>
                         </div>
-                        <p class="text-sm text-[var(--text-secondary)] mt-4" data-lang-key="versionNumber">目前版本：14.8.7</p>
+                        <p class="text-sm text-[var(--text-secondary)] mt-4" data-lang-key="versionNumber">目前版本：<span id="version-number-display">15.0.0</span></p>
                     </div>
                 </div>
             </div>
@@ -7178,6 +7178,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderTrash();
             showNotification(`${i18n[config.uiLanguage].trashEmptiedSuccess || '已成功清空垃圾桶，刪除了'} ${count} ${i18n[config.uiLanguage].items || '個項目'}。`, 'success');
         };
+        const updateDisplayedVersion = () => {
+    const versionDisplayElement = document.getElementById('version-number-display');
+    if (versionDisplayElement && typeof updateLogs !== 'undefined' && updateLogs.length > 0) {
+        const latestVersion = updateLogs[0].version; // 假設 updateLogs[0] 是最新版本
+        versionDisplayElement.textContent = latestVersion;
+        config.lastSeenVersion = latestVersion; // 同步更新已見版本，避免舊用戶看到舊版號的更新彈窗
+    }
+};
         async function initChatApp() {
             await loadConfig();
             await loadAppData();
@@ -7190,6 +7198,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             updateInputState();
             setupVoiceInput();
             setupScrollToBottomButton();
+            updateDisplayedVersion();
             checkAndShowLatestUpdate();
             ALL_ELEMENTS.menuToggleBtn.addEventListener('click', () => toggleSidebar());
             ALL_ELEMENTS.sidebarOverlay.addEventListener('click', () => toggleSidebar(false));
