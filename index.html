@@ -2661,20 +2661,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             trashViewCloseBtn: document.getElementById('trash-view-close-btn'),
             learningModeBtn: document.getElementById('learning-mode-btn'),
         };
-        /**
- * 輔助函式：比較兩個版本號字串。
- * @param {string} v1 - 第一個版本號
- * @param {string} v2 - 第二個版本號
- * @returns {number} 如果 v1 > v2 回傳 1, v1 < v2 回傳 -1, v1 == v2 回傳 0
- */
         const compareVersions = (v1, v2) => {
-            // 如果使用者是第一次使用 (v2 為空)，則任何版本都算 "新"
             if (!v2) return 1;
-
             const parts1 = v1.split('.').map(Number);
             const parts2 = v2.split('.').map(Number);
             const len = Math.max(parts1.length, parts2.length);
-
             for (let i = 0; i < len; i++) {
                 const p1 = parts1[i] || 0;
                 const p2 = parts2[i] || 0;
@@ -3599,9 +3590,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                         </button>
                     `,
-                    好的，很抱歉程式碼被中斷了。這就為您補上從 `eventListener: (el) => el.querySelector('#close-search-btn` 開始的完整後續代碼：
-
-```javascript
                     eventListener: (el) => el.querySelector('#close-search-btn-input').addEventListener('click', async () => {
                         conv.isWebSearchEnabled = false;
                         await saveAppData();
@@ -4027,7 +4015,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 conv.messages.push(finalAiMessage);
                 conv.lastUpdatedAt = new Date().toISOString();
                 await saveAppData();
-                if(config.enableFollowUp) {
+                if(config.enableFollowUp && !config.isLearningMode) {
                     await generateFollowUpPrompts(userMessage, fullResponse);
                 }
                 if (config.memoryEnabled1 && config.enableAutoMemory) {
@@ -4470,10 +4458,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.followUpPromptsList.classList.toggle('collapsed', !isFollowUpExpanded);
             const conv = getActiveConversation();
             if (conv && conv.messages.length > 0 && conv.messages[conv.messages.length-1].role === 'model') {
-                if (config.enableFollowUp) {
-                    const lastMessage = conv.messages[conv.messages.length-1].parts.map(p => p.text).join(' ');
+                if (config.enableFollowUp && !config.isLearningMode) {
+                    const lastUserMessage = conv.messages[conv.messages.length-2].parts.map(p => p.text).join(' ');
+                    const lastModelMessage = conv.messages[conv.messages.length-1].parts.map(p => p.text).join(' ');
                     if (ALL_ELEMENTS.followUpPromptsList.children.length === 0) {
-                        generateFollowUpPrompts(lastMessage);
+                        generateFollowUpPrompts(lastUserMessage, lastModelMessage);
                     }
                 }
             } else {
