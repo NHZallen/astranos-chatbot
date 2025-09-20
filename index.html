@@ -3536,34 +3536,21 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const updateFunctionButtonsState = () => {
             // 從元素清單中獲取所有需要控制的按鈕
             const { cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn } = ALL_ELEMENTS;
-            // 為了介面美觀，我們也把按鈕之間的的分隔線選取出來
             const separator = document.querySelector('#file-options-popover .border-t');
-            
             const conv = getActiveConversation();
-            if (!conv) return;
-
+            if (!conv) return; // 如果沒有對話，則不執行任何操作
             const modelInfo = MODELS.find(m => m.id === conv.model);
-            const provider = modelInfo?.provider;
-
-            // 將需要根據模型類型來隱藏/顯示的按鈕分組
+            const provider = modelInfo?.provider; // 獲取模型的提供者 ('openrouter' 或 'gemini')
             const multimodalButtons = [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn];
 
             if (provider === 'openrouter') {
-                // 如果是 OpenRouter 模型，直接隱藏多模態相關按鈕和分隔線
-                multimodalButtons.forEach(btn => btn.classList.add('hidden'));
-                if (separator) separator.classList.add('hidden');
-                
-                // 並確保「學習與研究模式」按鈕是可見且可用的
-                learningModeBtn.classList.remove('hidden');
-
+                multimodalButtons.forEach(btn => btn.style.display = 'none');
+                if (separator) separator.style.display = 'none';
+                learningModeBtn.style.display = 'flex';
             } else { // 此處處理 Gemini 或未來可能新增的其他模型
-                // 如果不是 OpenRouter 模型，則確保所有按鈕和分隔線都顯示出來
-                multimodalButtons.forEach(btn => btn.classList.remove('hidden'));
-                if (separator) separator.classList.remove('hidden');
-                learningModeBtn.classList.remove('hidden');
-
-                // 然後，根據是否處於「學習與研究模式」來決定是否“禁用”這些按鈕
-                // 這是為了處理 Gemini 模型在學習模式下也應該禁用這些功能的情況
+                multimodalButtons.forEach(btn => btn.style.display = 'flex');
+                if (separator) separator.style.display = 'block';
+                learningModeBtn.style.display = 'flex';
                 const shouldBeDisabled = config.isLearningMode;
                 multimodalButtons.forEach(btn => {
                     btn.disabled = shouldBeDisabled;
