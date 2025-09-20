@@ -18,9 +18,6 @@ window.i18n = {
         copyright: 'ASTRA版權所有',
         currentLanguageName: '繁體中文',
 
-
-
-
         // Main App UI
         newChat: '新對話',
         batchSelect: '批次選取',
@@ -51,11 +48,9 @@ window.i18n = {
         enterMessagePlaceholder: '在這裡輸入您的訊息...',
         voiceInput: '語音輸入',
         webSearch: '聯網搜尋',
+        learningMode: '學習與研究模式',
         howCanIHelp: '有什麼可以為您服務的嗎？',
         viewingArchived: '正在檢視封存的對話，無法傳送訊息。',
-
-
-
 
         // Settings Modal
         personalization: '個人化',
@@ -87,6 +82,7 @@ window.i18n = {
         restoreDefault: '還原預設',
         memorySwitch: '記憶功能開關',
         personalMemory: '個人習慣記憶 (類型1)',
+        crossDialogueMemory: '跨對話記憶 (類型2)',
         enableAutoMemory: '啟用自動添加記憶',
         personalMemoryManage: '個人習慣記憶管理',
         addMemory: '新增記憶',
@@ -113,7 +109,7 @@ window.i18n = {
         termsOfUse: '使用條款',
         privacyPolicy: '隱私權益政策',
         version: '版本號',
-        versionNumber: 'Astra-nos-14.9.9',
+        versionNumber: 'Astra-nos-15.0.0',
         helpCenterDesc: '進階 AI 聊天機器人（下稱「本服務」或「ASTRA」）旨在提供穩定、可控且以使用者為本的智慧對話體驗。本服務採取瀏覽器端運作設計，主要資料儲存於使用者之本機環境，以降低不必要之傳輸與集中化風險。使用者得依個人需求於單一介面中切換多種模型、建立不留痕跡之臨時對話、運用 Astras 功能自訂行為準則、管理資料夾並封存對話，亦可透過匯出與匯入機制，自主完成備份與移轉。若使用者有即時資訊之需求，得選擇啟用聯網搜尋；對於長文處理或媒體分析之情境，亦可於訊息中附加文件或影像，便於模型綜合判讀。 本服務所涉之對話內容、外觀與模型偏好、資料夾與封存狀態、Astras 設定及其他應用層級資訊，均以使用者裝置之瀏覽器資料庫保存。使用者自行提供之 API 金鑰僅用以連線第三方模型供應商（例如 Google Gemini 或 OpenRouter），並保留於本機以完成必要請求。本服務不建置伺服器端資料庫以蒐集使用者個資或對話內容，亦不就使用者於本機保存之資訊進行另行處理或轉售。使用者得隨時選擇關閉聯網、移除金鑰、啟用臨時對話或清除瀏覽器資料，以符合自身之安全與合規要求。',
         termsOfUseDesc: '首次使用時，請先於登入介面建立或登入本機帳號，以便關聯個別設定與對話紀錄。密碼將以雜湊方式（SHA-256）保存於瀏覽器端，僅供日後登入時比對之目的，不以明文儲存。完成登入後，建議立即前往設定頁面依實際需求填入對應模型之 API 金鑰：若使用 Gemini，請於指定欄位提供金鑰；若使用 OpenRouter，請為計畫使用之各模型分別儲存金鑰。金鑰設定完成後，訊息輸入與檔案附加即會啟用；如需檢索最新公開資訊，可切換開啟聯網搜尋後再行提問；如欲延展同一脈絡之討論，可啟用後續追問提示功能，以取得與當前回覆相銜接之建議問題。 當對話數量增加時，使用者可視需要將對話重新命名、移入資料夾或進行封存，並可使用批次選取進行合併操作。若需於不同瀏覽器或裝置間遷移工作環境，建議以匯出功能產生備份檔（JSON），於新環境完成匯入後可快速復原對話、資料夾與應用程式偏好（不含敏感憑證）。為保障使用者自主性，本服務亦提供臨時對話模式，該模式下之輸入與回覆僅駐留於當次工作階段，離開即不留痕跡。需特別注意者，本服務回覆係由第三方模型依輸入內容產生，可能受限於資料新舊、語境解讀或訓練邊界而產生不確定性；在醫療、法律、投資或其他專業領域，使用者應自行審慎判斷，並於必要時諮詢合格專業人士。',
         privacyPolicyDesc: '本服務重視使用者之資料保護與隱私權，並以最小化蒐集、在地化儲存及使用者自主控制為設計原則。除依法令或使用者另有明確授權外，本服務不主動於伺服器端保存使用者之對話內容或個人識別資料。一般情況下，對話紀錄、Astras 設定、應用外觀與模型偏好、資料夾與封存狀態，以及使用者於設定頁面所選保存之 API 金鑰，均儲存於使用者瀏覽器之本機資料庫。登入密碼將以 SHA-256 雜湊方式保存於同一環境，僅供登入驗證之用；除密碼雜湊外，其他應用層級資料於瀏覽器端並未額外加密，使用者應自行妥適保護裝置與瀏覽器環境，避免於共用或不受信任之設備儲存敏感資訊。 當使用者啟用第三方模型或聯網搜尋時，相關提示文字、必要上下文及（在使用者附檔時可能包含之）檔案內容，將依使用者之操作指示送交該第三方供應商，以完成請求或檢索最新資訊。該等資料處理將受第三方之條款與隱私政策拘束，可能涉及資料跨境傳輸與合規評估；本服務不就第三方之作業程序負責，亦不進行另行蒐集或出售。使用者得隨時關閉連網功能、移除 API 金鑰或改用臨時對話模式，以降低持久化保存或外部傳輸之風險；亦可透過匯出與匯入機制自主管理資料。除非法令強制或為保護使用者及第三人合法權益所必要，本服務不會要求或保留可直接識別個人之伺服器端資料，故原則上亦無從代為提供伺服器端紀錄。 本服務不以追蹤廣告為目的，不進行跨站追蹤或販售個資。未成年人使用本服務時，應先取得法定監護人之同意並於其指導下進行。使用者就其資料享有存取、匯出與刪除之控制權；得於「資料管理」頁面匯出備份，或清除瀏覽器資料使之歸零。本政策將視功能、法規或營運需要不時更新，最新版本公布後即刻生效；重大變更將以合理方式提示。若使用者對資料保護有任何疑問、要求或建議，敬請循指定聯絡窗口與我們聯繫，我們將於合理期間内提供協助。',
@@ -124,9 +120,6 @@ window.i18n = {
         versionInfo: '版本資訊',
         viewUpdateHistory: '查看版本更新資訊',
         enableUpdateNotifications: '啟用更新通知彈窗',
-
-
-
 
         // Other Modals & Dialogs
         selectDataToExport: '選擇您想要匯出的資料。',
@@ -183,9 +176,6 @@ window.i18n = {
         setAstrasAvatar: '設定 Astras 頭像',
         cropAvatarDesc: '移動和縮放圖片以裁切您喜歡的圓形頭像。',
 
-
-
-
         // Popover Menus
         pin: '釘選',
         unpin: '取消釘選',
@@ -196,16 +186,10 @@ window.i18n = {
         edit: '編輯',
         editAvatar: '編輯頭像',
 
-
-
-
         // Astras Store
         subscribe: '訂閱',
         unsubscribe: '取消訂閱',
         manage: '管理',
-
-
-
 
         // Dashboard specific
         modelUsageCount: '模型使用次數',
@@ -220,9 +204,6 @@ window.i18n = {
         monthSuffix: '月',
         daySuffix: '日',
         months: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
-
-
-
 
         // Dialogs & Notifications
         usernamePasswordRequired: '使用者名稱和密碼皆為必填項目。',
@@ -239,7 +220,7 @@ window.i18n = {
         importUserMismatchTitle: '使用者不符',
         importOverwriteWarning: '這將會覆蓋您目前所有的資料。此操作無法復原。確定要繼續嗎？',
         importConfirmation: '匯入確認',
-        importAuthRequired: '匯入前請先輸入此裝置的使用者名稱與密碼以進行驗證。',
+        importDataDescAuth: '選擇一個之前匯出的 `.json` 檔案。您輸入的帳號密碼將用於驗證備份檔案的所有權。',
         importInvalidFile: '無效的備份檔案或缺少使用者憑證。',
         importAuthMismatch: '您輸入的使用者名稱或密碼與備份檔案中的不符。',
         deleteConfirmationTitle: '刪除確認',
@@ -315,7 +296,18 @@ window.i18n = {
         emptyTrashConfirmationTitle: '清空垃圾桶確認',
         trashEmptiedSuccess: '已成功清空垃圾桶，刪除了',
         trashIsEmpty: '垃圾桶是空的。',
-
+        learningModeIndicator: '學習模式',
+        closeLearningMode: '關閉學習模式',
+        astrasActive: '使用中',
+        closeSearch: '關閉搜尋',
+        naming: 'AI思考中...',
+        searching: '正在搜尋中...',
+        noMessages: '此對話沒有訊息。',
+        webSearchNotAvailable: '當前模型不支援或無法使用聯網搜尋。',
+        deletedOn: '刪除於',
+        newVersionsFound: '發現 {count} 個新版本！',
+        learningModeEnabled: '學習與研究模式已開啟',
+        learningModeDisabled: '學習與研究模式已關閉',
 
         // Model Descriptions & Limits
         model_ultra_desc: '新版測試旗艦模型，適合大型研究與實驗探討；請注意!此模型對話內容將被模型提供方檢視。',
@@ -333,27 +325,24 @@ window.i18n = {
         model_pico_desc: '高速多語推理，適合即時運用與跨語言應用。',
         model_pico_limits: '20次/分鐘、50次/天',
 
-
-
-
         // Official Astras
-    astras_official_writer_01_name: '旅遊小編',
-    astras_official_writer_01_desc: '這是一款專為社群平台設計的Astras，能以優雅且富有感染力的語言撰寫旅遊景點與飯店介紹，透過細膩的文筆展現高級質感，同時結合城市歷史背景與熱門主題標籤，吸引目標客群並提升內容曝光度。',
-    astras_official_editor_02_name: '社群編輯',
-    astras_official_editor_02_desc: '社群編輯是一個專注於社群帳號經營的智慧助手，不會迎合或編造，而是以真實與一致為原則，協助檢視方向、發掘創意並掌握受眾回應，幫助在策略、內容與互動之間保持平衡，讓社群經營更有條理與延展性。',
-    astras_official_editor_03_name: '攝影之眼',
-    astras_official_editor_03_desc: '攝影之眼是一個專注於攝影的智慧助手，能夠針對構圖、主題、拍攝環境與設備設定提供實用建議。無論你使用手機還是相機，它都能根據不同情境給出專業且易懂的指引，幫助你捕捉更具故事性與美感的影像。',
-    astras_official_editor_04_name: 'Notion VP',
-    astras_official_editor_04_desc: 'Notion VP是一個專注於資訊整理與版面設計的智慧助手，能夠針對使用者提供的資料與需求，提出多種適用的整理方式，並且同時考慮在手機與電腦介面的可讀性與操作體驗。它不僅能協助梳理內容結構，還能提供清晰的版面規劃建議，讓資訊展示更有條理、直觀並具延展性。',
-    astras_official_editor_05_name: '剪序者',
-    astras_official_editor_05_desc: '剪序者是一個同時專注於影片構想與實際剪輯執行的智慧助手，能夠針對不同素材與需求，提供完整的故事設計、分鏡構思、節奏規劃，以及具體的後製操作建議。它的任務不只是提出抽象靈感，而是能幫助使用者將想法落實為實際可執行的剪輯方案，讓影片在敘事、節奏與視覺層面上達到最佳平衡。',
-    astras_official_editor_06_name: '法語藍圖',
-    astras_official_editor_06_desc: '法語藍圖是一個專為中文母語者設計的智慧學習助手，能夠針對中文學習者的語言特徵與常見困難，提供系統化的學習方法、例句示範、發音提示與文化補充，幫助使用者逐步構建從基礎到進階的法語藍圖。',
-    astras_official_editor_07_name: '語感英語',
-    astras_official_editor_07_desc: '語感英語是一個專為中文母語者設計的智慧學習助手，能針對中文學習者的語言特徵與學習痛點，提供系統化的學習方法、例句示範、發音提示與文化補充，幫助使用者在語言基礎與實際應用之間逐步建立完整的學習結構。',
-    astras_official_editor_08_name: '西文藍圖',
-    astras_official_editor_08_desc: '西語藍圖是一個專為中文母語者設計的智慧學習助手，聚焦中文學習者在西班牙語上的典型難點（動詞變位、陰陽性與性數一致、時態體貌、代詞與語序、發音與重音、文化與語用差異），提供系統化的學習方法、例句示範、發音提示、情境對話與文化補充，幫助學習者從基礎到進階逐步建立完整結構，能在真實場景中自然、自信地使用西語（西班牙與拉美變體皆涵蓋）。',
-  },
+        astras_official_writer_01_name: '旅遊小編',
+        astras_official_writer_01_desc: '這是一款專為社群平台設計的Astras，能以優雅且富有感染力的語言撰寫旅遊景點與飯店介紹，透過細膩的文筆展現高級質感，同時結合城市歷史背景與熱門主題標籤，吸引目標客群並提升內容曝光度。',
+        astras_official_editor_02_name: '社群編輯',
+        astras_official_editor_02_desc: '社群編輯是一個專注於社群帳號經營的智慧助手，不會迎合或編造，而是以真實與一致為原則，協助檢視方向、發掘創意並掌握受眾回應，幫助在策略、內容與互動之間保持平衡，讓社群經營更有條理與延展性。',
+        astras_official_editor_03_name: '攝影之眼',
+        astras_official_editor_03_desc: '攝影之眼是一個專注於攝影的智慧助手，能夠針對構圖、主題、拍攝環境與設備設定提供實用建議。無論你使用手機還是相機，它都能根據不同情境給出專業且易懂的指引，幫助你捕捉更具故事性與美感的影像。',
+        astras_official_editor_04_name: 'Notion VP',
+        astras_official_editor_04_desc: 'Notion VP是一個專注於資訊整理與版面設計的智慧助手，能夠針對使用者提供的資料與需求，提出多種適用的整理方式，並且同時考慮在手機與電腦介面的可讀性與操作體驗。它不僅能協助梳理內容結構，還能提供清晰的版面規劃建議，讓資訊展示更有條理、直觀並具延展性。',
+        astras_official_editor_05_name: '剪序者',
+        astras_official_editor_05_desc: '剪序者是一個同時專注於影片構想與實際剪輯執行的智慧助手，能夠針對不同素材與需求，提供完整的故事設計、分鏡構思、節奏規劃，以及具體的後製操作建議。它的任務不只是提出抽象靈感，而是能幫助使用者將想法落實為實際可執行的剪輯方案，讓影片在敘事、節奏與視覺層面上達到最佳平衡。',
+        astras_official_editor_06_name: '法語藍圖',
+        astras_official_editor_06_desc: '法語藍圖是一個專為中文母語者設計的智慧學習助手，能夠針對中文學習者的語言特徵與常見困難，提供系統化的學習方法、例句示範、發音提示與文化補充，幫助使用者逐步構建從基礎到進階的法語藍圖。',
+        astras_official_editor_07_name: '語感英語',
+        astras_official_editor_07_desc: '語感英語是一個專為中文母語者設計的智慧學習助手，能針對中文學習者的語言特徵與學習痛點，提供系統化的學習方法、例句示範、發音提示與文化補充，幫助使用者在語言基礎與實際應用之間逐步建立完整的學習結構。',
+        astras_official_editor_08_name: '西文藍圖',
+        astras_official_editor_08_desc: '西語藍圖是一個專為中文母語者設計的智慧學習助手，聚焦中文學習者在西班牙語上的典型難點（動詞變位、陰陽性與性數一致、時態體貌、代詞與語序、發音與重音、文化與語用差異），提供系統化的學習方法、例句示範、發音提示、情境對話與文化補充，幫助學習者從基礎到進階逐步建立完整結構，能在真實場景中自然、自信地使用西語（西班牙與拉美變體皆涵蓋）。',
+    },
     'en': {
         // Login Page
         login: 'Login',
@@ -372,9 +361,6 @@ window.i18n = {
         demoChatTitle: 'Astra-ultra Conversation Example',
         copyright: 'Copyright © ASTRA',
         currentLanguageName: 'English',
-
-
-
 
         // Main App UI
         newChat: 'New Chat',
@@ -406,11 +392,9 @@ window.i18n = {
         enterMessagePlaceholder: 'Enter your message here...',
         voiceInput: 'Voice Input',
         webSearch: 'Web Search',
+        learningMode: 'Learning & Research Mode',
         howCanIHelp: 'How can I help you?',
         viewingArchived: 'Viewing an archived chat. Cannot send messages.',
-
-
-
 
         // Settings Modal
         personalization: 'Personalization',
@@ -442,6 +426,7 @@ window.i18n = {
         restoreDefault: 'Restore Default',
         memorySwitch: 'Memory Function Switch',
         personalMemory: 'Personal Habits Memory (Type 1)',
+        crossDialogueMemory: 'Cross-Dialogue Memory (Type 2)',
         enableAutoMemory: 'Enable Automatic Memory Addition',
         personalMemoryManage: 'Personal Habits Memory Management',
         addMemory: 'Add Memory',
@@ -468,7 +453,7 @@ window.i18n = {
         termsOfUse: 'Terms of Use',
         privacyPolicy: 'Privacy Policy',
         version: 'Version',
-        versionNumber: 'Astra-nos-14.9.9',
+        versionNumber: 'Astra-nos-15.0.0',
         helpCenterDesc: 'The Advanced AI Chatbot (hereinafter "this Service" or "ASTRA") aims to provide a stable, controllable, and user-centric intelligent conversation experience. This Service is designed to operate on the client-side, with primary data stored in the user\'s local environment to reduce unnecessary transmission and centralization risks. Users can switch between multiple models in a single interface, create ephemeral temporary chats that leave no trace, use the Astras feature to customize behavioral guidelines, manage folders, and archive conversations. They can also perform backups and transfers independently through export and import mechanisms. If users require real-time information, they can enable web search. For long-text processing or media analysis, files or images can be attached to messages for comprehensive interpretation by the model. All conversation content, appearance and model preferences, folder and archive states, Astras settings, and other application-level information related to this Service are stored in the browser database on the user\'s device. API keys provided by the user are used solely to connect to third-party model providers (e.g., Google Gemini or OpenRouter) and are kept locally to complete necessary requests. This Service does not build server-side databases to collect user personal data or conversation content, nor does it process or resell information stored locally by the user. Users may choose to disable web search, remove API keys, use temporary chats, or clear browser data at any time to meet their own security and compliance requirements.',
         termsOfUseDesc: 'Upon first use, please create or log into a local account via the login interface to associate individual settings and conversation records. The password will be stored client-side as a hash (SHA-256) for future login comparison purposes only and is not stored in plaintext. After logging in, it is recommended to immediately navigate to the settings page and enter the API keys for the desired models: for Gemini, provide the key in the specified field; for OpenRouter, save keys for each model you plan to use. Once keys are set, message input and file attachment will be enabled. To retrieve the latest public information, you can toggle on web search before asking a question. To extend a discussion within the same context, enable the follow-up prompts feature to receive suggested questions related to the current response. As the number of conversations grows, users can rename, move into folders, or archive them as needed, and can use batch selection for combined operations. To migrate the working environment between different browsers or devices, it is recommended to use the export function to generate a backup file (JSON), which can be imported into the new environment to quickly restore conversations, folders, and application preferences (excluding sensitive credentials). To protect user autonomy, this Service also offers a temporary chat mode where inputs and replies exist only for the current session and leave no trace upon closing. It is important to note that responses from this Service are generated by third-party models based on the input and may be subject to uncertainty due to data timeliness, context interpretation, or training boundaries. In medical, legal, financial, or other professional fields, users should exercise their own careful judgment and consult qualified professionals when necessary.',
         privacyPolicyDesc: 'This Service values user data protection and privacy, and is designed on the principles of data minimization, localized storage, and user control. Except where required by law or explicitly authorized by the user, this Service does not actively store user conversation content or personally identifiable information on the server-side. Typically, conversation history, Astras settings, application appearance and model preferences, folder and archive status, and API keys saved by the user in the settings page are all stored in the local database of the user\'s browser. The login password will be stored in the same environment as a SHA-256 hash for login verification purposes only. Other than the password hash, other application-level data is not additionally encrypted on the client-side; users should adequately protect their device and browser environment and avoid storing sensitive information on shared or untrusted devices. When a user enables a third-party model or web search, the relevant prompt text, necessary context, and (if attached by the user) file content will be sent to the third-party provider as directed by the user\'s action to complete the request or retrieve the latest information. Such data processing will be governed by the third party\'s terms and privacy policy and may involve cross-border data transfer and compliance assessments. This Service is not responsible for the operational procedures of third parties, nor does it collect or sell this data separately. Users may at any time disable the web search feature, remove API keys, or switch to temporary chat mode to reduce the risk of persistent storage or external transmission. They can also manage their data independently through the export and import mechanisms. Unless compelled by law or necessary to protect the legitimate rights and interests of the user and third parties, this Service will not request or retain server-side data that can directly identify an individual, and therefore, in principle, cannot provide server-side records on their behalf. This Service is not used for ad tracking purposes, does not engage in cross-site tracking, or sell personal data. Minors should obtain the consent of a legal guardian and use this Service under their guidance. Users have control over their data, including access, export, and deletion rights; they can export a backup from the "Data Management" page or clear browser data to reset it. This policy will be updated from time to time based on functional, regulatory, or operational needs, with the latest version taking effect immediately upon publication. Significant changes will be communicated in a reasonable manner. If users have any questions, requests, or suggestions regarding data protection, please contact us through the designated channels, and we will provide assistance within a reasonable timeframe.',
@@ -479,9 +464,6 @@ window.i18n = {
         versionInfo: 'Version Info',
         viewUpdateHistory: 'View Update History',
         enableUpdateNotifications: 'Enable Update Notifications',
-
-
-
 
         // Other Modals & Dialogs
         selectDataToExport: 'Select the data you want to export.',
@@ -538,9 +520,6 @@ window.i18n = {
         setAstrasAvatar: 'Set Astras Avatar',
         cropAvatarDesc: 'Move and scale the image to crop your desired circular avatar.',
 
-
-
-
         // Popover Menus
         pin: 'Pin',
         unpin: 'Unpin',
@@ -551,16 +530,10 @@ window.i18n = {
         edit: 'Edit',
         editAvatar: 'Edit Avatar',
 
-
-
-
         // Astras Store
         subscribe: 'Subscribe',
         unsubscribe: 'Unsubscribe',
         manage: 'Manage',
-
-
-
 
         // Dashboard specific
         modelUsageCount: 'Model Usage Count',
@@ -575,9 +548,6 @@ window.i18n = {
         monthSuffix: '',
         daySuffix: '',
         months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-
-
-
 
         // Dialogs & Notifications
         usernamePasswordRequired: 'Username and password are required.',
@@ -594,7 +564,7 @@ window.i18n = {
         importUserMismatchTitle: 'User Mismatch',
         importOverwriteWarning: 'This will overwrite all your current data. This action cannot be undone. Are you sure you want to continue?',
         importConfirmation: 'Import Confirmation',
-        importAuthRequired: 'Please enter the username and password for this device to authenticate before importing.',
+        importDataDescAuth: 'Select a previously exported `.json` file. The username and password you enter will be used to verify ownership of the backup file.',
         importInvalidFile: 'Invalid backup file or missing user credentials.',
         importAuthMismatch: 'The username or password you entered does not match the one in the backup file.',
         deleteConfirmationTitle: 'Delete Confirmation',
@@ -670,9 +640,18 @@ window.i18n = {
         emptyTrashConfirmationTitle: 'Empty Trash Confirmation',
         trashEmptiedSuccess: 'Successfully emptied the trash, deleting',
         trashIsEmpty: 'The trash is empty.',
-
-
-
+        learningModeIndicator: 'Learning Mode',
+        closeLearningMode: 'Close Learning Mode',
+        astrasActive: 'active',
+        closeSearch: 'Close Search',
+        naming: 'AI is thinking...',
+        searching: 'Searching...',
+        noMessages: 'This conversation has no messages.',
+        webSearchNotAvailable: 'Web search is not available for the current model.',
+        deletedOn: 'Deleted on',
+        newVersionsFound: 'Found {count} new versions!',
+        learningModeEnabled: 'Learning & Research Mode enabled',
+        learningModeDisabled: 'Learning & Research Mode disabled',
 
         // Model Descriptions & Limits
         model_ultra_desc: 'New beta flagship model, suitable for large-scale research and experimental exploration; Please note! The content of conversations with this model will be reviewed by the model provider.',
@@ -690,27 +669,24 @@ window.i18n = {
         model_pico_desc: 'High-speed multilingual reasoning, suitable for real-time use and cross-lingual applications.',
         model_pico_limits: '20 reqs/min, 50 reqs/day',
 
-
-
-
         // Official Astras
         astras_official_writer_01_name: 'Travel Blogger',
-    astras_official_writer_01_desc: 'This is an Astras designed for social media platforms, capable of writing elegant and engaging introductions for tourist attractions and hotels. It uses refined language to convey a high-end feel, incorporating the city\'s historical background and popular hashtags to attract the target audience and increase content visibility.',
-    astras_official_editor_02_name: 'Social Media Editor',
-    astras_official_editor_02_desc: 'The Social Media Editor is an intelligent assistant focused on social media account management. It operates on principles of authenticity and consistency, rather than pandering or fabricating, to help review strategies, discover creative ideas, manage audience responses, and maintain a balance between strategy, content, and interaction, making social media management more organized and scalable.',
-    astras_official_editor_03_name: 'Eye of Photography',
-    astras_official_editor_03_desc: 'Eye of Photography is an intelligent assistant focused on photography, capable of providing practical advice on composition, themes, shooting environments, and equipment settings. Whether you are using a smartphone or a camera, it offers clear, professional, and accessible guidance tailored to the situation, helping you capture images with stronger storytelling and aesthetic appeal.',
-    astras_official_editor_04_name: 'Notion VP',
-    astras_official_editor_04_desc: 'Notion VP is an intelligent assistant focused on information organization and layout design. It can propose various suitable organization methods based on user-provided data and needs, while considering readability and user experience on both mobile and desktop interfaces. It not only helps structure content but also provides clear layout suggestions, making information display more organized, intuitive, and scalable.',
-    astras_official_editor_05_name: 'The Sequencer',
-    astras_official_editor_05_desc: 'The Sequencer is an intelligent assistant focused on both video conceptualization and practical editing execution. It can provide complete story design, storyboard ideas, rhythm planning, and specific post-production operational advice for different materials and requirements. Its task is not just to offer abstract inspiration but to help users transform ideas into executable editing plans, achieving the best balance in narrative, rhythm, and visual aspects of the video.',
-    astras_official_editor_06_name: 'French Blueprint',
-    astras_official_editor_06_desc: 'French Blueprint is an intelligent learning assistant designed for native Chinese speakers. It provides systematic learning methods, example sentences, pronunciation tips, and cultural supplements tailored to the linguistic characteristics and common difficulties of Chinese learners, helping users gradually build a French language blueprint from basic to advanced levels.',
-    astras_official_editor_07_name: 'English Sense',
-    astras_official_editor_07_desc: 'English Sense is an intelligent learning assistant designed for native Chinese speakers. It addresses their specific linguistic traits and learning pain points by providing systematic learning methods, example sentences, pronunciation tips, and cultural insights. It helps users build a complete learning structure, bridging the gap between foundational language skills and practical application.',
-    astras_official_editor_08_name: 'Spanish Blueprint',
-    astras_official_editor_08_desc: 'Spanish Blueprint is an intelligent learning assistant designed for native Chinese speakers, focusing on typical difficulties in Spanish (verb conjugation, gender/number agreement, tense/aspect, pronouns/word order, pronunciation/stress, cultural/pragmatic differences). It provides systematic learning methods, example sentences, pronunciation tips, situational dialogues, and cultural supplements to help learners build a complete structure from basic to advanced levels, enabling them to use Spanish naturally and confidently in real scenarios (covering both Spanish and Latin American variants).',
-  },
+        astras_official_writer_01_desc: 'This is an Astras designed for social media platforms, capable of writing elegant and engaging introductions for tourist attractions and hotels. It uses refined language to convey a high-end feel, incorporating the city\'s historical background and popular hashtags to attract the target audience and increase content visibility.',
+        astras_official_editor_02_name: 'Social Media Editor',
+        astras_official_editor_02_desc: 'The Social Media Editor is an intelligent assistant focused on social media account management. It operates on principles of authenticity and consistency, rather than pandering or fabricating, to help review strategies, discover creative ideas, manage audience responses, and maintain a balance between strategy, content, and interaction, making social media management more organized and scalable.',
+        astras_official_editor_03_name: 'Eye of Photography',
+        astras_official_editor_03_desc: 'Eye of Photography is an intelligent assistant focused on photography, capable of providing practical advice on composition, themes, shooting environments, and equipment settings. Whether you are using a smartphone or a camera, it offers clear, professional, and accessible guidance tailored to the situation, helping you capture images with stronger storytelling and aesthetic appeal.',
+        astras_official_editor_04_name: 'Notion VP',
+        astras_official_editor_04_desc: 'Notion VP is an intelligent assistant focused on information organization and layout design. It can propose various suitable organization methods based on user-provided data and needs, while considering readability and user experience on both mobile and desktop interfaces. It not only helps structure content but also provides clear layout suggestions, making information display more organized, intuitive, and scalable.',
+        astras_official_editor_05_name: 'The Sequencer',
+        astras_official_editor_05_desc: 'The Sequencer is an intelligent assistant focused on both video conceptualization and practical editing execution. It can provide complete story design, storyboard ideas, rhythm planning, and specific post-production operational advice for different materials and requirements. Its task is not just to offer abstract inspiration but to help users transform ideas into executable editing plans, achieving the best balance in narrative, rhythm, and visual aspects of the video.',
+        astras_official_editor_06_name: 'French Blueprint',
+        astras_official_editor_06_desc: 'French Blueprint is an intelligent learning assistant designed for native Chinese speakers. It provides systematic learning methods, example sentences, pronunciation tips, and cultural supplements tailored to the linguistic characteristics and common difficulties of Chinese learners, helping users gradually build a French language blueprint from basic to advanced levels.',
+        astras_official_editor_07_name: 'English Sense',
+        astras_official_editor_07_desc: 'English Sense is an intelligent learning assistant designed for native Chinese speakers. It addresses their specific linguistic traits and learning pain points by providing systematic learning methods, example sentences, pronunciation tips, and cultural insights. It helps users build a complete learning structure, bridging the gap between foundational language skills and practical application.',
+        astras_official_editor_08_name: 'Spanish Blueprint',
+        astras_official_editor_08_desc: 'Spanish Blueprint is an intelligent learning assistant designed for native Chinese speakers, focusing on typical difficulties in Spanish (verb conjugation, gender/number agreement, tense/aspect, pronouns/word order, pronunciation/stress, cultural/pragmatic differences). It provides systematic learning methods, example sentences, pronunciation tips, situational dialogues, and cultural supplements to help learners build a complete structure from basic to advanced levels, enabling them to use Spanish naturally and confidently in real scenarios (covering both Spanish and Latin American variants).',
+    },
     'fr': {
         // Login Page
         login: 'Connexion',
@@ -729,9 +705,6 @@ window.i18n = {
         demoChatTitle: 'Exemple de Conversation Astra-ultra',
         copyright: 'Copyright © ASTRA',
         currentLanguageName: 'Français',
-
-
-
 
         // Main App UI
         newChat: 'Nouveau Chat',
@@ -763,11 +736,9 @@ window.i18n = {
         enterMessagePlaceholder: 'Entrez votre message ici...',
         voiceInput: 'Saisie vocale',
         webSearch: 'Recherche Web',
+        learningMode: 'Mode Apprentissage & Recherche',
         howCanIHelp: 'Comment puis-je vous aider ?',
         viewingArchived: 'Consultation d\'un chat archivé. Impossible d\'envoyer des messages.',
-
-
-
 
         // Settings Modal
         personalization: 'Personnalisation',
@@ -799,6 +770,7 @@ window.i18n = {
         restoreDefault: 'Restaurer par Défaut',
         memorySwitch: 'Activation de la Mémoire',
         personalMemory: 'Mémoire des Habitudes (Type 1)',
+        crossDialogueMemory: 'Mémoire Inter-Dialogue (Type 2)',
         enableAutoMemory: 'Activer l\'Ajout Automatique de Mémoire',
         personalMemoryManage: 'Gestion de la Mémoire des Habitudes',
         addMemory: 'Ajouter une Mémoire',
@@ -825,7 +797,7 @@ window.i18n = {
         termsOfUse: 'Conditions d\'Utilisation',
         privacyPolicy: 'Politique de Confidentialité',
         version: 'Version',
-        versionNumber: 'Astra-nos-14.9.9',
+        versionNumber: 'Astra-nos-15.0.0',
         helpCenterDesc: 'Le Chatbot IA Avancé (ci-après "ce Service" ou "ASTRA") vise à fournir une expérience de conversation intelligente, stable, contrôlable et centrée sur l\'utilisateur. Ce Service est conçu pour fonctionner côté client, les données principales étant stockées dans l\'environnement local de l\'utilisateur afin de réduire les risques de transmission inutile et de centralisation. Les utilisateurs peuvent basculer entre plusieurs modèles dans une seule interface, créer des chats temporaires éphémères ne laissant aucune trace, utiliser la fonction Astras pour personnaliser les directives comportementales, gérer des dossiers et archiver des conversations. Ils peuvent également effectuer des sauvegardes et des transferts de manière autonome grâce aux mécanismes d\'exportation et d\'importation. Si les utilisateurs ont besoin d\'informations en temps réel, ils peuvent activer la recherche Web. Pour le traitement de textes longs ou l\'analyse de médias, des fichiers ou des images peuvent être joints aux messages pour une interprétation complète par le modèle. Tout le contenu des conversations, les préférences d\'apparence et de modèle, l\'état des dossiers et des archives, les paramètres d\'Astras et autres informations au niveau de l\'application relatives à ce Service sont stockés dans la base de données du navigateur sur l\'appareil de l\'utilisateur. Les clés API fournies par l\'utilisateur sont utilisées uniquement pour se connecter à des fournisseurs de modèles tiers (par exemple, Google Gemini ou OpenRouter) et sont conservées localement pour effectuer les requêtes nécessaires. Ce Service ne construit pas de bases de données côté serveur pour collecter les données personnelles des utilisateurs ou le contenu des conversations, et ne traite ni ne revend les informations stockées localement par l\'utilisateur. Les utilisateurs peuvent choisir de désactiver la recherche Web, de supprimer les clés API, d\'utiliser des chats temporaires ou d\'effacer les données du navigateur à tout moment pour répondre à leurs propres exigences de sécurité et de conformité.',
         termsOfUseDesc: 'Lors de la première utilisation, veuillez créer ou vous connecter à un compte local via l\'interface de connexion pour associer les paramètres individuels et l\'historique des conversations. Le mot de passe sera stocké côté client sous forme de hachage (SHA-256) uniquement à des fins de comparaison lors des connexions futures et n\'est pas stocké en clair. Après vous être connecté, il est recommandé de vous rendre immédiatement sur la page des paramètres et de saisir les clés API des modèles souhaités : pour Gemini, fournissez la clé dans le champ spécifié ; pour OpenRouter, enregistrez les clés pour chaque modèle que vous prévoyez d\'utiliser. Une fois les clés définies, la saisie de messages et la pièce jointe de fichiers seront activées. Pour récupérer les dernières informations publiques, vous pouvez activer la recherche Web avant de poser une question. Pour prolonger une discussion dans le même contexte, activez la fonction de suggestions de suivi pour recevoir des questions suggérées en rapport avec la réponse actuelle. À mesure que le nombre de conversations augmente, les utilisateurs peuvent les renommer, les déplacer dans des dossiers ou les archiver selon leurs besoins, et peuvent utiliser la sélection multiple pour des opérations groupées. Pour migrer l\'environnement de travail entre différents navigateurs ou appareils, il est recommandé d\'utiliser la fonction d\'exportation pour générer un fichier de sauvegarde (JSON), qui peut être importé dans le nouvel environnement pour restaurer rapidement les conversations, les dossiers et les préférences de l\'application (à l\'exclusion des informations d\'identification sensibles). Pour protéger l\'autonomie de l\'utilisateur, ce Service propose également un mode de chat temporaire où les entrées et les réponses n\'existent que pour la session en cours et ne laissent aucune trace à la fermeture. Il est important de noter que les réponses de ce Service sont générées par des modèles tiers en fonction de l\'entrée et peuvent être sujettes à des incertitudes en raison de l\'actualité des données, de l\'interprétation du contexte ou des limites de l\'entraînement. Dans les domaines médical, juridique, financier ou autres domaines professionnels, les utilisateurs doivent faire preuve de leur propre jugement et consulter des professionnels qualifiés si nécessaire.',
         privacyPolicyDesc: 'Ce Service attache de l\'importance à la protection des données et à la vie privée des utilisateurs, et est conçu sur les principes de minimisation des données, de stockage localisé et de contrôle par l\'utilisateur. Sauf si la loi l\'exige ou si l\'utilisateur l\'autorise explicitement, ce Service ne stocke pas activement le contenu des conversations des utilisateurs ou les informations personnellement identifiables côté serveur. En règle générale, l\'historique des conversations, les paramètres d\'Astras, les préférences d\'apparence et de modèle, l\'état des dossiers et des archives, ainsi que les clés API enregistrées par l\'utilisateur dans la page des paramètres sont tous stockés dans la base de données locale du navigateur de l\'utilisateur. Le mot de passe de connexion sera stocké dans le même environnement sous forme de hachage SHA-256 uniquement à des fins de vérification de la connexion. À l\'exception du hachage du mot de passe, les autres données au niveau de l\'application ne sont pas chiffrées de manière supplémentaire côté client ; les utilisateurs doivent protéger adéquatement leur appareil et leur environnement de navigateur et éviter de stocker des informations sensibles sur des appareils partagés ou non fiables. Lorsqu\'un utilisateur active un modèle tiers ou la recherche Web, le texte de la requête, le contexte nécessaire et (le cas échéant) le contenu des fichiers joints seront envoyés au fournisseur tiers conformément à l\'action de l\'utilisateur pour compléter la requête ou récupérer les dernières informations. Un tel traitement des données sera régi par les conditions et la politique de confidentialité du tiers et pourra impliquer un transfert de données transfrontalier et des évaluations de conformité. Ce Service n\'est pas responsable des procédures opérationnelles des tiers, et ne collecte ni ne vend ces données séparément. Les utilisateurs peuvent à tout moment désactiver la fonction de recherche Web, supprimer les clés API ou passer en mode de chat temporaire pour réduire le risque de stockage persistant ou de transmission externe. Ils peuvent également gérer leurs données de manière indépendante via les mécanismes d\'exportation et d\'importation. Sauf si la loi l\'exige ou si cela est nécessaire pour protéger les droits et intérêts légitimes de l\'utilisateur et de tiers, ce Service ne demandera ni ne conservera de données côté serveur pouvant identifier directement un individu et ne pourra donc, en principe, pas fournir de registres côté serveur en leur nom. Ce Service n\'est pas utilisé à des fins de suivi publicitaire, ne pratique pas le suivi intersites et ne vend pas de données personnelles. Les mineurs doivent obtenir le consentement d\'un tuteur légal et utiliser ce Service sous sa direction. Les utilisateurs ont le contrôle de leurs données, y compris les droits d\'accès, d\'exportation et de suppression ; ils peuvent exporter une sauvegarde depuis la page "Gestion des Données" ou effacer les données du navigateur pour les réinitialiser. Cette politique sera mise à jour de temps à autre en fonction des besoins fonctionnels, réglementaires ou opérationnels, la dernière version entrant en vigueur dès sa publication. Les changements importants seront communiqués de manière raisonnable. Si les utilisateurs ont des questions, des demandes ou des suggestions concernant la protection des données, veuillez nous contacter via les canaux désignés, et nous vous fournirons une assistance dans un délai raisonnable.',
@@ -836,9 +808,6 @@ window.i18n = {
         versionInfo: 'Informations sur la version',
         viewUpdateHistory: 'Voir l\'historique des mises à jour',
         enableUpdateNotifications: 'Activer les notifications de mise à jour',
-
-
-
 
         // Other Modals & Dialogs
         selectDataToExport: 'Sélectionnez les données que vous souhaitez exporter.',
@@ -895,9 +864,6 @@ window.i18n = {
         setAstrasAvatar: 'Définir l\'avatar de l\'Astras',
         cropAvatarDesc: 'Déplacez et redimensionnez l\'image pour recadrer l\'avatar circulaire souhaité.',
 
-
-
-
         // Popover Menus
         pin: 'Épingler',
         unpin: 'Désépingler',
@@ -908,16 +874,10 @@ window.i18n = {
         edit: 'Modifier',
         editAvatar: 'Modifier l\'avatar',
 
-
-
-
         // Astras Store
         subscribe: 'S\'abonner',
         unsubscribe: 'Se désabonner',
         manage: 'Gérer',
-
-
-
 
         // Dashboard specific
         modelUsageCount: 'Nombre d\'utilisations du modèle',
@@ -932,9 +892,6 @@ window.i18n = {
         monthSuffix: '',
         daySuffix: '',
         months: ['Janv', 'Févr', 'Mars', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'],
-
-
-
 
         // Dialogs & Notifications
         usernamePasswordRequired: 'Le nom d\'utilisateur et le mot de passe sont requis.',
@@ -951,7 +908,7 @@ window.i18n = {
         importUserMismatchTitle: 'Utilisateur non Concordant',
         importOverwriteWarning: 'Cela écrasera toutes vos données actuelles. Cette action est irréversible. Voulez-vous vraiment continuer ?',
         importConfirmation: 'Confirmation d\'Importation',
-        importAuthRequired: 'Veuillez saisir le nom d\'utilisateur et le mot de passe de cet appareil pour vous authentifier avant l\'importation.',
+        importDataDescAuth: 'Sélectionnez un fichier `.json` précédemment exporté. Le nom d\'utilisateur et le mot de passe que vous saisissez seront utilisés pour vérifier la propriété du fichier de sauvegarde.',
         importInvalidFile: 'Fichier de sauvegarde invalide ou identifiants manquants.',
         importAuthMismatch: 'Le nom d\'utilisateur ou le mot de passe que vous avez saisi ne correspond pas à celui du fichier de sauvegarde.',
         deleteConfirmationTitle: 'Confirmation de Suppression',
@@ -1027,9 +984,18 @@ window.i18n = {
         emptyTrashConfirmationTitle: 'Confirmation de vidage de la corbeille',
         trashEmptiedSuccess: 'Corbeille vidée avec succès, suppression de',
         trashIsEmpty: 'La corbeille est vide.',
-
-
-
+        learningModeIndicator: 'Mode Apprentissage',
+        closeLearningMode: 'Fermer le Mode Apprentissage',
+        astrasActive: 'actif',
+        closeSearch: 'Fermer la Recherche',
+        naming: 'IA réfléchit...',
+        searching: 'Recherche en cours...',
+        noMessages: 'Cette conversation n\'a aucun message.',
+        webSearchNotAvailable: 'La recherche Web n\'est pas disponible pour le modèle actuel.',
+        deletedOn: 'Supprimé le',
+        newVersionsFound: 'Trouvé {count} nouvelles versions !',
+        learningModeEnabled: 'Mode Apprentissage & Recherche activé',
+        learningModeDisabled: 'Mode Apprentissage & Recherche désactivé',
 
         // Model Descriptions & Limits
         model_ultra_desc: 'Nouveau modèle phare en bêta, adapté à la recherche à grande échelle et à l\'exploration expérimentale ; Attention ! Le contenu des conversations avec ce modèle sera examiné par le fournisseur du modèle.',
@@ -1047,25 +1013,22 @@ window.i18n = {
         model_pico_desc: 'Raisonnement multilingue à grande vitesse, adapté à une utilisation en temps réel et à des applications multilingues.',
         model_pico_limits: '20 reqs/min, 50 reqs/jour',
 
-
-
-
         // Official Astras
         astras_official_writer_01_name: 'Blogueur de Voyage',
-    astras_official_writer_01_desc: 'Ceci est un Astras conçu pour les plateformes de médias sociaux, capable de rédiger des introductions élégantes et engageantes pour les attractions touristiques et les hôtels. Il utilise un langage raffiné pour transmettre une sensation haut de gamme, en incorporant le contexte historique de la ville et des hashtags populaires pour attirer le public cible et augmenter la visibilité du contenu.',
-    astras_official_editor_02_name: 'Éditeur de Médias Sociaux',
-    astras_official_editor_02_desc: 'L\'Éditeur de Médias Sociaux est un assistant intelligent axé sur la gestion de comptes de médias sociaux. Il fonctionne sur des principes d\'authenticité et de cohérence, plutôt que de complaisance ou d\'invention, pour aider à examiner les stratégies, découvrir des idées créatives, gérer les réponses du public et maintenir un équilibre entre la stratégie, le contenu et l\'interaction, rendant la gestion des médias sociaux plus organisée et évolutive.',
-    astras_official_editor_03_name: 'Œil de la Photographie',
-    astras_official_editor_03_desc: 'Œil de la Photographie est un assistant intelligent spécialisé dans la photographie, capable de fournir des conseils pratiques sur la composition, les thèmes, les environnements de prise de vue et les réglages de l’équipement. Que vous utilisiez un smartphone ou un appareil photo, il offre des recommandations claires, professionnelles et accessibles, adaptées à chaque situation, pour vous aider à capturer des images plus narratives et esthétiques.',
-    astras_official_editor_04_name: 'VP de Notion',
-    astras_official_editor_04_desc: 'VP de Notion est un assistant intelligent axé sur l\'organisation de l\'information et la conception de mises en page. Il peut proposer diverses méthodes d\'organisation appropriées en fonction des données et des besoins fournis par l\'utilisateur, tout en tenant compte de la lisibilité et de l\'expérience utilisateur sur les interfaces mobiles et de bureau. Il aide non seulement à structurer le contenu, mais fournit également des suggestions de mise en page claires, rendant l\'affichage des informations plus organisé, intuitif et évolutif.',
-    astras_official_editor_05_name: 'Le Séquenceur',
-    astras_official_editor_05_desc: 'Le Séquenceur est un assistant intelligent axé à la fois sur la conceptualisation vidéo et l\'exécution pratique du montage. Il peut fournir une conception complète de l\'histoire, des idées de storyboard, une planification du rythme et des conseils opérationnels spécifiques de post-production pour différents matériaux et exigences. Sa tâche n\'est pas seulement d\'offrir une inspiration abstraite, mais d\'aider les utilisateurs à transformer leurs idées en plans de montage exécutables, atteignant le meilleur équilibre entre narration, rythme et aspects visuels de la vidéo.',
-    astras_official_editor_06_name: 'Plan Directeur Français',
-    astras_official_editor_06_desc: 'Plan Directeur Français est un assistant d\'apprentissage intelligent conçu pour les locuteurs natifs de chinois. Il fournit des méthodes d\'apprentissage systématiques, des phrases d\'exemple, des conseils de prononciation et des compléments culturels adaptés aux caractéristiques linguistiques et aux difficultés courantes des apprenants chinois, aidant les utilisateurs à construire progressivement un plan directeur de la langue française du niveau de base au niveau avancé.',
-    astras_official_editor_07_name: 'Sens de l\'Anglais',
-    astras_official_editor_07_desc: 'Sens de l\'Anglais est un assistant d\'apprentissage intelligent conçu pour les locuteurs natifs du chinois. Il aborde leurs traits linguistiques spécifiques et leurs difficultés d\'apprentissage en fournissant des méthodes d\'apprentissage systématiques, des exemples de phrases, des conseils de prononciation et des aperçus culturels. Il aide les utilisateurs à construire une structure d\'apprentissage complète, comblant le fossé entre les compétences linguistiques fondamentales et l\'application pratique.',
-    astras_official_editor_08_name: 'Plan Directeur Espagnol',
-    astras_official_editor_08_desc: 'Plan Directeur Espagnol est un assistant d\'apprentissage intelligent conçu pour les locuteurs natifs du chinois, axé sur les difficultés typiques en espagnol (conjugaison des verbes, accord en genre/nombre, temps/aspect, pronoms/ordre des mots, prononciation/accentuation, différences culturelles/pragmatiques). Il fournit des méthodes d\'apprentissage systématiques, des exemples de phrases, des conseils de prononciation, des dialogues situationnels et des compléments culturels pour aider les apprenants à construire une structure complète du niveau de base au niveau avancé, leur permettant d\'utiliser l\'espagnol de manière naturelle et confiante dans des scénarios réels (couvrant les variantes espagnoles et latino-américaines).',
-  }
+        astras_official_writer_01_desc: 'Ceci est un Astras conçu pour les plateformes de médias sociaux, capable de rédiger des introductions élégantes et engageantes pour les attractions touristiques et les hôtels. Il utilise un langage raffiné pour transmettre une sensation haut de gamme, en incorporant le contexte historique de la ville et des hashtags populaires pour attirer le public cible et augmenter la visibilité du contenu.',
+        astras_official_editor_02_name: 'Éditeur de Médias Sociaux',
+        astras_official_editor_02_desc: 'L\'Éditeur de Médias Sociaux est un assistant intelligent axé sur la gestion de comptes de médias sociaux. Il fonctionne sur des principes d\'authenticité et de cohérence, plutôt que de complaisance ou d\'invention, pour aider à examiner les stratégies, découvrir des idées créatives, gérer les réponses du public et maintenir un équilibre entre la stratégie, le contenu et l\'interaction, rendant la gestion des médias sociaux plus organisée et évolutive.',
+        astras_official_editor_03_name: 'Œil de la Photographie',
+        astras_official_editor_03_desc: 'Œil de la Photographie est un assistant intelligent spécialisé dans la photographie, capable de fournir des conseils pratiques sur la composition, les thèmes, les environnements de prise de vue et les réglages de l’équipement. Que vous utilisiez un smartphone ou un appareil photo, il offre des recommandations claires, professionnelles et accessibles, adaptées à chaque situation, pour vous aider à capturer des images plus narratives et esthétiques.',
+        astras_official_editor_04_name: 'VP de Notion',
+        astras_official_editor_04_desc: 'VP de Notion est un assistant intelligent axé sur l\'organisation de l\'information et la conception de mises en page. Il peut proposer diverses méthodes d\'organisation appropriées en fonction des données et des besoins fournis par l\'utilisateur, tout en tenant compte de la lisibilité et de l\'expérience utilisateur sur les interfaces mobiles et de bureau. Il aide non seulement à structurer le contenu, mais fournit également des suggestions de mise en page claires, rendant l\'affichage des informations plus organisé, intuitif et évolutif.',
+        astras_official_editor_05_name: 'Le Séquenceur',
+        astras_official_editor_05_desc: 'Le Séquenceur est un assistant intelligent axé à la fois sur la conceptualisation vidéo et l\'exécution pratique du montage. Il peut fournir une conception complète de l\'histoire, des idées de storyboard, une planification du rythme et des conseils opérationnels spécifiques de post-production pour différents matériaux et exigences. Sa tâche n\'est pas seulement d\'offrir une inspiration abstraite, mais d\'aider les utilisateurs à transformer leurs idées en plans de montage exécutables, atteignant le meilleur équilibre entre narration, rythme et aspects visuels de la vidéo.',
+        astras_official_editor_06_name: 'Plan Directeur Français',
+        astras_official_editor_06_desc: 'Plan Directeur Français est un assistant d\'apprentissage intelligent conçu pour les locuteurs natifs de chinois. Il fournit des méthodes d\'apprentissage systématiques, des phrases d\'exemple, des conseils de prononciation et des compléments culturels adaptés aux caractéristiques linguistiques et aux difficultés courantes des apprenants chinois, aidant les utilisateurs à construire progressivement un plan directeur de la langue française du niveau de base au niveau avancé.',
+        astras_official_editor_07_name: 'Sens de l\'Anglais',
+        astras_official_editor_07_desc: 'Sens de l\'Anglais est un assistant d\'apprentissage intelligent conçu pour les locuteurs natifs du chinois. Il aborde leurs traits linguistiques spécifiques et leurs difficultés d\'apprentissage en fournissant des méthodes d\'apprentissage systématiques, des exemples de phrases, des conseils de prononciation et des aperçus culturels. Il aide les utilisateurs à construire une structure d\'apprentissage complète, comblant le fossé entre les compétences linguistiques fondamentales et l\'application pratique.',
+        astras_official_editor_08_name: 'Plan Directeur Espagnol',
+        astras_official_editor_08_desc: 'Plan Directeur Espagnol est un assistant d\'apprentissage intelligent conçu pour les locuteurs natifs du chinois, axé sur les difficultés typiques en espagnol (conjugaison des verbes, accord en genre/nombre, temps/aspect, pronoms/ordre des mots, prononciation/accentuation, différences culturelles/pragmatiques). Il fournit des méthodes d\'apprentissage systématiques, des exemples de phrases, des conseils de prononciation, des dialogues situationnels et des compléments culturels pour aider les apprenants à construire une structure complète du niveau de base au niveau avancé, leur permettant d\'utiliser l\'espagnol de manière naturelle et confiante dans des scénarios réels (couvrant les variantes espagnoles et latino-américaines).',
+    }
 };
