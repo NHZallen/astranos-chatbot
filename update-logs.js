@@ -4,6 +4,7 @@ const updateLogs = [
         date: "2025-09-20",
         content: [
             "<strong>修正：</strong>更新彈窗錯誤彈出的問題",
+            "<strong>替換：</strong>Ultra模型已替換成Grok4-fash",
         ]
     },
         {
