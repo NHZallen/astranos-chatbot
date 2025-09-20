@@ -3018,49 +3018,54 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         const getDefaultGenConfig = () => ({ temperature: 0.7, topP: 0.95, maxTokens: null });
         const getDefaultFolder = () => ({ color: 'gray', icon: '📁' , isOpen: false});
-        const createBaseConversation = (title) => {
-            const defaultModelInfo = MODELS.find(m => m.id === config.lastUsedModel) || MODELS.find(m => m.id === config.defaultModel) || MODELS[0];
-            const now = new Date().toISOString();
-            return {
-                id: crypto.randomUUID(),
-                title: title,
-                summary: '',
-                messages: [],
-                model: defaultModelInfo.id,
-                provider: defaultModelInfo.provider,
-                archived: false,
-                createdAt: now,
-                lastUpdatedAt: now,
-                genConfig: getDefaultGenConfig(),
-                isRenamed: false,
-                folderId: null,
-                astrasId: null,
-                isWebSearchEnabled: false,
-                pinned: false,
-                isTemporary: true,
-                isNaming: false,
-                deletedAt: null,
-                 unsentMessage: ''
-            };
-        };
-        const startNewChat = () => {
-            const oldTempChatCount = conversations.length;
-            conversations = conversations.filter(c => !c.isTemporary || c.messages.length > 0);
-            if (conversations.length < oldTempChatCount) {
-                 saveAppData();
-            }
-            uploadedFiles = [];
-            const newConv = createBaseConversation('新對話');
-            conversations.unshift(newConv);
-            activeConversationId = newConv.id;
-            renderAll();
-            ALL_ELEMENTS.messageInput.value = '';
-            toggleSidebar(false);
-            sendConfirmed = false;
-            updateInputState();
-            updateApiKeyWarningBadge();
-            renderFollowUpPrompts([]);
-        };
+        const createBaseConversation = (title, options = {}) => {
+    const defaultModelInfo = MODELS.find(m => m.id === config.lastUsedModel) || MODELS.find(m => m.id === config.defaultModel) || MODELS[0];
+    const now = new Date().toISOString();
+    return {
+        id: crypto.randomUUID(),
+        title: title,
+        summary: '',
+        messages: [],
+        model: defaultModelInfo.id,
+        provider: defaultModelInfo.provider,
+        archived: false,
+        createdAt: now,
+        lastUpdatedAt: now,
+        genConfig: getDefaultGenConfig(),
+        isRenamed: false,
+        folderId: null,
+        astrasId: null,
+        isWebSearchEnabled: false,
+        pinned: false,
+        isTemporary: true,
+        isNaming: false,
+        deletedAt: null,
+        unsentMessage: '',
+        ...options // ✨ 關鍵修改：將傳入的 options 合併進來
+    };
+};
+        const startNewChat = (options = {}) => {
+    const oldTempChatCount = conversations.length;
+    conversations = conversations.filter(c => !c.isTemporary || c.messages.length > 0);
+    if (conversations.length < oldTempChatCount) {
+         saveAppData();
+    }
+    uploadedFiles = [];
+    const title = options.astrasId 
+        ? astras.find(a => a.id === options.astrasId)?.name || '新對話'
+        : '新對話';
+        
+    const newConv = createBaseConversation(title, options); // ✨ 將 options 傳下去
+    conversations.unshift(newConv);
+    activeConversationId = newConv.id;
+    renderAll();
+    ALL_ELEMENTS.messageInput.value = '';
+    toggleSidebar(false);
+    sendConfirmed = false;
+    updateInputState();
+    updateApiKeyWarningBadge();
+    renderFollowUpPrompts([]);
+};
         const loadChat = (id) => {
             if (id !== activeConversationId) {
                 const previousConv = getActiveConversation();
@@ -3283,19 +3288,18 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     pressTimer = null;
                 };
                 const handleClick = () => {
-                    if (pressTimer || !touchMoved) {
-                        cancelPress();
-                        if (isSelectionMode) return;
-                        const currentConv = getActiveConversation();
-                        if (currentConv && currentConv.astrasId === ast.id) {
-                            toggleSidebar(false);
-                        } else {
-                            startNewChat(); 
-                            setAstrasForConversation(ast.id); 
-                            toggleSidebar(false);
-                        }
-                    }
-                };
+    if (pressTimer || !touchMoved) {
+        cancelPress();
+        if (isSelectionMode) return;
+
+        const currentConv = getActiveConversation();
+        if (currentConv && currentConv.astrasId === ast.id && currentConv.messages.length === 0) {
+            toggleSidebar(false);
+        } else {
+            startNewChat({ astrasId: ast.id });
+        }
+    }
+};
                 item.addEventListener('touchstart', startPress, { passive: true });
                 item.addEventListener('touchend', cancelPress);
                 item.addEventListener('touchmove', () => { touchMoved = true; cancelPress(); }, { passive: true });
