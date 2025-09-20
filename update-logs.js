@@ -1,5 +1,18 @@
 const updateLogs = [
     {
+        version: "Astras-Nos-15.0.0",
+        date: "2025-09-20",
+        content: [
+            "<strong>新增：</strong>跨對話記憶功能",
+            "<strong>新增：</strong>學習與研究模式",
+            "<strong>優化：</strong>跨對話記憶功能邏輯與提示詞",
+            "<strong>優化：</strong>學習與研究功能邏輯與提示詞",
+            "<strong>修正：</strong>輸入欄內外加功能超出輸入框右側的問題",
+            "<strong>修正：</strong>移動端版本首頁匯入功能無法匯入的問題",
+            "<strong>修正：</strong>輸入欄內外加功能與輸入框重疊的問題",
+        ]
+    },
+    {
         version: "14.9.9",
         date: "2025-09-18",
         content: [
