@@ -1,13 +1,13 @@
 const updateLogs = [
         {
-        version: "Astras-Nos-15.0.1",
+        version: "15.0.1",
         date: "2025-09-20",
         content: [
             "<strong>修正：</strong>更新彈窗錯誤彈出的問題",
         ]
     },
         {
-        version: "Astras-Nos-15.0.0",
+        version: "15.0.0",
         date: "2025-09-20",
         content: [
             "<strong>新增：</strong>跨對話記憶功能",
