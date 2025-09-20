@@ -1,5 +1,19 @@
 const updateLogs = [
         {
+        version: "15.1.1",
+        date: "2025-09-20",
+        content: [
+            "<strong>修正：</strong>openrouter模型+功能錯誤顯示的問題",
+        ]
+    },
+        {
+        version: "15.1.0",
+        date: "2025-09-20",
+        content: [
+            "<strong>新增：</strong>openrouter+功能學習與研究模式的支援",
+        ]
+    },
+        {
         version: "15.0.1",
         date: "2025-09-20",
         content: [
