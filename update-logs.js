@@ -1,4 +1,5 @@
 const updateLogs = [
+        {
         version: "Astras-Nos-15.0.0",
         date: "2025-09-20",
         content: [
