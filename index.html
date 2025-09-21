@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.1.0</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.2.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -211,6 +211,20 @@ button:not(.btn-primary):active:not(:disabled) {
     position: relative;
     flex-direction: column;
     padding-top: 0; /* ✨ 新增：預設沒有上方內邊距 */
+}
+    #message-input {
+    line-height: 1.5rem; /* 設定行高，這對於計算高度很重要 */
+    max-height: calc(1.5rem * 8 + 1rem); /* 8行的高度 (8 * 行高) + 上下 padding (p-2 = 0.5rem * 2) */
+    transition: height 0.2s ease-out; /* 讓高度變化有平滑的動畫效果 */
+    overflow-y: auto; /* 當內容超出最大高度時，顯示滾動條 */
+}
+
+#message-input.expanded {
+    max-height: 50vh; /* 展開後的最大高度，設定為視窗高度的一半 */
+}
+
+#expand-input-btn.rotated {
+    transform: rotate(180deg); /* 讓箭頭旋轉180度，表示可收合 */
 }
     #input-bar-container .input-wrapper.has-indicators > .flex.items-end {
     margin-top: 0.9rem; /* 8px 的間距，您可以依喜好調整這個數值 */
@@ -1823,9 +1837,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     </button>
 </div>
                                 </div>
-                                <form id="chat-form" class="flex-1 flex items-center">
-                                    <input type="text" id="message-input" placeholder="請先在設定中輸入 API 金鑰..." class="flex-1 p-2 bg-transparent border-0 focus:ring-0 disabled:bg-transparent" autocomplete="off" disabled data-lang-key-placeholder="enterApiKeyPlaceholder">
-                                </form>
+                                <form id="chat-form" class="flex-1 flex items-end relative">
+    <textarea id="message-input" placeholder="請先在設定中輸入 API 金鑰..." class="w-full p-2 bg-transparent border-0 focus:ring-0 disabled:bg-transparent resize-none overflow-y-hidden" rows="1" autocomplete="off" disabled data-lang-key-placeholder="enterApiKeyPlaceholder"></textarea>
+    <button type="button" id="expand-input-btn" class="absolute top-1 right-1 w-6 h-6 rounded-full hover:bg-gray-500/20 flex items-center justify-center hidden transition-transform text-[var(--text-secondary)]">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m19 9-7 7-7-7" />
+        </svg>
+    </button>
+</form>
                                 <button id="voice-input-btn-message" title="語音輸入" class="voice-input-btn" data-lang-key-title="voiceInput">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" x2="12" y1="19" y2="22"></line></svg>
                                 </button>
@@ -3062,6 +3081,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             activeConversationId = newConv.id;
             renderAll();
             ALL_ELEMENTS.messageInput.value = '';
+            setTimeout(adjustTextareaHeight, 0);
             toggleSidebar(false);
             sendConfirmed = false;
             updateInputState();
@@ -3079,6 +3099,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 renderAll();
                 const conv = getActiveConversation();
                 ALL_ELEMENTS.messageInput.value = conv ? conv.unsentMessage || '' : '';
+                setTimeout(adjustTextareaHeight, 0);
             }
             sendConfirmed = false;
             updateInputState();
@@ -4033,6 +4054,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
             ALL_ELEMENTS.messageInput.value = '';
             uploadedFiles = [];
+            adjustTextareaHeight();
             renderFilePreviews();
             const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
             const contentDiv = loadingMessageDiv.querySelector('.message-content');
@@ -7305,6 +7327,15 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     wrapper.classList.add('pulse-glow');
                 }
             });
+            ALL_ELEMENTS.messageInput.addEventListener('input', adjustTextareaHeight);
+const expandBtn = document.getElementById('expand-input-btn');
+if (expandBtn) {
+    expandBtn.addEventListener('click', () => {
+        ALL_ELEMENTS.messageInput.classList.toggle('expanded');
+        expandBtn.classList.toggle('rotated');
+        adjustTextareaHeight(); // 點擊後重新計算一次高度
+    });
+}
             ALL_ELEMENTS.messageInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -7466,6 +7497,43 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 applyLanguage('zh-TW');
             })();
             const FOLDER_ICONS = ['📁', '📂', '🗂️', '📚', '📝', '🗃️', '📘', '📙', '📗', '📕'];
+            const adjustTextareaHeight = () => {
+    const textarea = ALL_ELEMENTS.messageInput;
+    const expandBtn = document.getElementById('expand-input-btn');
+    if (!textarea || !expandBtn) return;
+
+    // 暫時重置高度，以便正確計算內容的實際高度
+    textarea.style.height = 'auto';
+
+    const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight);
+    const paddingTop = parseFloat(getComputedStyle(textarea).paddingTop);
+    const paddingBottom = parseFloat(getComputedStyle(textarea).paddingBottom);
+    
+    // 計算出CSS中設定的8行最大高度
+    const maxHeight = (lineHeight * 8) + paddingTop + paddingBottom;
+    const scrollHeight = textarea.scrollHeight;
+
+    // 如果內容高度超過8行，就顯示展開按鈕，否則隱藏
+    if (scrollHeight > maxHeight + 2) { // +2 是一個小緩衝，避免誤差
+        expandBtn.classList.remove('hidden');
+        expandBtn.classList.add('flex');
+    } else {
+        expandBtn.classList.add('hidden');
+        expandBtn.classList.remove('flex');
+        // 如果文字減少了，自動取消展開狀態
+        if (textarea.classList.contains('expanded')) {
+            textarea.classList.remove('expanded');
+            expandBtn.classList.remove('rotated');
+        }
+    }
+
+    // 根據是否展開來設定最終高度
+    if (textarea.classList.contains('expanded')) {
+        textarea.style.height = `${scrollHeight}px`;
+    } else {
+        textarea.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
+    }
+};
             ALL_ELEMENTS.loginLangBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 ALL_ELEMENTS.loginLangMenu.classList.toggle('visible');
