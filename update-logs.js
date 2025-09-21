@@ -1,5 +1,12 @@
 const updateLogs = [
         {
+        version: "15.3.0",
+        date: "2025-09-21",
+        content: [
+            "<strong>新增：</strong>意見反饋與Astras提案功能",
+        ]
+    },
+        {
         version: "15.2.1",
         date: "2025-09-21",
         content: [
