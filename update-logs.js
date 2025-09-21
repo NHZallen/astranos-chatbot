@@ -1,5 +1,20 @@
 const updateLogs = [
         {
+        version: "15.2.1",
+        date: "2025-09-21",
+        content: [
+            "<strong>修正：</strong>輸入欄位Enter改為換行，Shift+Enter改為確認",
+            "<strong>修正：</strong>AI回覆程式碼時會超出螢幕邊框的問題",
+        ]
+    },
+        {
+        version: "15.2.0",
+        date: "2025-09-21",
+        content: [
+            "<strong>修正：</strong>輸入欄為無法換行輸入與展開",
+        ]
+    },
+        {
         version: "15.1.1",
         date: "2025-09-20",
         content: [
