@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.2.1</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.3.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -1884,7 +1884,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             <button id="back-to-chat-btn" class="p-2 rounded-md hover:bg-[var(--hover-bg)] mr-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
             </button>
-            <h1 class="text-xl font-semibold" data-lang-key="astrasStore">Astras 商店</h1>
+            <div class="flex-1 flex justify-between items-center">
+    <h1 class="text-xl font-semibold" data-lang-key="astrasStore">Astras 商店</h1>
+    <button id="propose-astras-btn" class="px-3 py-1.5 rounded-md btn-primary text-sm" data-lang-key="proposeAstras">
+        提案 Astras
+    </button>
+</div>
         </header>
         <div id="store-category-filter" class="flex-shrink-0 px-4 md:px-6 lg:px-8 pt-4 border-b border-[var(--border-color)]">
         <div id="store-category-list" class="flex items-center gap-2 pb-3 overflow-x-auto">
@@ -2115,6 +2120,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         </div>
                     </div>
                     <div id="about-section" class="settings-section">
+                        <h3 class="text-lg font-semibold mb-3" data-lang-key="feedback">意見反饋</h3>
+<p class="text-sm text-[var(--text-secondary)] mb-2" data-lang-key="feedbackDesc">
+    有任何問題或建議嗎？請告訴我們！您的反饋將直接發送到開發者的信箱。
+</p>
+<div class="space-y-3">
+    <textarea id="feedback-textarea" class="w-full p-2 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] h-28" placeholder="請在此輸入您的寶貴意見..." data-lang-key-placeholder="feedbackPlaceholder"></textarea>
+    <button id="send-feedback-btn" class="w-full text-center p-2 rounded-md btn-primary" data-lang-key="sendFeedback">
+        發送意見
+    </button>
+</div>
+<div class="border-t border-[var(--border-color)] my-6"></div>
                         <h3 class="text-lg font-semibold mb-3" data-lang-key="helpCenter">協助中心</h3>
                         <p class="text-sm text-[var(--text-secondary)] mb-4" data-lang-key="helpCenterDesc">內容待補充...</p>
                         <h3 class="text-lg font-semibold mb-3" data-lang-key="termsOfUse">使用條款</h3>
@@ -2707,6 +2723,15 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             closeTrashViewModalBtn: document.getElementById('close-trash-view-modal-btn'),
             trashViewCloseBtn: document.getElementById('trash-view-close-btn'),
             learningModeBtn: document.getElementById('learning-mode-btn'),
+            feedbackTextarea: document.getElementById('feedback-textarea'),
+            sendFeedbackBtn: document.getElementById('send-feedback-btn'),
+            proposeAstrasBtn: document.getElementById('propose-astras-btn'),
+            astrasProposalModal: document.getElementById('astras-proposal-modal'),
+            proposalNameInput: document.getElementById('proposal-name-input'),
+            proposalDescInput: document.getElementById('proposal-desc-input'),
+            proposalInstructionsInput: document.getElementById('proposal-instructions-input'),
+            cancelProposalBtn: document.getElementById('cancel-proposal-btn'),
+            submitProposalBtn: document.getElementById('submit-proposal-btn'),
         };
         const compareVersions = (v1, v2) => {
             if (!v2) return 1;
@@ -7479,6 +7504,89 @@ if (expandBtn) {
                 el.addEventListener('touchmove', handleMove, { passive: true });
             });
         };
+            ALL_ELEMENTS.sendFeedbackBtn.addEventListener('click', async () => {
+    const feedbackContent = ALL_ELEMENTS.feedbackTextarea.value.trim();
+    const sendButton = ALL_ELEMENTS.sendFeedbackBtn;
+    
+    if (!feedbackContent) {
+        showNotification('請先輸入您的意見！', 'warning');
+        return;
+    }
+    const FORM_ENDPOINT = 'https://formspree.io/f/mjkabkko'; 
+
+    const originalButtonText = sendButton.textContent;
+    sendButton.disabled = true;
+    sendButton.textContent = '發送中...';
+
+    try {
+        const response = await fetch(FORM_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ message: feedbackContent, source: 'Astra Feedback Form' })
+        });
+
+        if (response.ok) {
+            showNotification('反饋已成功發送，感謝您！', 'success');
+            ALL_ELEMENTS.feedbackTextarea.value = '';
+        } else {
+            throw new Error('伺服器發生錯誤，請稍後再試。');
+        }
+    } catch (error) {
+        console.error('發送反饋時出錯:', error);
+        showNotification('發送失敗，請檢查您的網路連線。', 'error');
+    } finally {
+        sendButton.disabled = false;
+        sendButton.textContent = originalButtonText;
+    }
+});
+            ALL_ELEMENTS.proposeAstrasBtn.addEventListener('click', () => {
+    ALL_ELEMENTS.proposalNameInput.value = '';
+    ALL_ELEMENTS.proposalDescInput.value = '';
+    ALL_ELEMENTS.proposalInstructionsInput.value = '';
+    toggleModal(ALL_ELEMENTS.astrasProposalModal, true);
+});
+
+ALL_ELEMENTS.cancelProposalBtn.addEventListener('click', () => {
+    toggleModal(ALL_ELEMENTS.astrasProposalModal, false);
+});
+
+ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
+    const name = ALL_ELEMENTS.proposalNameInput.value.trim();
+    const description = ALL_ELEMENTS.proposalDescInput.value.trim();
+    const instructions = ALL_ELEMENTS.proposalInstructionsInput.value.trim();
+    const submitButton = ALL_ELEMENTS.submitProposalBtn;
+
+    if (!name || !instructions) {
+        showNotification('提案的「名稱」和「指令」是必填的喔！', 'warning');
+        return;
+    }
+    const FORM_ENDPOINT = 'https://formspree.io/f/mzzjpzzw';
+
+    const originalButtonText = submitButton.textContent;
+    submitButton.disabled = true;
+    submitButton.textContent = '提交中...';
+
+    try {
+        const response = await fetch(FORM_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ "提案名稱": name, "功能說明": description, "核心指令": instructions })
+        });
+
+        if (response.ok) {
+            toggleModal(ALL_ELEMENTS.astrasProposalModal, false);
+            showNotification('感謝您的提案，已成功發送！', 'success');
+        } else {
+            throw new Error('伺服器發生錯誤，請稍後再試。');
+        }
+    } catch (error) {
+        console.error('提交提案時出錯:', error);
+        showNotification('提交失敗，請檢查您的網路連線。', 'error');
+    } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = originalButtonText;
+    }
+});
         initializeSpotlightEffect();
         }
         const handleDeleteMessagePair = async (index) => {
@@ -7590,5 +7698,31 @@ if (expandBtn) {
             lastTouchEnd = now;
         }, false);
     </script>
+    <div id="astras-proposal-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
+    <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl p-6 w-full max-w-md">
+        <h2 class="text-xl font-bold mb-4" data-lang-key="proposeNewAstras">提案新的 Astras</h2>
+        <p class="text-sm text-[var(--text-secondary)] mb-4" data-lang-key="proposeAstrasDesc">
+            您的提案將會以郵件形式發送給開發者，感謝您的貢獻！
+        </p>
+        <div class="space-y-4">
+            <div>
+                <label for="proposal-name-input" class="block text-sm font-medium mb-1" data-lang-key="name">名稱</label>
+                <input type="text" id="proposal-name-input" class="w-full p-2 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)]" placeholder="為這個 Astras 取個名字" data-lang-key-placeholder="astrasNamePlaceholder">
+            </div>
+            <div>
+                <label for="proposal-desc-input" class="block text-sm font-medium mb-1" data-lang-key="description">說明 (選填)</label>
+                <input type="text" id="proposal-desc-input" class="w-full p-2 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)]" placeholder="簡短描述它的功能" data-lang-key-placeholder="astrasDescPlaceholder">
+            </div>
+            <div>
+                <label for="proposal-instructions-input" class="block text-sm font-medium mb-1" data-lang-key="instructions">指令</label>
+                <textarea id="proposal-instructions-input" class="w-full p-2 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] h-32" placeholder="詳細說明這個 Astras 該如何運作" data-lang-key-placeholder="astrasInstructionsPlaceholder"></textarea>
+            </div>
+        </div>
+        <div class="flex justify-end gap-3 mt-6">
+            <button id="cancel-proposal-btn" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]" data-lang-key="cancel">取消</button>
+            <button id="submit-proposal-btn" class="px-4 py-2 rounded-md btn-primary" data-lang-key="submitProposal">提交提案</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>
