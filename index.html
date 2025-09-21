@@ -7505,88 +7505,91 @@ if (expandBtn) {
             });
         };
             ALL_ELEMENTS.sendFeedbackBtn.addEventListener('click', async () => {
-    const feedbackContent = ALL_ELEMENTS.feedbackTextarea.value.trim();
-    const sendButton = ALL_ELEMENTS.sendFeedbackBtn;
-    
-    if (!feedbackContent) {
-        showNotification('請先輸入您的意見！', 'warning');
-        return;
-    }
-    const FORM_ENDPOINT = 'https://formspree.io/f/mjkabkko'; 
+            const feedbackContent = ALL_ELEMENTS.feedbackTextarea.value.trim();
+            const sendButton = ALL_ELEMENTS.sendFeedbackBtn;
+            
+            if (!feedbackContent) {
+                showNotification('請先輸入您的意見！', 'warning');
+                return;
+            }
+            const FORM_ENDPOINT = 'https://formspree.io/f/mjkabkko'; 
 
-    const originalButtonText = sendButton.textContent;
-    sendButton.disabled = true;
-    sendButton.textContent = '發送中...';
+            const originalButtonText = sendButton.textContent;
+            sendButton.disabled = true;
+            sendButton.textContent = '發送中...';
 
-    try {
-        const response = await fetch(FORM_ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({ message: feedbackContent, source: 'Astra Feedback Form' })
+            try {
+                const response = await fetch(FORM_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ message: feedbackContent, source: 'Astra Feedback Form' })
+                });
+
+                if (response.ok) {
+                    showNotification('反饋已成功發送，感謝您！', 'success');
+                    ALL_ELEMENTS.feedbackTextarea.value = '';
+                } else {
+                    throw new Error('伺服器發生錯誤，請稍後再試。');
+                }
+            } catch (error) {
+                console.error('發送反饋時出錯:', error);
+                showNotification('發送失敗，請檢查您的網路連線。', 'error');
+            } finally {
+                sendButton.disabled = false;
+                sendButton.textContent = originalButtonText;
+            }
+        });
+        // END: [新版] 意見反饋功能的事件監聽
+
+        // START: [新版] Astras 提案功能的事件監聽
+        ALL_ELEMENTS.proposeAstrasBtn.addEventListener('click', () => {
+            ALL_ELEMENTS.proposalNameInput.value = '';
+            ALL_ELEMENTS.proposalDescInput.value = '';
+            ALL_ELEMENTS.proposalInstructionsInput.value = '';
+            toggleModal(ALL_ELEMENTS.astrasProposalModal, true);
         });
 
-        if (response.ok) {
-            showNotification('反饋已成功發送，感謝您！', 'success');
-            ALL_ELEMENTS.feedbackTextarea.value = '';
-        } else {
-            throw new Error('伺服器發生錯誤，請稍後再試。');
-        }
-    } catch (error) {
-        console.error('發送反饋時出錯:', error);
-        showNotification('發送失敗，請檢查您的網路連線。', 'error');
-    } finally {
-        sendButton.disabled = false;
-        sendButton.textContent = originalButtonText;
-    }
-});
-            ALL_ELEMENTS.proposeAstrasBtn.addEventListener('click', () => {
-    ALL_ELEMENTS.proposalNameInput.value = '';
-    ALL_ELEMENTS.proposalDescInput.value = '';
-    ALL_ELEMENTS.proposalInstructionsInput.value = '';
-    toggleModal(ALL_ELEMENTS.astrasProposalModal, true);
-});
-
-ALL_ELEMENTS.cancelProposalBtn.addEventListener('click', () => {
-    toggleModal(ALL_ELEMENTS.astrasProposalModal, false);
-});
-
-ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
-    const name = ALL_ELEMENTS.proposalNameInput.value.trim();
-    const description = ALL_ELEMENTS.proposalDescInput.value.trim();
-    const instructions = ALL_ELEMENTS.proposalInstructionsInput.value.trim();
-    const submitButton = ALL_ELEMENTS.submitProposalBtn;
-
-    if (!name || !instructions) {
-        showNotification('提案的「名稱」和「指令」是必填的喔！', 'warning');
-        return;
-    }
-    const FORM_ENDPOINT = 'https://formspree.io/f/mzzjpzzw';
-
-    const originalButtonText = submitButton.textContent;
-    submitButton.disabled = true;
-    submitButton.textContent = '提交中...';
-
-    try {
-        const response = await fetch(FORM_ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({ "提案名稱": name, "功能說明": description, "核心指令": instructions })
-        });
-
-        if (response.ok) {
+        ALL_ELEMENTS.cancelProposalBtn.addEventListener('click', () => {
             toggleModal(ALL_ELEMENTS.astrasProposalModal, false);
-            showNotification('感謝您的提案，已成功發送！', 'success');
-        } else {
-            throw new Error('伺服器發生錯誤，請稍後再試。');
-        }
-    } catch (error) {
-        console.error('提交提案時出錯:', error);
-        showNotification('提交失敗，請檢查您的網路連線。', 'error');
-    } finally {
-        submitButton.disabled = false;
-        submitButton.textContent = originalButtonText;
-    }
-});
+        });
+
+        ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
+            const name = ALL_ELEMENTS.proposalNameInput.value.trim();
+            const description = ALL_ELEMENTS.proposalDescInput.value.trim();
+            const instructions = ALL_ELEMENTS.proposalInstructionsInput.value.trim();
+            const submitButton = ALL_ELEMENTS.submitProposalBtn;
+
+            if (!name || !instructions) {
+                showNotification('提案的「名稱」和「指令」是必填的喔！', 'warning');
+                return;
+            }
+            const FORM_ENDPOINT = 'https://formspree.io/f/mzzjpzzw';
+
+            const originalButtonText = submitButton.textContent;
+            submitButton.disabled = true;
+            submitButton.textContent = '提交中...';
+
+            try {
+                const response = await fetch(FORM_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ "提案名稱": name, "功能說明": description, "核心指令": instructions })
+                });
+
+                if (response.ok) {
+                    toggleModal(ALL_ELEMENTS.astrasProposalModal, false);
+                    showNotification('感謝您的提案，已成功發送！', 'success');
+                } else {
+                    throw new Error('伺服器發生錯誤，請稍後再試。');
+                }
+            } catch (error) {
+                console.error('提交提案時出錯:', error);
+                showNotification('提交失敗，請檢查您的網路連線。', 'error');
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = originalButtonText;
+            }
+        });
         initializeSpotlightEffect();
         }
         const handleDeleteMessagePair = async (index) => {
