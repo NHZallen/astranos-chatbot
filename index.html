@@ -4132,30 +4132,29 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             let fullResponse = '';
             const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
             try {
-                const completeResponse = await streamApiCall(
-                    userParts,
-                    (chunk) => {
-                        fullResponse += chunk;
-                        contentDiv.innerHTML = renderMarkdown(fullResponse);
-                        const isNearBottom = ALL_ELEMENTS.chatContainer.scrollHeight - ALL_ELEMENTS.chatContainer.scrollTop <= ALL_ELEMENTS.chatContainer.clientHeight + 150;
-                        if (isNearBottom) {
-                            ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'auto' });
-                        }
-                    },
-                    abortController.signal
-                );
-                fullResponse = completeResponse;
-                finalAiMessage.parts = [{ text: fullResponse }];
-                conv.messages.push(finalAiMessage);
-                conv.lastUpdatedAt = new Date().toISOString();
-                await saveAppData();
-                if(config.enableFollowUp && !config.isLearningMode) {
-                    await generateFollowUpPrompts(userMessage, fullResponse);
-                }
-                if (config.memoryEnabled1 && config.enableAutoMemory) {
-                    await extractPersonalMemory(userMessage, fullResponse);
-                }
-            } catch (error) {
+                try {
+    const completeResponse = await streamApiCall(
+        userParts,
+        (chunk) => {
+            fullResponse += chunk;
+            contentDiv.innerHTML = renderMarkdown(fullResponse);
+            const isNearBottom = ALL_ELEMENTS.chatContainer.scrollHeight - ALL_ELEMENTS.chatContainer.scrollTop <= ALL_ELEMENTS.chatContainer.clientHeight + 150;
+            if (isNearBottom) {
+                ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'auto' });
+            }
+        },
+        abortController.signal
+    );
+    fullResponse = completeResponse;
+    finalAiMessage.parts = [{ text: fullResponse }];
+    conv.messages.push(finalAiMessage);
+    conv.lastUpdatedAt = new Date().toISOString();
+    await saveAppData();
+    // highlight-start
+    // 將舊的兩個 if 判斷，替換成下面這一行
+    await processAiResponseAddons(userMessage, fullResponse);
+    // highlight-end
+} catch (error) {
                 if (error.name === 'AbortError') {
                     contentDiv.innerHTML = renderMarkdown(fullResponse);
                     finalAiMessage.parts = [{ text: fullResponse }];
@@ -4206,6 +4205,55 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         bubble.insertAdjacentHTML('beforeend', deleteButtonHTML);
                     }
                 }
+                const convForReset = getActiveConversation();
+    let stateWasReset = false; // 用來追蹤是否有模式被重設
+
+    if (convForReset) {
+        let conversationStateChanged = false;
+        
+        // 檢查本次對話是否使用了「聯網搜尋」，如果是就將其關閉
+        if (convForReset.isWebSearchEnabled) {
+            convForReset.isWebSearchEnabled = false;
+            conversationStateChanged = true;
+            stateWasReset = true;
+        }
+        
+        // 檢查本次對話是否使用了「Astras」，如果是就將其關閉
+        if (convForReset.astrasId) {
+            convForReset.astrasId = null;
+            conversationStateChanged = true;
+            stateWasReset = true;
+        }
+        
+        // 如果對話相關的狀態有變，就儲存起來
+        if (conversationStateChanged) {
+            await saveAppData();
+        }
+    }
+
+    // 檢查本次對話是否使用了「學習與研究模式」，如果是就將其關閉
+    // 這是全域設定，所以獨立處理
+    if (config.isLearningMode) {
+        config.isLearningMode = false;
+        await saveConfig();
+        stateWasReset = true;
+    }
+
+    // 如果有任何模式被重設，就更新 UI 並通知使用者
+    if (stateWasReset) {
+        // 更新輸入框上方的指示器 UI，讓它們消失
+        renderInputIndicators();
+        
+        // 更新附加檔案彈出視窗中按鈕的狀態
+        updateFunctionButtonsState();
+        
+        // 顯示一個短暫的通知，告訴使用者模式已自動關閉
+        showNotification(
+            i18n[config.uiLanguage].auxiliaryModeAutoOff || '輔助模式已在此次對話後自動關閉。', 
+            'info'
+        );
+    }
+}
             }
         };
         function cleanGeminiHistory(history) {
@@ -4471,6 +4519,97 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
             return null;
         }
+         async function processAiResponseAddons(userMessage, aiResponse) {
+    // 檢查設定中對應的功能是否開啟
+    const shouldExtractMemory = config.memoryEnabled1 && config.enableAutoMemory;
+    const shouldGenerateFollowUps = config.enableFollowUp && !config.isLearningMode;
+
+    // 如果兩個功能都沒開，就直接結束
+    if (!shouldExtractMemory && !shouldGenerateFollowUps) {
+        return;
+    }
+
+    // --- 建立合併後的提示詞 (Prompt) ---
+    let prompt = `# 核心任務：對話後處理
+你是一個高效的 AI 助理，你的任務是分析使用者和 AI 之間的對話，並根據下方定義的規則，生成一個包含特定資訊的 JSON 物件。
+
+## 待分析的對話內容
+【使用者訊息】：${userMessage}
+【AI 回應】：${aiResponse}
+
+---
+`;
+    
+    // --- 建立 API 需要回傳的 JSON 結構 (Schema) ---
+    const responseSchema = {
+        type: "OBJECT",
+        properties: {},
+        required: []
+    };
+
+    // --- 根據啟用的功能，動態組合提示詞和 Schema ---
+    if (shouldExtractMemory) {
+        prompt += `
+# 任務一：提取使用者記憶
+分析對話，提取關於使用者的長期、客觀事實。
+- **規則1：** 必須是關於使用者的技能、職業、興趣、個人偏好或目標。
+- **規則2：** 資訊必須來自【使用者訊息】。
+- **規則3：** 必須是長期事實，而非暫時狀態 (例如 "我今天很累" 是無效的)。
+- **規則4：** 不要記錄使用者對 AI 的指令或評價。
+- **規則5：** 格式化為以「用戶」開頭的簡潔陳述句。
+- **規則6：** 如果沒有可提取的記憶，回傳一個空陣列。
+`;
+        responseSchema.properties.memories = {
+            type: "ARRAY",
+            items: { type: "STRING" },
+            description: "從對話中提取的潛在新記憶點列表。"
+        };
+        responseSchema.required.push("memories");
+    }
+
+    if (shouldGenerateFollowUps) {
+        prompt += `
+# 任務二：生成後續追問
+生成剛好 4 個有啟發性且多樣化的後續追問建議。
+- **規則1：** 最多只能有 2 個是傳統問句，其餘必須是指令或探索性短語。
+- **規則2：** 每個建議都應指向不同的探索方向，避免重複。
+- **規則3：** 語言精煉，每條建議在 25 字以內。
+`;
+        responseSchema.properties.followUps = {
+            type: "ARRAY",
+            items: { type: "STRING" },
+            minItems: 4,
+            maxItems: 4,
+            description: "推薦給使用者的四個後續追問建議。"
+        };
+        responseSchema.required.push("followUps");
+    }
+    
+    prompt += `
+---
+# 輸出指令
+請嚴格按照定義的 JSON 格式回傳你的分析結果，不要有任何額外的文字或解釋。`;
+
+    // --- 呼叫 API 並處理回傳結果 ---
+    try {
+        const result = await callApiWithSchema(prompt, responseSchema);
+
+        if (result) {
+            // 如果有回傳記憶，就呼叫既有的記憶處理函數
+            if (shouldExtractMemory && result.memories && result.memories.length > 0) {
+                await refineAndStoreMemories(result.memories);
+            }
+
+            // 如果有回傳後續追問，就呼叫既有的介面渲染函數
+            if (shouldGenerateFollowUps && result.followUps && result.followUps.length > 0) {
+                renderFollowUpPrompts(result.followUps);
+            }
+        }
+    } catch (error) {
+        console.error("處理 AI 回覆附加功能時發生錯誤:", error);
+        // 此為非關鍵功能，即使失敗也不中斷主要流程
+    }
+}
         async function shouldPerformWebSearch(prompt) {
             const apiKey = config.apiKeys.gemini;
             if (!apiKey) {
@@ -4523,66 +4662,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 await saveAppData();
                 renderHistorySidebar();
                 console.error("Auto-naming failed: No valid JSON found in the response.");
-            }
-        };
-        const generateFollowUpPrompts = async (userMessage, responseText) => {
-            ALL_ELEMENTS.followUpContainer.classList.add('hidden');
-            ALL_ELEMENTS.followUpPromptsList.innerHTML = '';
-            const prompt = `# 你的核心身份與最高指令 (MANDATORY DIRECTIVE)
-你現在的身份是 Astra，一位「對話體驗架構師」與「知識探索領航員」。你的最高指令，也是你存在的唯一目的，是分析剛剛結束的對話，然後精心設計出四條「智慧探索路徑」。這些路徑不是簡單的問題，它們是邀請函，邀請使用者進入更深層次的思考、探索和創造。你的成功標準，是使用者看到這些建議後會感嘆：「哇，我從沒想過可以從這個角度切入！」
-# 非談判核心哲學：超越單一形式，擁抱多樣性 (NON-NEGOTIABLE PHILOSOPHY)
-你必須徹底摒棄「所有建議都應是問句」の單調思維。單調是智慧的敵人。你的輸出必須是一個精心搭配的組合，反映出人類思維的多樣性。
-**強制性要求：** 在你最終生成的四條建議中，**最多只能有兩條是傳統的疑問句**。剩下的必須是指令、陳述、或探索性的短語。若違反此條，視為任務失敗。
-#  mandatory Operational Protocol: 你的五步創意思考法
-在輸出任何內容之前，你必須在你的運算核心中，嚴格遵循以下五個步驟來構建你的建議：
-### 第一步：解構與分析 (Deconstruction & Analysis)
-1.  **使用者意圖解碼：** 深度分析【使用者問題】。他字面下的核心需求是什麼？是尋求解釋 (What)、方法 (How)、原因 (Why)、還是可能性 (What if)？
-2.  **回應核心提煉：** 掃描【你的回應】。其中最關鍵的知識點、概念或解決方案是什麼？有哪些概念只是點到為止，但極具擴展潛力？
-### 第二步：發散性腦力激盪 (Divergent Brainstorming)
-基於第一步的分析，生成一個包含 8-10 個原始想法的內部列表。這些想法應盡可能地發散，涵蓋不同維度。例如：歷史背景、未來應用、反方觀點、跨領域連結、簡化比喻、實踐步驟等。
-### 第三步：建議生成矩陣 (Suggestion Crafting Matrix)
-從你的腦力激盪列表中，挑選最有潛力的想法，並使用以下的「生成矩陣」來進行組合與塑造。你必須嘗試從「智慧維度」和「行動類型」兩個軸向進行搭配，以確保最終建議的多樣性。
-*   **智慧維度 (Intellectual Dimensions):**
-    *   **深度挖掘 (Deep Dive):** 探究原理、機制、根源。
-    *   **橫向擴展 (Expansion):** 尋找相關概念、其他學派、不同領域的應用。
-    *   **實際應用 (Application):** 連結到現實世界的案例、具體操作、實踐方法。
-    *   **批判性思維 (Critical Thinking):** 探討限制、挑戰、潛在風險、反對觀點。
-    *   **創意性構建 (Creative Construction):** 要求比喻、設想未來場景、提出假設性問題。
-*   **行動類型 (Action Types):**
-    *   **解釋 (Explain):** "用一個...例子來解釋..."
-    *   **比較 (Compare):** "比較 A 與 B 的..."
-    *   **分析 (Analyze):** "分析...的關鍵因素。"
-    *   **舉例 (List/Provide):** "舉出三個...的實際應用。"
-    *   **設想 (Imagine/Hypothesize):** "設想一下如果...會發生什麼？"
-    *   **詢問 (Ask):** "...是什麼原因造成的？"
-### 第四步：篩選與精煉 (Selection & Refinement)
-從矩陣生成的眾多可能性中，挑選出最獨特、最互補、最能激發好奇心的四條。然後，用最精煉的語言（嚴格控制在 25 字以內）重寫它們，確保每一條都清晰、有力、且充滿吸引力。
-### 第五步：最終質量審查 (Final Quality Assurance)
-在輸出前，最後一次檢查你的四條建議是否：
-*   符合「非談判核心哲學」？（問句數量不超過2個）
-*   每一條都獨立且不重複？
-*   語言是否精煉且富有啟發性？
-*   完全符合最終的 JSON 輸出格式？
-# 絕對禁令 (ABSOLUTE PROHIBITIONS)
-*   **禁止低質量問題：** 嚴禁生成任何封閉式問題（能用「是/否」回答）或過於簡單的 "What is..." 類型的問題。
-*   **禁止通用填充語：** 嚴禁使用如「還有其他問題嗎？」、「需要更多資訊嗎？」之類的無效建議。
-*   **禁止概念重疊：** 四條建議必須指向四個不同的探索方向，不能只是換句話說。
-*   **禁止直接引用：** 建議中不能出現「如上所述」、「在我剛才的回答中」等回指性詞語。
-# 最終輸出格式 (Final Output Format)
-你唯一的、不帶任何解釋的輸出，必須是一個 RFC 8259 標準的 JSON 陣列。該陣列應精確地包含四個字串元素。
-*   **高品質範例：** \`["用一個廚房裡的例子來比喻異步編程。", "比較一下 Promise 和 async/await 的錯誤處理機制。", "分析在大型專案中選擇異步方案需要考慮哪些因素。", "如果 JavaScript 從未引入異步概念，現代網頁會是什麼樣子？"]\`
-# 待分析的對話內容
-【使用者問題】：${userMessage}
-【你的回應】：${responseText}`;
-            const responseSchema = {
-                type: "ARRAY",
-                items: { type: "STRING" },
-                minItems: 4,
-                maxItems: 4
-            };
-            const followUpPrompts = await callApiWithSchema(prompt, responseSchema);
-            if (followUpPrompts && followUpPrompts.length > 0) {
-                renderFollowUpPrompts(followUpPrompts);
             }
         };
         const renderFollowUpPrompts = (prompts) => {
@@ -6051,54 +6130,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             } catch (error) {
                 console.error("Error refining memories:", error);
-            }
-        };
-        const extractPersonalMemory = async (userMessage, aiResponse) => {
-            const prompt = `# 你的核心身份與最高指令
-你是一名為頂級 AI「Astra」服務的高級記憶架構師。你的最高指令是：從使用者與 Astra 的對話中，精準、客觀、且極具洞察力地提取出能夠構成長期「用戶畫像 (User Profile)」的關鍵資訊。你不是在閒聊，也不是在記錄對話流水帳，你是在為一個更智能、更個人化的 AI 體驗，奠定記憶的基石。
-# 黃金原則：徹底抽離對話本身
-這是你必須銘記於心的最重要原則。你記錄的是「使用者是誰」，而不是「使用者和 AI 聊了什麼」。把自己想像成一位人物傳記作家，而不是法庭記錄員。傳記作家會從對話中提煉人物特質；記錄員只會記錄對話本身。
-*   **情境範例:**
-    *   **使用者說：** 「我最近在學 Golang，之後想請你幫我看看程式碼。」
-    *   **法庭記錄員的錯誤記錄 (元數據)：** 「用戶想讓AI幫他看Golang程式碼。」 <-- 這是關於對話的意圖，無效！
-    *   **傳記作家的正確提煉 (用戶特質)：** 「用戶正在學習Golang。」、「用戶是一名程式開發者。」 <-- 這是關於用戶本身的技能與身份，非常有效！
-# 你的分步思考流程 (每條訊息都必須經過此流程)
-在你決定是否記錄任何資訊前，必須在心中依序回答以下問題：
-1.  **【來源審查】**：這條資訊是否 100% 來源於【使用者訊息】？如果不是，立即捨棄。
-2.  **【長期性評估】**：這個資訊在一年後還可能為真嗎？如果它描述的是一個短暫的狀態、情緒或一次性事件，立即捨棄。
-3.  **【抽離原則應用】**：這個資訊是描述「使用者本身」，還是描述「使用者與 AI 的互動」？如果是後者，立即捨棄。
-4.  **【內容過濾】**：這條資訊是否屬於下文「絕對禁令」中的任何一項？如果是，立即捨棄。
-5.  **【精煉與格式化】**：如果資訊通過了以上所有審查，將其重新表述為一個以「用戶」開頭的、簡潔的客觀陳述句。
-# 詳細規則與禁令
-### 4.1. 允許的記憶類型 (你應該尋找的目標)
-*   **職業與技能：** 「用戶是一名律師。」、「用戶擅長彈吉他。」
-*   **興趣與愛好：** 「用戶喜歡爬山。」、「用戶對古羅馬歷史感興趣。」
-*   **個人偏好：** 「用戶喜歡喝黑咖啡。」、「用戶偏愛簡潔的設計風格。」
-*   **重要的個人事實：** 「用戶有兩隻貓。」、「用戶住在台北。」
-*   **目標與願望：** 「用戶的目標是環遊世界。」、「用戶正在準備考取證照。」
-### 4.2. 絕對禁令 (你必須過濾掉的內容)
-*   **[禁令一] 對話元數據：** 任何關於對話本身、評價 AI、或對 AI 下達指令的內容。
-    *   *例如：* "你記得真清楚"、"我們下次再聊"、"用戶想討論..."、"用戶要求AI..."
-*   **[禁令二] 程式碼與技術內容：** 任何形式的程式碼、腳本、設定檔、或錯誤訊息。
-*   **[禁令三] 一次性指令與問題：** 使用者要求你執行的單次任務。
-    *   *例如：* "幫我寫一封郵件"、"法國的首都是哪裡？"、"翻譯這段文字"
-*   **[禁令四] 暫時性狀態與情緒：** 短時間内會改變的狀態。
-    *   *例如：* "我今天很累"、"我現在要去開會"、"我肚子餓了"
-*   **[禁令五] 引用或複製的內容：** 如果使用者貼上了一大段不屬於他原創觀點的文字（如新聞、文章），不應從中提取記憶。
-# 最終輸出格式
-你唯一的輸出必須是一個標準的 JSON 陣列。
-*   如果經過你嚴謹的思考流程後，提取到了任何有效的記憶點，將它們作為字串放入陣列中。
-*   如果【使用者訊息】中沒有任何符合上述所有條件的資訊，你**必須**輸出一個空的 JSON 陣列：\`[]\`。絕不能因為沒有找到就憑空捏造。
-# 待分析內容
-【使用者訊息】：${userMessage}
-【AI 回應】：${aiResponse}`;
-            const responseSchema = {
-                type: "ARRAY",
-                items: { type: "STRING" }
-            };
-            const extracted = await callApiWithSchema(prompt, responseSchema);
-            if (extracted && extracted.length > 0) {
-                await refineAndStoreMemories(extracted);
             }
         };
         const updateApiKeyWarningBadge = () => {
