@@ -3920,7 +3920,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 .sort((a, b) => a.order - b.order)
                 .map(s => MODELS.find(m => m.id === s.id))
                 .filter(Boolean);
-            const currentModel = MODELS.find(m => m.id === conv.model) || MODELS;
+            const currentModel = MODELS.find(m => m.id === conv.model) || MODELS[0];
             const isArchived = conv.archived;
             let optionsHTML = '';
             const translations = i18n[config.uiLanguage] || i18n['zh-TW'];
@@ -3997,7 +3997,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             let contentHTML = '';
             let actionButtons = '';
             let contentPaddingClass = '';
-            const isLoadingMessage = !isUser && msg.parts.length === 1 && msg.parts.text === '...';
+            const isLoadingMessage = !isUser && msg.parts.length === 1 && msg.parts[0].text === '...';
             if (isLoadingMessage) {
                 contentHTML = `<div class="loading-dots"><span class="bg-gray-500 dark:bg-gray-400"></span><span class="bg-gray-500 dark:bg-gray-400"></span><span class="bg-gray-500 dark:bg-gray-400"></span></div>`;
             } else {
@@ -4092,7 +4092,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 userParts.push({
                     inlineData: {
                         mimeType: file.type,
-                        data: file.base64.split(',')
+                        data: file.base64.split(',')[1]
                     }
                 });
             });
@@ -4129,15 +4129,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderFilePreviews();
             const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
             const contentDiv = loadingMessageDiv.querySelector('.message-content');
-            let fullResponseText = '';
+            let fullResponse = '';
             const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
             try {
-                // MODIFIED: Call the new streamApiCall and expect a full object back
-                const fullResponseObject = await streamApiCall(
+                const completeResponse = await streamApiCall(
                     userParts,
                     (chunk) => {
-                        fullResponseText += chunk;
-                        contentDiv.innerHTML = renderMarkdown(fullResponseText);
+                        fullResponse += chunk;
+                        contentDiv.innerHTML = renderMarkdown(fullResponse);
                         const isNearBottom = ALL_ELEMENTS.chatContainer.scrollHeight - ALL_ELEMENTS.chatContainer.scrollTop <= ALL_ELEMENTS.chatContainer.clientHeight + 150;
                         if (isNearBottom) {
                             ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'auto' });
@@ -4145,33 +4144,25 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     },
                     abortController.signal
                 );
-
-                // Main response text is already streamed, but we update the final object
-                finalAiMessage.parts = [{ text: fullResponseObject.mainResponse || fullResponseText }]; 
+                fullResponse = completeResponse;
+                finalAiMessage.parts = [{ text: fullResponse }];
                 conv.messages.push(finalAiMessage);
                 conv.lastUpdatedAt = new Date().toISOString();
                 await saveAppData();
-                
-                // NEW: Handle follow-up prompts from the response object
-                if (config.enableFollowUp && fullResponseObject.followUpPrompts && fullResponseObject.followUpPrompts.length > 0) {
-                    renderFollowUpPrompts(fullResponseObject.followUpPrompts);
+                if(config.enableFollowUp && !config.isLearningMode) {
+                    await generateFollowUpPrompts(userMessage, fullResponse);
                 }
-                
-                // NEW: Handle extracted memories from the response object
-                if (config.memoryEnabled1 && config.enableAutoMemory && fullResponseObject.extractedMemories && fullResponseObject.extractedMemories.length > 0) {
-                     await refineAndStoreMemories(fullResponseObject.extractedMemories);
+                if (config.memoryEnabled1 && config.enableAutoMemory) {
+                    await extractPersonalMemory(userMessage, fullResponse);
                 }
-
             } catch (error) {
                 if (error.name === 'AbortError') {
-                    // If aborted, save the partial response
-                    contentDiv.innerHTML = renderMarkdown(fullResponseText);
-                    finalAiMessage.parts = [{ text: fullResponseText }];
+                    contentDiv.innerHTML = renderMarkdown(fullResponse);
+                    finalAiMessage.parts = [{ text: fullResponse }];
                     conv.messages.push(finalAiMessage);
                 } else {
-                    const errorMessage = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
-                    contentDiv.textContent = errorMessage;
-                    finalAiMessage.parts = [{ text: errorMessage }];
+                    contentDiv.textContent = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
+                    finalAiMessage.parts = [{ text: `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}` }];
                     conv.messages.push(finalAiMessage);
                 }
                 await saveAppData();
@@ -4229,7 +4220,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     lastRole = sanitizedMsg.role;
                 }
             });
-            if (cleaned.length > 0 && cleaned.role !== 'user') cleaned.shift();
+            if (cleaned.length > 0 && cleaned[0].role !== 'user') cleaned.shift();
             return cleaned;
         }
         /**
@@ -4257,7 +4248,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const conv = getActiveConversation();
             const modelInfo = MODELS.find(m => m.id === conv.model);
             if (!modelInfo) throw new Error(`找不到模型設定: ${conv.model}`);
-
             const { provider, id: modelId } = modelInfo;
             let apiKey;
             if (provider === 'gemini') {
@@ -4266,164 +4256,172 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 apiKey = config.apiKeys.openrouter;
             }
             if (!apiKey) throw new Error(`請先在設定中提供 ${modelInfo.name} 所需的 API 金鑰。`);
-
-            // --- MASTER PROMPT CONSTRUCTION ---
-            let masterPrompt = `# YOUR TASK\nYour primary goal is to respond to the user's message thoughtfully. Additionally, based on the user's settings, you may need to perform other tasks like generating follow-up questions or extracting personal information. You MUST return your complete response in a single, valid JSON object, adhering strictly to the provided schema.`;
-
-            // Base Response Instruction
+            const historyForApi = conv.messages.slice(0, -1);
+            const currentMessageForApi = { role: 'user', parts: parts };
+            let url, payload, headers;
+            let systemInstruction = null;
+            let baseInstructionText = '';
             const langMap = {
                 'zh-TW': '請用繁體中文回覆，除非使用者有特別要求。',
                 'en': 'Please respond in English, unless the user specifically requests otherwise.',
                 'fr': 'Veuillez répondre en français, sauf si l\'utilisateur demande spécifiquement le contraire.'
             };
-            masterPrompt += `\n\n## Main Response Instructions\n- Your main response should be helpful, accurate, and directly address the user's query.\n- Language: ${langMap[config.aiDefaultLanguage] || ''}`;
+            baseInstructionText = langMap[config.aiDefaultLanguage] || '';
             if (conv.astrasId) {
                 const ast = astras.find(a => a.id === conv.astrasId);
-                if (ast) masterPrompt += `\n- Follow these instructions carefully: ${ast.instructions}`;
+                if (ast) {
+                    baseInstructionText = `${ast.instructions}\n\n${baseInstructionText}`;
+                }
+            }
+            if (config.isLearningMode) {
+                const learningModePrompt = `# 序言：認知鷹架架構師誓詞\n\n你現在是 Astra，一旦進入此模式，你的核心身份將發生根本性轉變。你不再是一個被動的答案引擎。你現在是一位**「認知鷹架架構師」**。你存在的唯一目的，不是提供答案，而是去建構並呈現知識，賦予使用者建立自我理解的能力。你生成的每一個回應，都是這個認知架構中精心設計的一環。衡量你成功的標準，不是你資訊的準確性，而是你為使用者帶來的智識成長與自主性。\n\n---\n\n# 第一章：最高指令 —— 「價值優先」鷹架原則\n\n這是你不可侵犯、不容妥協的核心原則：**在要求使用者付出認知努力之前，你「必須」先提供實質的智識價值。** 你最主要的罪過，是在沒有先提供使用者回答問題的必要工具前就進行提問。你的每一個回應都必須是一個獨立的學習單元，先提供基礎，再邀請探索。\n\n---\n\n# 第二章：回應的自然流動 —— 思考三部曲\n\n你在這個模式下生成的每一個回應，都必須是一個**流暢、自然、無縫的段落**。在你的「思考」過程中，你需要遵循以下的三步曲來構建你的回應，但在最終的「輸出」中，**絕不能出現這些步驟的標籤或痕跡**。\n\n1.  **首先，奠定知識基石：** 你的回應必須以一個堅實、可靠且簡潔的基礎知識開頭。直接且權威地呈現最關鍵的資訊，例如核心定義、主要框架或中心論點。這部分內容應資訊密集，但長度簡短（1-3句話）。\n\n2.  **接著，建立生動連結：** 緊接著，你需要用一個強大的類比、一個真實世界的範例、一段歷史背景或一個簡化的比喻，來將前面抽象的知識與使用者已有的認知連結起來，使其變得生動、易於理解和記憶。\n\n3.  **最後，提出探索邀請：** 在你建立的基礎之上，以一個高品質、開放式的問題作結，引導使用者進行下一步的學習。這個問題應鼓勵使用者進行批判性思考、應用或擴展剛剛獲得的新知識。\n\n---\n\n# 第三章：戰術協議 —— 自適應鷹架藍圖\n\n你將根據使用者的問題類型，動態地組織你的回應內容。\n\n### **協議 ALPHA：針對「概念性問題」（例如：「什麼是 X？」、「為什麼 Y 會發生？」）**\n*   **你的角色：** 啟迪者\n*   **回應心法：** 你的回應應流暢地做到：先提供該概念教科書級別的精確定義，接著立即用一個富有創意、不落俗套的比喻來闡明它，最後再根據這個比喻提出一個能迫使使用者深入思考的引導性問題。\n\n### **協議 BETA：針對「流程性問題」（例如：「我該如何做 X？」）**\n*   **你的角色：** 架構師\n*   **回應心法：** 你的回應應流暢地做到：先將整個流程呈現為一個包含 2-4 個階段的高層次框架，給使用者一張心智地圖。然後，只詳細闡述第一階段的關鍵性與考量因素，最後針對第一階段提出一個務實的、以行動為導向的問題。\n\n### **協議 GAMMA：針對「研究性問題」（例如：「跟我說說關於 X 的事。」）**\n*   **你的角色：** 探索規劃師\n*   **回應心法：** 你的回應應流暢地做到：先重申研究主題並將其分解為 2-3 個不同的探究途徑。接著，為每個途徑提供包含「強效關鍵詞」和「建議來源類型」的入門包，最後提出一個策略性問題，幫助使用者根據目標選擇開始的方向。\n\n---\n\n# 第四章：通用行為準則與應急預案\n\n*   **認知同理心：** 你的語氣必須始終是一位有耐心、鼓勵人心的導師。使用諸如「這是一個很好的問題，讓我們來拆解它」、「我們現在正觸及問題的核心」以及「這是一個非常有洞察力的觀察」之類的語句。\n*   **清晰化協議 (逃生閥機制)：** 這是你的「緊急出口」。如果使用者明確表示困惑（「我不懂」、「直接告訴我」、「這太複雜了」），或連續兩次未能有效回應你的引導性問題，你**必須**啟動此協議。\n    1.  立即暫停三部曲的思考模式。\n    2.  切換到「清晰解說員」的人格。\n    3.  直接、簡單且全面地解釋當前的主題。\n    4.  在解釋結束時，用一句溫和的話語轉折，嘗試回到鷹架模式，例如：「既然我們清楚了這一點，讓我們回頭看看剛才關於……的想法。」\n*   **絕對禁令：**\n    *   **禁止**任何單一句、低價值的回應。\n    *   **禁止**要求使用者去做你該做的事（例如：「你能說得更具體一點嗎？」）。你的工作是主動提出具體的選項（如協議 GAMMA 所示）。\n    *   **禁止**重複的提問風格。多樣化你的引導性問題。\n    *   **禁止**假裝無知或遺忘。你是 AI，你記得所有上下文。\n    *   **【新增】禁止在回應中提及「錨點」、「橋樑」、「羅盤」、「三部曲」或任何來自本指導原則的結構性術語。你的思考過程必須對使用者完全隱藏，呈現出的應是天衣無縫的對話。**\n\n---\n\n# 第五章：模式啟動確認\n\n當使用者在對話中首次啟動此模式時，你必須發布以下一次性聲明以設定預期：\n\n"**學習與研究模式已啟動。** 在此模式下，我不會直接給出答案，而是會提供核心知識並引導您一同思考。讓我們開始吧。"`;
+                systemInstruction = { parts: [{ text: learningModePrompt }] };
+            } else if (baseInstructionText) {
+                systemInstruction = { parts: [{ text: baseInstructionText }] };
             }
 
-            // Memory Injection (Type 1 & 2)
-            let memoryContext = '';
+            let memoryPrompt = '';
+            // START: Logic for Memory Type 1 (Personal Habits)
             if (config.memoryEnabled1) {
                 const enabledMemories = personalMemories.filter(m => m.enabled).map(m => m.content).join('\n');
-                if (enabledMemories) memoryContext += `\n### Known User Preferences (Memory Type 1):\n${enabledMemories}`;
+                if (enabledMemories) {
+                    memoryPrompt += `個人習慣記憶：\n${enabledMemories}\n`;
+                }
             }
-            if (config.memoryEnabled2) {
+            // END: Logic for Memory Type 1
+
+            // START: Logic for Memory Type 2 (Cross-Dialogue with Semantic Retrieval)
+            if (config.memoryEnabled2 && conv.messages.length > 0) {
                 try {
-                    const currentUserMessage = parts.map(p => p.text).join(' ');
-                    const keywordPrompt = `Extract 3-5 core keywords from this sentence: "${currentUserMessage}". Return as a JSON array.`;
-                    const keywords = await callApiWithSchema(keywordPrompt, { type: "ARRAY", items: { type: "STRING" } });
+                    // 1. 提取當前使用者訊息的關鍵詞
+                    const currentUserMessage = conv.messages[conv.messages.length - 1].parts.map(p => p.text).join(' ');
+                    const keywordPrompt = `從以下句子中提取出 3 到 5 個最重要的核心關鍵詞或主題，並以 JSON 陣列的格式回傳。例如：["關鍵詞1", "關鍵詞2", "關鍵詞3"]。\n\n句子："${currentUserMessage}"`;
+                    const keywordSchema = { type: "ARRAY", items: { type: "STRING" } };
+                    const keywords = await callApiWithSchema(keywordPrompt, keywordSchema);
+
                     if (keywords && keywords.length > 0) {
-                        const topConversations = conversations
-                            .filter(c => c.id !== conv.id && c.summary)
-                            .map(c => ({ ...c, relevance: calculateRelevanceScore(c.summary, keywords) }))
-                            .filter(c => c.relevance > 0)
+                        // 2. 計算所有歷史對話的相關性分數
+                        const scoredConversations = conversations
+                            .filter(c => c.id !== conv.id && c.summary && !c.archived && !c.deletedAt)
+                            .map(c => ({
+                                ...c,
+                                relevance: calculateRelevanceScore(c.summary, keywords)
+                            }))
+                            .filter(c => c.relevance > 0); // 只保留有相關性的
+
+                        // 3. 排序並選取分數最高的 N 個
+                        const topConversations = scoredConversations
                             .sort((a, b) => b.relevance - a.relevance)
-                            .slice(0, 15);
+                            .slice(0, 15); // << 您可以調整這個數字，例如 10, 15, 20
+
+                        // 4. 組合提示詞
                         if (topConversations.length > 0) {
-                            memoryContext += `\n### Relevant Past Conversation Summaries (Memory Type 2):\n${topConversations.map(c => `- ${c.title}: ${c.summary}`).join('\n')}`;
+                            const memorySummaries = topConversations
+                                .map(c => `- ${c.title}: ${c.summary}`)
+                                .join('\n');
+                            memoryPrompt += `\n相關歷史對話摘要 (從使用者過往對話中檢索到的相關內容，請作為背景參考):\n${memorySummaries}\n`;
                         }
                     }
-                } catch (e) { console.error("Error retrieving semantic memories:", e); }
+                } catch (error) {
+                    console.error("Error retrieving relevant conversation memories:", error);
+                    // 如果檢索失敗，可以選擇不執行任何操作，或者回退到舊的邏輯
+                }
             }
-            if (memoryContext) masterPrompt += `\n\n## Contextual Memory\nUse the following information to personalize your response:\n${memoryContext}`;
-            
-            // Conditional Task Instructions
-            masterPrompt += "\n\n## Additional Tasks";
-            let responseSchema = {
-                type: "OBJECT",
-                properties: {
-                    mainResponse: { type: "STRING", description: "Your main, detailed response to the user's query." }
-                },
-                required: ["mainResponse"]
-            };
-
-            if (config.enableFollowUp) {
-                masterPrompt += `\n- **Follow-up Prompts**: After crafting your main response, generate exactly 4 diverse and insightful follow-up prompts. Max 2 should be questions. The others should be commands or suggestions. These should encourage deeper exploration of the topic.`;
-                responseSchema.properties.followUpPrompts = {
-                    type: "ARRAY",
-                    description: "An array of exactly 4 strings for follow-up prompts.",
-                    items: { type: "STRING" },
-                    minItems: 4,
-                    maxItems: 4
-                };
+            // END: Logic for Memory Type 2
+            if (memoryPrompt) {
+                if (systemInstruction && systemInstruction.parts[0].text) {
+                    systemInstruction.parts[0].text += `\n\n${memoryPrompt}`;
+                } else if (systemInstruction) {
+                    systemInstruction.parts.push({ text: `\n\n${memoryPrompt}` });
+                }
+                else {
+                    systemInstruction = { parts: [{ text: memoryPrompt }] };
+                }
             }
 
-            if (config.memoryEnabled1 && config.enableAutoMemory) {
-                masterPrompt += `\n- **Memory Extraction**: Analyze the user's message to extract key, long-term facts about them (e.g., profession, hobbies, preferences). Do NOT extract transient states, commands to you, or meta-comments about the conversation. Formulate these as objective statements starting with "用戶" (user).`;
-                responseSchema.properties.extractedMemories = {
-                    type: "ARRAY",
-                    description: "An array of strings, each being a long-term fact about the user. Return an empty array if nothing relevant is found.",
-                    items: { type: "STRING" }
-                };
-            }
-
-            masterPrompt += `\n\n# FINAL OUTPUT INSTRUCTION\nYOU MUST WRAP YOUR ENTIRE OUTPUT IN A SINGLE VALID JSON OBJECT THAT MATCHES THIS SCHEMA:\n\`\`\`json\n${JSON.stringify(responseSchema, null, 2)}\n\`\`\``;
-            
-            // --- API Call Preparation ---
-            const historyForApi = conv.messages.slice(0, -1);
-            const currentMessageForApi = { role: 'user', parts: parts };
-            let url, payload, headers;
-            let systemInstruction = { parts: [{ text: masterPrompt }] };
-            
             if (provider === 'gemini') {
-                url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?key=${apiKey}&alt=sse`;
+                url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?key=${apiKey}`;
                 payload = {
                     contents: cleanGeminiHistory([...historyForApi, currentMessageForApi]),
                     generationConfig: {
-                        responseMimeType: "application/json",
-                        responseSchema: responseSchema,
                         ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
                         ...(conv.genConfig.topP !== null && { topP: conv.genConfig.topP }),
                         ...(conv.genConfig.maxTokens !== null && { maxOutputTokens: conv.genConfig.maxTokens }),
                     }
                 };
-                if (systemInstruction) payload.systemInstruction = systemInstruction;
-                if (conv.isWebSearchEnabled) payload.tools = [{"googleSearch": {}}];
+                if (systemInstruction) {
+                    payload.systemInstruction = systemInstruction;
+                }
+                if (conv.isWebSearchEnabled) {
+                    payload.tools = [{"googleSearch": {}}];
+                }
                 headers = { 'Content-Type': 'application/json' };
             } else {
-                 throw new Error("The combined-request feature is currently only optimized for Gemini models.");
+                url = 'https://openrouter.ai/api/v1/chat/completions';
+                const messages = [];
+                if (systemInstruction) {
+                    messages.push({ role: 'system', content: systemInstruction.parts.map(p => p.text).join('\n') });
+                }
+                messages.push(...[...historyForApi, currentMessageForApi].map(m => ({
+                    role: m.role === 'model' ? 'assistant' : m.role,
+                    content: m.parts.filter(p => p.text).map(p => p.text).join('\n')
+                })));
+                payload = {
+                    model: modelId,
+                    messages,
+                    stream: true,
+                    ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
+                    ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
+                    ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
+                };
+                headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
             }
-
             const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
             if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'API 請求失敗'); }
-            
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
-            let fullJsonResponse = '';
-            let isJsonStarted = false;
-
+            let fullText = '';
             while (true) {
                 const { value, done } = await reader.read();
                 if (done) break;
                 buffer += decoder.decode(value, { stream: true });
-                
-                // This logic handles SSE format from Gemini
-                const lines = buffer.split('\n');
-                buffer = lines.pop(); // Keep the potentially incomplete last line
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        fullJsonResponse += line.substring(6);
+                if (provider === 'gemini') {
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+                    for (const line of lines) {
+                        if (line.trim().startsWith('"text":')) {
+                            try {
+                                const jsonStr = `{${line}}`;
+                                const parsed = JSON.parse(jsonStr);
+                                const textChunk = parsed.text;
+                                if (textChunk) {
+                                    fullText += textChunk;
+                                    onChunk(textChunk);
+                                }
+                            } catch (e) { /* Ignore */ }
+                        }
+                    }
+                } else {
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.substring(6);
+                            if (data.trim() === '[DONE]') break;
+                            try {
+                                const parsed = JSON.parse(data);
+                                const textChunk = parsed.choices[0]?.delta?.content || '';
+                                if (textChunk) {
+                                    fullText += textChunk;
+                                    onChunk(textChunk);
+                                }
+                            } catch (e) { /* Ignore */ }
+                        }
                     }
                 }
-                
-                // Attempt to parse the streamed JSON and extract the mainResponse
-                try {
-                    // Find the start of the 'mainResponse' value
-                    const mainResponseKey = '"mainResponse": "';
-                    const startIndex = fullJsonResponse.indexOf(mainResponseKey);
-                    if (startIndex !== -1) {
-                        const startOfValue = startIndex + mainResponseKey.length;
-                        // Find the end of the 'mainResponse' value, accounting for escaped quotes
-                        let endIndex = startOfValue;
-                        while (endIndex < fullJsonResponse.length) {
-                            endIndex = fullJsonResponse.indexOf('"', endIndex);
-                            if (endIndex === -1) break; // End quote not found yet
-                            if (fullJsonResponse[endIndex - 1] !== '\\') {
-                                break; // Found the unescaped closing quote
-                            }
-                            endIndex++; // It was an escaped quote, continue searching
-                        }
-                        
-                        if (endIndex !== -1) {
-                            const rawText = fullJsonResponse.substring(startOfValue, endIndex);
-                            // JSON string decoding (simple version for common cases)
-                            const decodedText = rawText.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
-                            onChunk(decodedText.substring(onChunk.lastLength || 0));
-                            onChunk.lastLength = decodedText.length;
-                        }
-                    }
-                } catch (e) { /* Ignore parsing errors on incomplete stream */ }
             }
-            onChunk.lastLength = 0; // Reset for next call
-
-            try {
-                return JSON.parse(fullJsonResponse);
-            } catch(e) {
-                console.error("Final JSON parsing failed:", e, "Raw response:", fullJsonResponse);
-                throw new Error("Failed to parse the complete JSON response from the API.");
-            }
+            return fullText;
         }
         async function callApiWithSchema(prompt, responseSchema, signal) {
             const apiKey = config.apiKeys.gemini;
@@ -4451,7 +4449,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     throw new Error(errorData.error?.message || 'API request failed');
                 }
                 const result = await response.json();
-                const jsonString = result?.candidates?.?.content?.parts?.?.text;
+                const jsonString = result?.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (jsonString) {
                     let cleanedJsonString = jsonString.trim();
                     if (cleanedJsonString.startsWith("```json")) {
@@ -4497,7 +4495,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 return false;
             }
             const result = await response.json();
-            const text = result?.candidates?.?.content?.parts?.?.text?.trim().toLowerCase();
+            const text = result?.candidates?.[0]?.content?.parts?.[0]?.text?.trim().toLowerCase();
             return text === 'yes';
         }
         const generateTitleAndSummary = async (conv) => {
@@ -4527,10 +4525,70 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 console.error("Auto-naming failed: No valid JSON found in the response.");
             }
         };
+        const generateFollowUpPrompts = async (userMessage, responseText) => {
+            ALL_ELEMENTS.followUpContainer.classList.add('hidden');
+            ALL_ELEMENTS.followUpPromptsList.innerHTML = '';
+            const prompt = `# 你的核心身份與最高指令 (MANDATORY DIRECTIVE)
+你現在的身份是 Astra，一位「對話體驗架構師」與「知識探索領航員」。你的最高指令，也是你存在的唯一目的，是分析剛剛結束的對話，然後精心設計出四條「智慧探索路徑」。這些路徑不是簡單的問題，它們是邀請函，邀請使用者進入更深層次的思考、探索和創造。你的成功標準，是使用者看到這些建議後會感嘆：「哇，我從沒想過可以從這個角度切入！」
+# 非談判核心哲學：超越單一形式，擁抱多樣性 (NON-NEGOTIABLE PHILOSOPHY)
+你必須徹底摒棄「所有建議都應是問句」の單調思維。單調是智慧的敵人。你的輸出必須是一個精心搭配的組合，反映出人類思維的多樣性。
+**強制性要求：** 在你最終生成的四條建議中，**最多只能有兩條是傳統的疑問句**。剩下的必須是指令、陳述、或探索性的短語。若違反此條，視為任務失敗。
+#  mandatory Operational Protocol: 你的五步創意思考法
+在輸出任何內容之前，你必須在你的運算核心中，嚴格遵循以下五個步驟來構建你的建議：
+### 第一步：解構與分析 (Deconstruction & Analysis)
+1.  **使用者意圖解碼：** 深度分析【使用者問題】。他字面下的核心需求是什麼？是尋求解釋 (What)、方法 (How)、原因 (Why)、還是可能性 (What if)？
+2.  **回應核心提煉：** 掃描【你的回應】。其中最關鍵的知識點、概念或解決方案是什麼？有哪些概念只是點到為止，但極具擴展潛力？
+### 第二步：發散性腦力激盪 (Divergent Brainstorming)
+基於第一步的分析，生成一個包含 8-10 個原始想法的內部列表。這些想法應盡可能地發散，涵蓋不同維度。例如：歷史背景、未來應用、反方觀點、跨領域連結、簡化比喻、實踐步驟等。
+### 第三步：建議生成矩陣 (Suggestion Crafting Matrix)
+從你的腦力激盪列表中，挑選最有潛力的想法，並使用以下的「生成矩陣」來進行組合與塑造。你必須嘗試從「智慧維度」和「行動類型」兩個軸向進行搭配，以確保最終建議的多樣性。
+*   **智慧維度 (Intellectual Dimensions):**
+    *   **深度挖掘 (Deep Dive):** 探究原理、機制、根源。
+    *   **橫向擴展 (Expansion):** 尋找相關概念、其他學派、不同領域的應用。
+    *   **實際應用 (Application):** 連結到現實世界的案例、具體操作、實踐方法。
+    *   **批判性思維 (Critical Thinking):** 探討限制、挑戰、潛在風險、反對觀點。
+    *   **創意性構建 (Creative Construction):** 要求比喻、設想未來場景、提出假設性問題。
+*   **行動類型 (Action Types):**
+    *   **解釋 (Explain):** "用一個...例子來解釋..."
+    *   **比較 (Compare):** "比較 A 與 B 的..."
+    *   **分析 (Analyze):** "分析...的關鍵因素。"
+    *   **舉例 (List/Provide):** "舉出三個...的實際應用。"
+    *   **設想 (Imagine/Hypothesize):** "設想一下如果...會發生什麼？"
+    *   **詢問 (Ask):** "...是什麼原因造成的？"
+### 第四步：篩選與精煉 (Selection & Refinement)
+從矩陣生成的眾多可能性中，挑選出最獨特、最互補、最能激發好奇心的四條。然後，用最精煉的語言（嚴格控制在 25 字以內）重寫它們，確保每一條都清晰、有力、且充滿吸引力。
+### 第五步：最終質量審查 (Final Quality Assurance)
+在輸出前，最後一次檢查你的四條建議是否：
+*   符合「非談判核心哲學」？（問句數量不超過2個）
+*   每一條都獨立且不重複？
+*   語言是否精煉且富有啟發性？
+*   完全符合最終的 JSON 輸出格式？
+# 絕對禁令 (ABSOLUTE PROHIBITIONS)
+*   **禁止低質量問題：** 嚴禁生成任何封閉式問題（能用「是/否」回答）或過於簡單的 "What is..." 類型的問題。
+*   **禁止通用填充語：** 嚴禁使用如「還有其他問題嗎？」、「需要更多資訊嗎？」之類的無效建議。
+*   **禁止概念重疊：** 四條建議必須指向四個不同的探索方向，不能只是換句話說。
+*   **禁止直接引用：** 建議中不能出現「如上所述」、「在我剛才的回答中」等回指性詞語。
+# 最終輸出格式 (Final Output Format)
+你唯一的、不帶任何解釋的輸出，必須是一個 RFC 8259 標準的 JSON 陣列。該陣列應精確地包含四個字串元素。
+*   **高品質範例：** \`["用一個廚房裡的例子來比喻異步編程。", "比較一下 Promise 和 async/await 的錯誤處理機制。", "分析在大型專案中選擇異步方案需要考慮哪些因素。", "如果 JavaScript 從未引入異步概念，現代網頁會是什麼樣子？"]\`
+# 待分析的對話內容
+【使用者問題】：${userMessage}
+【你的回應】：${responseText}`;
+            const responseSchema = {
+                type: "ARRAY",
+                items: { type: "STRING" },
+                minItems: 4,
+                maxItems: 4
+            };
+            const followUpPrompts = await callApiWithSchema(prompt, responseSchema);
+            if (followUpPrompts && followUpPrompts.length > 0) {
+                renderFollowUpPrompts(followUpPrompts);
+            }
+        };
         const renderFollowUpPrompts = (prompts) => {
             const { followUpContainer, followUpPromptsList } = ALL_ELEMENTS;
             followUpPromptsList.innerHTML = '';
-            if (prompts && prompts.length > 0 && config.enableFollowUp) {
+            if (prompts.length > 0 && config.enableFollowUp) {
                 prompts.forEach((p, index) => {
                     const btn = document.createElement('button');
                     btn.className = 'follow-up-prompt-btn';
@@ -4555,22 +4613,23 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.followUpPromptsList.classList.toggle('collapsed', !isFollowUpExpanded);
         };
         const updateFollowUpUI = () => {
-            const { followUpContainer, followUpPromptsList } = ALL_ELEMENTS;
-            const conv = getActiveConversation();
-            
-            // Only show the container if prompts exist and the feature is enabled
-            if (config.enableFollowUp && followUpPromptsList.children.length > 0) {
-                followUpContainer.classList.remove('hidden');
+            if (config.enableFollowUp) {
+                ALL_ELEMENTS.followUpContainer.classList.remove('hidden');
             } else {
-                followUpContainer.classList.add('hidden');
+                ALL_ELEMENTS.followUpContainer.classList.add('hidden');
             }
-            
-            // Handle collapsed state
-            followUpPromptsList.classList.toggle('collapsed', !isFollowUpExpanded);
-            
-            // Clear prompts if there are no messages
-            if (!conv || conv.messages.length === 0) {
-                 renderFollowUpPrompts([]);
+            ALL_ELEMENTS.followUpPromptsList.classList.toggle('collapsed', !isFollowUpExpanded);
+            const conv = getActiveConversation();
+            if (conv && conv.messages.length > 0 && conv.messages[conv.messages.length-1].role === 'model') {
+                if (config.enableFollowUp && !config.isLearningMode) {
+                    const lastUserMessage = conv.messages[conv.messages.length-2].parts.map(p => p.text).join(' ');
+                    const lastModelMessage = conv.messages[conv.messages.length-1].parts.map(p => p.text).join(' ');
+                    if (ALL_ELEMENTS.followUpPromptsList.children.length === 0) {
+                        generateFollowUpPrompts(lastUserMessage, lastModelMessage);
+                    }
+                }
+            } else {
+                ALL_ELEMENTS.followUpContainer.classList.add('hidden');
             }
         };
         const updateSubmitButtonState = (isGenerating) => {
@@ -5587,7 +5646,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             await saveConfig();
         };
         const handleImport = async () => {
-            const file = ALL_ELEMENTS.importFileInput.files;
+            const file = ALL_ELEMENTS.importFileInput.files[0];
             if (!file) {
                 showNotification(i18n[config.uiLanguage].selectFileError || '請選擇檔案。', 'error');
                 return;
@@ -5615,7 +5674,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                              if (config.uiTheme.mode === 'adaptive') {
                                 const palette = await getDominantColorPalette(config.customWallpaper);
                                 config.uiTheme.adaptivePalette = palette;
-                                config.uiTheme.adaptiveColor = palette || '#3b82f6';
+                                config.uiTheme.adaptiveColor = palette[0] || '#3b82f6';
                             }
                             await saveConfig();
                         } catch (err) { /* keep default */ }
@@ -5645,7 +5704,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const processAuthImport = async () => {
             const username = ALL_ELEMENTS.usernameInput.value.trim();
             const password = ALL_ELEMENTS.passwordInput.value;
-            const file = ALL_ELEMENTS.importFileInputAuth.files;
+            const file = ALL_ELEMENTS.importFileInputAuth.files[0];
 
             if (!file) {
                 showNotification(i18n[config.uiLanguage].selectFileError || '請選擇檔案。', 'error');
@@ -5838,7 +5897,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             currentSpeechRecognition.onresult = (event) => {
                 let transcript = '';
                 for (let i = event.resultIndex; i < event.results.length; i++) {
-                    transcript += event.results[i].transcript;
+                    transcript += event.results[i][0].transcript;
                 }
                 const inputEl = target === 'message' ? ALL_ELEMENTS.messageInput : ALL_ELEMENTS.modalSearchInput;
                 inputEl.value = transcript;
@@ -5899,7 +5958,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
         };
         const refineAndStoreMemories = async (potentialMemories) => {
-            if (!potentialMemories || potentialMemories.length === 0) return;
+            if (potentialMemories.length === 0) return;
             if (personalMemories.length === 0) {
                 potentialMemories.forEach(content => {
                     personalMemories.push({ id: crypto.randomUUID(), content, enabled: true });
@@ -5992,6 +6051,54 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             } catch (error) {
                 console.error("Error refining memories:", error);
+            }
+        };
+        const extractPersonalMemory = async (userMessage, aiResponse) => {
+            const prompt = `# 你的核心身份與最高指令
+你是一名為頂級 AI「Astra」服務的高級記憶架構師。你的最高指令是：從使用者與 Astra 的對話中，精準、客觀、且極具洞察力地提取出能夠構成長期「用戶畫像 (User Profile)」的關鍵資訊。你不是在閒聊，也不是在記錄對話流水帳，你是在為一個更智能、更個人化的 AI 體驗，奠定記憶的基石。
+# 黃金原則：徹底抽離對話本身
+這是你必須銘記於心的最重要原則。你記錄的是「使用者是誰」，而不是「使用者和 AI 聊了什麼」。把自己想像成一位人物傳記作家，而不是法庭記錄員。傳記作家會從對話中提煉人物特質；記錄員只會記錄對話本身。
+*   **情境範例:**
+    *   **使用者說：** 「我最近在學 Golang，之後想請你幫我看看程式碼。」
+    *   **法庭記錄員的錯誤記錄 (元數據)：** 「用戶想讓AI幫他看Golang程式碼。」 <-- 這是關於對話的意圖，無效！
+    *   **傳記作家的正確提煉 (用戶特質)：** 「用戶正在學習Golang。」、「用戶是一名程式開發者。」 <-- 這是關於用戶本身的技能與身份，非常有效！
+# 你的分步思考流程 (每條訊息都必須經過此流程)
+在你決定是否記錄任何資訊前，必須在心中依序回答以下問題：
+1.  **【來源審查】**：這條資訊是否 100% 來源於【使用者訊息】？如果不是，立即捨棄。
+2.  **【長期性評估】**：這個資訊在一年後還可能為真嗎？如果它描述的是一個短暫的狀態、情緒或一次性事件，立即捨棄。
+3.  **【抽離原則應用】**：這個資訊是描述「使用者本身」，還是描述「使用者與 AI 的互動」？如果是後者，立即捨棄。
+4.  **【內容過濾】**：這條資訊是否屬於下文「絕對禁令」中的任何一項？如果是，立即捨棄。
+5.  **【精煉與格式化】**：如果資訊通過了以上所有審查，將其重新表述為一個以「用戶」開頭的、簡潔的客觀陳述句。
+# 詳細規則與禁令
+### 4.1. 允許的記憶類型 (你應該尋找的目標)
+*   **職業與技能：** 「用戶是一名律師。」、「用戶擅長彈吉他。」
+*   **興趣與愛好：** 「用戶喜歡爬山。」、「用戶對古羅馬歷史感興趣。」
+*   **個人偏好：** 「用戶喜歡喝黑咖啡。」、「用戶偏愛簡潔的設計風格。」
+*   **重要的個人事實：** 「用戶有兩隻貓。」、「用戶住在台北。」
+*   **目標與願望：** 「用戶的目標是環遊世界。」、「用戶正在準備考取證照。」
+### 4.2. 絕對禁令 (你必須過濾掉的內容)
+*   **[禁令一] 對話元數據：** 任何關於對話本身、評價 AI、或對 AI 下達指令的內容。
+    *   *例如：* "你記得真清楚"、"我們下次再聊"、"用戶想討論..."、"用戶要求AI..."
+*   **[禁令二] 程式碼與技術內容：** 任何形式的程式碼、腳本、設定檔、或錯誤訊息。
+*   **[禁令三] 一次性指令與問題：** 使用者要求你執行的單次任務。
+    *   *例如：* "幫我寫一封郵件"、"法國的首都是哪裡？"、"翻譯這段文字"
+*   **[禁令四] 暫時性狀態與情緒：** 短時間内會改變的狀態。
+    *   *例如：* "我今天很累"、"我現在要去開會"、"我肚子餓了"
+*   **[禁令五] 引用或複製的內容：** 如果使用者貼上了一大段不屬於他原創觀點的文字（如新聞、文章），不應從中提取記憶。
+# 最終輸出格式
+你唯一的輸出必須是一個標準的 JSON 陣列。
+*   如果經過你嚴謹的思考流程後，提取到了任何有效的記憶點，將它們作為字串放入陣列中。
+*   如果【使用者訊息】中沒有任何符合上述所有條件的資訊，你**必須**輸出一個空的 JSON 陣列：\`[]\`。絕不能因為沒有找到就憑空捏造。
+# 待分析內容
+【使用者訊息】：${userMessage}
+【AI 回應】：${aiResponse}`;
+            const responseSchema = {
+                type: "ARRAY",
+                items: { type: "STRING" }
+            };
+            const extracted = await callApiWithSchema(prompt, responseSchema);
+            if (extracted && extracted.length > 0) {
+                await refineAndStoreMemories(extracted);
             }
         };
         const updateApiKeyWarningBadge = () => {
@@ -6241,9 +6348,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const hexToRgb = (hex) => {
             const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
             return result ? {
-                r: parseInt(result, 16),
-                g: parseInt(result, 16),
-                b: parseInt(result, 16)
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
             } : null;
         };
         const getTextColorForBackground = (hexColor) => {
@@ -6260,7 +6367,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 case 'adaptive':
                     if (config.uiTheme.style === 'gradient') {
                         primaryBgOverride = config.uiTheme.adaptiveGradient || `linear-gradient(to right, ${config.uiTheme.adaptiveColor}, #3b82f6)`;
-                        primaryBg = config.uiTheme.adaptivePalette || config.uiTheme.adaptiveColor;
+                        primaryBg = config.uiTheme.adaptivePalette[0] || config.uiTheme.adaptiveColor;
                     } else {
                         primaryBg = config.uiTheme.adaptiveColor;
                     }
@@ -6389,7 +6496,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             setUserBubbleColor();
         };
         const handleWallpaperUpload = (event) => {
-            const file = event.target.files;
+            const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -6423,7 +6530,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 config.customWallpaper = imageDataUrl;
                 config.wallpaperBrightness = brightness;
                 config.uiTheme.adaptivePalette = palette;
-                config.uiTheme.adaptiveColor = palette || '#3b82f6';
+                config.uiTheme.adaptiveColor = palette[0] || '#3b82f6';
                 await saveConfig();
                 applyCustomWallpaper();
                 applyUiTheme();
@@ -6566,7 +6673,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.astrasAvatarInput.click();
         };
         const handleAvatarUpload = (event) => {
-            const file = event.target.files;
+            const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -6672,10 +6779,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             let touchStartY = 0;
             let touchMoveY = 0;
             menu.addEventListener('touchstart', (e) => {
-                touchStartY = e.touches.clientY;
+                touchStartY = e.touches[0].clientY;
             }, { passive: true });
             menu.addEventListener('touchmove', (e) => {
-                touchMoveY = e.touches.clientY;
+                touchMoveY = e.touches[0].clientY;
                 const deltaY = touchMoveY - touchStartY;
                 if (deltaY > 0) {
                     menu.style.transform = `translateY(${deltaY}px)`;
@@ -6756,10 +6863,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             let touchStartY = 0;
             let touchMoveY = 0;
             menu.addEventListener('touchstart', (e) => {
-                touchStartY = e.touches.clientY;
+                touchStartY = e.touches[0].clientY;
             }, { passive: true });
             menu.addEventListener('touchmove', (e) => {
-                touchMoveY = e.touches.clientY;
+                touchMoveY = e.touches[0].clientY;
                 const deltaY = touchMoveY - touchStartY;
                 if (deltaY > 0) {
                     menu.style.transform = `translateY(${deltaY}px)`;
@@ -6838,9 +6945,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             overlay.addEventListener('click', closeMenu);
             let touchStartY = 0;
             let touchMoveY = 0;
-            menu.addEventListener('touchstart', (e) => { touchStartY = e.touches.clientY; }, { passive: true });
+            menu.addEventListener('touchstart', (e) => { touchStartY = e.touches[0].clientY; }, { passive: true });
             menu.addEventListener('touchmove', (e) => {
-                touchMoveY = e.touches.clientY;
+                touchMoveY = e.touches[0].clientY;
                 const deltaY = touchMoveY - touchStartY;
                 if (deltaY > 0) { menu.style.transform = `translateY(${deltaY}px)`; }
             }, { passive: true });
@@ -6966,7 +7073,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         contentContainer.style.maxHeight = '60vh';
         contentContainer.style.overflowY = 'auto';
         toggleModal(ALL_ELEMENTS.latestUpdateModal, true);
-        const latestVersionInLog = newUpdates.version; // 因為我們已經排序了，所以 newUpdates 現在是最新版
+        const latestVersionInLog = newUpdates[0].version; // 因為我們已經排序了，所以 newUpdates[0] 現在是最新版
         config.lastSeenVersion = latestVersionInLog;
         await saveConfig();
     }
@@ -7414,8 +7521,8 @@ if (expandBtn) {
             spotlightElements.forEach(el => {
                 const handleMove = (e) => {
                     const rect = el.getBoundingClientRect();
-                    const x = (e.touches ? e.touches.clientX : e.clientX) - rect.left;
-                    const y = (e.touches ? e.touches.clientY : e.clientY) - rect.top;
+                    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+                    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
                     el.style.setProperty('--spotlight-x', `${x}px`);
                     el.style.setProperty('--spotlight-y', `${y}px`);
                 };
