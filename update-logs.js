@@ -1,5 +1,12 @@
 const updateLogs = [
         {
+        version: "15.3.1",
+        date: "2025-09-23",
+        content: [
+            "<strong>優化：</strong>後續追問將更符合使用者習慣",
+        ]
+    },
+        {
         version: "15.3.0",
         date: "2025-09-21",
         content: [
