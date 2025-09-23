@@ -4281,64 +4281,55 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
 
             let memoryPrompt = '';
-// START: Logic for Memory Type 1 (Personal Habits)
-if (config.memoryEnabled1) {
-    const enabledMemories = personalMemories.filter(m => m.enabled).map(m => m.content).join('\n');
-    if (enabledMemories) {
-        // ✨ 修改標題，使其更像是背景資訊
-        memoryPrompt += `關於使用者的背景資訊：\n${enabledMemories}\n`;
-    }
-}
-// END: Logic for Memory Type 1
-
-// START: Logic for Memory Type 2 (Cross-Dialogue with Semantic Retrieval)
-if (config.memoryEnabled2 && conv.messages.length > 0) {
-    try {
-        // ... (中間的檢索邏輯，保持不變) ...
-        const currentUserMessage = conv.messages[conv.messages.length - 1].parts.map(p => p.text).join(' ');
-        const keywordPrompt = `從以下句子中提取出 3 到 5 個最重要的核心關鍵詞或主題，並以 JSON 陣列的格式回傳。例如：["關鍵詞1", "關鍵詞2", "關鍵詞3"]。\n\n句子："${currentUserMessage}"`;
-        const keywordSchema = { type: "ARRAY", items: { type: "STRING" } };
-        const keywords = await callApiWithSchema(keywordPrompt, keywordSchema);
-
-        if (keywords && keywords.length > 0) {
-            const scoredConversations = conversations
-                .filter(c => c.id !== conv.id && c.summary && !c.archived && !c.deletedAt)
-                .map(c => ({
-                    ...c,
-                    relevance: calculateRelevanceScore(c.summary, keywords)
-                }))
-                .filter(c => c.relevance > 0); 
-            const topConversations = scoredConversations
-                .sort((a, b) => b.relevance - a.relevance)
-                .slice(0, 15);
-
-            if (topConversations.length > 0) {
-                const memorySummaries = topConversations
-                    .map(c => `- ${c.title}: ${c.summary}`)
-                    .join('\n');
-                // ✨ 修改標題，使其更像是背景脈絡
-                memoryPrompt += `\n從過往對話中提取的相關背景脈絡:\n${memorySummaries}\n`;
+        if (config.memoryEnabled1) {
+            const enabledMemories = personalMemories.filter(m => m.enabled).map(m => m.content).join('\n');
+            if (enabledMemories) {
+                memoryPrompt += `關於使用者的背景資訊：\n${enabledMemories}\n`;
             }
         }
-    } catch (error) {
-        console.error("Error retrieving relevant conversation memories:", error);
-    }
-}
-// END: Logic for Memory Type 2
 
-// ✨ 如果有記憶內容，就新增一條指令
-if (memoryPrompt) {
-    memoryPrompt += "\n請自然地運用以上資訊，但不要在回覆中直接提及「你的記憶」、「你的背景資訊」或「歷史摘要」等詞語。";
-    
-    if (systemInstruction && systemInstruction.parts[0].text) {
-        systemInstruction.parts[0].text += `\n\n${memoryPrompt}`;
-    } else if (systemInstruction) {
-        systemInstruction.parts.push({ text: `\n\n${memoryPrompt}` });
-    }
-    else {
-        systemInstruction = { parts: [{ text: memoryPrompt }] };
-    }
-}
+        if (config.memoryEnabled2 && conv.messages.length > 0) {
+            try {
+                const currentUserMessage = conv.messages[conv.messages.length - 1].parts.map(p => p.text).join(' ');
+                const keywordPrompt = `從以下句子中提取出 3 到 5 個最重要的核心關鍵詞或主題，並以 JSON 陣列的格式回傳。例如：["關鍵詞1", "關鍵詞2", "關鍵詞3"]。\n\n句子："${currentUserMessage}"`;
+                const keywordSchema = { type: "ARRAY", items: { type: "STRING" } };
+                const keywords = await callApiWithSchema(keywordPrompt, keywordSchema);
+
+                if (keywords && keywords.length > 0) {
+                    const scoredConversations = conversations
+                        .filter(c => c.id !== conv.id && c.summary && !c.archived && !c.deletedAt)
+                        .map(c => ({
+                            ...c,
+                            relevance: calculateRelevanceScore(c.summary, keywords)
+                        }))
+                        .filter(c => c.relevance > 0);
+                    const topConversations = scoredConversations
+                        .sort((a, b) => b.relevance - a.relevance)
+                        .slice(0, 15);
+
+                    if (topConversations.length > 0) {
+                        const memorySummaries = topConversations
+                            .map(c => `- ${c.title}: ${c.summary}`)
+                            .join('\n');
+                        memoryPrompt += `\n從過往對話中提取的相關背景脈絡:\n${memorySummaries}\n`;
+                    }
+                }
+            } catch (error) {
+                console.error("Error retrieving relevant conversation memories:", error);
+            }
+        }
+
+        if (memoryPrompt) {
+            memoryPrompt += "\n\n**重要指示：** 請自然地、不著痕跡地運用以上提供的背景資訊來豐富你的回覆。**絕對不要**在你的回覆中直接提及「根據你的背景資訊」、「從你的記憶來看」或「歷史摘要顯示」等任何提示資訊來源的詞語。";
+            
+            if (systemInstruction && systemInstruction.parts[0].text) {
+                systemInstruction.parts[0].text += `\n\n${memoryPrompt}`;
+            } else if (systemInstruction) {
+                systemInstruction.parts.push({ text: `\n\n${memoryPrompt}` });
+            } else {
+                systemInstruction = { parts: [{ text: memoryPrompt }] };
+            }
+        }
             // END: Logic for Memory Type 2
             if (memoryPrompt) {
                 if (systemInstruction && systemInstruction.parts[0].text) {
@@ -5994,15 +5985,14 @@ if (memoryPrompt) {
                 const item = document.createElement('div');
                 item.className = 'flex items-center justify-between p-2 rounded-lg bg-[var(--hover-bg)] border border-[var(--border-color)]';
                 item.innerHTML = `
-                    item.innerHTML = `
-    <div class="flex items-start gap-2 flex-1 min-w-0">
-        <input type="checkbox" class="memory-enabled-checkbox w-4 h-4 mt-0.5" data-id="${memory.id}" ${memory.enabled ? 'checked' : ''}>
-        <span class="text-sm flex-1 break-words">${memory.content}</span>
-    </div>
-    <button class="delete-memory-btn text-red-600 hover:text-red-800" data-id="${memory.id}">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-    </button>
-`;
+                    <div class="flex items-start gap-2 flex-1 min-w-0">
+                        <input type="checkbox" class="memory-enabled-checkbox w-4 h-4 mt-0.5" data-id="${memory.id}" ${memory.enabled ? 'checked' : ''}>
+                        <span class="text-sm flex-1 break-words">${memory.content}</span>
+                    </div>
+                    <button class="delete-memory-btn text-red-600 hover:text-red-800" data-id="${memory.id}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                    </button>
+                `;
                 container.appendChild(item);
             });
             container.querySelectorAll('.memory-enabled-checkbox').forEach(cb => {
