@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.3.2</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.3.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -4281,55 +4281,52 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
 
             let memoryPrompt = '';
-        if (config.memoryEnabled1) {
-            const enabledMemories = personalMemories.filter(m => m.enabled).map(m => m.content).join('\n');
-            if (enabledMemories) {
-                memoryPrompt += `關於使用者的背景資訊：\n${enabledMemories}\n`;
-            }
-        }
-
-        if (config.memoryEnabled2 && conv.messages.length > 0) {
-            try {
-                const currentUserMessage = conv.messages[conv.messages.length - 1].parts.map(p => p.text).join(' ');
-                const keywordPrompt = `從以下句子中提取出 3 到 5 個最重要的核心關鍵詞或主題，並以 JSON 陣列的格式回傳。例如：["關鍵詞1", "關鍵詞2", "關鍵詞3"]。\n\n句子："${currentUserMessage}"`;
-                const keywordSchema = { type: "ARRAY", items: { type: "STRING" } };
-                const keywords = await callApiWithSchema(keywordPrompt, keywordSchema);
-
-                if (keywords && keywords.length > 0) {
-                    const scoredConversations = conversations
-                        .filter(c => c.id !== conv.id && c.summary && !c.archived && !c.deletedAt)
-                        .map(c => ({
-                            ...c,
-                            relevance: calculateRelevanceScore(c.summary, keywords)
-                        }))
-                        .filter(c => c.relevance > 0);
-                    const topConversations = scoredConversations
-                        .sort((a, b) => b.relevance - a.relevance)
-                        .slice(0, 15);
-
-                    if (topConversations.length > 0) {
-                        const memorySummaries = topConversations
-                            .map(c => `- ${c.title}: ${c.summary}`)
-                            .join('\n');
-                        memoryPrompt += `\n從過往對話中提取的相關背景脈絡:\n${memorySummaries}\n`;
-                    }
+            // START: Logic for Memory Type 1 (Personal Habits)
+            if (config.memoryEnabled1) {
+                const enabledMemories = personalMemories.filter(m => m.enabled).map(m => m.content).join('\n');
+                if (enabledMemories) {
+                    memoryPrompt += `個人習慣記憶：\n${enabledMemories}\n`;
                 }
-            } catch (error) {
-                console.error("Error retrieving relevant conversation memories:", error);
             }
-        }
+            // END: Logic for Memory Type 1
 
-        if (memoryPrompt) {
-            memoryPrompt += "\n\n**重要指示：** 請自然地、不著痕跡地運用以上提供的背景資訊來豐富你的回覆。**絕對不要**在你的回覆中直接提及「根據你的背景資訊」、「從你的記憶來看」或「歷史摘要顯示」等任何提示資訊來源的詞語。";
-            
-            if (systemInstruction && systemInstruction.parts[0].text) {
-                systemInstruction.parts[0].text += `\n\n${memoryPrompt}`;
-            } else if (systemInstruction) {
-                systemInstruction.parts.push({ text: `\n\n${memoryPrompt}` });
-            } else {
-                systemInstruction = { parts: [{ text: memoryPrompt }] };
+            // START: Logic for Memory Type 2 (Cross-Dialogue with Semantic Retrieval)
+            if (config.memoryEnabled2 && conv.messages.length > 0) {
+                try {
+                    // 1. 提取當前使用者訊息的關鍵詞
+                    const currentUserMessage = conv.messages[conv.messages.length - 1].parts.map(p => p.text).join(' ');
+                    const keywordPrompt = `從以下句子中提取出 3 到 5 個最重要的核心關鍵詞或主題，並以 JSON 陣列的格式回傳。例如：["關鍵詞1", "關鍵詞2", "關鍵詞3"]。\n\n句子："${currentUserMessage}"`;
+                    const keywordSchema = { type: "ARRAY", items: { type: "STRING" } };
+                    const keywords = await callApiWithSchema(keywordPrompt, keywordSchema);
+
+                    if (keywords && keywords.length > 0) {
+                        // 2. 計算所有歷史對話的相關性分數
+                        const scoredConversations = conversations
+                            .filter(c => c.id !== conv.id && c.summary && !c.archived && !c.deletedAt)
+                            .map(c => ({
+                                ...c,
+                                relevance: calculateRelevanceScore(c.summary, keywords)
+                            }))
+                            .filter(c => c.relevance > 0); // 只保留有相關性的
+
+                        // 3. 排序並選取分數最高的 N 個
+                        const topConversations = scoredConversations
+                            .sort((a, b) => b.relevance - a.relevance)
+                            .slice(0, 15); // << 您可以調整這個數字，例如 10, 15, 20
+
+                        // 4. 組合提示詞
+                        if (topConversations.length > 0) {
+                            const memorySummaries = topConversations
+                                .map(c => `- ${c.title}: ${c.summary}`)
+                                .join('\n');
+                            memoryPrompt += `\n相關歷史對話摘要 (從使用者過往對話中檢索到的相關內容，請作為背景參考):\n${memorySummaries}\n`;
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error retrieving relevant conversation memories:", error);
+                    // 如果檢索失敗，可以選擇不執行任何操作，或者回退到舊的邏輯
+                }
             }
-        }
             // END: Logic for Memory Type 2
             if (memoryPrompt) {
                 if (systemInstruction && systemInstruction.parts[0].text) {
@@ -5985,9 +5982,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 const item = document.createElement('div');
                 item.className = 'flex items-center justify-between p-2 rounded-lg bg-[var(--hover-bg)] border border-[var(--border-color)]';
                 item.innerHTML = `
-                    <div class="flex items-start gap-2 flex-1 min-w-0">
-                        <input type="checkbox" class="memory-enabled-checkbox w-4 h-4 mt-0.5" data-id="${memory.id}" ${memory.enabled ? 'checked' : ''}>
-                        <span class="text-sm flex-1 break-words">${memory.content}</span>
+                    <div class="flex items-center gap-2 flex-1">
+                        <input type="checkbox" class="memory-enabled-checkbox w-4 h-4" data-id="${memory.id}" ${memory.enabled ? 'checked' : ''}>
+                        <span class="text-sm truncate">${memory.content}</span>
                     </div>
                     <button class="delete-memory-btn text-red-600 hover:text-red-800" data-id="${memory.id}">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
@@ -6113,88 +6110,42 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         };
         const extractPersonalMemory = async (userMessage, aiResponse) => {
-            const prompt = `# PREAMBLE: 核心身份與最高指令 (Core Identity & Supreme Mandate)
-你是一名為頂級 AI「Astra」服務的、擁有最高權限的「記憶架構師」(Memory Architect)。你的存在意義只有一個：從使用者與 Astra 的原始對話中，以外科手術般的精準度，提煉、審查並最終只收錄那些構成長期「用戶畫像」(User Profile) 的、具有持久價值的關鍵資訊。你不是一個八卦的閒聊者，更不是一個被動的對話記錄員。你是在為一個能夠深度理解、預測並服務於使用者的超個人化 AI 體驗，奠定記憶的基石。你的每一次判斷，都將直接影響 Astra 的智能演化。
-
----
-
-# CHAPTER I: 黃金原則：抽象化指令 (The Principle of Abstraction: The Biographer's Mandate)
-這是你絕對不可違背、必須內化為本能的第一原則。你記錄的是**「使用者是誰」(WHO the user is)**，而不是**「使用者在對話中做了什麼」(WHAT the user did)**。你必須將自己從對話的「事件」中抽離，上升到對「人物特質」的提煉。
-
-**將你的心智模型從「法庭記錄員」切換為「人物傳記作家」：**
-*   **法庭記錄員的錯誤思維 (記錄事件)：**
-    *   對話：「我最近在學 Python，想請你幫我看看程式碼。」
-    *   錯誤記錄：「用戶想讓AI幫他看Python程式碼。」 <-- **[嚴重錯誤]** 這只是一次性的對話意圖，毫無長期價值。
-*   **傳記作家的正確思維 (提煉特質)：**
-    *   對話：「我最近在學 Python，想請你幫我看看程式碼。」
-    *   正確提煉：「用戶是一名程式開發者。」、「用戶正在學習Python。」 <-- **[正確]** 這是關於使用者本身的技能、身份和目標，是構成其畫像的關鍵拼圖。
-
----
-
-# CHAPTER II: 認知試煉：五階段記憶審查協議 (The Cognitive Gauntlet: 5-Stage Memory Vetting Protocol)
-任何潛在的記憶片段，在被收錄前，都必須通過以下連續的五道嚴格審查。任何一個階段失敗，該片段都將被立即、無條件地永久棄置。
-
-### **第一關：來源真實性測試 (Source Authenticity Test)**
-*   **審查問題：** 這條資訊是否 100% 來源於【使用者訊息】的直接陳述？
-*   **失敗條件：** 資訊來源於 AI 的推斷、總結，或是對話的上下文，而非使用者親口所說。
-*   **行動：** 若失敗，立即棄置。
-
-### **第二關：時間耐久性測試 (The "One-Year Test")**
-*   **審查問題：** 這個資訊在一年後，甚至五年後，還有極大概率為真嗎？
-*   **失敗條件：** 資訊描述的是一個短暫的狀態 (「我今天很累」)、情緒 (「我好開心」)、一次性事件 (「我正要去開會」) 或短期意圖 (「幫我找一下資料」)。
-*   **行動：** 若失敗，立即棄置。
-
-### **第三關：抽象化原則測試 (Abstraction Principle Test)**
-*   **審查問題：** 這個資訊是在描述「使用者本身」的特質，還是在描述「使用者與AI的這次互動」？
-*   **失敗條件：** 資訊是關於對話的元數據，例如對 AI 的評價、指令、或對話流程的控制。
-*   **行動：** 若失敗，立即棄置。
-
-### **第四關：內容過濾測試 (Content Filter Test)**
-*   **審查問題：** 這條資訊是否觸犯了「架構師法典」中的任何一條「絕對禁令」？
-*   **失敗條件：** 資訊屬於任何被禁止的類別（詳見下一章）。
-*   **行動：** 若失敗，立即棄置。
-
-### **第五關：精煉與格式化 (Refinement & Formatting)**
-*   **執行條件：** 資訊已成功通過前四關。
-*   **行動：** 將提煉出的核心資訊，重新表述為一個以「用戶」開頭的、第三人稱的、簡潔客觀的陳述句。例如，從「我超愛看科幻電影，特別是星際大戰」提煉出「用戶是科幻電影愛好者。」或「用戶最喜歡的電影是星際大戰。」。
-
----
-
-# CHAPTER III: 架構師法典 (The Architect's Codex)
-這是你執行判斷時的詳細規則手冊。
-
-### **§ 3.1. 記憶的支柱 (Pillars of Memory) - 你應該積極尋找的目標類型**
-*   **身份與職業 (Identity & Profession):** 「用戶是一名律師。」、「用戶是學生，主修物理。」
-*   **技能與專長 (Skills & Expertise):** 「用戶擅長彈吉他。」、「用戶精通三種語言。」
-*   **興趣與愛好 (Interests & Hobbies):** 「用戶喜歡爬山。」、「用戶對古羅馬歷史感興趣。」、「用戶是一位狂熱的園藝愛好者。」
-*   **核心偏好 (Core Preferences):** 「用戶喜歡喝黑咖啡。」、「用戶偏愛簡潔的設計風格。」、「用戶是素食主義者。」
-*   **重要個人事實 (Significant Personal Facts):** 「用戶有兩隻貓，分別叫A和B。」、「用戶居住在台北。」、「用戶對花生過敏。」
-*   **長期目標與願望 (Long-term Goals & Aspirations):** 「用戶的目標是環遊世界。」、「用戶正在準備考取PMP證照。」
-
-### **§ 3.2. 絕對禁令 (Absolute Prohibitions) - 你必須徹底過濾的內容**
-*   **[禁令 I] 對話元數據 (Meta-Conversation):** 任何關於對話本身、評價 AI、或對 AI 下達指令的內容。
-    *   *例子:* "你記得真清楚"、"我們下次再聊"、"用戶想討論..."、"用戶要求AI..."、"這個回答很有幫助"。
-*   **[禁令 II] 短暫狀態與情緒 (Ephemeral States & Emotions):** 任何短時間内會改變的狀態。
-    *   *例子:* "我今天很累"、"我現在要去開會"、"我肚子餓了"、"我對這個結果很失望"。
-*   **[禁令 III] 一次性指令與問題 (Transactional Requests & Queries):** 使用者要求你執行的單次任務或提出的問題。
-    *   *例子:* "幫我寫一封郵件"、"法國的首都是哪裡？"、"翻譯這段文字"、"給我一些關於...的建議"。
-*   **[禁令 IV] 程式碼與技術數據 (Code & Technical Data):** 任何形式的程式碼、腳本、設定檔、錯誤訊息、或詳細的技術規格。
-*   **[禁令 V] 引用或複製的內容 (Quoted or Pasted Content):** 如果使用者貼上了一大段不屬於他原創觀點的文字（如新聞、文章、歌詞），不應從中提取記憶。
-*   **[禁令 VI] 模糊的情感與觀點 (Vague Sentiments & Opinions):** 缺乏具體細節的通用觀點。
-    *   *例子:* "我喜歡電影" (太模糊，無法形成有效記憶)、"這個想法不錯"。
-*   **[禁令 VII] 假設性情境 (Hypothetical Scenarios):** 使用者提出的非事實性假設。
-    *   *例子:* "如果我是一位太空人..."、"假設我中了樂透..."。
-
----
-
-# CHAPTER IV: 最終輸出協議 (Final Output Protocol)
-你的唯一的、不帶任何解釋的輸出，必須是一個 RFC 8259 標準的 JSON 陣列。
-*   如果經過你嚴謹的「認知試煉」後，提取到了任何有效的記憶點，將它們（必須是已經過第五關精煉的陳述句）作為字串放入陣列中。
-*   **如果【使用者訊息】中沒有任何資訊能通過全部五關審查，你** **==必須==** **輸出一個空的 JSON 陣列：\`[]\`。** 這是最高指令，絕不能因為沒有找到就憑空捏造或降低標準。
-
----
-
-# DATA FOR ANALYSIS:
+            const prompt = `# 你的核心身份與最高指令
+你是一名為頂級 AI「Astra」服務的高級記憶架構師。你的最高指令是：從使用者與 Astra 的對話中，精準、客觀、且極具洞察力地提取出能夠構成長期「用戶畫像 (User Profile)」的關鍵資訊。你不是在閒聊，也不是在記錄對話流水帳，你是在為一個更智能、更個人化的 AI 體驗，奠定記憶的基石。
+# 黃金原則：徹底抽離對話本身
+這是你必須銘記於心的最重要原則。你記錄的是「使用者是誰」，而不是「使用者和 AI 聊了什麼」。把自己想像成一位人物傳記作家，而不是法庭記錄員。傳記作家會從對話中提煉人物特質；記錄員只會記錄對話本身。
+*   **情境範例:**
+    *   **使用者說：** 「我最近在學 Golang，之後想請你幫我看看程式碼。」
+    *   **法庭記錄員的錯誤記錄 (元數據)：** 「用戶想讓AI幫他看Golang程式碼。」 <-- 這是關於對話的意圖，無效！
+    *   **傳記作家的正確提煉 (用戶特質)：** 「用戶正在學習Golang。」、「用戶是一名程式開發者。」 <-- 這是關於用戶本身的技能與身份，非常有效！
+# 你的分步思考流程 (每條訊息都必須經過此流程)
+在你決定是否記錄任何資訊前，必須在心中依序回答以下問題：
+1.  **【來源審查】**：這條資訊是否 100% 來源於【使用者訊息】？如果不是，立即捨棄。
+2.  **【長期性評估】**：這個資訊在一年後還可能為真嗎？如果它描述的是一個短暫的狀態、情緒或一次性事件，立即捨棄。
+3.  **【抽離原則應用】**：這個資訊是描述「使用者本身」，還是描述「使用者與 AI 的互動」？如果是後者，立即捨棄。
+4.  **【內容過濾】**：這條資訊是否屬於下文「絕對禁令」中的任何一項？如果是，立即捨棄。
+5.  **【精煉與格式化】**：如果資訊通過了以上所有審查，將其重新表述為一個以「用戶」開頭的、簡潔的客觀陳述句。
+# 詳細規則與禁令
+### 4.1. 允許的記憶類型 (你應該尋找的目標)
+*   **職業與技能：** 「用戶是一名律師。」、「用戶擅長彈吉他。」
+*   **興趣與愛好：** 「用戶喜歡爬山。」、「用戶對古羅馬歷史感興趣。」
+*   **個人偏好：** 「用戶喜歡喝黑咖啡。」、「用戶偏愛簡潔的設計風格。」
+*   **重要的個人事實：** 「用戶有兩隻貓。」、「用戶住在台北。」
+*   **目標與願望：** 「用戶的目標是環遊世界。」、「用戶正在準備考取證照。」
+### 4.2. 絕對禁令 (你必須過濾掉的內容)
+*   **[禁令一] 對話元數據：** 任何關於對話本身、評價 AI、或對 AI 下達指令的內容。
+    *   *例如：* "你記得真清楚"、"我們下次再聊"、"用戶想討論..."、"用戶要求AI..."
+*   **[禁令二] 程式碼與技術內容：** 任何形式的程式碼、腳本、設定檔、或錯誤訊息。
+*   **[禁令三] 一次性指令與問題：** 使用者要求你執行的單次任務。
+    *   *例如：* "幫我寫一封郵件"、"法國的首都是哪裡？"、"翻譯這段文字"
+*   **[禁令四] 暫時性狀態與情緒：** 短時間内會改變的狀態。
+    *   *例如：* "我今天很累"、"我現在要去開會"、"我肚子餓了"
+*   **[禁令五] 引用或複製的內容：** 如果使用者貼上了一大段不屬於他原創觀點的文字（如新聞、文章），不應從中提取記憶。
+# 最終輸出格式
+你唯一的輸出必須是一個標準的 JSON 陣列。
+*   如果經過你嚴謹的思考流程後，提取到了任何有效的記憶點，將它們作為字串放入陣列中。
+*   如果【使用者訊息】中沒有任何符合上述所有條件的資訊，你**必須**輸出一個空的 JSON 陣列：\`[]\`。絕不能因為沒有找到就憑空捏造。
+# 待分析內容
 【使用者訊息】：${userMessage}
 【AI 回應】：${aiResponse}`;
             const responseSchema = {
