@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.3.2</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.3.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -1611,50 +1611,6 @@ body.custom-wallpaper-active .input-indicator-item {
     width: 100%;
 }
 }
-#memory-recall-indicator {
-    position: absolute;
-    bottom: 5px; /* 根據您的 follow-up-container 和 input-bar-container 高度可能需要微調 */
-    left: 50%;
-    transform: translateX(-50%);
-    
-    display: flex;
-    align-items: center;
-    gap: 0.5rem; /* 8px */
-    
-    background-color: var(--hover-bg);
-    color: var(--text-secondary);
-    padding: 0.5rem 1rem; /* 8px 16px */
-    border-radius: 9999px;
-    border: 1px solid var(--border-color);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    
-    font-size: 0.75rem; /* 12px */
-    line-height: 1rem; /* 16px */
-    font-weight: 500;
-    
-    z-index: 10;
-    pointer-events: none;
-    
-    opacity: 0;
-    transition: opacity 0.4s ease-out, transform 0.4s ease-out;
-}
-
-#memory-recall-indicator.visible {
-    opacity: 1;
-    transform: translateX(-50%) translateY(-10px); /* 向上移動一點 */
-}
-
-.dark #memory-recall-indicator {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-body.custom-wallpaper-active #memory-recall-indicator {
-    background-color: rgba(255, 255, 255, 0.3);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    color: var(--text-primary);
-}
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -1851,12 +1807,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 </header>
                 <div id="chat-container" class="flex-1 p-4 md:p-6 overflow-y-auto scroll-area">
                     <div id="message-list" class="space-y-8 max-w-4xl mx-auto"></div>
-                    <div id="memory-recall-indicator" class="hidden">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 flex-shrink-0">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
-                        </svg>
-                        <span id="memory-recall-text"></span>
-                    </div>
                 </div>
                 <button id="scroll-to-bottom-btn" title="滾動到底部">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -2808,8 +2758,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             proposalInstructionsInput: document.getElementById('proposal-instructions-input'),
             cancelProposalBtn: document.getElementById('cancel-proposal-btn'),
             submitProposalBtn: document.getElementById('submit-proposal-btn'),
-            memoryRecallIndicator: document.getElementById('memory-recall-indicator'),
-            memoryRecallText: document.getElementById('memory-recall-text'),
         };
         const compareVersions = (v1, v2) => {
             if (!v2) return 1;
@@ -2829,7 +2777,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             { id: 'gemini-2.5-flash', name: 'astra-pro (2.5-Flash)', provider: 'gemini', descriptionKey: 'model_pro_desc', limitsKey: 'model_pro_limits' },
             { id: 'gemini-2.5-flash-lite', name: 'astra-plus (2.5-Flash-lite)', provider: 'gemini', descriptionKey: 'model_plus_desc', limitsKey: 'model_plus_limits' },
             { id: 'deepseek/deepseek-chat-v3.1:free', name: 'astra-mini (Deepseek-V3.1)', provider: 'openrouter', descriptionKey: 'model_mini_desc', limitsKey: 'model_mini_limits' },
-            { id: 'mistralai/mistral-small-3.2-24b-instruct:free', name: 'astra-mill (Mistral3.2)', provider: 'openrouter', descriptionKey: 'model_mill_desc', limitsKey: 'model_mill_limits' },
+            { id: 'openai/gpt-oss-20b:free', name: 'astra-mill (Gpt-20B)', provider: 'openrouter', descriptionKey: 'model_mill_desc', limitsKey: 'model_mill_limits' },
             { id: 'qwen/qwen3-coder:free', name: 'astra-nano (Qwen3)', provider: 'openrouter', descriptionKey: 'model_nano_desc', limitsKey: 'model_nano_limits' },
             { id: 'z-ai/glm-4.5-air:free', name: 'astra-pico (Glm-4.5-air)', provider: 'openrouter', descriptionKey: 'model_pico_desc', limitsKey: 'model_pico_limits' },
             ];
@@ -4275,27 +4223,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (cleaned.length > 0 && cleaned[0].role !== 'user') cleaned.shift();
             return cleaned;
         }
-         /**
- * 計算一個對話摘要與一組關鍵詞的相關性分數
- * @param {string} summary - 對話的摘要內容
- * @param {string[]} keywords - 從當前問題中提取的關鍵詞陣列
- * @returns {number} - 相關性分數
- */
-function calculateRelevanceScore(summary, keywords) {
-    if (!summary || !keywords || keywords.length === 0) {
-        return 0;
-    }
-    const summaryLower = summary.toLowerCase();
-    let score = 0;
-    keywords.forEach(keyword => {
-        if (summaryLower.includes(keyword.toLowerCase())) {
-            score++;
-        }
-    });
-    // 給予覆蓋率一個加權，匹配的關鍵詞越多，分數加成越高
-    const coverageRatio = score / keywords.length;
-    return score * (1 + coverageRatio);
-}
         /**
          * 計算一個對話摘要與一組關鍵詞的相關性分數
          * @param {string} summary - 對話的摘要內容
@@ -4317,32 +4244,6 @@ function calculateRelevanceScore(summary, keywords) {
             const coverageRatio = score / keywords.length;
             return score * (1 + coverageRatio);
         }
-         const showMemoryRecallIndicator = (conversationTitle) => {
-        const { memoryRecallIndicator, memoryRecallText } = ALL_ELEMENTS;
-        if (!memoryRecallIndicator || !memoryRecallText) return;
-
-        // 根據當前語言設定提示文字
-        const lang = config.uiLanguage;
-        const recallText = i18n[lang]?.referringToConversation.replace('{title}', `"${conversationTitle}"`) 
-                         || `正在參考您關於 "${conversationTitle}" 的對話...`;
-        
-        memoryRecallText.textContent = recallText;
-        memoryRecallIndicator.classList.remove('hidden');
-        
-        // 使用 requestAnimationFrame 確保顯示動畫能觸發
-        requestAnimationFrame(() => {
-            memoryRecallIndicator.classList.add('visible');
-        });
-
-        // 4秒後自動隱藏
-        setTimeout(() => {
-            memoryRecallIndicator.classList.remove('visible');
-            // 動畫結束後再徹底隱藏，避免閃爍
-            memoryRecallIndicator.addEventListener('transitionend', () => {
-                memoryRecallIndicator.classList.add('hidden');
-            }, { once: true });
-        }, 4000);
-    };
         async function streamApiCall(parts, onChunk, signal) {
             const conv = getActiveConversation();
             const modelInfo = MODELS.find(m => m.id === conv.model);
@@ -4380,69 +4281,60 @@ function calculateRelevanceScore(summary, keywords) {
             }
 
             let memoryPrompt = '';
-            // START: Logic for Memory Type 1 (Personal Habits) - 這部分不變
+            // START: Logic for Memory Type 1 (Personal Habits)
             if (config.memoryEnabled1) {
                 const enabledMemories = personalMemories.filter(m => m.enabled).map(m => m.content).join('\n');
                 if (enabledMemories) {
-                    memoryPrompt += `### 個人化記憶 (關於使用者的長期事實):\n${enabledMemories}\n\n`;
+                    memoryPrompt += `個人習慣記憶：\n${enabledMemories}\n`;
                 }
             }
             // END: Logic for Memory Type 1
 
-            // START: 記憶系統 2.0 - 主動式情境理解
+            // START: Logic for Memory Type 2 (Cross-Dialogue with Semantic Retrieval)
             if (config.memoryEnabled2 && conv.messages.length > 0) {
                 try {
-                    // 【方案一：雙向關聯檢索】
-                    // 1. 建立更豐富的上下文，而不僅僅是最後一句話
-                    const contextMessages = conv.messages.slice(-3); // 取最近的3條訊息來分析上下文
-                    const contextTextForKeywords = contextMessages.map(msg => msg.parts.map(p => p.text).join(' ')).join('\n');
-
-                    const keywordPrompt = `從以下對話上下文中，提取 3 到 5 個最重要的核心關鍵詞或主題，以便用於搜尋相關的歷史對話。請以 JSON 陣列的格式回傳。\n\n對話上下文：\n"${contextTextForKeywords}"`;
+                    // 1. 提取當前使用者訊息的關鍵詞
+                    const currentUserMessage = conv.messages[conv.messages.length - 1].parts.map(p => p.text).join(' ');
+                    const keywordPrompt = `從以下句子中提取出 3 到 5 個最重要的核心關鍵詞或主題，並以 JSON 陣列的格式回傳。例如：["關鍵詞1", "關鍵詞2", "關鍵詞3"]。\n\n句子："${currentUserMessage}"`;
                     const keywordSchema = { type: "ARRAY", items: { type: "STRING" } };
                     const keywords = await callApiWithSchema(keywordPrompt, keywordSchema);
 
                     if (keywords && keywords.length > 0) {
-                        // 2. 計算所有歷史對話的相關性分數 (這部分不變)
+                        // 2. 計算所有歷史對話的相關性分數
                         const scoredConversations = conversations
                             .filter(c => c.id !== conv.id && c.summary && !c.archived && !c.deletedAt)
                             .map(c => ({
                                 ...c,
                                 relevance: calculateRelevanceScore(c.summary, keywords)
                             }))
-                            .filter(c => c.relevance > 0);
+                            .filter(c => c.relevance > 0); // 只保留有相關性的
 
-                        // 3. 排序並選取分數最高的 N 個 (我們減少數量，因為內容更深入)
+                        // 3. 排序並選取分數最高的 N 個
                         const topConversations = scoredConversations
                             .sort((a, b) => b.relevance - a.relevance)
-                            .slice(0, 5); // <-- 減少數量到 5 個，因為我們要取更詳細的內容
+                            .slice(0, 15); // << 您可以調整這個數字，例如 10, 15, 20
 
-                        // 4. 【方案二：深度記憶片段】
+                        // 4. 組合提示詞
                         if (topConversations.length > 0) {
-                            // 【方案三：觸發記憶回溯指示器】
-                            // 我們只顯示最相關的那一則對話標題
-                            showMemoryRecallIndicator(topConversations[0].title);
-
-                            let deepMemoryFragments = "### 相關歷史對話片段 (從最相關的歷史對話中擷取):\n";
-                            
-                            topConversations.forEach(retrievedConv => {
-                                // ... (組合 deepMemoryFragments 的程式碼) ...
-                            });
-                            
-                            memoryPrompt += deepMemoryFragments;
+                            const memorySummaries = topConversations
+                                .map(c => `- ${c.title}: ${c.summary}`)
+                                .join('\n');
+                            memoryPrompt += `\n相關歷史對話摘要 (從使用者過往對話中檢索到的相關內容，請作為背景參考):\n${memorySummaries}\n`;
                         }
                     }
                 } catch (error) {
-                    console.error("Error retrieving relevant conversation memories (v2.0):", error);
+                    console.error("Error retrieving relevant conversation memories:", error);
+                    // 如果檢索失敗，可以選擇不執行任何操作，或者回退到舊的邏輯
                 }
             }
-            // END: 記憶系統 2.0
-
+            // END: Logic for Memory Type 2
             if (memoryPrompt) {
                 if (systemInstruction && systemInstruction.parts[0].text) {
                     systemInstruction.parts[0].text += `\n\n${memoryPrompt}`;
                 } else if (systemInstruction) {
                     systemInstruction.parts.push({ text: `\n\n${memoryPrompt}` });
-                } else {
+                }
+                else {
                     systemInstruction = { parts: [{ text: memoryPrompt }] };
                 }
             }
@@ -6090,11 +5982,11 @@ function calculateRelevanceScore(summary, keywords) {
                 const item = document.createElement('div');
                 item.className = 'flex items-center justify-between p-2 rounded-lg bg-[var(--hover-bg)] border border-[var(--border-color)]';
                 item.innerHTML = `
-    <div class="flex items-center gap-2 flex-1 min-w-0">
-        <input type="checkbox" class="memory-enabled-checkbox w-4 h-4" data-id="${memory.id}" ${memory.enabled ? 'checked' : ''}>
-        <span class="text-sm break-words">${memory.content}</span>
-    </div>
-    <button class="delete-memory-btn text-red-600 hover:text-red-800" data-id="${memory.id}">
+                    <div class="flex items-center gap-2 flex-1">
+                        <input type="checkbox" class="memory-enabled-checkbox w-4 h-4" data-id="${memory.id}" ${memory.enabled ? 'checked' : ''}>
+                        <span class="text-sm truncate">${memory.content}</span>
+                    </div>
+                    <button class="delete-memory-btn text-red-600 hover:text-red-800" data-id="${memory.id}">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                     </button>
                 `;
@@ -6220,14 +6112,12 @@ function calculateRelevanceScore(summary, keywords) {
         const extractPersonalMemory = async (userMessage, aiResponse) => {
             const prompt = `# 你的核心身份與最高指令
 你是一名為頂級 AI「Astra」服務的高級記憶架構師。你的最高指令是：從使用者與 Astra 的對話中，精準、客觀、且極具洞察力地提取出能夠構成長期「用戶畫像 (User Profile)」的關鍵資訊。你不是在閒聊，也不是在記錄對話流水帳，你是在為一個更智能、更個人化的 AI 體驗，奠定記憶的基石。
-
 # 黃金原則：徹底抽離對話本身
 這是你必須銘記於心的最重要原則。你記錄的是「使用者是誰」，而不是「使用者和 AI 聊了什麼」。把自己想像成一位人物傳記作家，而不是法庭記錄員。傳記作家會從對話中提煉人物特質；記錄員只會記錄對話本身。
 *   **情境範例:**
     *   **使用者說：** 「我最近在學 Golang，之後想請你幫我看看程式碼。」
     *   **法庭記錄員的錯誤記錄 (元數據)：** 「用戶想讓AI幫他看Golang程式碼。」 <-- 這是關於對話的意圖，無效！
     *   **傳記作家的正確提煉 (用戶特質)：** 「用戶正在學習Golang。」、「用戶是一名程式開發者。」 <-- 這是關於用戶本身的技能與身份，非常有效！
-
 # 你的分步思考流程 (每條訊息都必須經過此流程)
 在你決定是否記錄任何資訊前，必須在心中依序回答以下問題：
 1.  **【來源審查】**：這條資訊是否 100% 來源於【使用者訊息】？如果不是，立即捨棄。
@@ -6235,7 +6125,6 @@ function calculateRelevanceScore(summary, keywords) {
 3.  **【抽離原則應用】**：這個資訊是描述「使用者本身」，還是描述「使用者與 AI 的互動」？如果是後者，立即捨棄。
 4.  **【內容過濾】**：這條資訊是否屬於下文「絕對禁令」中的任何一項？如果是，立即捨棄。
 5.  **【精煉與格式化】**：如果資訊通過了以上所有審查，將其重新表述為一個以「用戶」開頭的、簡潔的客觀陳述句。
-
 # 詳細規則與禁令
 ### 4.1. 允許的記憶類型 (你應該尋找的目標)
 *   **職業與技能：** 「用戶是一名律師。」、「用戶擅長彈吉他。」
@@ -6243,7 +6132,6 @@ function calculateRelevanceScore(summary, keywords) {
 *   **個人偏好：** 「用戶喜歡喝黑咖啡。」、「用戶偏愛簡潔的設計風格。」
 *   **重要的個人事實：** 「用戶有兩隻貓。」、「用戶住在台北。」
 *   **目標與願望：** 「用戶的目標是環遊世界。」、「用戶正在準備考取證照。」
-
 ### 4.2. 絕對禁令 (你必須過濾掉的內容)
 *   **[禁令一] 對話元數據：** 任何關於對話本身、評價 AI、或對 AI 下達指令的內容。
     *   *例如：* "你記得真清楚"、"我們下次再聊"、"用戶想討論..."、"用戶要求AI..."
@@ -6253,12 +6141,10 @@ function calculateRelevanceScore(summary, keywords) {
 *   **[禁令四] 暫時性狀態與情緒：** 短時間内會改變的狀態。
     *   *例如：* "我今天很累"、"我現在要去開會"、"我肚子餓了"
 *   **[禁令五] 引用或複製的內容：** 如果使用者貼上了一大段不屬於他原創觀點的文字（如新聞、文章），不應從中提取記憶。
-
 # 最終輸出格式
 你唯一的輸出必須是一個標準的 JSON 陣列。
 *   如果經過你嚴謹的思考流程後，提取到了任何有效的記憶點，將它們作為字串放入陣列中。
 *   如果【使用者訊息】中沒有任何符合上述所有條件的資訊，你**必須**輸出一個空的 JSON 陣列：\`[]\`。絕不能因為沒有找到就憑空捏造。
-
 # 待分析內容
 【使用者訊息】：${userMessage}
 【AI 回應】：${aiResponse}`;
