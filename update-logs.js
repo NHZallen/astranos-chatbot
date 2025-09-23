@@ -1,19 +1,10 @@
 const updateLogs = [
         {
-        version: "15.3.2",
-        date: "2025-09-23",
-        content: [
-            "<strong>替換：</strong>Mill模型替換為Mistral3.2模型",
-            "<strong>優化：</strong>自動記憶的提取機制",
-            "<strong>修正：</strong>第一類記憶無法換行導致超出畫面的問題",
-            "<strong>修正：</strong>頻繁提及記憶內容的問題",
-        ]
-    },
-        {
         version: "15.3.1",
         date: "2025-09-23",
         content: [
             "<strong>優化：</strong>後續追問將更符合使用者習慣",
+            "<strong>替換：</strong>Mill模型替換為Mistral3.2模型",
         ]
     },
         {
