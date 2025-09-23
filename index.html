@@ -1611,6 +1611,50 @@ body.custom-wallpaper-active .input-indicator-item {
     width: 100%;
 }
 }
+#memory-recall-indicator {
+    position: absolute;
+    bottom: 5px; /* 根據您的 follow-up-container 和 input-bar-container 高度可能需要微調 */
+    left: 50%;
+    transform: translateX(-50%);
+    
+    display: flex;
+    align-items: center;
+    gap: 0.5rem; /* 8px */
+    
+    background-color: var(--hover-bg);
+    color: var(--text-secondary);
+    padding: 0.5rem 1rem; /* 8px 16px */
+    border-radius: 9999px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    
+    font-size: 0.75rem; /* 12px */
+    line-height: 1rem; /* 16px */
+    font-weight: 500;
+    
+    z-index: 10;
+    pointer-events: none;
+    
+    opacity: 0;
+    transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+}
+
+#memory-recall-indicator.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-10px); /* 向上移動一點 */
+}
+
+.dark #memory-recall-indicator {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+body.custom-wallpaper-active #memory-recall-indicator {
+    background-color: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    color: var(--text-primary);
+}
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -1807,6 +1851,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 </header>
                 <div id="chat-container" class="flex-1 p-4 md:p-6 overflow-y-auto scroll-area">
                     <div id="message-list" class="space-y-8 max-w-4xl mx-auto"></div>
+                    <div id="memory-recall-indicator" class="hidden">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 flex-shrink-0">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+                        </svg>
+                        <span id="memory-recall-text"></span>
+                    </div>
                 </div>
                 <button id="scroll-to-bottom-btn" title="滾動到底部">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -2758,6 +2808,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             proposalInstructionsInput: document.getElementById('proposal-instructions-input'),
             cancelProposalBtn: document.getElementById('cancel-proposal-btn'),
             submitProposalBtn: document.getElementById('submit-proposal-btn'),
+            memoryRecallIndicator: document.getElementById('memory-recall-indicator'),
+            memoryRecallText: document.getElementById('memory-recall-text'),
         };
         const compareVersions = (v1, v2) => {
             if (!v2) return 1;
@@ -4265,6 +4317,32 @@ function calculateRelevanceScore(summary, keywords) {
             const coverageRatio = score / keywords.length;
             return score * (1 + coverageRatio);
         }
+         const showMemoryRecallIndicator = (conversationTitle) => {
+        const { memoryRecallIndicator, memoryRecallText } = ALL_ELEMENTS;
+        if (!memoryRecallIndicator || !memoryRecallText) return;
+
+        // 根據當前語言設定提示文字
+        const lang = config.uiLanguage;
+        const recallText = i18n[lang]?.referringToConversation.replace('{title}', `"${conversationTitle}"`) 
+                         || `正在參考您關於 "${conversationTitle}" 的對話...`;
+        
+        memoryRecallText.textContent = recallText;
+        memoryRecallIndicator.classList.remove('hidden');
+        
+        // 使用 requestAnimationFrame 確保顯示動畫能觸發
+        requestAnimationFrame(() => {
+            memoryRecallIndicator.classList.add('visible');
+        });
+
+        // 4秒後自動隱藏
+        setTimeout(() => {
+            memoryRecallIndicator.classList.remove('visible');
+            // 動畫結束後再徹底隱藏，避免閃爍
+            memoryRecallIndicator.addEventListener('transitionend', () => {
+                memoryRecallIndicator.classList.add('hidden');
+            }, { once: true });
+        }, 4000);
+    };
         async function streamApiCall(parts, onChunk, signal) {
             const conv = getActiveConversation();
             const modelInfo = MODELS.find(m => m.id === conv.model);
@@ -4340,18 +4418,14 @@ function calculateRelevanceScore(summary, keywords) {
 
                         // 4. 【方案二：深度記憶片段】
                         if (topConversations.length > 0) {
+                            // 【方案三：觸發記憶回溯指示器】
+                            // 我們只顯示最相關的那一則對話標題
+                            showMemoryRecallIndicator(topConversations[0].title);
+
                             let deepMemoryFragments = "### 相關歷史對話片段 (從最相關的歷史對話中擷取):\n";
                             
                             topConversations.forEach(retrievedConv => {
-                                deepMemoryFragments += `--- (來自對話: "${retrievedConv.title}") ---\n`;
-                                // 提取該對話的最後 2-4 則訊息作為深度記憶
-                                const relevantMessages = retrievedConv.messages.slice(-4); 
-                                relevantMessages.forEach(msg => {
-                                    const role = msg.role === 'user' ? '使用者' : 'Astra';
-                                    const content = msg.parts.map(p => p.text).join(' ');
-                                    deepMemoryFragments += `${role}: ${content}\n`;
-                                });
-                                deepMemoryFragments += `\n`;
+                                // ... (組合 deepMemoryFragments 的程式碼) ...
                             });
                             
                             memoryPrompt += deepMemoryFragments;
