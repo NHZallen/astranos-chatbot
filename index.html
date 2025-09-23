@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.3.1</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.3.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -3179,29 +3179,31 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             updateFunctionButtonsState();
         };
         const deleteChat = async (id, event) => {
-            event?.stopPropagation();
-            const conv = conversations.find(c => c.id === id);
-            if (conv) {
-                conv.deletedAt = new Date().toISOString();
-                if (conv.folderId) {
-                    const folder = folders.find(f => f.id === conv.folderId);
-                    if (folder) {
-                        folder.conversationIds = folder.conversationIds.filter(cid => cid !== id);
-                    }
-                    conv.folderId = null;
-                }
-                await saveAppData();
-                if (activeConversationId === id) {
-                    const nextConv = conversations.find(c => !c.archived && !c.deletedAt);
-                    activeConversationId = nextConv ? nextConv.id : null;
-                    if (!activeConversationId) startNewChat();
-                    else loadChat(activeConversationId);
-                } else {
-                    renderAll();
-                }
-                showNotification(i18n[config.uiLanguage].chatMovedToTrash || '對話已移至垃圾桶。', 'success');
+    event?.stopPropagation();
+    const conv = conversations.find(c => c.id === id);
+    if (conv) {
+        conv.deletedAt = new Date().toISOString();
+        if (conv.folderId) {
+            const folder = folders.find(f => f.id === conv.folderId);
+            if (folder) {
+                folder.conversationIds = folder.conversationIds.filter(cid => cid !== id);
             }
-        };
+            conv.folderId = null;
+        }
+        await saveAppData();
+
+        // ↓↓↓↓↓↓ 就是這裡被修改了 ↓↓↓↓↓↓
+        if (activeConversationId === id) {
+            startNewChat();
+        } 
+        // ↑↑↑↑↑↑ 就是這裡被修改了 ↑↑↑↑↑↑
+        
+        else {
+            renderAll();
+        }
+        showNotification(i18n[config.uiLanguage].chatMovedToTrash || '對話已移至垃圾桶。', 'success');
+    }
+};
         const archiveChat = async (id, event) => {
             event?.stopPropagation();
             const conv = conversations.find(c => c.id === id);
