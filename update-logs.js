@@ -1,5 +1,14 @@
 const updateLogs = [
         {
+        version: "15.3.2",
+        date: "2025-09-23",
+        content: [
+            "<strong>優化：</strong>自動記憶的提取機制",
+            "<strong>修正：</strong>第一類記憶無法換行導致超出畫面的問題",
+            "<strong>修正：</strong>頻繁提及記憶內容的問題",
+        ]
+    },
+        {
         version: "15.3.1",
         date: "2025-09-23",
         content: [
