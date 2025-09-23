@@ -4302,61 +4302,73 @@ function calculateRelevanceScore(summary, keywords) {
             }
 
             let memoryPrompt = '';
-            // START: Logic for Memory Type 1 (Personal Habits)
+            // START: Logic for Memory Type 1 (Personal Habits) - 這部分不變
             if (config.memoryEnabled1) {
                 const enabledMemories = personalMemories.filter(m => m.enabled).map(m => m.content).join('\n');
                 if (enabledMemories) {
-                    memoryPrompt += `個人習慣記憶：\n${enabledMemories}\n`;
+                    memoryPrompt += `### 個人化記憶 (關於使用者的長期事實):\n${enabledMemories}\n\n`;
                 }
             }
             // END: Logic for Memory Type 1
 
-            // START: Logic for Memory Type 2 (Cross-Dialogue with Semantic Retrieval)
+            // START: 記憶系統 2.0 - 主動式情境理解
             if (config.memoryEnabled2 && conv.messages.length > 0) {
                 try {
-                    // 1. 提取當前使用者訊息的關鍵詞
-                    const currentUserMessage = conv.messages[conv.messages.length - 1].parts.map(p => p.text).join(' ');
-                    const keywordPrompt = `從以下句子中提取出 3 到 5 個最重要的核心關鍵詞或主題，並以 JSON 陣列的格式回傳。例如：["關鍵詞1", "關鍵詞2", "關鍵詞3"]。\n\n句子："${currentUserMessage}"`;
+                    // 【方案一：雙向關聯檢索】
+                    // 1. 建立更豐富的上下文，而不僅僅是最後一句話
+                    const contextMessages = conv.messages.slice(-3); // 取最近的3條訊息來分析上下文
+                    const contextTextForKeywords = contextMessages.map(msg => msg.parts.map(p => p.text).join(' ')).join('\n');
+
+                    const keywordPrompt = `從以下對話上下文中，提取 3 到 5 個最重要的核心關鍵詞或主題，以便用於搜尋相關的歷史對話。請以 JSON 陣列的格式回傳。\n\n對話上下文：\n"${contextTextForKeywords}"`;
                     const keywordSchema = { type: "ARRAY", items: { type: "STRING" } };
                     const keywords = await callApiWithSchema(keywordPrompt, keywordSchema);
 
                     if (keywords && keywords.length > 0) {
-                        // 2. 計算所有歷史對話的相關性分數
+                        // 2. 計算所有歷史對話的相關性分數 (這部分不變)
                         const scoredConversations = conversations
                             .filter(c => c.id !== conv.id && c.summary && !c.archived && !c.deletedAt)
                             .map(c => ({
                                 ...c,
                                 relevance: calculateRelevanceScore(c.summary, keywords)
                             }))
-                            .filter(c => c.relevance > 0); // 只保留有相關性的
+                            .filter(c => c.relevance > 0);
 
-                        // 3. 排序並選取分數最高的 N 個
+                        // 3. 排序並選取分數最高的 N 個 (我們減少數量，因為內容更深入)
                         const topConversations = scoredConversations
                             .sort((a, b) => b.relevance - a.relevance)
-                            .slice(0, 15); // << 您可以調整這個數字，例如 10, 15, 20
+                            .slice(0, 5); // <-- 減少數量到 5 個，因為我們要取更詳細的內容
 
-                        // 4. 組合提示詞
+                        // 4. 【方案二：深度記憶片段】
                         if (topConversations.length > 0) {
-                            const memorySummaries = topConversations
-                                .map(c => `- ${c.title}: ${c.summary}`)
-                                .join('\n');
-                            memoryPrompt += `\n相關歷史對話摘要 (從使用者過往對話中檢索到的相關內容，請作為背景參考):\n${memorySummaries}\n`;
+                            let deepMemoryFragments = "### 相關歷史對話片段 (從最相關的歷史對話中擷取):\n";
+                            
+                            topConversations.forEach(retrievedConv => {
+                                deepMemoryFragments += `--- (來自對話: "${retrievedConv.title}") ---\n`;
+                                // 提取該對話的最後 2-4 則訊息作為深度記憶
+                                const relevantMessages = retrievedConv.messages.slice(-4); 
+                                relevantMessages.forEach(msg => {
+                                    const role = msg.role === 'user' ? '使用者' : 'Astra';
+                                    const content = msg.parts.map(p => p.text).join(' ');
+                                    deepMemoryFragments += `${role}: ${content}\n`;
+                                });
+                                deepMemoryFragments += `\n`;
+                            });
+                            
+                            memoryPrompt += deepMemoryFragments;
                         }
                     }
                 } catch (error) {
-                    console.error("Error retrieving relevant conversation memories:", error);
-                    // 如果檢索失敗，可以選擇不執行任何操作，或者回退到舊的邏輯
+                    console.error("Error retrieving relevant conversation memories (v2.0):", error);
                 }
             }
-            // END: Logic for Memory Type 2
+            // END: 記憶系統 2.0
 
             if (memoryPrompt) {
                 if (systemInstruction && systemInstruction.parts[0].text) {
                     systemInstruction.parts[0].text += `\n\n${memoryPrompt}`;
                 } else if (systemInstruction) {
                     systemInstruction.parts.push({ text: `\n\n${memoryPrompt}` });
-                }
-                else {
+                } else {
                     systemInstruction = { parts: [{ text: memoryPrompt }] };
                 }
             }
