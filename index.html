@@ -4278,7 +4278,101 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const denominator = Math.sqrt(normA) * Math.sqrt(normB);
         return denominator === 0 ? 0 : dotProduct / denominator;
     }
-    
+    // =================================================================
+    // START: VECTOR SEARCH FUNCTIONS (NEWLY ADDED/MODIFIED)
+    // =================================================================
+
+    /**
+     * Calculates the cosine similarity between two vectors.
+     * @param {number[]} vecA - The first vector.
+     * @param {number[]} vecB - The second vector.
+     * @returns {number} The cosine similarity score (between -1 and 1).
+     */
+    function cosineSimilarity(vecA, vecB) {
+        if (!vecA || !vecB || vecA.length !== vecB.length) {
+            return 0;
+        }
+        let dotProduct = 0;
+        let normA = 0;
+        let normB = 0;
+        for (let i = 0; i < vecA.length; i++) {
+            dotProduct += vecA[i] * vecB[i];
+            normA += vecA[i] * vecA[i];
+            normB += vecB[i] * vecB[i];
+        }
+        const denominator = Math.sqrt(normA) * Math.sqrt(normB);
+        return denominator === 0 ? 0 : dotProduct / denominator;
+    }
+
+    /**
+     * Calls the Google Gemini API to get text embeddings using the user-provided API key
+     * and the recommended text-embedding-004 model.
+     * @param {string} text The text to embed.
+     * @returns {Promise<number[]|null>} A promise that resolves to the embedding vector, or null if failed.
+     */
+    async function getEmbedding(text) {
+        // 1. 檢查是否有 Gemini API 金鑰
+        const apiKey = config.apiKeys.gemini;
+        if (!apiKey) {
+            console.error("Gemini API key is required for semantic search functionality.");
+            // 避免在大量操作時重複彈出通知
+            // showNotification("語意搜尋功能需要 Gemini API 金鑰。", "error");
+            return null;
+        }
+
+        // 2. 確保文字內容有效，避免不必要的 API 呼叫
+        if (!text || typeof text !== 'string' || text.trim() === '') {
+            console.warn("getEmbedding called with invalid or empty text.");
+            return null;
+        }
+        
+        // 3. 定義使用的嵌入模型 (text-embedding-004 是 Google 推薦的最新專用模型)
+        const MODEL_NAME = "text-embedding-004";
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:embedContent?key=${apiKey}`;
+
+        try {
+            // 4. 發送 API 請求
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    model: `models/${MODEL_NAME}`,
+                    content: {
+                        parts: [{ "text": text }]
+                    }
+                })
+            });
+
+            // 5. 處理 API 回應
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error("Google Embedding API Error:", errorData.error.message);
+                showNotification(`無法生成語意向量: ${errorData.error.message}`, "error");
+                return null;
+            }
+
+            const data = await response.json();
+            
+            // 6. 返回向量值
+            if (data.embedding && data.embedding.values) {
+                return data.embedding.values;
+            } else {
+                throw new Error("Invalid response structure from Embedding API.");
+            }
+
+        } catch (error) {
+            console.error("Failed to execute getEmbedding:", error);
+            showNotification("生成語意向量時發生網路或執行錯誤。", "error");
+            return null; // 發生任何錯誤都返回 null
+        }
+    }
+
+    // =================================================================
+    // END: VECTOR SEARCH FUNCTIONS
+    // =================================================================
+
     async function streamApiCall(parts, onChunk, signal) {
         const conv = getActiveConversation();
         const modelInfo = MODELS.find(m => m.id === conv.model);
