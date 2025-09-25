@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.3.2</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.3.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -6016,7 +6016,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
         };
         const refineAndStoreMemories = async (potentialMemories) => {
+            // START: 修改後的程式碼
             if (potentialMemories.length === 0) return;
+
+            // 如果記憶庫是空的，直接全部新增，無需調用 AI
             if (personalMemories.length === 0) {
                 potentialMemories.forEach(content => {
                     personalMemories.push({ id: crypto.randomUUID(), content, enabled: true });
@@ -6026,44 +6029,50 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 showNotification('已自動添加新的個人記憶。', 'success');
                 return;
             }
+            
             const prompt = `# 你的核心任務：記憶庫管理員
-        你是一個高度精確的AI記憶庫管理員。你的任務是分析 "潛在的新記憶" 列表，並與 "現有的記憶庫" 進行比對。你的目標是保持記憶庫的精簡、準確且無冗餘。
-        # 處理原則 (必須嚴格遵守)
-        1.  **相似性判斷**: 你需要理解語意上的相似性，而不僅僅是文字上的。例如，「用戶喜歡爬山」和「用戶的愛好是登山」是相似的。
-        2.  **合併與升級**: 當一個新記憶是對現有記憶的補充或更具體的描述時，你應該合併它們，而不是簡單地新增。例如，現有記憶是「用戶是開發者」，新記憶是「用戶使用 Python」，那麼應該將現有記憶更新為「用戶是使用 Python 的開發者」。
-        3.  **消除冗餘**: 如果新記憶與現有記憶完全相同或只是換句話說，則應忽略新記憶。
-        4.  **保留新資訊**: 如果新記憶是全新的、與現有記憶庫完全無關的資訊，則應添加它。
-        # 你的行動指令
-        對於每一條 "潛在的新記憶"，你必須做出以下三種判斷之一：
-        1.  **"ADD"**: 如果這是一條全新的、不重複的資訊。
-        2.  **"UPDATE"**: 如果這條資訊可以更新或合併到一條現有的記憶中，使其更完整或更精確。
-        3.  **"IGNORE"**: 如果這條資訊是重複的、無關緊要的，或者與現有記憶相比沒有提供更多價值。
-        # 最終輸出格式
-        你必須嚴格地以一個 JSON 陣列的形式回覆，陣列中包含多個物件，每個物件代表一個行動。不要包含任何 JSON 以外的解釋或文字。
-        格式如下:
-        \`\`\`json
-        [
-          {
-            "action": "ADD",
-            "content": "新的記憶內容"
-          },
-          {
-            "action": "UPDATE",
-            "id": "要更新的現有記憶的ID",
-            "content": "更新後的完整記憶內容"
-          },
-          {
-            "action": "IGNORE",
-            "content": "要忽略的新記憶內容"
-          }
-        ]
-        \`\`\`
-        # 待處理的資料
-        【現有的記憶庫 (包含 ID)】:
-        ${JSON.stringify(personalMemories, null, 2)}
-        【潛在的新記憶】:
-        ${JSON.stringify(potentialMemories, null, 2)}
-        `;
+你是一個高度精確的AI記憶庫管理員。你的任務是分析 "潛在的新記憶" 列表，並與 "現有的記憶庫" 進行比對。你的目標是保持記憶庫的精簡、準確且無冗餘。
+
+# 處理原則 (必須嚴格遵守)
+1.  **相似性判斷**: 你需要理解語意上的相似性，而不僅僅是文字上的。例如，「用戶喜歡爬山」和「用戶的愛好是登山」是相似的。
+2.  **合併與升級**: 當一個新記憶是對現有記憶的補充或更具體的描述時，你應該合併它們，而不是簡單地新增。例如，現有記憶是「用戶是開發者」，新記憶是「用戶使用 Python」，那麼應該將現有記憶更新為「用戶是使用 Python 的開發者」。
+3.  **消除冗餘**: 如果新記憶與現有記憶完全相同或只是換句話說，則應忽略新記憶。
+4.  **保留新資訊**: 如果新記憶是全新的、與現有記憶庫完全無關的資訊，則應添加它。
+
+# 你的行動指令
+對於每一條 "潛在的新記憶"，你必須做出以下三種判斷之一：
+1.  **"ADD"**: 如果這是一條全新的、不重複的資訊。
+2.  **"UPDATE"**: 如果這條資訊可以更新或合併到一條現有的記憶中，使其更完整或更精確。
+3.  **"IGNORE"**: 如果這條資訊是重複的、無關緊要的，或者與現有記憶相比沒有提供更多價值。
+
+# 最終輸出格式
+你必須嚴格地以一個 JSON 陣列的形式回覆，陣列中包含多個物件，每個物件代表一個行動。不要包含任何 JSON 以外的解釋或文字。
+格式如下:
+\`\`\`json
+[
+  {
+    "action": "ADD",
+    "content": "新的記憶內容"
+  },
+  {
+    "action": "UPDATE",
+    "id": "要更新的現有記憶的ID",
+    "content": "更新後的完整記憶內容"
+  },
+  {
+    "action": "IGNORE",
+    "content": "要忽略的新記憶內容"
+  }
+]
+\`\`\`
+
+# 待處理的資料
+【現有的記憶庫 (包含 ID)】:
+${JSON.stringify(personalMemories, null, 2)}
+
+【潛在的新記憶】:
+${JSON.stringify(potentialMemories, null, 2)}
+`;
             const responseSchema = {
                 type: "ARRAY",
                 items: {
@@ -6076,6 +6085,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     required: ["action", "content"]
                 }
             };
+
             try {
                 const actions = await callApiWithSchema(prompt, responseSchema);
                 if (actions && Array.isArray(actions)) {
@@ -6083,6 +6093,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     actions.forEach(act => {
                         switch (act.action) {
                             case 'ADD':
+                                // 再次確認不會新增重複內容
                                 if (!personalMemories.some(m => m.content === act.content)) {
                                     personalMemories.push({ id: crypto.randomUUID(), content: act.content, enabled: true });
                                     memoriesChanged = true;
@@ -6096,11 +6107,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                 }
                                 break;
                             case 'IGNORE':
+                                // Do nothing
                                 break;
                         }
                     });
+
                     if (memoriesChanged) {
                         await saveAppData();
+                        // 如果設定頁面是打開的，就即時更新上面的記憶列表
                         if (!ALL_ELEMENTS.settingsModal.classList.contains('hidden')) {
                            renderPersonalMemoryList();
                         }
@@ -6110,16 +6124,20 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             } catch (error) {
                 console.error("Error refining memories:", error);
             }
+            // END: 修改後的程式碼
         };
         const extractPersonalMemory = async (userMessage, aiResponse) => {
+            // START: 修改後的程式碼
             const prompt = `# 你的核心身份與最高指令
 你是一名為頂級 AI「Astra」服務的高級記憶架構師。你的最高指令是：從使用者與 Astra 的對話中，精準、客觀、且極具洞察力地提取出能夠構成長期「用戶畫像 (User Profile)」的關鍵資訊。你不是在閒聊，也不是在記錄對話流水帳，你是在為一個更智能、更個人化的 AI 體驗，奠定記憶的基石。
+
 # 黃金原則：徹底抽離對話本身
 這是你必須銘記於心的最重要原則。你記錄的是「使用者是誰」，而不是「使用者和 AI 聊了什麼」。把自己想像成一位人物傳記作家，而不是法庭記錄員。傳記作家會從對話中提煉人物特質；記錄員只會記錄對話本身。
 *   **情境範例:**
     *   **使用者說：** 「我最近在學 Golang，之後想請你幫我看看程式碼。」
     *   **法庭記錄員的錯誤記錄 (元數據)：** 「用戶想讓AI幫他看Golang程式碼。」 <-- 這是關於對話的意圖，無效！
     *   **傳記作家的正確提煉 (用戶特質)：** 「用戶正在學習Golang。」、「用戶是一名程式開發者。」 <-- 這是關於用戶本身的技能與身份，非常有效！
+
 # 你的分步思考流程 (每條訊息都必須經過此流程)
 在你決定是否記錄任何資訊前，必須在心中依序回答以下問題：
 1.  **【來源審查】**：這條資訊是否 100% 來源於【使用者訊息】？如果不是，立即捨棄。
@@ -6127,6 +6145,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 3.  **【抽離原則應用】**：這個資訊是描述「使用者本身」，還是描述「使用者與 AI 的互動」？如果是後者，立即捨棄。
 4.  **【內容過濾】**：這條資訊是否屬於下文「絕對禁令」中的任何一項？如果是，立即捨棄。
 5.  **【精煉與格式化】**：如果資訊通過了以上所有審查，將其重新表述為一個以「用戶」開頭的、簡潔的客觀陳述句。
+
 # 詳細規則與禁令
 ### 4.1. 允許的記憶類型 (你應該尋找的目標)
 *   **職業與技能：** 「用戶是一名律師。」、「用戶擅長彈吉他。」
@@ -6134,6 +6153,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 *   **個人偏好：** 「用戶喜歡喝黑咖啡。」、「用戶偏愛簡潔的設計風格。」
 *   **重要的個人事實：** 「用戶有兩隻貓。」、「用戶住在台北。」
 *   **目標與願望：** 「用戶的目標是環遊世界。」、「用戶正在準備考取證照。」
+
 ### 4.2. 絕對禁令 (你必須過濾掉的內容)
 *   **[禁令一] 對話元數據：** 任何關於對話本身、評價 AI、或對 AI 下達指令的內容。
     *   *例如：* "你記得真清楚"、"我們下次再聊"、"用戶想討論..."、"用戶要求AI..."
@@ -6143,10 +6163,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 *   **[禁令四] 暫時性狀態與情緒：** 短時間内會改變的狀態。
     *   *例如：* "我今天很累"、"我現在要去開會"、"我肚子餓了"
 *   **[禁令五] 引用或複製的內容：** 如果使用者貼上了一大段不屬於他原創觀點的文字（如新聞、文章），不應從中提取記憶。
+
 # 最終輸出格式
 你唯一的輸出必須是一個標準的 JSON 陣列。
 *   如果經過你嚴謹的思考流程後，提取到了任何有效的記憶點，將它們作為字串放入陣列中。
 *   如果【使用者訊息】中沒有任何符合上述所有條件的資訊，你**必須**輸出一個空的 JSON 陣列：\`[]\`。絕不能因為沒有找到就憑空捏造。
+
 # 待分析內容
 【使用者訊息】：${userMessage}
 【AI 回應】：${aiResponse}`;
@@ -6154,6 +6176,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 type: "ARRAY",
                 items: { type: "STRING" }
             };
+            // END: 修改後的程式碼
             const extracted = await callApiWithSchema(prompt, responseSchema);
             if (extracted && extracted.length > 0) {
                 await refineAndStoreMemories(extracted);
