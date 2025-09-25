@@ -772,7 +772,7 @@ window.i18n = {
     'writer': 'Assistant d\'écriture',
     'editor': 'Outils d\'édition',
     'learning': 'Spécialisation Apprentissage'
-},
+}
 
         // Main App UI
         newChat: 'Nouveau Chat',
