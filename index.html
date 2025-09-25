@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.3.4</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.3.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -2869,7 +2869,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let modelPieChart = null;
         let timeDistChart = null;
         let cropperInstance = null;
-        let currentStoreCategory = '全部';
+        let currentStoreCategory = 'all';
         let editingAstraForAvatarId = null;
         let isAutoScrolling = false;
         let isTrashSelectionMode = false;
@@ -6776,7 +6776,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
             }, { once: true });
         };
         const renderStore = () => {
-            const mainContent = document.querySelector('#store-main-content');
+    const mainContent = document.querySelector('#store-main-content');
     if (mainContent) {
         mainContent.scrollTop = 0;
     }
@@ -6785,33 +6785,52 @@ ${JSON.stringify(potentialMemories, null, 2)}
     grid.innerHTML = '';
     categoryList.innerHTML = '';
     const translations = i18n[config.uiLanguage] || i18n['zh-TW'];
+
+    // 【修改 1】: 我們不再從 Astras 物件中直接拿 category 文字，而是拿 category_key
     const translatedOfficialAstras = OFFICIAL_ASTRAS.map(ast => ({
         ...ast,
         name: translations['astras_' + ast.id.replace(/-/g, '_') + '_name'] || ast.name,
         description: translations['astras_' + ast.id.replace(/-/g, '_') + '_desc'] || ast.description
     }));
     const userCreatedAstras = astras.filter(a => !a.officialId);
-    const allCategories = ['全部', ...new Set([
-        ...translatedOfficialAstras.map(a => a.category),
-        ...userCreatedAstras.map(a => a.category)
+
+    // 【修改 2】: 建立分類鍵的列表，'all' 是我們手動加入的
+    const allCategoryKeys = ['all', ...new Set([
+        ...translatedOfficialAstras.map(a => a.category_key),
+        ...userCreatedAstras.map(a => a.category_key) // 如果使用者自創的也有分類鍵
     ].filter(Boolean))];
-    allCategories.forEach(category => {
+
+    // 【修改 3】: 遍歷分類鍵列表，而不是分類文字列表
+    allCategoryKeys.forEach(categoryKey => {
         const btn = document.createElement('button');
         btn.className = 'store-category-btn';
-        btn.textContent = category;
-        if (category === currentStoreCategory) {
+        
+        // 【修改 4】: 從 i18n 物件中查找對應的翻譯文字
+        btn.textContent = translations.store_categories[categoryKey] || categoryKey;
+        
+        // 【修改 5】: 將分類鍵儲存在按鈕的 dataset 中，方便點擊時使用
+        btn.dataset.categoryKey = categoryKey;
+
+        // 判斷當前選中狀態，現在比較的是 key 而不是文字
+        if (categoryKey === currentStoreCategory) {
             btn.classList.add('active');
         }
+
         btn.addEventListener('click', () => {
-            currentStoreCategory = category;
+            // 點擊後，更新 currentStoreCategory 為分類的 key
+            currentStoreCategory = categoryKey;
             renderStore();
         });
         categoryList.appendChild(btn);
     });
+
     const allStoreAstras = [...translatedOfficialAstras, ...userCreatedAstras];
-    const filteredAstras = currentStoreCategory === '全部'
+    
+    // 【修改 6】: 過濾邏輯現在也使用 category_key 來比對
+    const filteredAstras = currentStoreCategory === 'all'
         ? allStoreAstras
-        : allStoreAstras.filter(a => a.category === currentStoreCategory);
+        : allStoreAstras.filter(a => a.category_key === currentStoreCategory);
+
     filteredAstras.forEach(ast => {
         const card = document.createElement('div');
         card.className = 'astras-store-card';
@@ -6843,6 +6862,10 @@ ${JSON.stringify(potentialMemories, null, 2)}
         });
         grid.appendChild(card);
     });
+
+    // 最後，別忘了將 currentStoreCategory 的初始值也設為 'all'
+    // 你可以在 initChatApp 或其他初始化的地方找到 let currentStoreCategory = '全部';
+    // 把它改成 let currentStoreCategory = 'all';
 };
         const handleSubscription = (officialId) => {
             const isSubscribed = astras.some(a => a.officialId === officialId);
