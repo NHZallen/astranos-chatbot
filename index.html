@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.3.3</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.3.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -2407,14 +2407,21 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 <div>
                     <h3 class="text-lg font-semibold mb-3" data-lang-key="messageTimeDistribution">訊息數量時間分佈</h3>
                     <div class="p-4 bg-[var(--sidebar-bg)] rounded-lg">
-                        <div class="flex flex-wrap gap-2 mb-4 items-center">
-                            <label for="time-analysis-year-select" class="text-sm" data-lang-key="year">年份:</label>
-                            <select id="time-analysis-year-select" class="p-1 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] text-sm"></select>
-                            <label for="time-analysis-month-select" class="text-sm" data-lang-key="month">月份:</label>
-                            <select id="time-analysis-month-select" class="p-1 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] text-sm" disabled></select>
-                            <label for="time-analysis-day-select" class="text-sm" data-lang-key="day">日期:</label>
-                            <select id="time-analysis-day-select" class="p-1 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] text-sm" disabled></select>
-                        </div>
+                        <div class="flex flex-wrap gap-x-4 gap-y-2 mb-4 items-center">
+    <!-- 時間篩選 -->
+    <div class="flex items-center gap-2">
+        <label for="time-analysis-year-select" class="text-sm" data-lang-key="year">年份:</label>
+        <select id="time-analysis-year-select" class="p-1 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] text-sm"></select>
+        <label for="time-analysis-month-select" class="text-sm" data-lang-key="month">月份:</label>
+        <select id="time-analysis-month-select" class="p-1 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] text-sm" disabled></select>
+        <label for="time-analysis-day-select" class="text-sm" data-lang-key="day">日期:</label>
+        <select id="time-analysis-day-select" class="p-1 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] text-sm" disabled></select>
+    </div>
+    <div id="model-filter-container" class="flex items-center gap-2">
+        <label for="time-analysis-model-select" class="text-sm" data-lang-key="modelFilter">模型篩選:</label>
+        <select id="time-analysis-model-select" class="p-1 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] text-sm"></select>
+    </div>
+</div>
                         <div id="time-chart-container" style="height: 300px;">
                              <canvas id="time-distribution-chart"></canvas>
                         </div>
@@ -6364,14 +6371,30 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 updateTimeDistributionChart();
             });
             timeAnalysisDaySelect.addEventListener('change', updateTimeDistributionChart);
+            const timeAnalysisModelSelect = document.getElementById('time-analysis-model-select');
+    if (timeAnalysisModelSelect) {
+        timeAnalysisModelSelect.innerHTML = `<option value="">${i18n[config.uiLanguage].allModels || '全部模型'}</option>`;
+        MODELS.forEach(model => {
+            const option = document.createElement('option');
+            option.value = model.id;
+            option.textContent = model.name;
+            timeAnalysisModelSelect.appendChild(option);
+        });
+        timeAnalysisModelSelect.addEventListener('change', updateTimeDistributionChart);
+    }
             updateTimeDistributionChart();
         };
         const updateTimeDistributionChart = () => {
             const year = ALL_ELEMENTS.timeAnalysisYearSelect.value ? parseInt(ALL_ELEMENTS.timeAnalysisYearSelect.value) : null;
             const month = ALL_ELEMENTS.timeAnalysisMonthSelect.value ? parseInt(ALL_ELEMENTS.timeAnalysisMonthSelect.value) : null;
             const day = ALL_ELEMENTS.timeAnalysisDaySelect.value ? parseInt(ALL_ELEMENTS.timeAnalysisDaySelect.value) : null;
+            const modelSelect = document.getElementById('time-analysis-model-select');
+    const selectedModel = modelSelect ? modelSelect.value : null;
+    const filteredConversations = selectedModel 
+        ? conversations.filter(c => c.model === selectedModel)
+        : conversations;
+    const allMessages = filteredConversations.flatMap(c => c.messages);
             let labels, data, chartType, label;
-            const allMessages = conversations.flatMap(c => c.messages);
             const lang = config.uiLanguage;
             if (year && month && day) {
                 chartType = 'line';
