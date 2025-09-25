@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.3.3</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.3.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -5353,23 +5353,32 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const scope = ALL_ELEMENTS.modalSearchScopeSelect.value;
             const container = ALL_ELEMENTS.searchResultsContainer;
             container.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].searching || '正在搜尋中...'}</p>`;
+            
             if (!query) {
                 container.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].searchPrompt}</p>`;
                 return;
             }
+
             let results = [];
             if (scope === 'natural') {
                 try {
-                    const weightedKeywords = await generateSearchKeywords(query);
-                    if (!weightedKeywords || weightedKeywords.length === 0) {
+                    // 1. 呼叫新的分析函式，變數名改為 searchAnalysis 更貼切
+                    const searchAnalysis = await generateSearchKeywords(query);
+
+                    // 2. 使用新的、更可靠的方式檢查回傳結果
+                    if (!searchAnalysis || !searchAnalysis.weighted_keywords || searchAnalysis.weighted_keywords.length === 0) {
                         throw new Error(i18n[config.uiLanguage].keywordGenerationFailed || '無法從您的查詢中提取關鍵字。');
                     }
-                    results = calculateRelevanceScores(weightedKeywords);
+                    
+                    // 3. 將完整的分析物件傳遞給新的評分函式
+                    results = calculateRelevanceScores(searchAnalysis);
+
                 } catch (error) {
                     container.innerHTML = `<p class="text-center text-red-500">${error.message}</p>`;
                     return;
                 }
             } else {
+                // 關鍵字搜尋邏輯保持不變
                 const lowerCaseQuery = query.toLowerCase();
                 const searchIn = scope === 'keyword-title' ? ['title'] : ['title', 'content'];
                 conversations.forEach(conv => {
@@ -5401,14 +5410,18 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     }
                 });
             }
+
+            // 排序和渲染邏輯保持不變
             if (scope === 'natural') {
                 results.sort((a, b) => b.score - a.score);
             }
+
             container.innerHTML = '';
             if (results.length === 0) {
                 container.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].noResultsFound || '找不到符合的對話。'}</p>`;
                 return;
             }
+
             results.forEach(({ conv, titleHTML, snippetHTML, score }) => {
                 const item = document.createElement('div');
                 item.className = 'p-3 rounded-md hover:bg-[var(--hover-bg)] border border-transparent hover:border-[var(--border-color)]';
