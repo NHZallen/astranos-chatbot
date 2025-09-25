@@ -5481,83 +5481,176 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             toggleModal(ALL_ELEMENTS.searchViewModal, true);
         };
         const generateSearchKeywords = async (naturalQuery) => {
-            const prompt = `分析以下自然語言查詢，提取 5-10 個最相關的核心關鍵字。對於每個關鍵字，根據其在查詢中的重要性，給予一個 1 到 10 的權重分數（10為最重要）。請嚴格按照以下 JSON 格式輸出，不要有任何額外的文字或解釋。
-範例:
+            const prompt = `你是一位專業的搜尋意圖分析師。請分析以下自然語言查詢，並嚴格按照指定的 JSON 格式輸出一個包含三部分的物件：
+1.  "core_intent": 用一句話精準概括使用者的核心搜尋意圖。
+2.  "weighted_keywords": 提取 5-7 個最相關的核心關鍵字，並為每個關鍵字設定 1-10 的權重（10為最重要）。
+3.  "related_concepts": 列出 2-3 個與查詢相關但未直接提及的擴展概念或同義詞，用於語意擴展搜尋。
+
+範例：
 查詢: "去年夏天在巴黎鐵塔附近吃的最好吃的法國可麗餅是什麼？"
-輸出: [{"keyword": "可麗餅", "weight": 10}, {"keyword": "巴黎鐵塔", "weight": 9}, {"keyword": "法國", "weight": 7}, {"keyword": "吃", "weight": 5}, {"keyword": "去年夏天", "weight": 4}]
-查詢內容：${naturalQuery}`;
+輸出: {
+  "core_intent": "尋找關於在巴黎特定地點吃過的美味可麗餅的資訊。",
+  "weighted_keywords": [
+    {"keyword": "可麗餅", "weight": 10},
+    {"keyword": "巴黎鐵塔", "weight": 9},
+    {"keyword": "法國", "weight": 7},
+    {"keyword": "美食", "weight": 6},
+    {"keyword": "去年夏天", "weight": 4}
+  ],
+  "related_concepts": ["甜點", "旅遊回憶", "歐洲美食"]
+}
+
+---
+待分析的查詢內容： "${naturalQuery}"`;
+
             const responseSchema = {
-                type: "ARRAY",
-                items: {
-                    type: "OBJECT",
-                    properties: {
-                        keyword: { type: "STRING" },
-                        weight: { type: "INTEGER", minimum: 1, maximum: 10 }
+                type: "OBJECT",
+                properties: {
+                    core_intent: { type: "STRING" },
+                    weighted_keywords: {
+                        type: "ARRAY",
+                        items: {
+                            type: "OBJECT",
+                            properties: {
+                                keyword: { type: "STRING" },
+                                weight: { type: "INTEGER", minimum: 1, maximum: 10 }
+                            },
+                            required: ["keyword", "weight"]
+                        }
                     },
-                    required: ["keyword", "weight"]
+                    related_concepts: {
+                        type: "ARRAY",
+                        items: { type: "STRING" }
+                    }
                 },
-                minItems: 3,
-                maxItems: 10
+                required: ["core_intent", "weighted_keywords", "related_concepts"]
             };
+
+            // 我們使用 callApiWithSchema 來確保得到乾淨的 JSON 結構化資料
             return await callApiWithSchema(prompt, responseSchema);
         };
-        const calculateRelevanceScores = (weightedKeywords) => {
+        const calculateRelevanceScores = (searchAnalysis) => {
+            // 從分析結果中解構出我們需要的資料
+            const { core_intent, weighted_keywords, related_concepts } = searchAnalysis;
+            
             let results = [];
-            let processedConvIds = new Set();
-            const totalWeightSum = weightedKeywords.reduce((sum, kw) => sum + kw.weight, 0);
+            
+            // 定義各項目的分數權重，方便未來調整
+            const weights = {
+                INTENT_BONUS: 25,      // 摘要(summary)符合核心意圖的額外加分
+                TITLE_MULTIPLIER: 3.5,   // 標題匹配的權重
+                SUMMARY_MULTIPLIER: 2.5, // 摘要匹配的權重
+                USER_MSG_MULTIPLIER: 1.2,// 使用者訊息匹配的權重
+                AI_MSG_MULTIPLIER: 1.0,  // AI 訊息匹配的權重
+                CONCEPT_WEIGHT: 2,       // 擴展概念的基礎分數
+            };
+
             conversations.forEach(conv => {
-                if (processedConvIds.has(conv.id)) return;
-                let totalScore = 0;
-                let maxPossibleScore = 0;
-                let foundKeywords = new Set();
-                let bestSnippet = '';
-                let titleHTML = conv.title;
-                const totalMessages = conv.messages.length;
-                weightedKeywords.forEach(kw => {
+                // 跳過已刪除或封存的對話
+                if (conv.deletedAt || conv.archived) return;
+
+                let score = 0;
+                let details = {
+                    titleScore: 0,
+                    summaryScore: 0,
+                    contentScore: 0,
+                    foundKeywords: new Set(),
+                    foundConcepts: new Set(),
+                };
+
+                // 1. 核心意圖匹配 (高額加分)
+                // 檢查對話摘要是否包含核心意圖的關鍵部分
+                if (core_intent && conv.summary && conv.summary.toLowerCase().includes(core_intent.substring(0, 15).toLowerCase())) {
+                    score += weights.INTENT_BONUS;
+                }
+
+                // 2. 處理帶權重的關鍵字
+                weighted_keywords.forEach(kw => {
                     const keywordLower = kw.keyword.toLowerCase();
-                    maxPossibleScore += kw.weight * 10;
+                    let keywordFound = false;
+
+                    // 檢查標題
                     if (conv.title.toLowerCase().includes(keywordLower)) {
-                        totalScore += kw.weight * 10;
-                        foundKeywords.add(keywordLower);
-                        titleHTML = highlightText(titleHTML, kw.keyword);
+                        details.titleScore += kw.weight;
+                        keywordFound = true;
                     }
-                    conv.messages.forEach((msg, msgIndex) => {
+                    // 檢查摘要
+                    if (conv.summary && conv.summary.toLowerCase().includes(keywordLower)) {
+                        details.summaryScore += kw.weight;
+                        keywordFound = true;
+                    }
+                    
+                    // 檢查內文
+                    conv.messages.forEach(msg => {
                         msg.parts.forEach(part => {
                             if (part.text && part.text.toLowerCase().includes(keywordLower)) {
-                                foundKeywords.add(keywordLower);
-                                const occurrences = (part.text.toLowerCase().match(new RegExp(keywordLower, 'g')) || []).length;
-                                totalScore += kw.weight * occurrences * 0.5;
-                                const recencyWeight = (msgIndex + 1) / totalMessages;
-                                totalScore += kw.weight * recencyWeight * 2;
-                                const roleWeight = msg.role === 'user' ? 1.5 : 1;
-                                totalScore += kw.weight * roleWeight;
-                                if (!bestSnippet) {
-                                    const text = part.text;
-                                    const matchIndex = text.toLowerCase().indexOf(keywordLower);
-                                    const start = Math.max(0, matchIndex - 40);
-                                    const end = Math.min(text.length, matchIndex + kw.keyword.length + 40);
-                                    bestSnippet = (start > 0 ? '...' : '') + text.substring(start, end) + (end < text.length ? '...' : '');
-                                }
+                                const multiplier = msg.role === 'user' ? weights.USER_MSG_MULTIPLIER : weights.AI_MSG_MULTIPLIER;
+                                details.contentScore += kw.weight * multiplier;
+                                keywordFound = true;
                             }
                         });
                     });
+
+                    if (keywordFound) {
+                        details.foundKeywords.add(kw.keyword);
+                    }
                 });
-                if (foundKeywords.size > 0) {
-                    const coverageRatio = foundKeywords.size / weightedKeywords.length;
-                    totalScore *= (1 + coverageRatio);
-                    let finalScore = Math.min(100, Math.round((totalScore / maxPossibleScore) * 100 * 3));
-                    finalScore = Math.min(99, finalScore);
-                    const allKeywordsQuery = weightedKeywords.map(kw => kw.keyword).join('|');
-                    const highlightedSnippet = highlightText(bestSnippet, allKeywordsQuery);
+
+                // 3. 處理擴展概念 (提供基礎語意分數)
+                related_concepts.forEach(concept => {
+                    const conceptLower = concept.toLowerCase();
+                    let conceptFound = false;
+                    
+                    if (conv.title.toLowerCase().includes(conceptLower) || (conv.summary && conv.summary.toLowerCase().includes(conceptLower))) {
+                        details.contentScore += weights.CONCEPT_WEIGHT * 2; // 在標題或摘要找到，權重較高
+                        conceptFound = true;
+                    }
+                    conv.messages.forEach(msg => {
+                        msg.parts.forEach(part => {
+                            if (part.text && part.text.toLowerCase().includes(conceptLower)) {
+                                details.contentScore += weights.CONCEPT_WEIGHT;
+                                conceptFound = true;
+                            }
+                        });
+                    });
+
+                    if(conceptFound) {
+                        details.foundConcepts.add(concept);
+                    }
+                });
+
+                // 4. 計算總分與正規化
+                if (details.foundKeywords.size > 0 || details.foundConcepts.size > 0) {
+                    // 組合加權分數
+                    let totalWeightedScore = 
+                        (details.titleScore * weights.TITLE_MULTIPLIER) + 
+                        (details.summaryScore * weights.SUMMARY_MULTIPLIER) + 
+                        details.contentScore;
+
+                    // 關鍵字覆蓋率加成
+                    const keywordCoverage = weighted_keywords.length > 0 ? (details.foundKeywords.size / weighted_keywords.length) : 0;
+                    totalWeightedScore *= (1 + keywordCoverage);
+
+                    // 最終分數正規化到 0-99 之間，使其分布更合理
+                    // 這裡使用 log 函數來讓分數分布更平滑，避免極端值
+                    const normalizedScore = Math.min(99, Math.round(Math.log(totalWeightedScore + 1) * 15));
+
+                    // 組合所有找到的關鍵字/概念用於高亮顯示
+                    const allFoundTerms = [...details.foundKeywords, ...details.foundConcepts].join('|');
+                    const bestSnippet = conv.summary || (conv.messages.find(m => m.parts[0]?.text)?.parts[0]?.text || '').substring(0, 100);
+                    
                     results.push({
                         conv,
-                        titleHTML: highlightText(conv.title, allKeywordsQuery),
-                        snippetHTML: highlightedSnippet,
-                        score: finalScore
+                        titleHTML: highlightText(conv.title, allFoundTerms),
+                        snippetHTML: highlightText(bestSnippet, allFoundTerms),
+                        score: normalizedScore
                     });
-                    processedConvIds.add(conv.id);
                 }
             });
+
+            // 根據最終分數由高到低排序
+            return results.sort((a, b) => b.score - a.score);
+        };
             return results;
         };
         const renderFilePreviews = () => {
