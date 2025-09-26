@@ -1,390 +1,465 @@
 window.demoConversations = {
-  // 頂級推理AI
-ultra: `
+  // Ultra — 頂級推理：超長文、跨領域研究
+  ultra: `
     <!-- Round 1 -->
     <div class="flex justify-end gap-3">
-      <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">
-        我有一個創業構想，是關於一個結合 AI 和永續時尚的個人化推薦 App。我們的目標客群是 Z 世代，但我對如何制定一個有效的市場進入策略感到迷茫。Astra-ULTRA，可以給我一些初步的戰略方向嗎？
+      <div class="p-3 rounded-lg bg-indigo-600 text-white max-w-[80%]">
+        我正在撰寫 80 頁博士論文，主題是「AI 在循環時尚的應用」。請提供完整章節架構，每章要有細分小節與摘要，方便我直接展開。
       </div>
-      <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">U</div>
+      <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold">U</div>
     </div>
     <div class="flex gap-3 mt-3">
-      <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center">AI</div>
-      <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
-        這是一個非常有潛力的構想，完美結合了當前兩大趨勢：個人化 AI 與永續消費。針對 Z 世代的市場進入策略，我建議採用一個三階段的精實啟動模式：<br><br>
-        <strong>1. 第一階段：MVP 與社群預熱</strong><br>
-        專注於獨特的推薦演算法，並在 TikTok/Instagram 透過討論永續時尚來吸引早期粉絲。<br><br>
-        <strong>2. 第二階段：目標式上市 (Go-to-Market)</strong><br>
-        與關心永續議題的微型網紅合作，並為早期使用者提供獨家計畫，創造稀有性。<br><br>
-        <strong>3. 第三階段：數據驅動的成長與迭代</strong><br>
-        利用早期數據快速優化 AI 推薦，形成「越多人用，越好用」的正向循環，並根據社群反饋擴展功能。<br><br>
-        這個框架可以幫助您在控制成本的同時，驗證市場並建立忠實的品牌社群。您對哪個階段的細節最感興趣？
+      <div class="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center">AI</div>
+      <div class="p-3 rounded-lg bg-white border text-gray-900 max-w-[80%]">
+        論文建議架構：<br><br>
+        第 1 章 緒論：研究背景、問題意識、研究目的、研究問題與貢獻。<br>
+        第 2 章 文獻回顧：永續發展理論、循環經濟模式、AI 技術（推薦系統、電腦視覺、自然語言處理）、時尚產業挑戰。<br>
+        第 3 章 研究方法：多模態資料蒐集方式、實驗設計、模型架構。<br>
+        第 4 章 系統設計：資料前處理、AI 模型流程、LCA 評估方法。<br>
+        第 5 章 實驗：跨國品牌案例、用戶實測、數據指標（碳足跡、消費行為）。<br>
+        第 6 章 分析：跨案例比較、統計檢定、消費者訪談質化分析。<br>
+        第 7 章 討論：對政策的啟示、商業價值、學術貢獻。<br>
+        第 8 章 結論：研究限制、未來研究方向。<br><br>
+        我能同時處理 200 萬 token 級別的資料與引用，適合完整學術研究。
       </div>
     </div>
     <!-- Round 2 -->
     <div class="flex justify-end gap-3 mt-3">
-      <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">
-        謝謝你的結構化建議！我對第一階段的「社群建立」和第二階段提到的「微型網紅合作」特別感興趣。針對 Z 世代，有沒有一些具體、創新的操作方式，而不是傳統的廣告投放？
+      <div class="p-3 rounded-lg bg-indigo-600 text-white max-w-[80%]">
+        幫我整合十篇「AI 供應鏈永續管理」論文，指出關聯性與研究缺口，並用表格顯示。
       </div>
-      <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">U</div>
+      <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold">U</div>
     </div>
     <div class="flex gap-3 mt-3">
-      <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center">AI</div>
-      <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
-        當然。要吸引 Z 世代，關鍵在於「真實性」與「參與感」。這裡有幾個創新的策略：<br><br>
-        • <strong>發起 #永續穿搭挑戰：</strong>在 TikTok/Reels 上鼓勵用戶用舊衣物搭配出多樣造型，讓行銷變得有趣。<br><br>
-        • <strong>透明度報告與「成分解碼器」：</strong>定期發布品牌環保分析，並預告 App 內建的掃描功能，將社群內容與產品緊密連結。<br><br>
-        • <strong>AI 造型師共創計畫：</strong>邀請核心粉絲參與「訓練」AI，讓他們上傳穿搭並標註風格。這會給予他們無與倫比的主人翁意識。<br><br>
-        • <strong>選擇「故事型」網紅：</strong>合作對象應是真正實踐永續生活的人，分享他們如何利用 App 解決真實困境。<br><br>
-        這些策略的核心是將行銷轉化為有價值的內容和社群互動。「AI 造型師共創計畫」將會是您最強大的護城河。
+      <div class="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center">AI</div>
+      <div class="p-3 rounded-lg bg-white border text-gray-900 max-w-[80%]">
+        已整合十篇核心論文：<br><br>
+        <table class="border">
+          <tr><th>年份</th><th>焦點</th><th>主要發現</th></tr>
+          <tr><td>2019</td><td>物流最佳化</td><td>AI 降低配送成本 12%</td></tr>
+          <tr><td>2020</td><td>碳排追蹤</td><td>初步導入 LCA+AI</td></tr>
+          <tr><td>2021</td><td>需求預測</td><td>AI 提升準確率 15%</td></tr>
+          <tr><td>2022</td><td>多模態數據</td><td>圖像分析應用於布料追蹤</td></tr>
+          <tr><td>2023</td><td>跨產業 ESG</td><td>缺乏標準化數據共享</td></tr>
+          <tr><td>2024</td><td>供應鏈整合</td><td>仍未涵蓋社會責任與勞動權益</td></tr>
+        </table><br>
+        關聯：從單一物流→需求預測→碳足跡→ESG 整合。<br>
+        缺口：缺乏跨國資料共享、勞動權益未整合、缺乏長期追蹤。
       </div>
     </div>
     <!-- Round 3 -->
     <div class="flex justify-end gap-3 mt-3">
-      <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">
-        「AI 造型師共創計畫」這個點子太棒了！完全打中了核心。要實現這個功能，在技術上我應該選擇什麼樣的 AI 模型或技術堆疊？希望能兼顧成本效益與未來的擴展性。
+      <div class="p-3 rounded-lg bg-indigo-600 text-white max-w-[80%]">
+        請生成「資料治理與合規」政策條款，格式要像法律文件，涵蓋資料最小化、跨境傳輸、當事人權利。
       </div>
-      <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">U</div>
+      <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold">U</div>
     </div>
     <div class="flex gap-3 mt-3">
-      <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center">AI</div>
-      <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
-        很好的問題。為了兼顧成本與擴展性，我建議採用「雲端服務 API + 開源模型微調」的混合策略。這是一個高層次的技術路線圖：<br><br>
-        <strong>技術堆疊建議：</strong><br>
-        1. <strong>圖像辨識：</strong>使用 Google Vision AI 或 AWS Rekognition API，以低成本快速分析用戶上傳的衣物圖片，建立基礎數據。<br><br>
-        2. <strong>推薦引擎：</strong>利用 TensorFlow Recommenders (TFRS) 這類開源函式庫來建構，並部署在可擴展的雲端伺服器上。<br><br>
-        3. <strong>風格生成 (共創核心)：</strong>對輕量級的開源文生圖模型（如 Stable Diffusion）進行微調 (Fine-tuning)，讓模型學習核心社群的獨特風格，生成全新的搭配建議圖。<br><br>
-        這個路線圖可以確保您的 App 從一個輕量級的 MVP 平滑過渡到功能強大的平台。祝您專案順利！
+      <div class="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center">AI</div>
+      <div class="p-3 rounded-lg bg-white border text-gray-900 max-w-[80%]">
+        條款草案：<br><br>
+        第 1 條【資料最小化】：任何資料蒐集僅限必要範圍。<br>
+        第 2 條【目的限制】：資料不得超出原定研究與政策用途。<br>
+        第 3 條【跨境資料傳輸】：須符合 GDPR 與當地法規，並取得書面同意。<br>
+        第 4 條【當事人權利】：可要求查詢、更正、刪除或限制處理。<br>
+        第 5 條【偏差監控】：模型須定期檢測並公布偏差報告。<br>
+        第 6 條【資安事件通報】：72 小時內通報主管機關與當事人。<br>
+        第 7 條【子處理者管理】：所有外包單位須簽署 DPA 並公開清單。
       </div>
     </div>
   `,
-  // 超大規模：戰略分析
+
+  // Pro Max — 深度推理：商業決策／複雜分析
+  proMax: `
+    <!-- Round 1 -->
+    <div class="flex justify-end gap-3">
+      <div class="p-3 rounded-lg bg-purple-600 text-white max-w-[80%]">
+        請比較「直營電商」與「通路聯盟」兩種市場進入策略，幫我做完整 SWOT 分析與決策樹。
+      </div>
+      <div class="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold">U</div>
+    </div>
+    <div class="flex gap-3">
+      <div class="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center">AI</div>
+      <div class="p-3 rounded-lg bg-white border text-gray-900 max-w-[80%]">
+        SWOT 分析：<br><br>
+        • 直營：強品牌、毛利高；弱點是高成本、行銷壓力；機會是直控數據；威脅是庫存壓力。<br>
+        • 聯盟：優勢是快速覆蓋、進入門檻低；弱點是利潤少、依賴他人；機會是規模經濟；威脅是品牌弱化。<br><br>
+        決策樹：若資金充裕且品牌定位清晰 → 直營；若資源有限且需快速測試 → 聯盟。
+      </div>
+    </div>
+    <!-- Round 2 -->
+    <div class="flex justify-end gap-3 mt-3">
+      <div class="p-3 rounded-lg bg-purple-600 text-white max-w-[80%]">
+        如果景氣下行，請設計悲觀／基準／樂觀三情境財務模擬，推算盈虧平衡點。
+      </div>
+      <div class="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold">U</div>
+    </div>
+    <div class="flex gap-3">
+      <div class="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center">AI</div>
+      <div class="p-3 rounded-lg bg-white border text-gray-900 max-w-[80%]">
+        財務模擬：<br><br>
+        • 樂觀：直營 6 個月 BEP；聯盟 3 個月 BEP。<br>
+        • 基準：直營 9 個月；聯盟 6 個月。<br>
+        • 悲觀：直營 12 個月以上；聯盟 8 個月。<br><br>
+        風險控制：悲觀情境需調整分潤條款、增加現金流備用金。
+      </div>
+    </div>
+    <!-- Round 3 -->
+    <div class="flex justify-end gap-3 mt-3">
+      <div class="p-3 rounded-lg bg-purple-600 text-white max-w-[80%]">
+        請給我一份 90 天執行計畫，每兩週設 KPI，方便對投資人簡報。
+      </div>
+      <div class="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold">U</div>
+    </div>
+    <div class="flex gap-3">
+      <div class="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center">AI</div>
+      <div class="p-3 rounded-lg bg-white border text-gray-900 max-w-[80%]">
+        路線圖：<br><br>
+        • 週 1–2：產品定義、團隊培訓；KPI = MVP 功能完成率 90%<br>
+        • 週 3–6：直營 MVP 上線；KPI = CAC &lt; 200、CVR ≥ 2%<br>
+        • 週 7–10：通路試點；KPI = 月銷售額達 50 萬<br>
+        • 週 11–12：數據彙整；KPI = LTV/CAC ≥ 2.0<br><br>
+        此規劃可直接向投資人展示，邏輯清楚、數據可追蹤。
+      </div>
+    </div>
+  `,
+
+// Pro PV — 預覽：多模態 + 速度
+  proPV: `
+    <!-- Round 1 -->
+    <div class="flex justify-end gap-3">
+      <div class="p-3 rounded-lg bg-pink-600 text-white max-w-[80%]">
+        這張產品包裝照（假設已上傳）要如何改進？請分析三個重點並提出一句吸睛文案。
+      </div>
+      <div class="w-8 h-8 rounded-full bg-pink-600 text-white flex items-center justify-center font-bold">U</div>
+    </div>
+    <div class="flex gap-3">
+      <div class="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center">AI</div>
+      <div class="p-3 rounded-lg bg-white border text-gray-900 max-w-[80%]">
+        改進建議：<br>
+        1. 成分字體過小，須放大以增強透明感。<br>
+        2. 顏色層次不足，缺乏視覺焦點。<br>
+        3. 側邊缺少永續標章，降低品牌可信度。<br><br>
+        吸睛文案：「純淨成分，永續看得見。」
+      </div>
+    </div>
+    <!-- Round 2 -->
+    <div class="flex justify-end gap-3 mt-3">
+      <div class="p-3 rounded-lg bg-pink-600 text-white max-w-[80%]">
+        幫我延伸 10 個短文案，適合做 A/B 測試，越簡潔越好。
+      </div>
+      <div class="w-8 h-8 rounded-full bg-pink-600 text-white flex items-center justify-center font-bold">U</div>
+    </div>
+    <div class="flex gap-3">
+      <div class="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center">AI</div>
+      <div class="p-3 rounded-lg bg-white border text-gray-900 max-w-[80%]">
+        文案選項：<br>
+        1. 純淨成分，安心選擇<br>
+        2. 永續是一種態度<br>
+        3. 成分透明，良心之選<br>
+        4. 為地球更輕盈<br>
+        5. 美麗不該有負擔<br>
+        6. 少一點浪費，多一點時尚<br>
+        7. 乾淨美，零妥協<br>
+        8. 負責任的時尚<br>
+        9. 永續設計，與眾不同<br>
+        10. 簡單選擇，純粹生活
+      </div>
+    </div>
+    <!-- Round 3 -->
+    <div class="flex justify-end gap-3 mt-3">
+      <div class="p-3 rounded-lg bg-pink-600 text-white max-w-[80%]">
+        請用其中最有力的兩句，設計一個 30 秒廣告腳本，分鏡要明確。
+      </div>
+      <div class="w-8 h-8 rounded-full bg-pink-600 text-white flex items-center justify-center font-bold">U</div>
+    </div>
+    <div class="flex gap-3">
+      <div class="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center">AI</div>
+      <div class="p-3 rounded-lg bg-white border text-gray-900 max-w-[80%]">
+        腳本：<br><br>
+        • 0–5 秒：近拍產品，背景乾淨純白 → 文案「純淨成分，安心選擇」浮現。<br>
+        • 6–15 秒：展示永續設計元素，搭配樹木、海洋影像 → 文案「為地球更輕盈」。<br>
+        • 16–25 秒：年輕人自信使用產品的場景。<br>
+        • 26–30 秒：品牌 Logo + 行動口號「簡單選擇，純粹生活」。
+      </div>
+    </div>
+  `,
+
+  // Pro — 高效多模態：文件、文字與影像分析
   pro: `
     <!-- Round 1 -->
     <div class="flex justify-end gap-3">
-      <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">
-        幫我從宏觀角度分析「空間計算」在未來 2 年的市場趨勢，請列出三大驅動力、核心應用領域，以及可能的產業結構變化。
+      <div class="p-3 rounded-lg bg-blue-600 text-white max-w-[80%]">
+        我有一張發票和一份需求說明（假設已提供）。請幫我抽取發票欄位並生成採購單草稿。
       </div>
-      <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">U</div>
+      <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">U</div>
     </div>
     <div class="flex gap-3">
-      <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center">AI</div>
-      <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
-        從宏觀視角來看：<br><br>
-        <strong>三大驅動力：</strong><br>
-        1. 硬體成熟化：感測器、輕量化頭顯與邊緣運算晶片的突破。<br>
-        2. AI 融合：計算機視覺與自然語言理解的深度整合。<br>
-        3. B2B 投入：製造、醫療、零售企業積極導入，形成穩定需求。<br><br>
-        <strong>核心應用領域：</strong><br>
-        工業（數位孿生、遠距維護）、醫療（手術導航、影像診斷）、零售娛樂（沉浸式購物與互動體驗）。<br><br>
-        <strong>產業結構變化：</strong><br>
-        大廠（Apple, Meta）推動平台標準；中小創新專注垂直應用；開源社群降低門檻，形成碎片化創新。
+      <div class="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center">AI</div>
+      <div class="p-3 rounded-lg bg-white border text-gray-900 max-w-[80%]">
+        抽取結果：供應商名稱、品項、數量、單價、稅額、總價。<br>
+        已依需求自動生成採購單草稿，包含付款條件與到貨日期。
       </div>
     </div>
     <!-- Round 2 -->
     <div class="flex justify-end gap-3 mt-3">
-      <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">
-        那醫療領域中，哪些應用最可能在短期內實際落地？
+      <div class="p-3 rounded-lg bg-blue-600 text-white max-w-[80%]">
+        請比對合約價目，若有差異請用紅色標註，並推測可能原因。
       </div>
-      <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">U</div>
+      <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">U</div>
     </div>
     <div class="flex gap-3">
-      <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center">AI</div>
-      <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
-        短期內（1–2 年）最具落地性的應用是：<br><br>
-        1. 術前 3D 規劃：將 CT/MRI 資料轉為可互動模型。<br>
-        2. AR 手術輔助：在患者器官上疊加虛擬影像，提高精準度。<br>
-        3. 復健訓練：互動遊戲化方式輔助訓練，並蒐集數據回饋。<br><br>
-        這些已在臨床試驗中獲得驗證，主要挑戰在於法規與商業化速度。
+      <div class="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center">AI</div>
+      <div class="p-3 rounded-lg bg-white border text-gray-900 max-w-[80%]">
+        差異：兩項高於合約價 8%，一項低於合約價 5%。<br>
+        可能原因：急單附加費、新版材料成本上升、供應商促銷。<br>
+        已標註於文件，並附談判建議。
       </div>
     </div>
     <!-- Round 3 -->
     <div class="flex justify-end gap-3 mt-3">
-      <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">
-        如果要吸引投資人，這個領域最有說服力的商業模式會是什麼？
+      <div class="p-3 rounded-lg bg-blue-600 text-white max-w-[80%]">
+        幫我生成一封給供應商的郵件範本，語氣專業禮貌但堅定。
       </div>
-      <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">U</div>
+      <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">U</div>
     </div>
     <div class="flex gap-3">
-      <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center">AI</div>
-      <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
-        投資人最看重的模式是<strong>醫療 SaaS 平台</strong>：<br><br>
-        • 以病例數或醫師席位訂閱收費。<br>
-        • 與 HIS 系統串接，形成長期鎖定。<br>
-        • 提供合規審查與數據安全，降低醫院導入門檻。<br>
-        • 往遠距會診、保險風險控制擴展，市場可持續放大。<br><br>
-        高毛利 + 高壁壘 + 剛需，是投資說服力的核心。
+      <div class="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center">AI</div>
+      <div class="p-3 rounded-lg bg-white border text-gray-900 max-w-[80%]">
+        郵件範本：<br><br>
+        主旨：關於近期採購單價格差異之確認<br>
+        內容：<br>
+        • 感謝長期合作<br>
+        • 指出差異並附上比對表<br>
+        • 請求說明原因與修正建議<br>
+        • 設定回覆期限，強調合作誠意<br><br>
+        可直接套用並依實際資料微調。
       </div>
     </div>
   `,
 
-  // 混和推理：跨領域結合
-  plus: `
+  // Plus PV — 輕量快速：日常應用／會議總結
+  plusPV: `
     <!-- Round 1 -->
     <div class="flex justify-end gap-3">
-      <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">
-        請幫我設計一個跨領域研究提案，主題是「AI 與永續城市」，要有研究目標、方法、潛在成果。
+      <div class="p-3 rounded-lg bg-emerald-600 text-white max-w-[80%]">
+        我要主持 30 分鐘週會，請幫我設計簡短議程並寫主持人開場、轉場、結尾話術。
       </div>
-      <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">U</div>
+      <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold">U</div>
     </div>
     <div class="flex gap-3">
-      <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center">AI</div>
-      <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
-        <strong>研究目標：</strong><br>
-        利用 AI 模型最佳化能源管理、交通規劃與建築設計，提升城市永續性。<br><br>
-        <strong>研究方法：</strong><br>
-        1. 蒐集 IoT 感測數據（能源使用、交通流量、空氣品質）。<br>
-        2. 建立 AI 模型，進行資源分配與需求預測。<br>
-        3. 設計模擬平台，測試不同政策情境。<br><br>
-        <strong>潛在成果：</strong><br>
-        • 減少 20% 能源浪費。<br>
-        • 提升大眾運輸效率。<br>
-        • 提供城市規劃的決策輔助工具。
+      <div class="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center">AI</div>
+      <div class="p-3 rounded-lg bg-white border text-gray-900 max-w-[80%]">
+        議程：5 分鐘 KPI 快報 → 15 分鐘專案進度 → 10 分鐘行動決策。<br><br>
+        話術：<br>
+        • 開場：「感謝大家準時，今天聚焦在三個重點...」<br>
+        • 轉場：「接下來請 XXX 分享專案進度...」<br>
+        • 收尾：「今天的行動項有三件，請各位下週更新狀態。」
       </div>
     </div>
     <!-- Round 2 -->
     <div class="flex justify-end gap-3 mt-3">
-      <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">
-        那在數據隱私和公平性方面，需要怎麼設計？
+      <div class="p-3 rounded-lg bg-emerald-600 text-white max-w-[80%]">
+        幫我整理會議精華摘要，限制在一段話和三個行動項目。
       </div>
-      <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">U</div>
+      <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold">U</div>
     </div>
     <div class="flex gap-3">
-      <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center">AI</div>
-      <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
-        解決方式：<br><br>
-        • <strong>隱私：</strong>採用聯邦學習，數據留在當地裝置，僅傳送模型參數。<br>
-        • <strong>公平性：</strong>在模型訓練中引入偏差檢測指標，確保不同社群不被邊緣化。<br>
-        • <strong>透明性：</strong>建立「可解釋 AI」模組，讓政策制定者理解決策邏輯。<br><br>
-        這些設計有助於提升社會接受度。
+      <div class="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center">AI</div>
+      <div class="p-3 rounded-lg bg-white border text-gray-900 max-w-[80%]">
+        摘要：本週聚焦出貨穩定、行銷上線、供應鏈風險。<br>
+        行動項：<br>
+        1. XXX 負責追蹤供應商交期<br>
+        2. YYY 準備上線壓測<br>
+        3. ZZZ 規劃行銷備案
       </div>
     </div>
     <!-- Round 3 -->
     <div class="flex justify-end gap-3 mt-3">
-      <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">
-        如果要在 5 年內落地，最可能的試點場域會是什麼？
+      <div class="p-3 rounded-lg bg-emerald-600 text-white max-w-[80%]">
+        幫我輸出 Notion 任務區塊 Markdown，包含 Owner、Deadline、Status。
       </div>
-      <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">U</div>
+      <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold">U</div>
     </div>
     <div class="flex gap-3">
-      <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center">AI</div>
-      <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
-        最可能的試點是<strong>智慧新興城市與校園社區</strong>：<br><br>
-        • 新興城市基礎設施剛起步，導入成本低。<br>
-        • 校園社區人口與規模可控，便於收集數據。<br>
-        • 政府與學術機構往往有資金支持，利於快速測試。<br><br>
-        透過小規模試點逐步放大，5 年內具備實際落地可能。
+      <div class="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center">AI</div>
+      <div class="p-3 rounded-lg bg-white border text-gray-900 max-w-[80%]">
+        Markdown：<br>
+        <code>
+        | 任務 | Owner | Deadline | Status |<br>
+        |-----|-------|----------|--------|<br>
+        | 追蹤交期 | XXX | 3/10 | Ongoing |<br>
+        | 上線壓測 | YYY | 3/15 | Pending |<br>
+        | 行銷備案 | ZZZ | 3/18 | Planned |
+        </code>
       </div>
     </div>
   `,
 
-  // 強大開源：知識與應用
+  // Mini — 強大推理 + 長文處理
   mini: `
     <!-- Round 1 -->
     <div class="flex justify-end gap-3">
-      <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">
-        用簡單的方式解釋什麼是「量子糾纏」，並舉一個生活化的比喻。
+      <div class="p-3 rounded-lg bg-amber-600 text-white max-w-[80%]">
+        請推導折現現金流 (DCF) 公式，並用簡單例子展示計算過程。
       </div>
-      <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">U</div>
+      <div class="w-8 h-8 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold">U</div>
     </div>
     <div class="flex gap-3">
-      <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center">AI</div>
-      <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
-        量子糾纏是指兩個粒子狀態緊密相連，即使分隔遙遠，一個改變，另一個也會立即對應。<br><br>
-        生活比喻：像是一對「神奇骰子」，無論距離多遠，一顆擲出 3，另一顆立刻顯示 3，好像有心電感應。
+      <div class="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center">AI</div>
+      <div class="p-3 rounded-lg bg-white border text-gray-900 max-w-[80%]">
+        DCF 公式：企業價值 = Σ CF<sub>t</sub> / (1+r)^t + TV / (1+r)^n。<br>
+        例子：每年現金流 100 萬，r=10%，三年，永續成長 g=2%。計算步驟逐年折現，最後加上終值。
       </div>
     </div>
     <!-- Round 2 -->
     <div class="flex justify-end gap-3 mt-3">
-      <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">
-        這種現象有什麼實際應用嗎？
+      <div class="p-3 rounded-lg bg-amber-600 text-white max-w-[80%]">
+        若現金流不穩定，請提供兩種保守估算方法並解釋適用情境。
       </div>
-      <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">U</div>
+      <div class="w-8 h-8 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold">U</div>
     </div>
     <div class="flex gap-3">
-      <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center">AI</div>
-      <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
-        應用主要有兩個：<br><br>
-        • <strong>量子通訊：</strong>透過糾纏態實現「量子密鑰分發」，理論上可達絕對安全。<br>
-        • <strong>量子計算：</strong>藉由糾纏提升多比特協同運算效率，能解決傳統電腦難以處理的問題。
+      <div class="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center">AI</div>
+      <div class="p-3 rounded-lg bg-white border text-gray-900 max-w-[80%]">
+        方法：<br>
+        1. 情境分析：設定悲觀、基準、樂觀權重，偏向保守假設。<br>
+        2. 提高折現率：增加風險溢酬，拉低估值。<br><br>
+        適用：新創高波動產業、景氣循環敏感行業。
       </div>
     </div>
     <!-- Round 3 -->
     <div class="flex justify-end gap-3 mt-3">
-      <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">
-        那在現實中，這些應用離我們還有多遠？
+      <div class="p-3 rounded-lg bg-amber-600 text-white max-w-[80%]">
+        幫我把整個 DCF 計算流程整理成六步驟 SOP，適合新人快速學習。
       </div>
-      <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">U</div>
+      <div class="w-8 h-8 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold">U</div>
     </div>
     <div class="flex gap-3">
-      <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center">AI</div>
-      <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
-        目前進展如下：<br><br>
-        • 量子通訊已在中國、歐洲建立實驗性量子衛星與光纖網絡，商業化雛形已出現。<br>
-        • 量子計算仍處早期，雖然 Google 與 IBM 已展示「量子霸權」實驗，但距離大規模商用還需 10–15 年。<br><br>
-        換言之，理論已被驗證，但大規模普及仍需時間。
+      <div class="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center">AI</div>
+      <div class="p-3 rounded-lg bg-white border text-gray-900 max-w-[80%]">
+        SOP：<br>
+        1. 收集歷史現金流數據<br>
+        2. 預測未來現金流<br>
+        3. 確定折現率 r<br>
+        4. 計算各年度現值<br>
+        5. 計算終值 TV 並折現<br>
+        6. 加總得出企業價值，進行敏感度分析
       </div>
     </div>
   `,
 
-  // 高速精準：短平快資訊濃縮
+  // Mill — 開源高效：短文生成／結構化任務
   mill: `
     <!-- Round 1 -->
     <div class="flex justify-end gap-3">
-      <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">
-        請給我五個推廣「永續時尚」的行銷標語，要簡潔、直觀、有記憶點。
+      <div class="p-3 rounded-lg bg-slate-700 text-white max-w-[80%]">
+        給我六則永續時尚貼文標題，每則限制 12 字以內，要簡潔有力。
       </div>
-      <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">U</div>
+      <div class="w-8 h-8 rounded-full bg-slate-700 text-white flex items-center justify-center font-bold">U</div>
     </div>
     <div class="flex gap-3">
-      <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center">AI</div>
-      <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
-        提供五句：<br>
-        1. 「時尚，不該犧牲未來。」<br>
-        2. 「美麗，源自永續。」<br>
-        3. 「環保，是新的奢華。」<br>
-        4. 「穿上態度，也穿上責任。」<br>
-        5. 「改變世界，從一件衣服開始。」
+      <div class="w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center">AI</div>
+      <div class="p-3 rounded-lg bg-white border text-gray-900 max-w-[80%]">
+        標題：<br>
+        1. 永續也時髦<br>
+        2. 成分說清楚<br>
+        3. 為地球減重<br>
+        4. 少即是多<br>
+        5. 回收也高級<br>
+        6. 把良心穿上身
       </div>
     </div>
     <!-- Round 2 -->
     <div class="flex justify-end gap-3 mt-3">
-      <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">
-        能不能再加一些比較幽默或潮流感的？
+      <div class="p-3 rounded-lg bg-slate-700 text-white max-w-[80%]">
+        幫我轉成 CSV 格式，欄位是 title, tone，tone 要標 clean/bold/playful。
       </div>
-      <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">U</div>
+      <div class="w-8 h-8 rounded-full bg-slate-700 text-white flex items-center justify-center font-bold">U</div>
     </div>
     <div class="flex gap-3">
-      <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center">AI</div>
-      <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
-        當然，這裡有兩句：<br>
-        • 「今天穿綠色，明天地球更清新。」<br>
-        • 「Less trash, more fashion.」
+      <div class="w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center">AI</div>
+      <div class="p-3 rounded-lg bg-white border text-gray-900 max-w-[80%]">
+        <code>
+        title,tone<br>
+        永續也時髦,bold<br>
+        成分說清楚,clean<br>
+        為地球減重,clean<br>
+        少即是多,clean<br>
+        回收也高級,playful<br>
+        把良心穿上身,bold
+        </code>
       </div>
     </div>
     <!-- Round 3 -->
     <div class="flex justify-end gap-3 mt-3">
-      <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">
-        如果要做成短影片廣告，這些標語怎麼用？
+      <div class="p-3 rounded-lg bg-slate-700 text-white max-w-[80%]">
+        幫我把其中兩則生成短影片腳本（15 秒），要潮流感強。
       </div>
-      <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">U</div>
+      <div class="w-8 h-8 rounded-full bg-slate-700 text-white flex items-center justify-center font-bold">U</div>
     </div>
     <div class="flex gap-3">
-      <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center">AI</div>
-      <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
-        使用方式建議：<br><br>
-        • 開頭快速丟出一句強烈標語，例如「時尚，不該犧牲未來。」搭配震撼影像。<br>
-        • 中段切換到幽默句「Less trash, more fashion.」，加快節奏。<br>
-        • 結尾用一句溫暖口號「改變世界，從一件衣服開始。」呼應品牌責任。<br><br>
-        節奏要快、畫面要鮮明，才能在短影片中吸引注意。
+      <div class="w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center">AI</div>
+      <div class="p-3 rounded-lg bg-white border text-gray-900 max-w-[80%]">
+        腳本 1：「永續也時髦」<br>
+        • 0–3 秒：快剪街頭時尚<br>
+        • 4–10 秒：模特兒穿再生布料<br>
+        • 11–15 秒：Logo + 標語<br><br>
+        腳本 2：「回收也高級」<br>
+        • 0–5 秒：手拿寶特瓶→變身高級包<br>
+        • 6–12 秒：走秀舞台感<br>
+        • 13–15 秒：品牌 slogan 出現
       </div>
     </div>
   `,
 
-  // 輕巧迅捷：代碼解析
+  // Nano — 程式專精：技術支援／代碼解釋
   nano: `
     <!-- Round 1 -->
     <div class="flex justify-end gap-3">
-      <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">
-        這段程式碼會輸出什麼？<br><code>[x**2 for x in range(5,15,2)]</code>
+      <div class="p-3 rounded-lg bg-cyan-600 text-white max-w-[80%]">
+        請解釋這段 Python 程式：<br>
+        <code>[x**2 for x in range(5,15,2)]</code>
       </div>
-      <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">U</div>
+      <div class="w-8 h-8 rounded-full bg-cyan-600 text-white flex items-center justify-center font-bold">U</div>
     </div>
     <div class="flex gap-3">
-      <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center">AI</div>
-      <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
-        這會產生 5 到 14 的奇數平方：<code>[25, 49, 81, 121, 169]</code>。
+      <div class="w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center">AI</div>
+      <div class="p-3 rounded-lg bg-white border text-gray-900 max-w-[80%]">
+        這是 list comprehension。<br>
+        range(5,15,2) = [5,7,9,11,13]。<br>
+        輸出為平方值：[25,49,81,121,169]。
       </div>
     </div>
     <!-- Round 2 -->
     <div class="flex justify-end gap-3 mt-3">
-      <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">
-        那如果我想讓輸出變成字串格式「x²=結果」呢？
+      <div class="p-3 rounded-lg bg-cyan-600 text-white max-w-[80%]">
+        我要輸出成字串「x²=結果」，要怎麼改？
       </div>
-      <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">U</div>
+      <div class="w-8 h-8 rounded-full bg-cyan-600 text-white flex items-center justify-center font-bold">U</div>
     </div>
     <div class="flex gap-3">
-      <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center">AI</div>
-      <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
-        你可以這樣寫：<br><code>[f"{x}²={x**2}" for x in range(5,15,2)]</code><br>
-        輸出：<code>["5²=25", "7²=49", "9²=81", "11²=121", "13²=169"]</code>。
+      <div class="w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center">AI</div>
+      <div class="p-3 rounded-lg bg-white border text-gray-900 max-w-[80%]">
+        寫法：<br>
+        <code>[f"{x}²={x**2}" for x in range(5,15,2)]</code><br>
+        輸出：[ "5²=25", "7²=49", ... ]
       </div>
     </div>
     <!-- Round 3 -->
     <div class="flex justify-end gap-3 mt-3">
-      <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">
-        如果我還要同時計算立方數，要怎麼合併輸出？
+      <div class="p-3 rounded-lg bg-cyan-600 text-white max-w-[80%]">
+        我還想同時計算立方數，怎麼合併輸出？
       </div>
-      <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">U</div>
+      <div class="w-8 h-8 rounded-full bg-cyan-600 text-white flex items-center justify-center font-bold">U</div>
     </div>
     <div class="flex gap-3">
-      <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center">AI</div>
-      <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
-        可以用雙重 f-string：<br>
+      <div class="w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center">AI</div>
+      <div class="p-3 rounded-lg bg-white border text-gray-900 max-w-[80%]">
+        寫法：<br>
         <code>[f"{x}²={x**2}, {x}³={x**3}" for x in range(5,15,2)]</code><br>
-        輸出：<br>
-        <code>[
-          "5²=25, 5³=125",
-          "7²=49, 7³=343",
-          "9²=81, 9³=729",
-          "11²=121, 11³=1331",
-          "13²=169, 13³=2197"
-        ]</code>
+        輸出：[ "5²=25, 5³=125", "7²=49, 7³=343", ... ]
       </div>
     </div>
-  `,
-
-  // 靈活輕量：多語翻譯
-  pico: `
-    <!-- Round 1 -->
-    <div class="flex justify-end gap-3">
-      <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">
-        幫我把「互惠合作」翻譯成英文、日文、德文，並解釋文化語境上的差異。
-      </div>
-      <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">U</div>
-    </div>
-    <div class="flex gap-3">
-      <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center">AI</div>
-      <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
-        翻譯：<br>
-        • 英文：Reciprocal cooperation（偏正式，常用於學術或外交）<br>
-        • 日文：相互協力（そうごきょうりょく，帶有共同努力的情感色彩）<br>
-        • 德文：Reziproke Zusammenarbeit（正式，強調制度性平等）<br><br>
-        語境差異：英文偏理論，日文帶情感共鳴，德文則多用於法律或官方協議。
-      </div>
-    </div>
-    <!-- Round 2 -->
-    <div class="flex justify-end gap-3 mt-3">
-      <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">
-        那「共同繁榮」呢？同樣翻成三語，並說明應用場合。
-      </div>
-      <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">U</div>
-    </div>
-    <div class="flex gap-3">
-      <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center">AI</div>
-      <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
-        翻譯：<br>
-        • 英文：Shared prosperity（常見於國際組織、經濟論壇）<br>
-        • 日文：共通の繁栄（きょうつうのはんえい，多用於經濟合作協議）<br>
-        • 德文：Gemeinsamer Wohlstand（在政治與 EU 文件中常見）<br><br>
-        應用場合：通常出現在國家合作聲明、跨國經濟協議。
-      </div>
-    </div>
-    <!-- Round 3 -->
-    <div class="flex justify-end gap-3 mt-3">
-      <div class="p-3 rounded-lg bg-blue-500 text-white max-w-[80%]">
-        如果要用在品牌國際宣傳口號，哪一種表達最適合？
-      </div>
-      <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">U</div>
-    </div>
-    <div class="flex gap-3">
-      <div class="w-8 h-8 rounded-full bg-gray-700 text-white flex items-center justify-center">AI</div>
-      <div class="p-3 rounded-lg bg-white border border-gray-200 text-gray-800 max-w-[80%]">
-        最適合的是<strong>英文 "Shared prosperity"</strong>，因為它簡短、正面，容易跨文化共鳴。<br><br>
-        • 在日文宣傳時，可搭配「共通の繁栄」，突顯合作精神。<br>
-        • 在德語市場則用「Gemeinsamer Wohlstand」，傳遞嚴謹與可信度。<br><br>
-        組合策略：主標語用英文，地方市場配合本地語言，兼具國際感與在地化。
-      </div>
-    </div>
-  `,
+  `
 };
