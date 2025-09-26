@@ -1,14 +1,5 @@
 const updateLogs = [
         {
-        version: "15.3.4",
-        date: "2025-09-25",
-        content: [
-            "<strong>優化：</strong>自然語言搜索精準度與評分機制",
-            "<strong>優化：</strong>自動記憶功能的嚴謹度",
-            "<strong>優化：</strong>個人化記憶整合功能與邏輯",
-        ]
-    },
-        {
         version: "15.3.3",
         date: "2025-09-24",
         content: [
