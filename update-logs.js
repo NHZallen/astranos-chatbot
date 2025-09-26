@@ -1,5 +1,13 @@
 const updateLogs = [
         {
+        version: "15.3.4",
+        date: "2025-09-26",
+        content: [
+            "<strong>新增：</strong>gemini2.5-Pro、gemini2.5-flash預覽版、gemini2.5-flash-lite預覽版",
+            "<strong>刪除：</strong>Pico模型",
+        ]
+    },
+        {
         version: "15.3.3",
         date: "2025-09-24",
         content: [
