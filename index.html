@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.3.4</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.3.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -2053,6 +2053,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                 <p class="text-xs text-[var(--text-secondary)] mb-2" data-lang-key="openRouterApiDescAll">輸入您的單一 OpenRouter 金鑰以啟用所有相關模型。</p>
                                 <input type="password" id="openrouter-api-key-input-all" class="w-full p-2 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)]" placeholder="sk-or-..." data-lang-key-placeholder="openRouterApiPlaceholder">
                             </div>
+                            <div>
+    <label for="perplexity-api-key-input" class="block text-sm font-medium mb-1" data-lang-key="perplexityApiKey">Perplexity API 金鑰</label>
+    <p class="text-xs text-[var(--text-secondary)] mb-2" data-lang-key="perplexityApiDesc">輸入您的 Perplexity 金鑰以啟用 Sonar 等線上模型。</p>
+    <input type="password" id="perplexity-api-key-input" class="w-full p-2 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)]" placeholder="pplx-..." data-lang-key-placeholder="perplexityApiPlaceholder">
+</div>
                         </div>
                         <h3 class="text-lg font-semibold mb-3 mt-6" data-lang-key="modelListManagement">模型清單管理</h3>
                         <p class="text-sm text-[var(--text-secondary)] mb-3" data-lang-key="modelListManagementDesc">點擊箭頭以排序、點擊眼睛以隱藏/顯示、點擊圓圈以設定預設模型。</p>
@@ -2767,6 +2772,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             proposalInstructionsInput: document.getElementById('proposal-instructions-input'),
             cancelProposalBtn: document.getElementById('cancel-proposal-btn'),
             submitProposalBtn: document.getElementById('submit-proposal-btn'),
+            perplexityApiKeyInput: document.getElementById('perplexity-api-key-input'),
         };
         const compareVersions = (v1, v2) => {
             if (!v2) return 1;
@@ -2790,6 +2796,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             { id: 'deepseek/deepseek-chat-v3.1:free', name: 'Astra-Mini (Deepseek-V3.1)', provider: 'openrouter', descriptionKey: 'model_Mini_desc', limitsKey: 'model_Mini_limits' },
             { id: 'mistralai/mistral-small-3.2-24b-instruct:free', name: 'Astra-Mill (Mistral3.2)', provider: 'openrouter', descriptionKey: 'model_Mill_desc', limitsKey: 'model_Mill_limits' },
             { id: 'qwen/qwen3-coder:free', name: 'Astra-Nano (Qwen3)', provider: 'openrouter', descriptionKey: 'model_Nano_desc', limitsKey: 'model_Nano_limits' },
+            { id: 'perplexity/sonar', name: 'Astra-Sonar S (Sonar-Small-Online)', provider: 'perplexity', descriptionKey: 'model_SonarS_desc', limitsKey: 'model_SonarS_limits' },
             ];
         const CHEAP_MODEL_ID = 'gemini-2.5-flash-lite';
         const FOLDER_COLORS = {
@@ -2834,7 +2841,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let personalMemories = [];
         let activeConversationId = null;
         let config = {
-            apiKeys: { gemini: '', openrouter: '' },
+            apiKeys: { gemini: '', openrouter: '', perplexity: '' },
             defaultModel: MODELS[0].id,
             theme: 'light',
             modelSettings: [],
@@ -4270,6 +4277,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             let apiKey;
             if (provider === 'gemini') {
                 apiKey = config.apiKeys.gemini;
+                } else if (provider === 'perplexity') { // ✨ 新增：處理 Perplexity
+        apiKey = config.apiKeys.perplexity;
             } else if (provider === 'openrouter') {
                 apiKey = config.apiKeys.openrouter;
             }
@@ -4380,73 +4389,108 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     payload.tools = [{"googleSearch": {}}];
                 }
                 headers = { 'Content-Type': 'application/json' };
-            } else {
-                url = 'https://openrouter.ai/api/v1/chat/completions';
-                const messages = [];
-                if (systemInstruction) {
-                    messages.push({ role: 'system', content: systemInstruction.parts.map(p => p.text).join('\n') });
-                }
-                messages.push(...[...historyForApi, currentMessageForApi].map(m => ({
-                    role: m.role === 'model' ? 'assistant' : m.role,
-                    content: m.parts.filter(p => p.text).map(p => p.text).join('\n')
-                })));
-                payload = {
-                    model: modelId,
-                    messages,
-                    stream: true,
-                    ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
-                    ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
-                    ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
-                };
-                headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
-            }
-            const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
-            if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'API 請求失敗'); }
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = '';
-            let fullText = '';
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
-                buffer += decoder.decode(value, { stream: true });
-                if (provider === 'gemini') {
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop();
-                    for (const line of lines) {
-                        if (line.trim().startsWith('"text":')) {
-                            try {
-                                const jsonStr = `{${line}}`;
-                                const parsed = JSON.parse(jsonStr);
-                                const textChunk = parsed.text;
-                                if (textChunk) {
-                                    fullText += textChunk;
-                                    onChunk(textChunk);
-                                }
-                            } catch (e) { /* Ignore */ }
-                        }
-                    }
-                } else {
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop();
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            const data = line.substring(6);
-                            if (data.trim() === '[DONE]') break;
-                            try {
-                                const parsed = JSON.parse(data);
-                                const textChunk = parsed.choices[0]?.delta?.content || '';
-                                if (textChunk) {
-                                    fullText += textChunk;
-                                    onChunk(textChunk);
-                                }
-                            } catch (e) { /* Ignore */ }
-                        }
-                    }
-                }
-            }
-            return fullText;
+    } 
+    // ✨ START: 新增 Perplexity 的 payload 建立邏輯
+    else if (provider === 'perplexity') {
+        url = 'https://api.perplexity.ai/chat/completions';
+        
+        const messages = [];
+        if (systemInstruction) {
+            messages.push({ role: 'system', content: systemInstruction.parts.map(p => p.text).join('\n') });
         }
+
+        messages.push(...[...historyForApi, currentMessageForApi].map(m => ({
+            role: m.role === 'model' ? 'assistant' : m.role,
+            content: m.parts.filter(p => p.text).map(p => p.text).join('\n')
+        })));
+
+        payload = {
+            model: modelId,
+            messages: messages,
+            stream: true,
+            ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
+            ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
+            ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
+        };
+        headers = { 
+            'Authorization': `Bearer ${apiKey}`, 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        };
+    }
+    // ✨ END: 新增 Perplexity 邏輯
+    else { // 處理 OpenRouter
+        url = 'https://openrouter.ai/api/v1/chat/completions';
+        const messages = [];
+        if (systemInstruction) {
+            messages.push({ role: 'system', content: systemInstruction.parts.map(p => p.text).join('\n') });
+        }
+        messages.push(...[...historyForApi, currentMessageForApi].map(m => ({
+            role: m.role === 'model' ? 'assistant' : m.role,
+            content: m.parts.filter(p => p.text).map(p => p.text).join('\n')
+        })));
+        payload = {
+            model: modelId,
+            messages,
+            stream: true,
+            ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
+            ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
+            ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
+        };
+        headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
+    }
+
+    // 5. 發送請求並處理回應串流
+    const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
+    if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'API 請求失敗'); }
+    
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullText = '';
+    
+    while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        
+        if (provider === 'gemini') {
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+            for (const line of lines) {
+                if (line.trim().startsWith('"text":')) {
+                    try {
+                        const jsonStr = `{${line}}`;
+                        const parsed = JSON.parse(jsonStr);
+                        const textChunk = parsed.text;
+                        if (textChunk) {
+                            fullText += textChunk;
+                            onChunk(textChunk);
+                        }
+                    } catch (e) { /* Ignore */ }
+                }
+            }
+        } else { // ✨ Perplexity 和 OpenRouter 共用此邏輯
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const data = line.substring(6);
+                    if (data.trim() === '[DONE]') break;
+                    try {
+                        const parsed = JSON.parse(data);
+                        const textChunk = parsed.choices[0]?.delta?.content || '';
+                        if (textChunk) {
+                            fullText += textChunk;
+                            onChunk(textChunk);
+                        }
+                    } catch (e) { /* Ignore */ }
+                }
+            }
+        }
+    }
+    return fullText;
+}
         async function callApiWithSchema(prompt, responseSchema, signal) {
             const apiKey = config.apiKeys.gemini;
             if (!apiKey) {
@@ -4748,7 +4792,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 hasApiKey = !!config.apiKeys.gemini;
             } else if (provider === 'openrouter') {
                 hasApiKey = !!config.apiKeys.openrouter;
-            }
+            } else if (provider === 'perplexity') { // ✨ 新增這一行
+    hasApiKey = !!config.apiKeys.perplexity; // ✨ 新增這一行
+}
             ALL_ELEMENTS.messageInput.disabled = !hasApiKey;
             ALL_ELEMENTS.messageInput.placeholder = hasApiKey ? i18n[config.uiLanguage].enterMessagePlaceholder : i18n[config.uiLanguage].enterApiKeyPlaceholder;
             if (!hasApiKey || !hasContent) {
@@ -4766,6 +4812,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const setupSettingsModal = () => {
             ALL_ELEMENTS.geminiApiKeyInput.value = config.apiKeys.gemini;
             ALL_ELEMENTS.openrouterApiKeyInputAll.value = config.apiKeys.openrouter;
+            ALL_ELEMENTS.perplexityApiKeyInput.value = config.apiKeys.perplexity;
             ALL_ELEMENTS.followUpToggleSwitch.checked = config.enableFollowUp;
             ALL_ELEMENTS.autoNamingToggleSwitch.checked = config.autoNaming;
             ALL_ELEMENTS.autoWebSearchToggleSwitch.checked = config.enableAutoWebSearch;
@@ -4798,6 +4845,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const saveSettings = async () => {
             config.apiKeys.gemini = ALL_ELEMENTS.geminiApiKeyInput.value.trim();
             config.apiKeys.openrouter = ALL_ELEMENTS.openrouterApiKeyInputAll.value.trim();
+            config.apiKeys.perplexity = ALL_ELEMENTS.perplexityApiKeyInput.value.trim();
             config.enableFollowUp = ALL_ELEMENTS.followUpToggleSwitch.checked;
             config.enableAutoWebSearch = ALL_ELEMENTS.autoWebSearchToggleSwitch.checked;
             config.aiBubbleColor = ALL_ELEMENTS.aiBubbleColorDropdown.querySelector('.color-dropdown-btn')?.dataset.color || 'default';
