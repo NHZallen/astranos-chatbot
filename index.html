@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.3.4</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.4.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -2782,6 +2782,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             return 0;
         };
         const MODELS = [
+            { id: 'gemini-2.0-flash-preview-image-generation', name: 'Astra-Image Gen (Flash PV)', provider: 'gemini', type: 'image', descriptionKey: 'model_Image_desc', limitsKey: 'model_Image_limits' },
             { id: 'x-ai/grok-4-fast:free', name: 'Astra-Ultra (Grok-4-Fast)', provider: 'openrouter', descriptionKey: 'model_Ultra_desc', limitsKey: 'model_Ultra_limits' },
             { id: 'gemini-2.5-pro', name: 'Astra-Pro Max (2.5-Pro)', provider: 'gemini', descriptionKey: 'model_ProMax_desc', limitsKey: 'model_ProMax_limits' },
             { id: 'gemini-2.5-flash-preview-09-2025', name: 'Astra-Pro PV (2.5-Flash PV)', provider: 'gemini', descriptionKey: 'model_ProPV_desc', limitsKey: 'model_ProPV_limits' },
@@ -4037,7 +4038,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     mediaPartsContent.forEach(media => {
                         const src = `data:${media.mimeType};base64,${media.data}`;
                         if (media.mimeType.startsWith('image/')) {
-                            mediaHTML += `<img src="${src}" class="max-w-xs max-h-48 rounded-lg object-cover border border-[var(--border-color)]">`;
+                            const imgClass = isUser ? "max-w-xs max-h-48 object-cover" : "max-w-full object-contain";
+                        mediaHTML += `<img src="${src}" class="mt-2 rounded-lg border border-[var(--border-color)] ${imgClass}">`;
                         } else {
                             mediaHTML += `<div class="p-2 bg-[var(--hover-bg)] rounded-lg text-sm flex items-center gap-2 border border-[var(--border-color)]">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
@@ -4095,6 +4097,65 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderFollowUpPrompts([]);
             const conv = getActiveConversation();
             if (conv.archived) return;
+            const modelInfo = MODELS.find(m => m.id === conv.model);
+
+    // --- 圖像模型處理邏輯 ---
+    if (modelInfo && modelInfo.type === 'image') {
+        abortController = new AbortController();
+        updateSubmitButtonState(true);
+
+        if (!sendConfirmed) {
+            sendConfirmed = true;
+            updateInputState();
+            return;
+        }
+        
+        const userParts = [];
+        if (userMessage) { userParts.push({ text: userMessage }); }
+        uploadedFiles.forEach(file => {
+            userParts.push({ inlineData: { mimeType: file.type, data: file.base64.split(',')[1] } });
+        });
+
+        const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
+        addMessageToUI(userMessageObject, conv.messages.length, true);
+        conv.lastUpdatedAt = new Date().toISOString();
+        conv.unsentMessage = '';
+        
+        if (conv.isTemporary) { conv.isTemporary = false; renderHistorySidebar(); }
+        await saveAppData();
+
+        ALL_ELEMENTS.messageInput.value = '';
+        uploadedFiles = [];
+        adjustTextareaHeight();
+        renderFilePreviews();
+        
+        const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false, true);
+        const contentDiv = loadingMessageDiv.querySelector('.message-content');
+
+        try {
+            const responseParts = await callImageGenerationApi(userParts, abortController.signal);
+            const finalAiMessage = { role: 'model', parts: responseParts, createdAt: new Date().toISOString() };
+            
+            loadingMessageDiv.remove(); // 移除載入中的訊息
+            addMessageToUI(finalAiMessage, conv.messages.length, true, true); // 添加包含圖片的最終訊息
+            
+            conv.lastUpdatedAt = new Date().toISOString();
+            await saveAppData();
+
+        } catch (error) {
+            const errorMessage = `抱歉，圖像生成時發生錯誤：${error.message}`;
+            contentDiv.innerHTML = renderMarkdown(errorMessage);
+            const errorMsgObject = { role: 'model', parts: [{ text: errorMessage }], createdAt: new Date().toISOString() };
+            conv.messages.push(errorMsgObject);
+            await saveAppData();
+        } finally {
+            abortController = null;
+            updateSubmitButtonState(false);
+            sendConfirmed = false;
+            updateInputState();
+        }
+        return; // 圖像生成邏輯到此結束，直接返回
+    }
             abortController = new AbortController();
             updateSubmitButtonState(true);
             if (!sendConfirmed) {
@@ -4447,6 +4508,61 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
             return fullText;
         }
+         /**
+     * 呼叫非串流的 Gemini API 進行圖像生成。
+     * @param {Array} parts - 使用者輸入的內容 parts 陣列。
+     * @param {AbortSignal} signal - 用於中斷請求的 AbortSignal。
+     * @returns {Promise<Array>} - 返回模型生成的回應 parts 陣列。
+     */
+    async function callImageGenerationApi(parts, signal) {
+        const conv = getActiveConversation();
+        const modelInfo = MODELS.find(m => m.id === conv.model);
+        if (!modelInfo || modelInfo.provider !== 'gemini') {
+            throw new Error("用於圖像生成的模型無效。");
+        }
+
+        const apiKey = config.apiKeys.gemini;
+        if (!apiKey) {
+            throw new Error(`請在設定中提供 Gemini API 金鑰。`);
+        }
+
+        // 為了支援多輪圖像編輯，我們需要傳送完整的歷史紀錄
+        const historyForApi = conv.messages.filter(msg => msg.role !== 'model' || msg.parts.some(p => p.text !== '...'));
+        const currentMessageForApi = { role: 'user', parts: parts };
+
+        const payload = {
+            // 將當前訊息加入到歷史紀錄中一起傳送
+            contents: cleanGeminiHistory([...historyForApi, currentMessageForApi]),
+            generationConfig: {
+                ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
+            }
+        };
+
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelInfo.id}:generateContent?key=${apiKey}`;
+        const headers = { 'Content-Type': 'application/json' };
+
+        const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
+
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error?.message || '圖像生成 API 請求失敗');
+        }
+
+        const result = await response.json();
+        
+        // 處理潛在的錯誤或阻擋回應
+        if (!result.candidates || result.candidates.length === 0) {
+            if (result.promptFeedback && result.promptFeedback.blockReason) {
+                const blockReason = result.promptFeedback.blockReason;
+                const safetyRatings = result.promptFeedback.safetyRatings.map(r => `${r.category}: ${r.probability}`).join(', ');
+                throw new Error(`圖像生成被阻擋。原因: ${blockReason}。 安全評分: ${safetyRatings}`);
+            }
+            throw new Error("模型未返回任何內容。");
+        }
+        
+        // 返回包含圖像和可能文字的回應 parts
+        return result.candidates[0].content.parts;
+    }
         async function callApiWithSchema(prompt, responseSchema, signal) {
             const apiKey = config.apiKeys.gemini;
             if (!apiKey) {
