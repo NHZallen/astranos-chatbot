@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.0</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.3.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -2784,7 +2784,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const MODELS = [
             { id: 'x-ai/grok-4-fast:free', name: 'Astra-Ultra (Grok-4-Fast)', provider: 'openrouter', descriptionKey: 'model_Ultra_desc', limitsKey: 'model_Ultra_limits' },
             { id: 'gemini-2.5-pro', name: 'Astra-Pro Max (2.5-Pro)', provider: 'gemini', descriptionKey: 'model_ProMax_desc', limitsKey: 'model_ProMax_limits' },
-            { id: 'gemini-2.0-flash-preview-image-generation', name: 'Astra-Image Gen (2.0-Flash)', provider: 'gemini', descriptionKey: 'model_Image_desc', limitsKey: 'model_Image_limits' },
             { id: 'gemini-2.5-flash-preview-09-2025', name: 'Astra-Pro PV (2.5-Flash PV)', provider: 'gemini', descriptionKey: 'model_ProPV_desc', limitsKey: 'model_ProPV_limits' },
             { id: 'gemini-2.5-flash', name: 'Astra-Pro (2.5-Flash)', provider: 'gemini', descriptionKey: 'model_Pro_desc', limitsKey: 'model_Pro_limits' },
             { id: 'gemini-2.5-flash-lite-preview-09-2025', name: 'Astra-Plus PV (2.5-Flash-Lite PV)', provider: 'gemini', descriptionKey: 'model_PlusPV_desc', limitsKey: 'model_PlusPV_limits' },
@@ -3646,25 +3645,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const provider = modelInfo?.provider; // 獲取模型的提供者 ('openrouter' 或 'gemini')
             const multimodalButtons = [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn];
 
-            if(modelInfo.id === 'gemini-2.0-flash-preview-image-generation') {
-                multimodalButtons.forEach(btn => btn.style.display = 'flex');
-                 if (separator) separator.style.display = 'block';
-                learningModeBtn.style.display = 'none';
 
-                const shouldBeDisabled = uploadedFiles.length > 0;
-                [cameraBtn, uploadFileBtn].forEach(btn => {
-                    btn.disabled = shouldBeDisabled;
-                     if (shouldBeDisabled) {
-                        btn.classList.add('opacity-50', 'cursor-not-allowed');
-                    } else {
-                        btn.classList.remove('opacity-50', 'cursor-not-allowed');
-                    }
-                });
-                webSearchPopoverBtn.disabled = true;
-                webSearchPopoverBtn.classList.add('opacity-50', 'cursor-not-allowed');
-
-
-            } else if (provider === 'openrouter') {
+            if (provider === 'openrouter') {
                 multimodalButtons.forEach(btn => btn.style.display = 'none');
                 if (separator) separator.style.display = 'none';
                 learningModeBtn.style.display = 'flex';
@@ -4033,7 +4015,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             let contentHTML = '';
             let actionButtons = '';
             let contentPaddingClass = '';
-            const isLoadingMessage = !isUser && msg.parts.length === 1 && (msg.parts[0].text === '...' || msg.parts[0].text === '...');
+            const isLoadingMessage = !isUser && msg.parts.length === 1 && msg.parts[0].text === '...';
             if (isLoadingMessage) {
                 contentHTML = `<div class="loading-dots"><span class="bg-gray-500 dark:bg-gray-400"></span><span class="bg-gray-500 dark:bg-gray-400"></span><span class="bg-gray-500 dark:bg-gray-400"></span></div>`;
             } else {
@@ -4165,39 +4147,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderFilePreviews();
             const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
             const contentDiv = loadingMessageDiv.querySelector('.message-content');
-            
-            const modelInfo = MODELS.find(m => m.id === conv.model);
-            if (modelInfo.id === 'gemini-2.0-flash-preview-image-generation') {
-                 try {
-                    const imageParts = await callImageGenerationApi(userParts, abortController.signal);
-                    const finalAiMessage = { role: 'model', parts: imageParts, createdAt: new Date().toISOString() };
-                    conv.messages.push(finalAiMessage);
-                    contentDiv.innerHTML = '';
-                    imageParts.forEach(part => {
-                         if (part.inlineData && part.inlineData.mimeType.startsWith('image/')) {
-                            const src = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-                            contentDiv.innerHTML += `<img src="${src}" class="max-w-full rounded-lg object-cover border border-[var(--border-color)]">`;
-                         }
-                    });
-                     // Remove loading message placeholder
-                    loadingMessageDiv.querySelector('.loading-dots').remove();
-
-                } catch (error) {
-                    if (error.name !== 'AbortError') {
-                        contentDiv.textContent = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
-                        const finalAiMessage = { role: 'model', parts: [{ text: `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}` }], createdAt: new Date().toISOString() };
-                        conv.messages.push(finalAiMessage);
-                    }
-                } finally {
-                    await saveAppData();
-                    abortController = null;
-                    updateSubmitButtonState(false);
-                    sendConfirmed = false;
-                    updateInputState();
-                }
-                return; 
-            }
-
             let fullResponse = '';
             const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
             try {
@@ -4312,56 +4261,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             // 給予覆蓋率一個加權，匹配的關鍵詞越多，分數加成越高
             const coverageRatio = score / keywords.length;
             return score * (1 + coverageRatio);
-        }
-        async function callImageGenerationApi(parts, signal) {
-            const apiKey = config.apiKeys.gemini;
-            if (!apiKey) throw new Error(`請先在設定中提供 Gemini API 金鑰。`);
-            
-            const modelId = 'gemini-2.0-flash-preview-image-generation';
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
-            
-            // 根據官方文件，圖像生成模型的 contents 格式比較特殊
-            // 如果只有文字，contents 是字串
-            // 如果有文字和圖片，contents 是 parts 陣列
-            let contentsPayload;
-            const textPart = parts.find(p => p.text);
-            const imagePart = parts.find(p => p.inlineData);
-
-            if (imagePart) {
-                 // 圖像編輯模式 (Image + Text -> Image)
-                 contentsPayload = parts;
-            } else if (textPart) {
-                // 純文字生成圖像模式 (Text -> Image)
-                contentsPayload = textPart.text;
-            } else {
-                throw new Error("圖像生成需要文字提示。");
-            }
-           
-            const payload = {
-                contents: contentsPayload,
-            };
-
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-                signal
-            });
-
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.error?.message || '圖像生成 API 請求失敗');
-            }
-
-            const result = await response.json();
-            const responseParts = result?.candidates?.[0]?.content?.parts;
-
-            if (!responseParts || responseParts.length === 0) {
-                throw new Error("API 未返回有效的圖像資料。");
-            }
-
-            // 過濾掉空的 text part，只返回有圖像資料的 parts
-            return responseParts.filter(p => p.inlineData);
         }
         async function streamApiCall(parts, onChunk, signal) {
             const conv = getActiveConversation();
@@ -5704,7 +5603,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 filePreviewContainer.appendChild(previewEl);
             });
             updateInputState();
-            updateFunctionButtonsState();
         };
         const handleFileSelection = (event) => {
             const files = event.target.files;
