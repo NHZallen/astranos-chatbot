@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.3.4</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.3.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -476,7 +476,30 @@ button:not(.btn-primary):active:not(:disabled) {
     .prose h2 { font-size: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
     .prose h3 { font-size: 1.25rem; }
     .prose p { margin-bottom: 1em; }
-    .prose table { width: 100%; border-collapse: collapse; margin-bottom: 1em; }
+    .prose table {
+    /* ✨ --- START: 修改/新增的程式碼 --- ✨ */
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* 優化行動裝置滾動體驗 */
+    scrollbar-width: thin;             /* 美化 Firefox 滾動條 */
+    scrollbar-color: var(--border-color) transparent; /* 美化 Firefox 滾動條 */
+    /* ✨ --- END: 修改/新增的程式碼 --- ✨ */
+    
+    border-collapse: collapse;
+    margin-bottom: 1em;
+}
+
+/* ✨ --- START: 新增的程式碼 --- ✨ */
+/* 美化 Webkit 核心瀏覽器 (Chrome, Safari) 的滾動條 */
+.prose table::-webkit-scrollbar {
+    height: 6px;
+}
+.prose table::-webkit-scrollbar-thumb {
+    background-color: var(--border-color);
+    border-radius: 3px;
+}
+
     .prose table th, .prose table td { border: 1px solid var(--border-color); padding: 0.75rem; text-align: left; }
     .prose table thead { background-color: var(--hover-bg); }
     .prose table tr:nth-child(even) { background-color: var(--hover-bg); }
@@ -3504,7 +3527,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const contentWrapper = document.createElement('div');
             contentWrapper.className = 'flex-1 flex items-center justify-between truncate';
             contentWrapper.innerHTML = `
-                <div class="flex-1 flex items-center gap-2 truncate">
+                <div class="flex-1 flex items-center gap-2 truncate" style="min-width: 0;">
                     <span class="truncate">${conv.title}${conv.pinned ? ' <span class="pinned-icon">📌</span>' : ''}</span>
                     ${modelNameSuffix}
                  </div>
@@ -4030,7 +4053,36 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 });
                 if (textPartsContent.length > 0) {
                     const combinedText = textPartsContent.join('\n');
-                    contentHTML += `<div>${isUser ? combinedText.replace(/\n/g, '<br>') : renderMarkdown(combinedText)}</div>`;
+                    // ✨ --- START: 新增的圖表渲染邏輯 --- ✨
+                    const chartRegex = /```javascript-chart\s*([\s\S]*?)```/;
+                    const chartMatch = combinedText.match(chartRegex);
+
+
+                    if (chartMatch && !isUser) {
+                        const chartCode = chartMatch[1];
+                        const canvasId = `chart-${crypto.randomUUID()}`;
+                        // 移除程式碼區塊，只留下一個 canvas 容器
+                        contentHTML = combinedText.replace(chartRegex, `<div class="chart-container p-4 bg-white rounded-lg"><canvas id="${canvasId}"></canvas></div>`);
+                        
+                        // 使用 setTimeout 確保 DOM 元素已渲染
+                        setTimeout(() => {
+                            try {
+                                const ctx = document.getElementById(canvasId);
+                                if (ctx) {
+                                    // 動態執行從 AI 來的程式碼
+                                    new Function('ctx', chartCode)(ctx.getContext('2d'));
+                                }
+                            } catch (e) {
+                                console.error("圖表渲染失敗:", e);
+                                const container = document.getElementById(canvasId).parentElement;
+                                if(container) container.innerHTML = "<p class='text-red-500'>圖表渲染失敗，請檢查程式碼。</p>";
+                            }
+                        }, 100);
+                    } else {
+                        // 如果不是圖表，則正常渲染 Markdown
+                        contentHTML += `<div>${isUser ? combinedText.replace(/\n/g, '<br>') : renderMarkdown(combinedText)}</div>`;
+                    }
+                     // ✨ --- END: 新增的圖表渲染邏輯 --- ✨
                 }
                 if (mediaPartsContent.length > 0) {
                     let mediaHTML = '<div class="mt-2 flex flex-wrap gap-2">';
