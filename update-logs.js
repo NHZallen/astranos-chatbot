@@ -1,5 +1,12 @@
 const updateLogs = [
         {
+        version: "15.3.5",
+        date: "2025-10-1",
+        content: [
+            "<strong>修正：</strong>移動端版本AI回復表格時會超出螢幕範圍的問題",
+        ]
+    },
+        {
         version: "15.3.4",
         date: "2025-09-26",
         content: [
