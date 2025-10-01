@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.0</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.4.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -7944,15 +7944,19 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
                 5.  At the very end, generate 3-4 insightful follow-up questions for deeper exploration based on the synthesized content. Format them as a simple list.
                 6.  The entire output must be a single Markdown text.`;
 
-                const finalReport = await streamApiCall(
-                    [{ text: synthesisPrompt }],
-                    (chunk) => {
-                        contentDiv.innerHTML = renderMarkdown(contentDiv.textContent + chunk);
-                    },
-                    abortController.signal
-                );
+                let fullReportContent = ''; // <-- 新增：初始化一個空字串來累積內容
+    const finalReport = await streamApiCall(
+        [{ text: synthesisPrompt }],
+        (chunk) => {
+            fullReportContent += chunk; // <-- 修改：將新的 chunk 累加到原始字串中
+            contentDiv.innerHTML = renderMarkdown(fullReportContent); // <-- 修改：永遠渲染完整的原始字串
+        },
+        abortController.signal
+    );
 
-                const finalAiMessage = { role: 'model', parts: [{ text: finalReport }], createdAt: new Date().toISOString() };
+    // 注意：這裡的 finalReport 變數仍然是完整的報告，用於儲存。
+    // 我們只是改變了即時渲染的方式。
+    const finalAiMessage = { role: 'model', parts: [{ text: finalReport }], createdAt: new Date().toISOString() };
                 conv.messages.push(finalAiMessage);
                 await saveAppData();
                 
