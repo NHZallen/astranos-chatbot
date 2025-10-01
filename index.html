@@ -4451,17 +4451,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         if (line.startsWith('data: ')) {
                             const data = line.substring(6);
                             if (data.trim() === '[DONE]') break;
-                            try {
-                                const parsed = JSON.parse(data);
-                                const textChunk = parsed.choices[0]?.delta?.content || '';
-                                if (textChunk) {
-                                    fullText += textChunk;
-                                    onChunk(textChunk);
-                                }
-                            } catch (e) { /* Ignore */ }
-                        }
+                            if (provider === 'gemini' && buffer.trim().startsWith('{')) {
+                 try {
+                    const parsed = JSON.parse(buffer);
+                    const part = parsed?.candidates?.[0]?.content?.parts?.[0];
+                    if (part && part.text && !part.functionCall) {
+                        const textChunk = part.text;
+                        fullText += textChunk;
+                        onChunk(textChunk);
                     }
-                }
+                } catch(e) { /* ignore final parse error */ }
             }
             return fullText;
         }
