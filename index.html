@@ -467,10 +467,8 @@ button:not(.btn-primary):active:not(:disabled) {
     padding: 1em;
     border-radius: 0.5em;
     overflow-x: auto;
-    white-space: pre-wrap;
-    word-break: break-all;
-    max-width: 100%;
-    overflow-wrap: anywhere;
+    white-space: pre-wrap; /* ---> 新增：允許程式碼在保留格式的情況下自動換行 <--- */
+    word-break: break-all;  /* ---> 新增：強制過長的單詞(如URL)也能被斷開 <--- */
 }
     .prose pre code { background-color: transparent; padding: 0; color: inherit; border: none; }
     .prose h1, .prose h2, .prose h3 { margin-top: 1.5em; margin-bottom: 0.5em; font-weight: bold; }
@@ -663,17 +661,8 @@ button:not(.btn-primary):active:not(:disabled) {
   position: relative;
   background-color: transparent;
   z-index: 0;
-  max-width: 100vw;
-  overflow-x: auto;
-  word-wrap: break-word;
-  overflow-wrap: anywhere;
-}
-
-.message-bubble .message-content {
-  word-wrap: break-word;
-  overflow-wrap: anywhere;
-  max-width: 100%;
-  word-break: break-word;
+  max-width: 100%; /* ✨ 修改: 寬度相對於父容器，而不是整個視窗 */
+  overflow: hidden;  /* ✨ 修改: 隱藏溢出，讓內容本身處理換行 */
 }
     .message-bubble::before {
         content: '';
@@ -687,9 +676,8 @@ button:not(.btn-primary):active:not(:disabled) {
     }
     .user-message .message-content {
     white-space: pre-line;
-    word-wrap: break-word;
-    overflow-wrap: anywhere;
-    word-break: break-word;
+    overflow-wrap: break-word; /* ✨ 新增: 標準 CSS 屬性，允許過長的單詞換行 */
+    word-break: break-word;    /* ✨ 新增: 兼容屬性，確保在各種情況下都能斷詞 */
 }
     .user-message .message-bubble::before {
         background-color: var(--user-bubble-bg);
@@ -4434,20 +4422,22 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 if (done) break;
                 buffer += decoder.decode(value, { stream: true });
                 if (provider === 'gemini') {
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop();
-                    for (const line of lines) {
-                        if (line.trim().startsWith('"text":')) {
-                            try {
-                                const jsonStr = `{${line}}`;
-                                const parsed = JSON.parse(jsonStr);
-                                const textChunk = parsed.text;
-                                if (textChunk) {
-                                    fullText += textChunk;
-                                    onChunk(textChunk);
-                                }
-                            } catch (e) { /* Ignore */ }
+                    try {
+                        // 這個正規表示式會找到所有 "text":"..." 的內容
+                        const textMatches = buffer.matchAll(/"text":\s*"((?:\\"|[^"])*)"/g);
+                        let currentText = '';
+                        for (const match of textMatches) {
+                            // 因為擷取到的內容是 JSON 字串的一部分，需要解析來處理特殊字元 (例如 \n)
+                            currentText += JSON.parse(`"${match[1]}"`);
                         }
+                        
+                        // 只有在內容實際發生改變時才更新，避免不必要的重複渲染
+                        if (currentText && currentText !== fullText) {
+                            fullText = currentText;
+                            onChunk(fullText); // 傳遞完整的累積文字
+                        }
+                    } catch (e) {
+                        // 忽略錯誤，因為 buffer 中的 JSON 可能還不完整
                     }
                 } else {
                     const lines = buffer.split('\n');
