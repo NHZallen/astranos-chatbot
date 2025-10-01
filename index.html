@@ -4418,32 +4418,28 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             while (true) {
                 const { value, done } = await reader.read();
                 if (done) break;
-                
+                buffer += decoder.decode(value, { stream: true });
                 if (provider === 'gemini') {
-                    buffer += decoder.decode(value, { stream: true });
-                    // API 可能一次推送多個 JSON 區塊，用換行符分割
-                    const chunks = buffer.split('\n');
-                    // 最後一個區塊可能不完整，先保留在 buffer 中等待下次數據
-                    buffer = chunks.pop(); 
-
-                    for (const chunk of chunks) {
-                        // 忽略空行或非 JSON 的數據
-                        if (chunk.trim() === '' || !chunk.startsWith('{')) continue; 
-                        try {
-                            const parsed = JSON.parse(chunk);
-                            // 精準地找到內容部分，這是修正的核心
-                            const part = parsed?.candidates?.[0]?.content?.parts?.[0];
-                            
-                            // ✨ 關鍵判斷：確保這個部分是純文字(part.text)，且不是工具呼叫(functionCall)
-                            if (part && part.text && !part.functionCall) {
-                                const textChunk = part.text;
-                                fullText += textChunk;
-                                onChunk(textChunk);
-                            }
-                        } catch (e) {
-                            // 忽略解析錯誤，這通常發生在 JSON 數據不完整時，等待 buffer 累積更多數據即可
-                        }
+            const lines = buffer.split('\n');
+            buffer = lines.pop(); // 保留最後一個可能不完整的片段，待下次處理
+            for (const line of lines) {
+                if (line.trim().length === 0) continue; // 忽略空行
+                try {
+                    // 嘗試將每一行作為一個完整的 JSON 物件來解析
+                    const parsed = JSON.parse(line);
+                    // 從標準的 API 回應結構中，安全地取出文字片段
+                    // 這個路徑 `candidates[0].content.parts[0].text` 是 Gemini API 的標準格式
+                    const textChunk = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (textChunk) {
+                        fullText += textChunk;
+                        onChunk(textChunk);
                     }
+                } catch (e) {
+                    // 如果解析失敗，通常是因為 JSON 片段不完整，可以暫時忽略
+                    // 它會在下一次接收到更多資料後被組合並成功解析
+                    console.log("無法解析串流中的片段，可能尚不完整:", line);
+                }
+            }
                 } else {
                     const lines = buffer.split('\n');
                     buffer = lines.pop();
@@ -4451,16 +4447,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         if (line.startsWith('data: ')) {
                             const data = line.substring(6);
                             if (data.trim() === '[DONE]') break;
-                            if (provider === 'gemini' && buffer.trim().startsWith('{')) {
-                 try {
-                    const parsed = JSON.parse(buffer);
-                    const part = parsed?.candidates?.[0]?.content?.parts?.[0];
-                    if (part && part.text && !part.functionCall) {
-                        const textChunk = part.text;
-                        fullText += textChunk;
-                        onChunk(textChunk);
+                            try {
+                                const parsed = JSON.parse(data);
+                                const textChunk = parsed.choices[0]?.delta?.content || '';
+                                if (textChunk) {
+                                    fullText += textChunk;
+                                    onChunk(textChunk);
+                                }
+                            } catch (e) { /* Ignore */ }
+                        }
                     }
-                } catch(e) { /* ignore final parse error */ }
+                }
             }
             return fullText;
         }
