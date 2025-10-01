@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.3.5</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.3.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -4418,21 +4418,30 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             while (true) {
                 const { value, done } = await reader.read();
                 if (done) break;
-                buffer += decoder.decode(value, { stream: true });
+                
                 if (provider === 'gemini') {
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop();
-                    for (const line of lines) {
-                        if (line.trim().startsWith('"text":')) {
-                            try {
-                                const jsonStr = `{${line}}`;
-                                const parsed = JSON.parse(jsonStr);
-                                const textChunk = parsed.text;
-                                if (textChunk) {
-                                    fullText += textChunk;
-                                    onChunk(textChunk);
-                                }
-                            } catch (e) { /* Ignore */ }
+                    buffer += decoder.decode(value, { stream: true });
+                    // API 可能一次推送多個 JSON 區塊，用換行符分割
+                    const chunks = buffer.split('\n');
+                    // 最後一個區塊可能不完整，先保留在 buffer 中等待下次數據
+                    buffer = chunks.pop(); 
+
+                    for (const chunk of chunks) {
+                        // 忽略空行或非 JSON 的數據
+                        if (chunk.trim() === '' || !chunk.startsWith('{')) continue; 
+                        try {
+                            const parsed = JSON.parse(chunk);
+                            // 精準地找到內容部分，這是修正的核心
+                            const part = parsed?.candidates?.[0]?.content?.parts?.[0];
+                            
+                            // ✨ 關鍵判斷：確保這個部分是純文字(part.text)，且不是工具呼叫(functionCall)
+                            if (part && part.text && !part.functionCall) {
+                                const textChunk = part.text;
+                                fullText += textChunk;
+                                onChunk(textChunk);
+                            }
+                        } catch (e) {
+                            // 忽略解析錯誤，這通常發生在 JSON 數據不完整時，等待 buffer 累積更多數據即可
                         }
                     }
                 } else {
