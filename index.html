@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.3.8</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.3.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -3656,19 +3656,27 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
 
             if (provider === 'openrouter') {
+                // OpenRouter 模型目前不支援多模態，所以維持隱藏狀態
                 multimodalButtons.forEach(btn => btn.style.display = 'none');
                 if (separator) separator.style.display = 'none';
                 learningModeBtn.style.display = 'flex';
-            } else { // 此處處理 Gemini 或未來可能新增的其他模型
+            } else { // 此處處理 Gemini 模型
                 multimodalButtons.forEach(btn => btn.style.display = 'flex');
                 if (separator) separator.style.display = 'block';
                 learningModeBtn.style.display = 'flex';
-                const shouldBeDisabled = config.isLearningMode;
+
+                // START: MODIFICATION - Always enable multimodal features for Gemini
+                // 舊邏輯是 const shouldBeDisabled = config.isLearningMode;
+                // 我們將其改為 false，代表對於 Gemini 模型，無論學習模式是否開啟，多模態功能永不禁用。
+                const shouldBeDisabled = false;
+                // END: MODIFICATION
+
                 multimodalButtons.forEach(btn => {
                     btn.disabled = shouldBeDisabled;
                     if (shouldBeDisabled) {
                         btn.classList.add('opacity-50', 'cursor-not-allowed');
                     } else {
+                        // 因為 shouldBeDisabled 恆為 false，所以這裡會永遠移除禁用樣式。
                         btn.classList.remove('opacity-50', 'cursor-not-allowed');
                     }
                 });
