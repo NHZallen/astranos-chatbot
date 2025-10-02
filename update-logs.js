@@ -1,5 +1,33 @@
 const updateLogs = [
         {
+        version: "15.3.9",
+        date: "2025-10-2",
+        content: [
+            "<strong>修正：</strong>GEMINI模型使用學習與研究模式時，無法上傳圖片與檔案的問題",
+        ]
+    },
+        {
+        version: "15.3.8",
+        date: "2025-10-2",
+        content: [
+            "<strong>修正：</strong>搜索功能出現重複內容的問題",
+        ]
+    },
+        {
+        version: "15.3.7",
+        date: "2025-10-2",
+        content: [
+            "<strong>修正：</strong>輸入欄導致螢幕縮放的問題",
+        ]
+    },
+        {
+        version: "15.3.6",
+        date: "2025-10-2",
+        content: [
+            "<strong>修正：</strong>輸入欄遮蔽的問題",
+        ]
+    },
+        {
         version: "15.3.5",
         date: "2025-10-1",
         content: [
