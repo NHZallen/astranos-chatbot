@@ -1,5 +1,20 @@
 const updateLogs = [
         {
+        version: "15.4.1",
+        date: "2025-10-3",
+        content: [
+            "<strong>修正：</strong>深度研究模式後續追問失效的問題",
+            "<strong>優化：</strong>深度研究，研究中的狀態UI",
+        ]
+    },
+        {
+        version: "15.4.0",
+        date: "2025-10-3",
+        content: [
+            "<strong>新增：</strong>深度研究功能",
+        ]
+    },
+        {
         version: "15.3.9",
         date: "2025-10-2",
         content: [
