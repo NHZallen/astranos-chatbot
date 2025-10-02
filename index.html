@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.0</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.3.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -1868,10 +1868,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         <span data-lang-key="webSearch">聯網搜尋</span>
     </button>
     <div class="border-t border-[var(--border-color)] my-1"></div>
-        <button id="deep-research-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-        <span data-lang-key="deepResearchMode">深度研究模式</span>
-    </button>
     <button id="learning-mode-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 18a6 6 0 0 0 6-6c0-1.657-2.686-3-6-3s-6 1.343-6 3a6 6 0 0 0 6 6z"/><path d="M12 2v10"/></svg>
         <span data-lang-key="learningMode">學習與研究模式</span>
@@ -2771,7 +2767,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             closeTrashViewModalBtn: document.getElementById('close-trash-view-modal-btn'),
             trashViewCloseBtn: document.getElementById('trash-view-close-btn'),
             learningModeBtn: document.getElementById('learning-mode-btn'),
-            deepResearchBtn: document.getElementById('deep-research-btn'),
             feedbackTextarea: document.getElementById('feedback-textarea'),
             sendFeedbackBtn: document.getElementById('send-feedback-btn'),
             proposeAstrasBtn: document.getElementById('propose-astras-btn'),
@@ -2876,9 +2871,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             enableUpdateNotifications: true,
             lastSeenVersion: '',
             isLearningMode: false,
-            isDeepResearchMode: false,
         };
-        let originalMemorySettings = null;
         let itemToRename = { id: null, type: null };
         let folderToCustomize = null;
         let currentUser = null;
@@ -3699,174 +3692,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
             showNotification(config.isLearningMode ? (i18n[config.uiLanguage].learningModeEnabled || '學習與研究模式已開啟') : (i18n[config.uiLanguage].learningModeDisabled || '學習與研究模式已關閉'), 'success');
         };
-         // START: 在這裡貼上完整的 handleDeepResearchSubmit 函式
-        /**
-         * 處理深度研究模式的提交，包含三階段的提示詞鏈。
-         * @param {string} topic 使用者輸入的研究主題
-         */
-        async function handleDeepResearchSubmit(topic) {
-            const lang = config.uiLanguage;
-            const conv = getActiveConversation();
-            if (!conv) return;
 
-            // --- UI 準備 ---
-            ALL_ELEMENTS.messageInput.disabled = true;
-            addMessageToUI({ role: 'model', parts: [{ text: `好的，正在為您啟動深度研究模式，主題是：「${topic}」。\n\n第一步：規劃研究流程...` }], createdAt: new Date().toISOString() }, conv.messages.length, true);
-            let currentMessageDiv = ALL_ELEMENTS.messageList.lastElementChild.querySelector('.message-content');
-
-            try {
-                // =================================================================
-                // == 階段一：規劃 (Planning)
-                // =================================================================
-                const planningPrompt = `# 角色
-你是一位頂級的研究分析師與策略規劃師。你的專長是將一個複雜、模糊的研究主題，拆解成一個清晰、有邏輯、可執行的步驟清單。
-
-# 任務
-分析以下提供的「研究主題」，並設計一個包含 4 到 7 個步驟的研究計畫。
-
-# 指導原則
-1.  **邏輯性：** 步驟之間必須有邏輯上的先後順序，例如先定義概念，再分析影響，最後提出策略。
-2.  **行動導向：** 每個步驟都應該是一個具體的行動，例如「研究...」、「分析...」、「比較...」、「總結...」。
-3.  **全面性：** 計畫需要完整地涵蓋使用者主題的各個核心面向。
-4.  **格式要求：** 你必須嚴格地以一個 JSON 陣列的格式回覆，陣列中的每個元素都是一個代表研究步驟的字串。不要包含任何 JSON 格式以外的文字、註解或解釋。
-
-# 範例
--   研究主題："分析電動車市場的未來趨勢"
--   你的輸出:
-    \`\`\`json
-    [
-      "研究全球主要電動車市場的現況與規模。",
-      "分析特斯拉、比亞迪等主要競爭對手的產品策略與市場份額。",
-      "調查電池技術的最新發展與成本趨勢。",
-      "分析各國政府的環保政策與補助措施對市場的影響。",
-      "探討充電基礎設施的普及挑戰與解決方案。",
-      "總結未來 5-10 年電動車市場的潛在增長點與風險。"
-    ]
-    \`\`\`
-
-# 開始分析
-研究主題："` + topic + `"`;
-
-                const planningSchema = { type: "ARRAY", items: { type: "STRING" } };
-                const plan = await callApiWithSchema(planningPrompt, planningSchema);
-
-                if (!plan || plan.length === 0) {
-                    throw new Error(i18n[lang].researchPlanFailed || '無法生成研究計畫，請稍後再試。');
-                }
-
-                let planHtml = `研究計畫已生成，包含 ${plan.length} 個步驟：\n\n<ol style="margin-left: 20px; list-style-type: decimal;">${plan.map(step => `<li>${step}</li>`).join('')}</ol>\n<p>現在開始執行研究...</p>`;
-                currentMessageDiv.innerHTML = renderMarkdown(planHtml);
-                
-                const allSummaries = [];
-
-                // =================================================================
-                // == 階段二：執行 (Execution) - 迴圈
-                // =================================================================
-                for (let i = 0; i < plan.length; i++) {
-                    const step = plan[i];
-                    
-                    addMessageToUI({ role: 'model', parts: [{ text: `[${i + 1}/${plan.length}] 正在研究：${step}` }], createdAt: new Date().toISOString() }, conv.messages.length, true);
-                    currentMessageDiv = ALL_ELEMENTS.messageList.lastElementChild.querySelector('.message-content');
-                    
-                    // 2a. 生成搜尋關鍵詞
-                    const keywordPrompt = `# 角色
-你是一位資深的網路搜尋專家，擅長為複雜的研究問題生成精準的搜尋關鍵詞。
-
-# 任務
-根據整體的「研究總目標」和當前的「研究步驟」，生成 3 到 5 個最有效、最可能找到權威資料（如學術論文、產業報告、官方文件）的 Google 搜尋關鍵詞。
-
-# 指導原則
-1.  **精準性：** 關鍵詞應具體，避免過於寬泛。
-2.  **多樣性：** 嘗試使用不同的詞彙組合和角度。
-3.  **格式要求：** 你必須嚴格地以 JSON 陣列的格式回覆，陣列中的每個元素都是一個搜尋關鍵詞字串。
-
-# 輸入
--   研究總目標："` + topic + `"
--   當前研究步驟："` + step + `"`;
-                    
-                    const keywordSchema = { type: "ARRAY", items: { type: "STRING" } };
-                    const keywords = await callApiWithSchema(keywordPrompt, keywordSchema);
-                    
-                    // !!! 注意：這是一個模擬步驟 !!!
-                    // 在實際產品中，您需要在此處使用 keywords 陣列去呼叫一個真正的網路搜尋 API (例如 Google Custom Search API)
-                    // 然後將獲取到的網頁內容整理成 searchResultsText。
-                    const searchResultsText = `[模擬搜尋結果]：根據關鍵詞 "${keywords ? keywords.join(', ') : 'N/A'}" 在網路上找到的相關資料顯示，關於 "${step}" 的核心資訊如下...(此處應為真實的網路搜尋資料摘要)`;
-
-                    // 2b. 根據搜尋結果撰寫摘要
-                    const summaryPrompt = `# 角色
-你是一位客觀、精確的資訊整合分析師。你只根據提供的資料進行總結，不添加任何外部知識或個人觀點。
-
-# 任務
-根據以下提供的「網路搜尋資料」，針對研究步驟「` + step + `」，撰寫一份客觀、精煉、不超過 300 字的摘要。
-
-# 指導原則
-1.  **忠於原文：** 你的摘要必須完全基於提供的資料，嚴禁捏造或推斷。
-2.  **提煉核心：** 找出資料中的關鍵事實、數據和主要論點。
-3.  **結構清晰：** 用通順的語句將重點組織起來。
-4.  **輸出格式：** 直接輸出摘要的文字內容，不需要標題。
-
-# 網路搜尋資料
-` + searchResultsText;
-                    
-                    let summary = '';
-                    // 假設 streamApiCall 可以接受一個完整的 prompt 參數 (需要您微調)
-                    await streamApiCall([], (chunk) => { summary += chunk; }, null, summaryPrompt); 
-                    
-                    allSummaries.push({ title: step, content: summary });
-                    currentMessageDiv.innerHTML = renderMarkdown(`**研究步驟 [${i + 1}/${plan.length}] 完成**\n\n**摘要：**\n${summary}`);
-                }
-
-                // =================================================================
-                // == 階段三：綜合 (Synthesis)
-                // =================================================================
-                addMessageToUI({ role: 'model', parts: [{ text: `所有研究步驟已完成，正在為您撰寫最終報告...` }], createdAt: new Date().toISOString() }, conv.messages.length, true);
-                const finalReportMessageItem = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, true);
-                const finalReportContentDiv = finalReportMessageItem.querySelector('.message-content');
-                finalReportContentDiv.innerHTML = ''; // 清空 loading dots
-                
-                let synthesisNotes = allSummaries.map((s, i) => `---
-## 步驟 ${i+1}：${s.title} 的研究筆記
-
-${s.content}
-`).join('\n');
-
-                const synthesisPrompt = `# 角色
-你是一位資深的報告撰寫專家與編輯，擅長將零散的研究筆記整合成一篇結構完整、邏輯流暢、格式清晰的深度研究報告。
-
-# 任務
-你的任務是將以下一系列針對不同研究步驟的摘要筆記，整合成一篇關於「` + topic + `」的深度研究報告。
-
-# 指導原則
-1.  **使用 Markdown 格式：** 善用標題 (\`##\`, \`###\`)、粗體、斜體和條列式清單來提升報告的可讀性。
-2.  **結構完整：** 報告應包含：
-    *   一個合適的主標題。
-    *   在報告開頭提供一個 100 字以內的「核心摘要」(Executive Summary)。
-    *   根據每個研究步驟，設立對應的副標題，並將其筆記內容擴寫、潤飾成流暢的段落。
-    *   在報告結尾，根據所有內容，撰寫一個「結論與展望」部分。
-3.  **邏輯連貫：** 確保各個段落之間的過渡自然、流暢。
-4.  **客觀專業：** 保持中立、客觀的語氣。
-
-# 研究筆記彙編
-` + synthesisNotes;
-                
-                let finalReportText = '';
-                await streamApiCall([], (chunk) => {
-                    finalReportText += chunk;
-                    finalReportContentDiv.innerHTML = renderMarkdown(finalReportText);
-                }, null, synthesisPrompt);
-
-            } catch (error) {
-                console.error("深度研究失敗:", error);
-                currentMessageDiv.innerHTML = `<p style="color: red;">研究過程中發生錯誤：${error.message}</p>`;
-            } finally {
-                // --- UI 清理 ---
-                ALL_ELEMENTS.messageInput.disabled = false;
-                if (config.isDeepResearchMode) {
-                    await toggleDeepResearchMode();
-                }
-            }
-        }
-        // END: 新函式結束
 
         const renderInputIndicators = () => {
             const container = ALL_ELEMENTS.inputIndicatorContainer;
@@ -3886,21 +3712,6 @@ ${s.content}
         
             const activeIndicators = new Map();
             const astrasId = getActiveAstrasId();
-            if (config.isDeepResearchMode) {
-        activeIndicators.set('deep-research-indicator', {
-            id: 'deep-research-indicator',
-            html: `
-                <span class="flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-                    <span>${i18n[config.uiLanguage].deepResearchModeIndicator || '深度研究'}</span>
-                </span>
-                <button id="close-deep-research-btn-input" class="ml-2 p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10" title="${i18n[config.uiLanguage].closeDeepResearchMode || '關閉深度研究模式'}">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </button>
-            `,
-            eventListener: (el) => el.querySelector('#close-deep-research-btn-input').addEventListener('click', toggleDeepResearchMode)
-        });
-    }
 
 
             if (config.isLearningMode) {
@@ -4297,16 +4108,6 @@ ${s.content}
             e.preventDefault();
             if (abortController) return;
             const userMessage = ALL_ELEMENTS.messageInput.value.trim();
-    if (config.isDeepResearchMode) {
-        if (!userMessage) {
-            showNotification(i18n[config.uiLanguage].enterResearchTopic || '請輸入您想研究的主題。', 'warning');
-            return;
-        }
-        // 切換到深度研究的處理流程
-        handleDeepResearchSubmit(userMessage);
-        ALL_ELEMENTS.messageInput.value = ''; // 清空輸入框
-        return; // 結束函式，不執行後續的標準聊天邏輯
-    }
             if (!userMessage && uploadedFiles.length === 0) return;
             renderFollowUpPrompts([]);
             const conv = getActiveConversation();
@@ -7761,7 +7562,6 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 await saveAppData();
             });
             ALL_ELEMENTS.learningModeBtn.addEventListener('click', toggleLearningMode);
-            ALL_ELEMENTS.deepResearchBtn.addEventListener('click', toggleDeepResearchMode);
             ALL_ELEMENTS.uploadImageBtn.addEventListener('click', () => {
                 ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
                 ALL_ELEMENTS.imageVideoInput.removeAttribute('capture');
