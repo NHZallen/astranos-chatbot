@@ -4151,6 +4151,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             }
             ALL_ELEMENTS.messageInput.value = '';
+            ALL_ELEMENTS.messageInput.blur();
             uploadedFiles = [];
             adjustTextareaHeight();
             renderFilePreviews();
@@ -7400,6 +7401,32 @@ ${JSON.stringify(potentialMemories, null, 2)}
             setupScrollToBottomButton();
             updateDisplayedVersion();
             checkAndShowLatestUpdate();
+            const isMobile = () => /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            if (isMobile()) {
+                const messageInput = ALL_ELEMENTS.messageInput;
+                const appContainer = ALL_ELEMENTS.appContainer;
+                const inputBarContainer = ALL_ELEMENTS.inputBarContainer;
+
+                const handleInputFocus = () => {
+                    // 當輸入欄取得焦點時，虛擬鍵盤會出現。
+                    // 我們給予一個短暫的延遲（例如 250 毫秒），等待鍵盤開始彈出。
+                    setTimeout(() => {
+                        // 使用 scrollIntoView 將輸入欄捲動到可見區域的底部。
+                        // 'block: 'end'' 這個選項能確保元素底部對齊可視區底部，
+                        // 從而將其推到虛擬鍵盤的上方，並解決位置不夠高的問題。
+                        inputBarContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    }, 250);
+                };
+
+                const handleInputBlur = () => {
+                    // 當輸入欄失去焦點時，鍵盤會收起。
+                    // 我們可以將視窗捲動回頂部以確保佈局恢復正常。
+                    window.scrollTo(0, 0);
+                };
+
+                messageInput.addEventListener('focus', handleInputFocus);
+                messageInput.addEventListener('blur', handleInputBlur);
+            }
             ALL_ELEMENTS.menuToggleBtn.addEventListener('click', () => toggleSidebar());
             ALL_ELEMENTS.sidebarOverlay.addEventListener('click', () => toggleSidebar(false));
             ALL_ELEMENTS.newChatBtn.addEventListener('click', () => startNewChat());
