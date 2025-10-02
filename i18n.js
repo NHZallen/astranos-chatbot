@@ -14,7 +14,7 @@ window.i18n = {
         importRecords: '匯入紀錄',
         exploreModels: '探索我們的 AI 模型',
         exploreModelsDesc: '我們提供一系列為不同任務量身打造的頂尖模型，無論是創意寫作、程式設計還是商業分析，總有一款適合您。',
-        demoChatTitle: 'Astra-ultra 對話範例',
+        demoChatTitle: 'Astra-ProMax 對話範例',
         copyright: 'ASTRA版權所有',
         currentLanguageName: '繁體中文',
 
@@ -335,8 +335,6 @@ window.i18n = {
 
 
         // Model Descriptions & Limits
-        model_Ultra_desc: '新版X-AI模型，適合大型研究與實驗探討，支援200萬token上下文。',
-        model_Ultra_limits: '20次/分鐘、50次/天',
         model_ProMax_desc: '深度推理專長，專業研究與複雜決策首選。',
         model_ProMax_limits: '5次/分鐘、100次/天',
         model_ProPV_desc: '測試最新功能，兼具速度與多模態體驗。',
@@ -385,7 +383,7 @@ window.i18n = {
         importRecords: 'Import Records',
         exploreModels: 'Explore Our AI Models',
         exploreModelsDesc: 'We offer a range of top-tier models tailored for different tasks. Whether it\'s creative writing, programming, or business analysis, there\'s one for you.',
-        demoChatTitle: 'Astra-ultra Conversation Example',
+        demoChatTitle: 'Astra-ProMax Conversation Example',
         copyright: 'Copyright © ASTRA',
         currentLanguageName: 'English',
 
@@ -706,8 +704,6 @@ window.i18n = {
 
 
         // Model Descriptions & Limits
-        model_Ultra_desc: 'New X-AI model, designed for large-scale research and experiments, supports up to 2M tokens context.',
-        model_Ultra_limits: '20 req/min, 50 req/day',
         model_ProMax_desc: 'Expert in deep reasoning, best choice for professional research and complex decisions.',
         model_ProMax_limits: '5 req/min, 100 req/day',
         model_ProPV_desc: 'Preview latest features, combining speed with multimodal capabilities.',
@@ -757,7 +753,7 @@ window.i18n = {
         importRecords: 'Importer des Données',
         exploreModels: 'Découvrez Nos Modèles d\'IA',
         exploreModelsDesc: 'Nous proposons une gamme de modèles de pointe pour différentes tâches. Que ce soit pour l\'écriture créative, la programmation ou l\'analyse commerciale, il y en a un pour vous.',
-        demoChatTitle: 'Exemple de Conversation Astra-ultra',
+        demoChatTitle: 'Exemple de Conversation Astra-ProMax',
         copyright: 'Copyright © ASTRA',
         currentLanguageName: 'Français',
 
@@ -1077,8 +1073,6 @@ window.i18n = {
 
 
         // Model Descriptions & Limits
-        model_Ultra_desc: 'Nouveau modèle X-AI, conçu pour la recherche et l’expérimentation à grande échelle, supporte jusqu’à 2M tokens.',
-        model_Ultra_limits: '20 req/min, 50 req/jour',
         model_ProMax_desc: 'Spécialiste du raisonnement profond, choix idéal pour recherche professionnelle et décisions complexes.',
         model_ProMax_limits: '5 req/min, 100 req/jour',
         model_ProPV_desc: 'Aperçu des dernières fonctions, alliant rapidité et capacités multimodales.',
