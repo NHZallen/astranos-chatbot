@@ -7398,7 +7398,6 @@ ${JSON.stringify(potentialMemories, null, 2)}
             updateInputState();
             setupVoiceInput();
             setupScrollToBottomButton();
-            setupMobileKeyboardHandlers();
             updateDisplayedVersion();
             checkAndShowLatestUpdate();
             ALL_ELEMENTS.menuToggleBtn.addEventListener('click', () => toggleSidebar());
@@ -7773,7 +7772,66 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
     }
 });
         initializeSpotlightEffect();
+        setupVirtualKeyboardHandler();
         }
+         const setupVirtualKeyboardHandler = () => {
+        const mainContainer = document.querySelector('#app-container main');
+        const inputBar = document.getElementById('input-bar-container');
+        const messageInput = document.getElementById('message-input');
+        const chatContainer = document.getElementById('chat-container');
+
+        // 如果找不到必要的元素，則終止函式
+        if (!mainContainer || !inputBar || !messageInput || !chatContainer) {
+            console.error("虛擬鍵盤處理器設定失敗：找不到一個或多個必要的元素。");
+            return;
+        }
+
+        // 為不支援 VisualViewport API 的舊版瀏覽器提供備用方案
+        const applyFallback = () => {
+            messageInput.addEventListener('focus', () => {
+                // 在鍵盤彈出後，延遲一小段時間再將輸入欄滾動到可視區域
+                setTimeout(() => {
+                    inputBar.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                }, 300);
+            });
+        };
+
+        if (!window.visualViewport) {
+            console.warn("不支援 VisualViewport API，將採用備用方案。");
+            applyFallback();
+            return;
+        }
+
+        const handleViewportChange = () => {
+            const viewport = window.visualViewport;
+            // 計算佈局可視區底部與視覺可視區底部之間的差距
+            // 這是偵測虛擬鍵盤等底部UI覆蓋物大小的可靠方法
+            const bottomOffset = window.innerHeight - viewport.height;
+
+            // 使用一個閾值 (例如 100px) 來確保這是虛擬鍵盤，而不是瀏覽器工具列的微小變化
+            if (bottomOffset > 100 && document.activeElement === messageInput) {
+                // 鍵盤已彈出。調整 padding-bottom 將內容往上推
+                mainContainer.style.paddingBottom = `${bottomOffset}px`;
+                // 將聊天容器滾動到底部，確保輸入欄可見
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            } else {
+                // 鍵盤已收起。移除 padding
+                mainContainer.style.paddingBottom = '0px';
+            }
+        };
+        
+        messageInput.addEventListener('focus', () => {
+            // 當輸入欄獲得焦點時，我們確保最新的可視區狀態被應用，並且視圖滾動到正確位置
+            // 一個極短的延遲可以讓鍵盤動畫開始並觸發 resize 事件
+            setTimeout(() => {
+                handleViewportChange(); // 再次呼叫以確保位置正確
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }, 150);
+        });
+
+        // 監聽可視區的 resize 事件，這是偵測鍵盤最可靠的方式
+        window.visualViewport.addEventListener('resize', handleViewportChange);
+    };
         const handleDeleteMessagePair = async (index) => {
             const confirmed = await showCustomDialog({
                 title: i18n[config.uiLanguage].deleteConfirmationTitle || '刪除確認',
@@ -7794,49 +7852,6 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
                     }
                 }
             };
-         const setupMobileKeyboardHandlers = () => {
-            // 檢查是否為行動裝置，避免在桌機上執行不必要的邏輯
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            
-            // 如果不是行動裝置或瀏覽器不支援我們需要的 API，則不執行此功能
-            if (!isMobile || !window.visualViewport) {
-                console.log("非行動裝置或瀏覽器不支援，將不啟用鍵盤處理邏輯。");
-                return;
-            }
-
-            const messageInput = ALL_ELEMENTS.messageInput;
-            const appContainer = ALL_ELEMENTS.appContainer;
-            const chatContainer = ALL_ELEMENTS.chatContainer;
-
-            // 當虛擬鍵盤彈出或收合，導致可視區域變化時觸發
-            const onViewportResize = () => {
-                // 獲取被虛擬鍵盤遮擋的高度
-                const coveredHeight = window.innerHeight - window.visualViewport.height;
-
-                // 為主容器增加一個與鍵盤等高的底部內邊距，將整個 App 畫面向上推
-                appContainer.style.paddingBottom = `${coveredHeight}px`;
-
-                // 確保在鍵盤彈出後，聊天內容自動滾動到底部
-                // 使用 setTimeout 是為了確保 DOM 已經完成佈局更新
-                setTimeout(() => {
-                    chatContainer.scrollTop = chatContainer.scrollHeight;
-                }, 100);
-            };
-
-            // 當使用者點擊輸入框時觸發
-            const onInputFocus = () => {
-                // 立即將輸入框滾動到可見區域，提供更即時的反應
-                messageInput.scrollIntoView({ behavior: 'smooth', block: 'end' });
-            };
-
-            // 為輸入框綁定 'focus' 事件
-            if (messageInput) {
-                messageInput.addEventListener('focus', onInputFocus);
-            }
-
-            // 監聽 visualViewport 的 'resize' 事件
-            window.visualViewport.addEventListener('resize', onViewportResize);
-        };
             ALL_ELEMENTS.authForm.addEventListener('submit', handleLogin);
             const toggleAuthImportButton = () => {
                 const username = ALL_ELEMENTS.usernameInput.value.trim();
