@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.3.6</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.3.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -4420,19 +4420,37 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 if (done) break;
                 buffer += decoder.decode(value, { stream: true });
                 if (provider === 'gemini') {
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop();
-                    for (const line of lines) {
-                        if (line.trim().startsWith('"text":')) {
+                    // 採用更強健的串流解析邏輯，專門處理 Gemini API 的複雜回應格式。
+                    // 舊的程式碼過於簡化，會錯誤地將非顯示用的中間資料也當成是答案。
+                    
+                    // 這個正規表達式會尋找 JSON 物件之間的分隔符號（`} ,`），並用一個獨特的標記 `}&&&` 來取代。
+                    // 這樣我們就可以安全地將串流分割成一個個獨立的 JSON 物件。
+                    let processedBuffer = buffer.replace(/}\s*,/g, '}&&&');
+
+                    // 使用我們自訂的標記來分割字串。
+                    const potentialObjects = processedBuffer.split('&&&');
+
+                    // 分割後的最後一項可能是不完整的，所以我們將它放回 buffer 中，等待下一次資料傳來再處理。
+                    buffer = potentialObjects.pop() || '';
+                    
+                    for (const objStr of potentialObjects) {
+                        // 只處理看起來像是一個完整 JSON 物件的字串。
+                        if (objStr.trim().startsWith('{') && objStr.trim().endsWith('}')) {
                             try {
-                                const jsonStr = `{${line}}`;
-                                const parsed = JSON.parse(jsonStr);
-                                const textChunk = parsed.text;
+                                const parsed = JSON.parse(objStr);
+                                // 這是關鍵：我們精準地從複雜的 JSON 結構中，只提取要顯示給使用者的文字部分。
+                                const textChunk = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                                // 確保 textChunk 確實存在，這樣就能過濾掉所有不含顯示文字的資料塊（例如工具呼叫的中間結果）。
                                 if (textChunk) {
                                     fullText += textChunk;
                                     onChunk(textChunk);
                                 }
-                            } catch (e) { /* Ignore */ }
+                            } catch (e) {
+                                // 如果解析失敗，代表這個物件還不完整，將它放回 buffer 等待下次處理。
+                                buffer = objStr + buffer;
+                                console.warn('無法解析 JSON 串流區塊，正在緩衝...', e);
+                            }
                         }
                     }
                 } else {
