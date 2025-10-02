@@ -7562,24 +7562,43 @@ if (expandBtn) {
     }
 });
 const handleInputFocus = () => {
-                // 檢查瀏覽器是否支援 visualViewport API。
+                // 檢查瀏覽器是否支援 visualViewport API，這是此解決方案的基礎。
                 if (window.visualViewport) {
-                    // 當鍵盤彈出導致可視區域變化時，這個 resize 事件會觸發。
-                    // 我們使用 { once: true } 確保它只執行一次後就自動移除監聽。
-                    window.visualViewport.addEventListener('resize', function onResize() {
-                        // 在 resize 事件觸發後，我們加入一個極短的延遲。
-                        // 這是為了確保瀏覽器自身的滾動和佈局調整已經完成，
-                        // 我們的滾動指令將作為最終的校準，從而避免位置不準確的問題。
-                        setTimeout(() => {
-                            const inputBarContainer = document.getElementById('input-bar-container');
-                            if (inputBarContainer) {
-                                // 這個指令現在會在最完美的時機執行，確保位置正確且動畫流暢。
-                                inputBarContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    const smoothScrollToTarget = () => {
+                        const inputBarContainer = document.getElementById('input-bar-container');
+                        if (!inputBarContainer) return;
+
+                        // 請求在下一次瀏覽器重繪前執行我們的計算，這是實現平滑動畫的關鍵。
+                        requestAnimationFrame(() => {
+                            const PADDING_BOTTOM = 10; // 在鍵盤和輸入框之間保留 10px 的間距，讓位置更靠上。
+
+                            // 獲取輸入框容器相對於可視區域的幾何資訊。
+                            const inputBarRect = inputBarContainer.getBoundingClientRect();
+                            // 獲取鍵盤彈出後，真正的可視區域高度。
+                            const viewportHeight = window.visualViewport.height;
+                            
+                            // 計算輸入框底部超出可視區域底部的距離。
+                            // 正值表示輸入框被鍵盤遮擋了。
+                            const offset = inputBarRect.bottom - viewportHeight + PADDING_BOTTOM;
+
+                            // 如果輸入框已經在視野內且位置正確，則無需滾動。
+                            if (offset > 0) {
+                                // 計算新的滾動位置：目前的滾動位置 + 需要額外滾動的距離。
+                                const newScrollPosition = window.scrollY + offset;
+                                // 執行平滑滾動到我們精確計算出的位置。
+                                window.scrollTo({
+                                    top: newScrollPosition,
+                                    behavior: 'smooth'
+                                });
                             }
-                        }, 100); // 100毫秒的延遲對使用者來說幾乎是瞬時的，但足以解決時機競賽問題。
-                    }, { once: true });
+                        });
+                    };
+
+                    // 當鍵盤彈出導致可視區域大小改變時，觸發我們的滾動計算。
+                    // 使用 { once: true } 確保只觸發一次，避免鍵盤動畫過程中的多次觸發導致抖動。
+                    window.visualViewport.addEventListener('resize', smoothScrollToTarget, { once: true });
                 } else {
-                    // 對於舊版瀏覽器，保留原始的備用方案。
+                    // 對於不支援 visualViewport 的舊版瀏覽器，保留一個基本的備用方案。
                     setTimeout(() => {
                         const inputBarContainer = document.getElementById('input-bar-container');
                         if (inputBarContainer) {
