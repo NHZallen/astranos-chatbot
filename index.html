@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.3.9</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.4.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -1868,6 +1868,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         <span data-lang-key="webSearch">聯網搜尋</span>
     </button>
     <div class="border-t border-[var(--border-color)] my-1"></div>
+        <button id="deep-research-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        <span data-lang-key="deepResearchMode">深度研究模式</span>
+    </button>
     <button id="learning-mode-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 18a6 6 0 0 0 6-6c0-1.657-2.686-3-6-3s-6 1.343-6 3a6 6 0 0 0 6 6z"/><path d="M12 2v10"/></svg>
         <span data-lang-key="learningMode">學習與研究模式</span>
@@ -2767,6 +2771,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             closeTrashViewModalBtn: document.getElementById('close-trash-view-modal-btn'),
             trashViewCloseBtn: document.getElementById('trash-view-close-btn'),
             learningModeBtn: document.getElementById('learning-mode-btn'),
+            deepResearchBtn: document.getElementById('deep-research-btn'),
             feedbackTextarea: document.getElementById('feedback-textarea'),
             sendFeedbackBtn: document.getElementById('send-feedback-btn'),
             proposeAstrasBtn: document.getElementById('propose-astras-btn'),
@@ -2871,7 +2876,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             enableUpdateNotifications: true,
             lastSeenVersion: '',
             isLearningMode: false,
+            isDeepResearchMode: false,
         };
+        let originalMemorySettings = null;
         let itemToRename = { id: null, type: null };
         let folderToCustomize = null;
         let currentUser = null;
@@ -3692,6 +3699,51 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
             showNotification(config.isLearningMode ? (i18n[config.uiLanguage].learningModeEnabled || '學習與研究模式已開啟') : (i18n[config.uiLanguage].learningModeDisabled || '學習與研究模式已關閉'), 'success');
         };
+         // START: 在這裡貼上新的函式
+        /**
+         * 切換深度研究模式。
+         * 開啟時，暫存並禁用所有記憶功能。
+         * 關閉時，恢復使用者原本的記憶設定。
+         */
+        const toggleDeepResearchMode = async () => {
+            const isActivating = !config.isDeepResearchMode;
+            const lang = config.uiLanguage;
+
+            if (isActivating) {
+                // 1. 儲存使用者當前的記憶設定
+                originalMemorySettings = {
+                    memoryEnabled1: config.memoryEnabled1,
+                    memoryEnabled2: config.memoryEnabled2,
+                    enableAutoMemory: config.enableAutoMemory
+                };
+
+                // 2. 強制關閉所有記憶相關功能
+                config.memoryEnabled1 = false;
+                config.memoryEnabled2 = false;
+                config.enableAutoMemory = false;
+
+                showNotification(i18n[lang].deepResearchEnabled || '深度研究模式已開啟，記憶功能已暫時禁用。', 'success');
+            } else {
+                // 1. 檢查是否有暫存的設定可以還原
+                if (originalMemorySettings !== null) {
+                    config.memoryEnabled1 = originalMemorySettings.memoryEnabled1;
+                    config.memoryEnabled2 = originalMemorySettings.memoryEnabled2;
+                    config.enableAutoMemory = originalMemorySettings.enableAutoMemory;
+                    
+                    // 2. 清除暫存
+                    originalMemorySettings = null;
+                }
+                showNotification(i18n[lang].deepResearchDisabled || '深度研究模式已關閉，記憶功能已恢復。', 'success');
+            }
+
+            // 更新模式狀態並儲存設定
+            config.isDeepResearchMode = isActivating;
+            await saveConfig();
+
+            // 更新 UI
+            renderInputIndicators();
+            ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
+        };
 
 
         const renderInputIndicators = () => {
@@ -3712,6 +3764,21 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         
             const activeIndicators = new Map();
             const astrasId = getActiveAstrasId();
+            if (config.isDeepResearchMode) {
+        activeIndicators.set('deep-research-indicator', {
+            id: 'deep-research-indicator',
+            html: `
+                <span class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                    <span>${i18n[config.uiLanguage].deepResearchModeIndicator || '深度研究'}</span>
+                </span>
+                <button id="close-deep-research-btn-input" class="ml-2 p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10" title="${i18n[config.uiLanguage].closeDeepResearchMode || '關閉深度研究模式'}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            `,
+            eventListener: (el) => el.querySelector('#close-deep-research-btn-input').addEventListener('click', toggleDeepResearchMode)
+        });
+    }
 
 
             if (config.isLearningMode) {
@@ -7562,6 +7629,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 await saveAppData();
             });
             ALL_ELEMENTS.learningModeBtn.addEventListener('click', toggleLearningMode);
+            ALL_ELEMENTS.deepResearchBtn.addEventListener('click', toggleDeepResearchMode);
             ALL_ELEMENTS.uploadImageBtn.addEventListener('click', () => {
                 ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
                 ALL_ELEMENTS.imageVideoInput.removeAttribute('capture');
