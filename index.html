@@ -4420,37 +4420,56 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 if (done) break;
                 buffer += decoder.decode(value, { stream: true });
                 if (provider === 'gemini') {
-                    // 採用更強健的串流解析邏輯，專門處理 Gemini API 的複雜回應格式。
-                    // 舊的程式碼過於簡化，會錯誤地將非顯示用的中間資料也當成是答案。
-                    
-                    // 這個正規表達式會尋找 JSON 物件之間的分隔符號（`} ,`），並用一個獨特的標記 `}&&&` 來取代。
-                    // 這樣我們就可以安全地將串流分割成一個個獨立的 JSON 物件。
-                    let processedBuffer = buffer.replace(/}\s*,/g, '}&&&');
+                    // V5 終極強健版解析邏輯：使用括號計數法來準確尋找完整的 JSON 物件，
+                    // 這樣既能處理正常對話，也能過濾掉聯網搜尋的中間產物。
+                    while (true) {
+                        const firstBrace = buffer.indexOf('{');
+                        // 如果在緩衝區中找不到任何 '{'，代表沒有可處理的資料，跳出迴圈。
+                        if (firstBrace === -1) {
+                            break;
+                        }
 
-                    // 使用我們自訂的標記來分割字串。
-                    const potentialObjects = processedBuffer.split('&&&');
+                        let braceCount = 0;
+                        let endIndex = -1;
+                        // 從第一個 '{' 開始，尋找與之配對的 '}'
+                        for (let i = firstBrace; i < buffer.length; i++) {
+                            if (buffer[i] === '{') {
+                                braceCount++;
+                            } else if (buffer[i] === '}') {
+                                braceCount--;
+                            }
+                            // 當括號計數歸零時，代表我們找到了一個完整的 JSON 物件。
+                            if (braceCount === 0) {
+                                endIndex = i;
+                                break;
+                            }
+                        }
 
-                    // 分割後的最後一項可能是不完整的，所以我們將它放回 buffer 中，等待下一次資料傳來再處理。
-                    buffer = potentialObjects.pop() || '';
-                    
-                    for (const objStr of potentialObjects) {
-                        // 只處理看起來像是一個完整 JSON 物件的字串。
-                        if (objStr.trim().startsWith('{') && objStr.trim().endsWith('}')) {
+                        // 如果找到了一個完整的 JSON 物件 (endIndex !== -1)
+                        if (endIndex !== -1) {
+                            // 提取這個完整的 JSON 字串。
+                            const jsonStr = buffer.substring(firstBrace, endIndex + 1);
+                            // 立刻將已提取的部分從緩衝區中移除，準備處理下一個。
+                            buffer = buffer.substring(endIndex + 1);
+
                             try {
-                                const parsed = JSON.parse(objStr);
-                                // 這是關鍵：我們精準地從複雜的 JSON 結構中，只提取要顯示給使用者的文字部分。
+                                const parsed = JSON.parse(jsonStr);
+                                // 這是關鍵：我們精準地從 JSON 結構中只提取要顯示的文字。
                                 const textChunk = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-                                // 確保 textChunk 確實存在，這樣就能過濾掉所有不含顯示文字的資料塊（例如工具呼叫的中間結果）。
+                                // 如果成功提取到文字，就將它顯示出來。
+                                // 這一步會自動過濾掉所有不包含 'text' 欄位的資料塊（如工具呼叫的日誌）。
                                 if (textChunk) {
                                     fullText += textChunk;
                                     onChunk(textChunk);
                                 }
                             } catch (e) {
-                                // 如果解析失敗，代表這個物件還不完整，將它放回 buffer 等待下次處理。
-                                buffer = objStr + buffer;
-                                console.warn('無法解析 JSON 串流區塊，正在緩衝...', e);
+                                console.warn("解析 Gemini 串流中的 JSON 區塊時出錯:", e, "區塊內容:", jsonStr);
                             }
+                        } else {
+                            // 如果在緩衝區中只找到 '{' 但找不到配對的 '}'，代表資料還不完整，
+                            // 跳出迴圈，等待下一次資料傳入後再一起處理。
+                            break;
                         }
                     }
                 } else {
