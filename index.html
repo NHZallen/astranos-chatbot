@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.0</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.4.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -1627,33 +1627,6 @@ body.custom-wallpaper-active .input-indicator-item {
 #input-bar-container .input-wrapper > .flex.items-end {
     width: 100%;
 }
-/* ✨ 新增：深度研究進度卡片樣式 */
-.research-progress-card {
-    background-color: var(--sidebar-bg);
-    border: 1px solid var(--border-color);
-    padding: 1rem;
-    border-radius: 0.75rem;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-.research-progress-card .spinner {
-    width: 24px;
-    height: 24px;
-    border: 3px solid var(--hover-bg);
-    border-top-color: var(--button-primary-bg);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    flex-shrink: 0;
-}
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-.research-progress-card p {
-    margin: 0;
-    font-weight: 500;
-    color: var(--text-secondary);
-}
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -1966,6 +1939,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         <li class="settings-nav-item p-3 rounded-md" data-section="data-management" data-lang-key="dataManagement">資料管理</li>
                         <li class="settings-nav-item p-3 rounded-md" data-section="accessibility" data-lang-key="accessibility">輔助功能</li>
                         <li class="settings-nav-item p-3 rounded-md" data-section="trash" data-lang-key="trash">垃圾桶</li>
+                        <li class="settings-nav-item p-3 rounded-md" data-section="advanced-features" data-lang-key="advancedFeatures">進階功能</li>
                         <li class="settings-nav-item p-3 rounded-md" data-section="about" data-lang-key="about">關於</li>
                     </ul>
                 </nav>
@@ -2140,6 +2114,21 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             <div class="relative inline-block w-12 h-6 mr-2 align-middle select-none transition duration-200 ease-in">
                                 <input type="checkbox" name="auto-web-search-toggle-switch" id="auto-web-search-toggle-switch" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
                                 <label for="auto-web-search-toggle-switch" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="advanced-features-section" class="settings-section">
+                        <h3 class="text-lg font-semibold mb-3" data-lang-key="advancedFeatures">進階功能</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="deep-research-query-count-slider" class="block text-sm font-medium mb-1" data-lang-key="deepResearchQueryCount">深度研究搜尋次數</label>
+                                <p class="text-xs text-[var(--text-secondary)] mb-3" data-lang-key="deepResearchQueryCountDesc">
+                                    設定深度研究模式單次執行的搜尋次數。「自動」模式將由 AI 根據問題複雜度決定。
+                                </p>
+                                <div class="flex items-center gap-4">
+                                    <input type="range" id="deep-research-query-count-slider" min="0" max="10" step="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700">
+                                    <span id="deep-research-query-count-label" class="text-sm font-semibold w-20 text-center">自動</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -2903,6 +2892,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             lastSeenVersion: '',
             isLearningMode: false,
             isDeepResearchMode: false, // ✨ 新增狀態
+            deepResearchQueryCount: 0, // ✨ 新增這一行，0 代表自動
         };
         let itemToRename = { id: null, type: null };
         let folderToCustomize = null;
@@ -4889,6 +4879,18 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderUserBubbleColorDropdown();
             renderUiColorOptions();
             renderTrash();
+            const slider = document.getElementById('deep-research-query-count-slider');
+            const label = document.getElementById('deep-research-query-count-label');
+
+            if (slider && label) {
+                slider.value = config.deepResearchQueryCount;
+                label.textContent = config.deepResearchQueryCount === 0 ? (i18n[config.uiLanguage].auto || '自動') : `${config.deepResearchQueryCount} ${i18n[config.uiLanguage].queriesSuffix || '次'}`;
+
+                slider.addEventListener('input', () => {
+                    const value = parseInt(slider.value);
+                    label.textContent = value === 0 ? (i18n[config.uiLanguage].auto || '自動') : `${value} ${i18n[config.uiLanguage].queriesSuffix || '次'}`;
+                });
+            }
             const navItems = ALL_ELEMENTS.settingsNav.querySelectorAll('.settings-nav-item');
             navItems.forEach(item => {
                 item.addEventListener('click', () => {
@@ -4914,6 +4916,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             config.uiLanguage = ALL_ELEMENTS.uiLanguageSelect.value;
             config.aiDefaultLanguage = ALL_ELEMENTS.aiLanguageSelect.value;
             config.enableUpdateNotifications = ALL_ELEMENTS.enableUpdateNotificationsToggle.checked;
+            const queryCountSlider = document.getElementById('deep-research-query-count-slider');
+            if (queryCountSlider) {
+                config.deepResearchQueryCount = parseInt(queryCountSlider.value);
+            }
             const selectedThemeMode = document.querySelector('input[name="color-theme"]:checked').value;
             const selectedCustomColor = ALL_ELEMENTS.customColorSwatches.querySelector('.selected')?.dataset.color || config.uiTheme.customColor;
             const selectedStyle = document.querySelector('input[name="color-style"]:checked')?.value || 'single';
@@ -7450,7 +7456,289 @@ ${JSON.stringify(potentialMemories, null, 2)}
         versionDisplayElement.textContent = latestVersionInLog;
     }
 };
+        // ✨ 新增：動態注入深度研究功能所需樣式的函數
+        function injectDeepResearchStyles() {
+            // 檢查樣式是否已存在，避免重複注入
+            if (document.getElementById('deep-research-styles')) {
+                return;
+            }
+
+            const css = `
+                .research-dashboard {
+                    background-color: var(--sidebar-bg);
+                    border: 1px solid var(--border-color);
+                    padding: 1rem 1.5rem;
+                    border-radius: 0.75rem;
+                    max-w-4xl mx-auto;
+                    animation: subtleFadeInUp 0.4s ease-out;
+                }
+                .research-dashboard h4 {
+                    font-size: 1rem;
+                    font-weight: 600;
+                    margin-bottom: 1rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    color: var(--text-primary);
+                }
+                .research-dashboard .main-spinner {
+                    width: 18px;
+                    height: 18px;
+                    border: 2px solid var(--hover-bg);
+                    border-top-color: var(--button-primary-bg);
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                }
+                .research-dashboard ul {
+                    list-style: none;
+                    padding: 0;
+                    margin: 0;
+                    space-y: 0.75rem;
+                }
+                .research-step {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                    font-size: 0.875rem;
+                    color: var(--text-secondary);
+                    transition: color 0.3s ease;
+                }
+                .research-step .status-icon {
+                    width: 20px;
+                    height: 20px;
+                    flex-shrink: 0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .research-step .status-icon .spinner {
+                    width: 16px;
+                    height: 16px;
+                    border: 2px solid currentColor;
+                    border-top-color: transparent;
+                    border-radius: 50%;
+                    animation: spin 0.8s linear infinite;
+                }
+                .research-step.status-running {
+                    color: var(--button-primary-bg);
+                    font-weight: 500;
+                }
+                .research-step.status-completed {
+                    color: #10b981; /* Green-500 */
+                }
+                .dark .research-step.status-completed {
+                    color: #34d399; /* Green-400 */
+                }
+                .research-step.status-error {
+                    color: #ef4444; /* Red-500 */
+                }
+            `;
+
+            const styleSheet = document.createElement("style");
+            styleSheet.id = 'deep-research-styles';
+            styleSheet.innerText = css;
+            document.head.appendChild(styleSheet);
+        }
+        // ✨ 新增：生成深度研究儀表板卡片的輔助函數
+        function addResearchDashboardCard(title, steps) {
+            const card = document.createElement('div');
+            card.className = 'message-item';
+
+            const stepsHTML = steps.map((step, index) => `
+                <li class="research-step status-pending" id="research-step-${index}">
+                    <div class="status-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle></svg>
+                    </div>
+                    <span class="step-text">${step}</span>
+                </li>
+            `).join('');
+
+            card.innerHTML = `
+                <div class="research-dashboard">
+                    <h4><div class="main-spinner"></div><span>${title}</span></h4>
+                    <ul>
+                        ${stepsHTML}
+                        <li class="research-step status-pending" id="research-step-synthesis">
+                            <div class="status-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle></svg>
+                            </div>
+                            <span class="step-text">綜合所有資料並撰寫報告</span>
+                        </li>
+                    </ul>
+                </div>
+            `;
+            ALL_ELEMENTS.messageList.appendChild(card);
+            ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
+
+            // 返回一個可以控制儀表板狀態的物件
+            return {
+                cardElement: card,
+                updateStep: (index, status, text) => {
+                    const stepId = index === 'synthesis' ? 'research-step-synthesis' : `research-step-${index}`;
+                    const stepElement = card.querySelector(`#${stepId}`);
+                    if (stepElement) {
+                        stepElement.className = `research-step status-${status}`;
+                        const iconContainer = stepElement.querySelector('.status-icon');
+                        const textElement = stepElement.querySelector('.step-text');
+                        
+                        if (status === 'running') {
+                            iconContainer.innerHTML = '<div class="spinner"></div>';
+                        } else if (status === 'completed') {
+                            iconContainer.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>';
+                        } else if (status === 'error') {
+                            iconContainer.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>';
+                        }
+                        
+                        if (text) {
+                            textElement.textContent = text;
+                        }
+                    }
+                },
+                setTitle: (newTitle) => {
+                    const titleElement = card.querySelector('h4');
+                    if (titleElement) {
+                        // 保持 spinner 不變，只更新文字
+                        titleElement.childNodes[1].textContent = ` ${newTitle}`;
+                    }
+                },
+                remove: () => card.remove()
+            };
+        }
+        // ✨ 更新後的深度研究核心函數
+        async function handleDeepResearch(userMessage) {
+            renderFollowUpPrompts([]);
+            const conv = getActiveConversation();
+            if (conv.archived) return;
+
+            abortController = new AbortController();
+            updateSubmitButtonState(true);
+
+            const userMessageObject = { role: 'user', parts: [{ text: userMessage }], createdAt: new Date().toISOString() };
+            addMessageToUI(userMessageObject, conv.messages.length, true);
+            conv.lastUpdatedAt = new Date().toISOString();
+            conv.unsentMessage = '';
+
+            if (conv.isTemporary) {
+                conv.isTemporary = false;
+                conv.isNaming = true;
+                renderHistorySidebar();
+                if (config.autoNaming) {
+                    generateTitleAndSummary(conv);
+                } else {
+                    conv.isNaming = false;
+                }
+                await saveAppData();
+            }
+
+            ALL_ELEMENTS.messageInput.value = '';
+            adjustTextareaHeight();
+            
+            let dashboard = addResearchDashboardCard('啟動深度研究...', ['正在分析主題並規劃研究步驟...']);
+            dashboard.updateStep(0, 'running');
+
+            let fullReport = '';
+
+            try {
+                // 1. 規劃階段 (PLANNING)
+                const userQueryCount = config.deepResearchQueryCount;
+                const promptModeInstruction = userQueryCount === 0 
+                    ? "請先分析下方主題的複雜度，自行決定一個最合適的搜尋查詢數量（介於 2 到 8 之間），然後生成這些查詢。"
+                    : `使用者已指定需要 ${userQueryCount} 個搜尋查詢，請嚴格生成這個數量。`;
+                
+                const plannerPrompt = `你是一個資深研究員。你的任務是為給定的研究主題生成一系列 Google 搜尋查詢。
+        ${promptModeInstruction}
+        查詢應具備多樣性，能從不同角度涵蓋主題的核心。請嚴格以 JSON 陣列格式回傳，例如: ["查詢1", "查詢2", "查詢3"]
+
+        主題: "${userMessage}"`;
+
+                const plannerSchema = { 
+                    type: "ARRAY", 
+                    items: { type: "STRING" }
+                };
+
+                const searchQueries = await callApiWithSchema(plannerPrompt, plannerSchema, abortController.signal);
+
+                if (!searchQueries || searchQueries.length === 0) {
+                    throw new Error('無法生成研究計畫。');
+                }
+                
+                dashboard.remove();
+                dashboard = addResearchDashboardCard('正在執行研究計畫...', searchQueries);
+
+                // 2. 執行階段 (EXECUTION) - 平行化處理
+                dashboard.setTitle('正在平行搜尋資料...');
+                const searchPromises = searchQueries.map((query, index) => {
+                    return (async () => {
+                        try {
+                            dashboard.updateStep(index, 'running', query);
+                            const searchResultText = await streamApiCall(
+                                [{ text: query }], 
+                                () => {}, 
+                                abortController.signal,
+                                true
+                            );
+                            dashboard.updateStep(index, 'completed', query);
+                            return `--- 關於 "${query}" 的搜尋結果 ---\n${searchResultText}\n`;
+                        } catch (err) {
+                            dashboard.updateStep(index, 'error', `搜尋失敗: ${query}`);
+                            console.error(`Search failed for query: ${query}`, err);
+                            return `--- 關於 "${query}" 的搜尋失敗 ---\n錯誤訊息: ${err.message}\n`;
+                        }
+                    })();
+                });
+
+                const searchResults = await Promise.all(searchPromises);
+
+                // 3. 綜合階段 (SYNTHESIZING)
+                dashboard.setTitle('正在綜合所有資料...');
+                dashboard.updateStep('synthesis', 'running');
+                const synthesizerPrompt = `你是一位專業分析師。請根據以下原始任務和收集到的多份資料，撰寫一份全面、結構化的 Markdown 報告。報告應包含標題、摘要、條列式重點、數據（如果有的話）。請整合資訊，去除冗餘，並確保邏輯清晰。\n\n原始任務: "${userMessage}"\n\n收集到的資料:\n${searchResults.join('\n')}`;
+
+                dashboard.remove();
+                const reportContentDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false).querySelector('.message-content');
+
+                await streamApiCall(
+                    [{ text: synthesizerPrompt }],
+                    (chunk) => {
+                        fullReport += chunk;
+                        reportContentDiv.innerHTML = renderMarkdown(fullReport);
+                        ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'auto' });
+                    },
+                    abortController.signal,
+                    false
+                );
+                
+                const finalReportMessage = { role: 'model', parts: [{ text: fullReport }], createdAt: new Date().toISOString() };
+                conv.messages.push(finalReportMessage);
+
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    console.error('深度研究失敗:', error);
+                    dashboard.setTitle('研究失敗!');
+                    dashboard.updateStep('synthesis', 'error', `研究中止: ${error.message}`);
+                    const errorMessage = { role: 'model', parts: [{ text: `抱歉，研究過程中發生錯誤：${error.message}` }], createdAt: new Date().toISOString() };
+                    conv.messages.push(errorMessage);
+                } else {
+                    dashboard.remove();
+                }
+            } finally {
+                abortController = null;
+                updateSubmitButtonState(false);
+                sendConfirmed = false;
+                updateInputState();
+                await saveAppData();
+                
+                if (fullReport && !config.isLearningMode) {
+                     try {
+                        await generateFollowUpPrompts(userMessage, fullReport);
+                    } catch (e) {
+                        console.error("在深度研究後生成後續追問時失敗:", e);
+                    }
+                }
+            }
+        }
         async function initChatApp() {
+            injectDeepResearchStyles(); // ✨ 注入樣式
             await loadConfig();
             await loadAppData();
             applyCustomWallpaper();
@@ -7582,7 +7870,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 await saveAppData();
             });
             ALL_ELEMENTS.learningModeBtn.addEventListener('click', toggleLearningMode);
-            ALL_ELEMENTS.deepResearchBtn.addEventListener('click', toggleDeepResearchMode); // ✨ 綁定事件
+            ALL_ELEMENTS.deepResearchBtn.addEventListener('click', toggleDeepResearchMode);
             ALL_ELEMENTS.uploadImageBtn.addEventListener('click', () => {
                 ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
                 ALL_ELEMENTS.imageVideoInput.removeAttribute('capture');
@@ -7960,139 +8248,21 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
                     ALL_ELEMENTS.loginLangMenu.classList.remove('visible');
                 }
             });
-
-            // ✨ 新增：深度研究核心函數
-            async function handleDeepResearch(userMessage) {
-                renderFollowUpPrompts([]);
-                const conv = getActiveConversation();
-                if (conv.archived) return;
-
-                abortController = new AbortController();
-                updateSubmitButtonState(true);
-
-                const userMessageObject = { role: 'user', parts: [{ text: userMessage }], createdAt: new Date().toISOString() };
-                addMessageToUI(userMessageObject, conv.messages.length, true);
-                conv.lastUpdatedAt = new Date().toISOString();
-                conv.unsentMessage = '';
-
-                if (conv.isTemporary) {
-                    conv.isTemporary = false;
-                    conv.isNaming = true;
-                    renderHistorySidebar();
-                    if (config.autoNaming) {
-                        generateTitleAndSummary(conv);
-                    } else {
-                        conv.isNaming = false;
-                    }
-                    await saveAppData();
-                }
-
-                ALL_ELEMENTS.messageInput.value = '';
-                adjustTextareaHeight();
-                
-                const progressCard = addResearchProgressCard('開始規劃研究步驟...');
-                const progressText = progressCard.querySelector('p');
-
-                try {
-                    // 1. 規劃階段 (PLANNING)
-                    progressText.textContent = '分析研究主題，產生搜尋計畫...';
-                    const plannerPrompt = `你是一個資深研究員。根據以下研究主題，生成一個包含 3 到 5 個最關鍵的 Google 搜尋查詢，以 JSON 陣列格式回傳。例如: ["查詢1", "查詢2", "查詢3"]\n\n主題: "${userMessage}"`;
-                    const plannerSchema = { type: "ARRAY", items: { type: "STRING" }, minItems: 3, maxItems: 5 };
-                    const searchQueries = await callApiWithSchema(plannerPrompt, plannerSchema, abortController.signal);
-
-                    if (!searchQueries || searchQueries.length === 0) {
-                        throw new Error('無法生成研究計畫。');
-                    }
-
-                    // 2. 執行階段 (EXECUTION)
-                    const searchResults = [];
-                    for (let i = 0; i < searchQueries.length; i++) {
-                        const query = searchQueries[i];
-                        progressText.textContent = `[${i+1}/${searchQueries.length}] 正在搜尋: ${query}...`;
-                        
-                        // 這裡我們模擬呼叫帶有搜尋工具的 API
-                        // 實際上是呼叫 streamApiCall 並強制開啟 isWebSearchForced
-                        // 我們不渲染中間結果，只收集最終的完整回應
-                        const searchResultText = await streamApiCall(
-                            [{ text: query }], 
-                            () => {}, // onChunk is empty, we don't stream to UI here
-                            abortController.signal,
-                            true // Force web search
-                        );
-
-                        searchResults.push(`--- 關於 "${query}" 的搜尋結果 ---\n${searchResultText}\n`);
-                    }
-
-                    // 3. 綜合階段 (SYNTHESIZING)
-                    progressText.textContent = '正在綜合所有資料，撰寫報告草稿...';
-                    const synthesizerPrompt = `你是一位專業分析師。請根據以下原始任務和收集到的多份資料，撰寫一份全面、結構化的 Markdown 報告。報告應包含標題、摘要、條列式重點、數據（如果有的話）。請整合資訊，去除冗餘，並確保邏輯清晰。\n\n原始任務: "${userMessage}"\n\n收集到的資料:\n${searchResults.join('\n')}`;
-
-                    const reportContentDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false).querySelector('.message-content');
-                    progressCard.remove(); // 移除進度卡片，準備顯示最終報告
-
-                    let fullReport = '';
-                    await streamApiCall(
-                        [{ text: synthesizerPrompt }],
-                        (chunk) => {
-                            fullReport += chunk;
-                            reportContentDiv.innerHTML = renderMarkdown(fullReport);
-                            ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'auto' });
-                        },
-                        abortController.signal,
-                        false // The final synthesis doesn't need another search
-                    );
-                    
-                    const finalReportMessage = { role: 'model', parts: [{ text: fullReport }], createdAt: new Date().toISOString() };
-                    conv.messages.push(finalReportMessage);
-
-                } catch (error) {
-                    if (error.name !== 'AbortError') {
-                        console.error('深度研究失敗:', error);
-                        progressText.textContent = `研究失敗: ${error.message}`;
-                        progressCard.querySelector('.spinner').style.display = 'none'; // 隱藏 spinner
-                        const errorMessage = { role: 'model', parts: [{ text: `抱歉，研究過程中發生錯誤：${error.message}` }], createdAt: new Date().toISOString() };
-                        conv.messages.push(errorMessage);
-                    } else {
-                        progressCard.remove();
-                    }
-                } finally {
-                    abortController = null;
-                    updateSubmitButtonState(false);
-                    sendConfirmed = false;
-                    updateInputState();
-                    await saveAppData();
-                }
-            }
-
-            function addResearchProgressCard(initialText) {
-                const card = document.createElement('div');
-                card.className = 'message-item';
-                card.innerHTML = `
-                    <div class="research-progress-card max-w-4xl mx-auto">
-                        <div class="spinner"></div>
-                        <p>${initialText}</p>
-                    </div>
-                `;
-                ALL_ELEMENTS.messageList.appendChild(card);
-                ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
-                return card;
-            }
-
-        </script>
-        <script>
-        document.addEventListener('touchstart', function(event) {
-            if (event.touches.length > 1) {
-                event.preventDefault();
-            }
-        }, { passive: false });
-        var lastTouchEnd = 0;
-        document.addEventListener('touchend', function(event) {
-            var now = (new Date()).getTime();
-            if (now - lastTouchEnd <= 300) {
-                event.preventDefault();
-            }
-            lastTouchEnd = now;
-        }, false);
     </script>
+    <script>
+    document.addEventListener('touchstart', function(event) {
+        if (event.touches.length > 1) {
+            event.preventDefault();
+        }
+    }, { passive: false });
+    var lastTouchEnd = 0;
+    document.addEventListener('touchend', function(event) {
+        var now = (new Date()).getTime();
+        if (now - lastTouchEnd <= 300) {
+            event.preventDefault();
+        }
+        lastTouchEnd = now;
+    }, false);
+</script>
 </body>
 </html>
