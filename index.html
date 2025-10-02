@@ -7562,19 +7562,24 @@ if (expandBtn) {
     }
 });
 const handleInputFocus = () => {
-                // 檢查瀏覽器是否支援 visualViewport API，這是更現代、更精準的方式。
+                // 檢查瀏覽器是否支援 visualViewport API。
                 if (window.visualViewport) {
                     // 當鍵盤彈出導致可視區域變化時，這個 resize 事件會觸發。
-                    // 我們使用 { once: true } 來確保這個監聽器只執行一次，然後就自動移除。
-                    // 這樣可以避免不必要的重複觸發。
+                    // 我們使用 { once: true } 確保它只執行一次後就自動移除監聽。
                     window.visualViewport.addEventListener('resize', function onResize() {
-                        const inputBarContainer = document.getElementById('input-bar-container');
-                        if (inputBarContainer) {
-                            inputBarContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                        }
+                        // 在 resize 事件觸發後，我們加入一個極短的延遲。
+                        // 這是為了確保瀏覽器自身的滾動和佈局調整已經完成，
+                        // 我們的滾動指令將作為最終的校準，從而避免位置不準確的問題。
+                        setTimeout(() => {
+                            const inputBarContainer = document.getElementById('input-bar-container');
+                            if (inputBarContainer) {
+                                // 這個指令現在會在最完美的時機執行，確保位置正確且動畫流暢。
+                                inputBarContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                            }
+                        }, 100); // 100毫秒的延遲對使用者來說幾乎是瞬時的，但足以解決時機競賽問題。
                     }, { once: true });
                 } else {
-                    // 對於不支援 visualViewport 的舊版瀏覽器，我們保留 setTimeout 作為備用方案。
+                    // 對於舊版瀏覽器，保留原始的備用方案。
                     setTimeout(() => {
                         const inputBarContainer = document.getElementById('input-bar-container');
                         if (inputBarContainer) {
