@@ -7562,23 +7562,29 @@ if (expandBtn) {
     }
 });
 const handleInputFocus = () => {
-                // 使用 setTimeout 是為了給瀏覽器一點時間來顯示虛擬鍵盤並調整視窗大小。
-                // 沒有延遲的話，滾動計算可能會在鍵盤完全彈出前執行，導致位置不正確。
-                setTimeout(() => {
-                    const inputBarContainer = document.getElementById('input-bar-container');
-                    if (inputBarContainer) {
-                        // scrollIntoView 是一個標準的網頁 API，可以將指定的元素滾動到瀏覽器的可見區域。
-                        // 'behavior: 'smooth'' 讓滾動有平滑的動畫效果。
-                        // 'block: 'end'' 是一個關鍵參數，它會嘗試將元素的底部邊緣與可見區域的底部對齊。
-                        // 這通常能完美地將輸入欄定位在彈出的虛擬鍵盤正上方，同時也解決了位置不夠靠上的問題。
-                        inputBarContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                    }
-                }, 300); // 300毫秒是一個比較安全可靠的延遲時間，足以應對大多數設備的鍵盤動畫。
+                // 檢查瀏覽器是否支援 visualViewport API，這是更現代、更精準的方式。
+                if (window.visualViewport) {
+                    // 當鍵盤彈出導致可視區域變化時，這個 resize 事件會觸發。
+                    // 我們使用 { once: true } 來確保這個監聽器只執行一次，然後就自動移除。
+                    // 這樣可以避免不必要的重複觸發。
+                    window.visualViewport.addEventListener('resize', function onResize() {
+                        const inputBarContainer = document.getElementById('input-bar-container');
+                        if (inputBarContainer) {
+                            inputBarContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                        }
+                    }, { once: true });
+                } else {
+                    // 對於不支援 visualViewport 的舊版瀏覽器，我們保留 setTimeout 作為備用方案。
+                    setTimeout(() => {
+                        const inputBarContainer = document.getElementById('input-bar-container');
+                        if (inputBarContainer) {
+                            inputBarContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                        }
+                    }, 300);
+                }
             };
 
-            // 將我們定義好的處理函數綁定到輸入欄的 'focus' 事件上。
-            // 'focus' 事件在用戶點擊或觸摸輸入欄時觸發。
-            // 這確保了每次點擊輸入欄，無論之前的狀態如何，都會觸發我們的滾動邏輯，解決了問題1和2。
+            // 監聽 focus 事件仍然是我們觸發邏輯的起點。
             ALL_ELEMENTS.messageInput.addEventListener('focus', handleInputFocus);
 
             ALL_ELEMENTS.messageInput.addEventListener('input', () => {
