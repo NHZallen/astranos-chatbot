@@ -177,7 +177,7 @@ button:not(.btn-primary):active:not(:disabled) {
     #app-container, #store-container {
         opacity: 0;
         transform: scale(1.05);
-        transition: opacity 0.4s ease-in 0.2s, transform 0.2s ease-out;
+        transition: opacity 0.4s ease-in 0.2s, transform 0.4s ease-in 0.2s;
     }
     #app-container.visible, #store-container.visible {
         opacity: 1;
@@ -7561,7 +7561,25 @@ if (expandBtn) {
         ALL_ELEMENTS.submitButton.click();
     }
 });
+const handleInputFocus = () => {
+                // 使用 setTimeout 是為了給瀏覽器一點時間來顯示虛擬鍵盤並調整視窗大小。
+                // 沒有延遲的話，滾動計算可能會在鍵盤完全彈出前執行，導致位置不正確。
+                setTimeout(() => {
+                    const inputBarContainer = document.getElementById('input-bar-container');
+                    if (inputBarContainer) {
+                        // scrollIntoView 是一個標準的網頁 API，可以將指定的元素滾動到瀏覽器的可見區域。
+                        // 'behavior: 'smooth'' 讓滾動有平滑的動畫效果。
+                        // 'block: 'end'' 是一個關鍵參數，它會嘗試將元素的底部邊緣與可見區域的底部對齊。
+                        // 這通常能完美地將輸入欄定位在彈出的虛擬鍵盤正上方，同時也解決了位置不夠靠上的問題。
+                        inputBarContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    }
+                }, 300); // 300毫秒是一個比較安全可靠的延遲時間，足以應對大多數設備的鍵盤動畫。
+            };
 
+            // 將我們定義好的處理函數綁定到輸入欄的 'focus' 事件上。
+            // 'focus' 事件在用戶點擊或觸摸輸入欄時觸發。
+            // 這確保了每次點擊輸入欄，無論之前的狀態如何，都會觸發我們的滾動邏輯，解決了問題1和2。
+            ALL_ELEMENTS.messageInput.addEventListener('focus', handleInputFocus);
 
             ALL_ELEMENTS.messageInput.addEventListener('input', () => {
                 const conv = getActiveConversation();
@@ -7772,56 +7790,7 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
     }
 });
         initializeSpotlightEffect();
-        setupVirtualKeyboardHandler();
         }
-         const setupVirtualKeyboardHandler = () => {
-        // ✨ 目標從 main 容器改為整個 app 容器
-        const appContainer = document.getElementById('app-container'); 
-        const messageInput = document.getElementById('message-input');
-
-        if (!appContainer || !messageInput) {
-            console.error("虛擬鍵盤處理器設定失敗：找不到 app-container 或 message-input。");
-            return;
-        }
-
-        // 備用方案保持不變
-        const applyFallback = () => {
-            messageInput.addEventListener('focus', () => {
-                setTimeout(() => {
-                    messageInput.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                }, 300);
-            });
-        };
-
-        if (!window.visualViewport) {
-            console.warn("不支援 VisualViewport API，將採用備用方案。");
-            applyFallback();
-            return;
-        }
-
-        const handleViewportChange = () => {
-            const viewport = window.visualViewport;
-            const bottomOffset = window.innerHeight - viewport.height;
-            
-            // 檢查鍵盤是否彈出，並且焦點是否在輸入框上
-            if (bottomOffset > 100 && document.activeElement === messageInput) {
-                // ✨ 核心修改：使用 transform 將整個 app 容器向上平移
-                appContainer.style.transform = `translateY(-${bottomOffset}px)`;
-            } else {
-                // ✨ 鍵盤收起時，恢復 app 容器的位置
-                appContainer.style.transform = 'translateY(0)';
-            }
-        };
-
-        messageInput.addEventListener('focus', () => {
-            // 短暫延遲以等待鍵盤動畫開始
-            setTimeout(() => {
-                handleViewportChange();
-            }, 100);
-        });
-
-        window.visualViewport.addEventListener('resize', handleViewportChange);
-    };
         const handleDeleteMessagePair = async (index) => {
             const confirmed = await showCustomDialog({
                 title: i18n[config.uiLanguage].deleteConfirmationTitle || '刪除確認',
