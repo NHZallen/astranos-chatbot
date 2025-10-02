@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.3.5</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.3.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -7562,34 +7562,30 @@ if (expandBtn) {
     }
 });
 const handleInputFocus = () => {
-                // 執行滾動的核心邏輯
-                const performScroll = () => {
-                    // 判斷當前是否處於自訂義桌布模式
-                    if (document.body.classList.contains('custom-wallpaper-active')) {
-                        // 【桌布模式下的解決方案】
-                        // 不滾動整個頁面，而是只滾動內部的聊天訊息容器到底部。
-                        // 這樣可以避免因滾動透明 body 而觸發的白色閃爍問題。
-                        ALL_ELEMENTS.chatContainer.scrollTo({
-                            top: ALL_ELEMENTS.chatContainer.scrollHeight,
-                            behavior: 'smooth'
-                        });
-                    } else {
-                        // 【正常模式下的解決方案】
-                        // 繼續使用效果良好的 scrollIntoView 方法。
+                // 檢查瀏覽器是否支援 visualViewport API。
+                if (window.visualViewport) {
+                    // 當鍵盤彈出導致可視區域變化時，這個 resize 事件會觸發。
+                    // 我們使用 { once: true } 確保它只執行一次後就自動移除監聽。
+                    window.visualViewport.addEventListener('resize', function onResize() {
+                        // 在 resize 事件觸發後，我們加入一個極短的延遲。
+                        // 這是為了確保瀏覽器自身的滾動和佈局調整已經完成，
+                        // 我們的滾動指令將作為最終的校準，從而避免位置不準確的問題。
+                        setTimeout(() => {
+                            const inputBarContainer = document.getElementById('input-bar-container');
+                            if (inputBarContainer) {
+                                // 這個指令現在會在最完美的時機執行，確保位置正確且動畫流暢。
+                                inputBarContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                            }
+                        }, 100); // 100毫秒的延遲對使用者來說幾乎是瞬時的，但足以解決時機競賽問題。
+                    }, { once: true });
+                } else {
+                    // 對於舊版瀏覽器，保留原始的備用方案。
+                    setTimeout(() => {
                         const inputBarContainer = document.getElementById('input-bar-container');
                         if (inputBarContainer) {
                             inputBarContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
                         }
-                    }
-                };
-
-                // 使用 V3 的時機校準邏輯，確保滾動在最佳時機觸發
-                if (window.visualViewport) {
-                    window.visualViewport.addEventListener('resize', function onResize() {
-                        setTimeout(performScroll, 100);
-                    }, { once: true });
-                } else {
-                    setTimeout(performScroll, 300);
+                    }, 300);
                 }
             };
 
