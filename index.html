@@ -7703,7 +7703,100 @@ ${JSON.stringify(potentialMemories, null, 2)}
             };
         }
         // ✨ 更新後的深度研究核心函數
-        async function handleDeepResearch(userMessage) {
+        /**
+ * 顯示研究計畫審查 Modal 的函式
+ * @param {Array} plan - AI 生成的研究計畫步驟
+ * @returns {Promise<Array|null>} - 返回使用者確認後的計畫，如果取消則返回 null
+ */
+function showPlanReviewModal(plan) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('research-plan-modal');
+        const stepsContainer = document.getElementById('research-plan-steps-container');
+        const cancelBtn = document.getElementById('cancel-plan-btn');
+        const editBtn = document.getElementById('edit-plan-btn');
+        const saveBtn = document.getElementById('save-plan-btn');
+        const runBtn = document.getElementById('run-plan-btn');
+
+        // 確保按鈕狀態重置
+        editBtn.classList.remove('hidden');
+        saveBtn.classList.add('hidden');
+
+        // 渲染計畫步驟
+        const renderSteps = (isEditable = false) => {
+            stepsContainer.innerHTML = '';
+            plan.forEach((step, index) => {
+                const stepEl = document.createElement('div');
+                stepEl.className = 'p-3 rounded-md bg-[var(--input-field-bg)] border border-[var(--border-color)]';
+                if (isEditable) {
+                    stepEl.innerHTML = `
+                        <div class="font-semibold text-sm mb-1">${step.step}</div>
+                        <textarea data-index="${index}" class="w-full p-2 text-sm border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] resize-y" rows="2">${step.action}</textarea>
+                    `;
+                } else {
+                    stepEl.innerHTML = `
+                        <div class="font-semibold">${step.step}</div>
+                        <p class="text-sm text-[var(--text-secondary)]">${step.action}</p>
+                    `;
+                }
+                stepsContainer.appendChild(stepEl);
+            });
+        };
+
+        renderSteps(false); // 初始為檢視模式
+
+        const cleanupAndClose = (result) => {
+            toggleModal(modal, false);
+            // 移除事件監聽器以避免記憶體洩漏
+            cancelBtn.onclick = null;
+            editBtn.onclick = null;
+            saveBtn.onclick = null;
+            runBtn.onclick = null;
+            resolve(result);
+        };
+
+        cancelBtn.onclick = () => cleanupAndClose(null);
+
+        editBtn.onclick = () => {
+            renderSteps(true);
+            editBtn.classList.add('hidden');
+            saveBtn.classList.remove('hidden');
+        };
+
+        saveBtn.onclick = () => {
+            const textareas = stepsContainer.querySelectorAll('textarea');
+            const newPlan = [];
+            textareas.forEach(textarea => {
+                const index = parseInt(textarea.dataset.index);
+                newPlan.push({
+                    step: plan[index].step, // 步驟標題不變
+                    action: textarea.value.trim()
+                });
+            });
+            plan = newPlan; // 更新計畫
+            renderSteps(false);
+            saveBtn.classList.add('hidden');
+            editBtn.classList.remove('hidden');
+            showNotification('計畫已更新！', 'success');
+        };
+
+        runBtn.onclick = () => {
+            // 如果在編輯模式下直接點擊執行，先儲存
+            if (!saveBtn.classList.contains('hidden')) {
+                saveBtn.click();
+            }
+            cleanupAndClose(plan);
+        };
+        
+        toggleModal(modal, true);
+    });
+}
+
+
+/**
+ * 處理深度研究模式的核心函式
+ * @param {string} userMessage - 使用者的輸入訊息
+ */
+async function handleDeepResearch(userMessage) {
     renderFollowUpPrompts([]);
     const conv = getActiveConversation();
     if (conv.archived) return;
@@ -7712,18 +7805,11 @@ ${JSON.stringify(potentialMemories, null, 2)}
     updateSubmitButtonState(true);
 
     const hasFiles = uploadedFiles.length > 0;
-    const fileInfo = hasFiles 
-        ? `使用者同時上傳了 ${uploadedFiles.length} 個檔案/圖片 (${uploadedFiles.map(f => f.name).join(', ')})。` 
-        : "";
-
     const userParts = [{ text: userMessage }];
     if (hasFiles) {
         uploadedFiles.forEach(file => {
             userParts.push({
-                inlineData: {
-                    mimeType: file.type,
-                    data: file.base64.split(',')[1]
-                }
+                inlineData: { mimeType: file.type, data: file.base64.split(',')[1] }
             });
         });
     }
@@ -7854,25 +7940,23 @@ ${JSON.stringify(potentialMemories, null, 2)}
             throw new Error('無法生成研究計畫。');
         }
         
-        // ✨ 修改後：移除舊的儀表板，並呼叫新的審查 Modal
-        dashboard.remove(); // 移除初始的 "正在規劃" 儀表板
+        dashboard.remove();
         const finalPlan = await showPlanReviewModal(researchPlan);
 
-        // ✨ 修改後：檢查使用者是否取消
-        if (!finalPlan) { // 如果使用者點擊取消，finalPlan 會是 null
+        if (!finalPlan) {
             showNotification('深度研究已取消。', 'warning');
-            abortController.abort(); // 中止後續操作
-            return; // 直接結束函式
+            if (abortController && !abortController.signal.aborted) {
+                abortController.abort();
+            }
+            return;
         }
 
-        // ✨ 修改後：使用使用者確認後的計畫繼續執行
         researchPlan = finalPlan;
         
         dashboard = addResearchDashboardCard('正在執行研究計畫...', researchPlan.map(p => `${p.step}: ${p.action}`));
         
         const allSearchResults = [];
 
-        // --- 階段二：分步執行研究計畫 ---
         for (let i = 0; i < researchPlan.length; i++) {
             const planStep = researchPlan[i];
             dashboard.updateStep(i, 'running');
@@ -7909,7 +7993,6 @@ ${JSON.stringify(potentialMemories, null, 2)}
             dashboard.updateStep(i, 'completed');
         }
 
-        // --- 階段三：綜合報告 ---
         dashboard.setTitle('正在綜合所有資料...');
         dashboard.updateStep('synthesis', 'running');
         
@@ -7943,19 +8026,15 @@ ${hasFiles ? "此研究基於使用者提供的檔案，並結合了外部搜尋
 收集到的資料:
 ${allSearchResults.join('\n\n')}`;
 
-        dashboard.remove();
-        const reportContentDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false).querySelector('.message-content');
-
+        const reportContainer = addMessageToUI({ role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
+        const reportContentDiv = reportContainer.querySelector('.message-content');
+        const renderer = smoothStreamRenderer(reportContentDiv);
+        
         await streamApiCall(
             [{ text: synthesizerPrompt }],
             (chunk) => {
                 fullReport += chunk;
-                reportContentDiv.innerHTML = renderMarkdown(fullReport);
-                const chatContainer = ALL_ELEMENTS.chatContainer;
-                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 30;
-                if (isNearBottom) {
-                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
-                }
+                renderer.push(chunk);
             },
             abortController.signal,
             false
@@ -7971,11 +8050,13 @@ ${allSearchResults.join('\n\n')}`;
             dashboard.updateStep('synthesis', 'error', `研究中止: ${error.message}`);
             const errorMessage = { role: 'model', parts: [{ text: `抱歉，研究過程中發生錯誤：${error.message}` }], createdAt: new Date().toISOString() };
             addMessageToUI(errorMessage, conv.messages.length, true);
-        } else {
+        } else if (dashboard && dashboard.cardElement && document.body.contains(dashboard.cardElement)) {
             dashboard.remove();
         }
     } finally {
-        abortController = null;
+        if (abortController) {
+            abortController = null;
+        }
         updateSubmitButtonState(false);
         sendConfirmed = false;
         updateInputState();
@@ -7986,7 +8067,7 @@ ${allSearchResults.join('\n\n')}`;
             const bubble = lastMessageDiv.querySelector('.message-bubble');
             const content = lastMessageDiv.querySelector('.message-content');
             const aiMessageObject = conv.messages[conv.messages.length - 1];
-            if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute')) {
+            if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute') && aiMessageObject.parts.some(p => p.text)) {
                 content.classList.add('pb-8');
                 const timeString = formatFullTimestamp(aiMessageObject.createdAt);
                 const actionButtonsHTML = `
