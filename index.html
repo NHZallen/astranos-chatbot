@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.5</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.4.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -3301,16 +3301,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     }));
                     astras = (data.astras || []).map(a => ({ avatarUrl: null, officialId: null, ...a }));
                     personalMemories = data.personalMemories || [];
-                    let stuckCount = 0;
-                    conversations.forEach(c => {
-                        if (c.isNaming) {
-                            c.isNaming = false;
-                            stuckCount++;
-                        }
-                    });
-                    if (stuckCount > 0) {
-                        console.log(`Fixed ${stuckCount} conversation(s) stuck in a naming state.`);
-                    }
                 } catch (e) {
                     console.error("Failed to parse app data:", e);
                     showNotification("讀取對話紀錄失敗，資料可能已損毀。", "error");
@@ -3407,9 +3397,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         await saveAppData();
 
 
+        // ↓↓↓↓↓↓ 就是這裡被修改了 ↓↓↓↓↓↓
         if (activeConversationId === id) {
             startNewChat();
         } 
+        // ↑↑↑↑↑↑ 就是這裡被修改了 ↑↑↑↑↑↑
+        
         else {
             renderAll();
         }
@@ -7772,15 +7765,16 @@ ${JSON.stringify(potentialMemories, null, 2)}
             return new Promise((resolve) => {
                 const { interactivePlanModal, planEditorStepsContainer, addPlanStepBtn, confirmPlanBtn, cancelPlanBtn } = ALL_ELEMENTS;
                 
-                let dashboardCard = null; // 用來追蹤儀表板卡片
+                let dashboardCard = null;
 
                 function renderPlanSteps() {
                     planEditorStepsContainer.innerHTML = '';
-                    const steps = planEditorStepsContainer.querySelectorAll('.plan-editor-step').length;
                     
                     initialPlan.forEach((plan, index) => {
                         const stepElement = document.createElement('div');
                         stepElement.className = 'plan-editor-step';
+                        
+                        // ✨ 修正點 1: 這行程式碼確保每次渲染時，步驟編號都是根據當前在陣列中的位置 (index) 動態計算的，從而修復了編號不會改變的問題。
                         stepElement.innerHTML = `
                             <div class="step-header">
                                 <label>步驟 ${index + 1}</label>
@@ -7792,6 +7786,19 @@ ${JSON.stringify(potentialMemories, null, 2)}
                             <textarea class="step-action-input" placeholder="步驟具體行動">${plan.action}</textarea>
                         `;
                         planEditorStepsContainer.appendChild(stepElement);
+
+                        // ✨ 優化點 1: 在每個步驟下方都新增一個插入按鈕的容器
+                        const insertDivider = document.createElement('div');
+                        insertDivider.className = 'insert-step-divider';
+                        insertDivider.innerHTML = `
+                            <div class="insert-step-btn">
+                                <button data-insert-after="${index}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                    插入步驟
+                                </button>
+                            </div>
+                        `;
+                        planEditorStepsContainer.appendChild(insertDivider);
                     });
                     updateRemoveButtonsState();
                 }
@@ -7799,32 +7806,36 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 function updateRemoveButtonsState() {
                     const removeButtons = planEditorStepsContainer.querySelectorAll('.remove-step-btn');
                     removeButtons.forEach(btn => {
+                        // 只有當步驟多於一個時，才允許刪除
                         btn.disabled = removeButtons.length <= 1;
                     });
                 }
 
+                // ✨ 優化點 2: "新增步驟"按鈕現在明確地在列表末尾添加
                 function handleAddStep() {
                     const stepCount = planEditorStepsContainer.querySelectorAll('.plan-editor-step').length;
                     if (stepCount >= 10) {
                         showNotification('最多只能新增 10 個步驟。', 'warning');
                         return;
                     }
-                    initialPlan.push({ step: `新步驟 ${stepCount + 1}`, action: '' });
+                    // 使用 push 在陣列末尾加入新步驟
+                    initialPlan.push({ step: '', action: '' });
                     renderPlanSteps();
                 }
                 
                 function handleRemoveStep(buttonElement) {
+                    // 透過尋找 DOM 結構來確定要刪除的步驟索引
                     const stepElement = buttonElement.closest('.plan-editor-step');
-                    const index = Array.from(planEditorStepsContainer.children).indexOf(stepElement);
+                    // 由於每個 step 後面都跟著一個 divider，所以索引要除以 2
+                    const index = Math.floor(Array.from(planEditorStepsContainer.children).indexOf(stepElement) / 2);
                     if (index > -1) {
                         initialPlan.splice(index, 1);
                         renderPlanSteps();
                     }
                 }
-
+                
                 function cleanupAndClose() {
                     toggleModal(interactivePlanModal, false);
-                    // 移除事件監聽器以避免記憶體洩漏
                     confirmPlanBtn.removeEventListener('click', onConfirm);
                     cancelPlanBtn.removeEventListener('click', onCancel);
                     addPlanStepBtn.removeEventListener('click', handleAddStep);
@@ -7845,12 +7856,12 @@ ${JSON.stringify(potentialMemories, null, 2)}
                     });
                     
                     if (!isValid) {
-                        showNotification('所有步驟的標題和內容都不能為空！', 'error');
+                        showNotification('所有步驟的標題和行動都不能為空！', 'error');
                         return;
                     }
                     
                     cleanupAndClose();
-                    resolve(finalPlan); // 返回最終確認的計畫
+                    resolve(finalPlan);
                 }
                 
                 function onCancel() {
@@ -7858,14 +7869,41 @@ ${JSON.stringify(potentialMemories, null, 2)}
                     if (dashboardCard) {
                         dashboardCard.remove();
                     }
-                    resolve(null); // 返回 null 表示使用者取消
+                    resolve(null);
                 }
                 
+                // ✨ 優化點 3: 重新設計點擊事件處理，以同時處理 "刪除" 和新的 "插入" 按鈕
                 function onStepContainerClick(e) {
-                    if (e.target.closest('.remove-step-btn')) {
-                        handleRemoveStep(e.target.closest('.remove-step-btn'));
+                    const removeBtn = e.target.closest('.remove-step-btn');
+                    if (removeBtn) {
+                        handleRemoveStep(removeBtn);
+                        return;
+                    }
+                    
+                    const insertBtn = e.target.closest('[data-insert-after]');
+                    if (insertBtn) {
+                        const index = parseInt(insertBtn.dataset.insertAfter, 10);
+                        const stepCount = planEditorStepsContainer.querySelectorAll('.plan-editor-step').length;
+                        if (stepCount >= 10) {
+                            showNotification('最多只能新增 10 個步驟。', 'warning');
+                            return;
+                        }
+                        // 使用 splice 在指定位置插入新步驟
+                        initialPlan.splice(index + 1, 0, { step: '', action: '' });
+                        renderPlanSteps();
                     }
                 }
+
+                renderPlanSteps();
+                
+                confirmPlanBtn.addEventListener('click', onConfirm);
+                cancelPlanBtn.addEventListener('click', onCancel);
+                addPlanStepBtn.addEventListener('click', handleAddStep);
+                planEditorStepsContainer.addEventListener('click', onStepContainerClick);
+
+                toggleModal(interactivePlanModal, true);
+            });
+        }
 
                 // 初始化
                 renderPlanSteps();
@@ -8681,3 +8719,5 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
 </script>
 </body>
 </html>
+
+
