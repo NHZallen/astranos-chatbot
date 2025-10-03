@@ -1,5 +1,12 @@
 const updateLogs = [
         {
+        version: "15.4.5",
+        date: "2025-10-4",
+        content: [
+            "<strong>新增：</strong>深度研究模式編輯研究計畫的功能(BETA測試版功能，我方不承擔任何出錯而導致的損失責任",
+        ]
+    },
+        {
         version: "15.4.4",
         date: "2025-10-3",
         content: [
