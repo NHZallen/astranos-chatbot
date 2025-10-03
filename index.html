@@ -31,6 +31,21 @@
     }
 }
 
+@keyframes smoothFadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 只對正在串流的訊息中，由 Markdown 產生的最後一個區塊元素應用動畫 */
+.message-item.is-streaming .prose > *:last-child {
+    animation: smoothFadeInUp 0.5s ease-out forwards;
+}
 
 @keyframes indicator-exit {
     from {
@@ -4106,6 +4121,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const isLoadingMessage = !isUser && msg.parts.length === 1 && msg.parts[0].text === '...';
             if (isLoadingMessage) {
                 contentHTML = `<div class="loading-dots"><span class="bg-gray-500 dark:bg-gray-400"></span><span class="bg-gray-500 dark:bg-gray-400"></span><span class="bg-gray-500 dark:bg-gray-400"></span></div>`;
+                messageDiv.classList.add('is-streaming');
             } else {
                 let textPartsContent = [];
                 let mediaPartsContent = [];
@@ -4280,6 +4296,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
                 await saveAppData();
             } finally {
+                if (loadingMessageDiv) {
+                    loadingMessageDiv.classList.remove('is-streaming');
+                }
                 abortController = null;
                 updateSubmitButtonState(false);
                 sendConfirmed = false;
@@ -7645,32 +7664,11 @@ ${JSON.stringify(potentialMemories, null, 2)}
                     ? "請先分析下方主題的複雜度，自行決定一個最合適的搜尋查詢數量（介於 2 到 8 之間），然後生成這些查詢。"
                     : `使用者已指定需要 ${userQueryCount} 個搜尋查詢，請嚴格生成這個數量。`;
                 
-                const plannerPrompt = `你是一位頂尖的策略研究分析師。你的任務是針對一個複雜主題，設計一份清晰、有邏輯、步驟化的「研究計畫」。這份計畫不該只是零散的關鍵字，而應該是一系列結構化的行動綱領，完整地勾勒出你將如何探討這個主題。
+                const plannerPrompt = `你是一個資深研究員。你的任務是為給定的研究主題生成一系列 Google 搜尋查詢。
+        ${promptModeInstruction}
+        查詢應具備多樣性，能從不同角度涵蓋主題的核心。請嚴格以 JSON 陣列格式回傳，例如: ["查詢1", "查詢2", "查詢3"]
 
-${promptModeInstruction}
-
-# 你的輸出必須遵循以下原則：
-1.  **策略性思考：** 每個步驟都應代表一個獨特的研究角度或分析層面。
-2.  **描述性語言：** 使用完整的句子來描述每個步驟的行動，例如「收集...的數據」、「分析...之間的關係」、「檢視...採取的策略」。
-3.  **由宏觀到微觀：** 計畫的開頭應該是基礎數據收集和現況分析，然後逐步深入到策略、影響、比較和綜合評估。
-4.  **可操作性：** 每個步驟都應該清晰到可以被當作一個獨立的研究任務來執行。
-
-# 卓越典範 (Excellent Example):
-如果主題是：「台灣老齡化對未來半導體產業帶來的影響與相關性」，一份卓越的研究計畫會像這樣：
-[
-    "1. 數據收集：收集台灣未來到 2050 年的人口老化趨勢、勞動力結構變化的最新預測報告。",
-    "2. 供需分析：分析台灣半導體產業對高技術人力（如研發、製程工程師）的具體需求與老化人口結構間的潛在缺口。",
-    "3. 企業策略檢視：檢視台積電、聯發科等指標企業在自動化、AI 應用及人才留任上的應對策略。",
-    "4. 政府政策研究：研究國科會、經濟部在吸引國際半導體人才及推動產學合作方面的最新政策。",
-    "5. 創新能力評估：探討勞動力老化是否會影響半導體產業的長期研發動能與創新能力。",
-    "6. 國際經驗比較：比較日本、韓國在應對製造業勞動力老化問題上的成功與失敗案例。",
-    "7. 風險與機遇評估：綜合所有信息，評估人口老化對台灣半導體產業全球競爭力的整體風險與機遇。"
-]
-
-# 你的任務：
-現在，請為以下主題生成一份同樣高品質的研究計畫。請嚴格以 JSON 陣列格式回傳。
-
-主題: "${userMessage}"`;
+        主題: "${userMessage}"`;
 
                 const plannerSchema = { 
                     type: "ARRAY", 
