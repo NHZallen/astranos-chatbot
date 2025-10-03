@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.4</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.4.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -7733,13 +7733,26 @@ ${fileInfo ? fileInfo + "在制定計畫時，你必須首先判斷這些檔案�
                 // --- 階段二：分步執行研究計畫 ---
                 for (let i = 0; i < researchPlan.length; i++) {
                     const planStep = researchPlan[i];
-                    dashboard.updateStep(i, 'running');
+                    
+                    // ✨ 強化版的 Query Generation Prompt ✨
+                    const queryGenPrompt = `# 核心身份：情報蒐集專家
+你的任務是為一個具體的研究步驟，制定 2-3 個**高度針對性**的 Google 搜尋查詢。
 
-                    // 為每個步驟生成具體的搜尋關鍵字
-                    const queryGenPrompt = `基於以下總體研究目標和當前具體的研究步驟，生成 2-3 個最有效的 Google 搜尋關鍵字。請嚴格以 JSON 陣列格式回傳。
+# 最高指導原則：强制外部搜索
+*   **假設你的內部知識庫是空白或已過時的。** 你必須生成能找到**外部、即時、具體數據或報告**的查詢。
+*   **生成「問題」而非「關鍵字」。** 好的查詢通常是問句，或者包含 "報告"、"數據"、"統計"、"案例研究"、"最新政策" 等詞彙。
 
-總體目標: "${userMessage}"
-當前步驟: "${planStep.step}: ${planStep.action}"`;
+# 卓越典範
+*   **研究步驟**: "分析半導體產業的人力需求與老化人口結構之間的潛在不匹配。"
+*   **低劣查詢 (應避免)**: ["半導體 人力", "人口老化"]
+*   **優質查詢 (應生成)**: ["台灣半導體產業人才缺口報告 2024", "高齡化社會對高科技勞動力的影響分析", "2025年台灣工程師年齡結構統計"]
+
+# 輸出格式
+請嚴格以 JSON 陣列格式回傳，不要包含任何額外的文字。
+
+# 待處理的研究步驟
+*   **總體研究目標**: "${userMessage}"
+*   **當前步驟**: "${planStep.step}: ${planStep.action}"`;
                     
                     const queryGenSchema = { type: "ARRAY", items: { type: "STRING" }, maxItems: 3 };
                     const searchQueries = await callApiWithSchema(queryGenPrompt, queryGenSchema, abortController.signal);
@@ -7750,6 +7763,10 @@ ${fileInfo ? fileInfo + "在制定計畫時，你必須首先判斷這些檔案�
                         continue;
                     }
                     
+                    // UI 更新：顯示正在執行的具體查詢
+                    const stepText = `${planStep.step}: 正在搜尋 "${searchQueries.join('", "')}"...`;
+                    dashboard.updateStep(i, 'running', stepText);
+
                     // 平行執行搜尋
                     const searchPromises = searchQueries.map(query => 
                         streamApiCall(
@@ -7766,14 +7783,13 @@ ${fileInfo ? fileInfo + "在制定計畫時，你必須首先判斷這些檔案�
                     
                     const stepResults = await Promise.all(searchPromises);
                     allSearchResults.push(`## 來自研究步驟「${planStep.step}」的資料：\n\n` + stepResults.join('\n'));
-                    dashboard.updateStep(i, 'completed');
+                    dashboard.updateStep(i, 'completed', `${planStep.step}: ${planStep.action}`);
                 }
 
                 // --- 階段三：綜合報告 ---
                 dashboard.setTitle('正在綜合所有資料...');
                 dashboard.updateStep('synthesis', 'running');
                 
-                // ✨✨✨ 強化版的 Synthesizer Prompt ✨✨✨
                 const synthesizerPrompt = `# 核心身份：首席研究分析師
 你的核心任務是 **綜合 (Synthesize)** 而非僅僅 **總結 (Summarize)**。你必須將下方收集到的、來自不同研究步驟的零散資料，編織成一份**具備統一觀點和流暢敘事結構**的深度分析報告。
 
@@ -7834,7 +7850,6 @@ ${allSearchResults.join('\n\n')}`;
                 updateInputState();
                 await saveAppData();
                 
-                // ✨✨✨ UI 修正邏輯 ✨✨✨
                 const lastMessageDiv = ALL_ELEMENTS.messageList.lastElementChild;
                 if (lastMessageDiv && lastMessageDiv.classList.contains('model-message')) {
                     const bubble = lastMessageDiv.querySelector('.message-bubble');
