@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.3</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.4.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -7773,18 +7773,24 @@ ${fileInfo ? fileInfo + "在制定計畫時，你必須首先判斷這些檔案�
                 dashboard.setTitle('正在綜合所有資料...');
                 dashboard.updateStep('synthesis', 'running');
                 
-                const synthesizerPrompt = `你是一位專業分析師。請根據以下原始任務和按照研究計畫收集到的多份資料，撰寫一份全面、結構化、深入的 Markdown 格式報告。
+                // ✨✨✨ 強化版的 Synthesizer Prompt ✨✨✨
+                const synthesizerPrompt = `# 核心身份：首席研究分析師
+你的核心任務是 **綜合 (Synthesize)** 而非僅僅 **總結 (Summarize)**。你必須將下方收集到的、來自不同研究步驟的零散資料，編織成一份**具備統一觀點和流暢敘事結構**的深度分析報告。
 
-報告應包含：
-- 一個清晰的標題。
-- 一段簡潔的執行摘要（Executive Summary）。
-- 根據研究計畫的步驟，分點詳細闡述，並整合所有相關資料。
-- 去除冗餘資訊，確保邏輯連貫。
-- 如果資料包含數據，請適當引用。
-- 最後提出一個總結或結論。
+# 最高指導原則：禁止直接拼接！
+**絕對禁止**將每個研究步驟的資料直接整理後分段列出。你的價值在於**跨越步驟的界線**，找出資料之間的關聯、模式與洞察，然後以一個全新的、更有邏輯的結構來呈現它們。你產出的應該是一篇渾然天成的文章，而不是一份資料彙編。
 
+# 報告結構要求 (Markdown 格式):
+1.  **報告標題**: 為報告起一個精確且具吸引力的標題。
+2.  **執行摘要 (Executive Summary)**: 在報告開頭，用 2-3 句話高度概括整個報告的核心發現與結論。
+3.  **主體分析**:
+    *   根據你對所有資料的理解，重新組織報告的結構。你可以圍繞幾個核心主題、趨勢或論點來展開，而不是死板地按照原始的研究步驟。
+    *   在論述中自然地融入從各處收集來的資料作為證據，確保段落之間有**平滑的過渡和邏輯連接**。
+    *   使用條列式清單、粗體等格式來增強可讀性。
+4.  **結論 (Conclusion)**: 在報告結尾，提出一個基於前面分析的綜合性結論或展望。
+
+# 待處理資料
 原始任務: "${userMessage}"
-
 ${hasFiles ? "此研究基於使用者提供的檔案，並結合了外部搜尋資料。" : ""}
 
 收集到的資料:
@@ -7827,6 +7833,43 @@ ${allSearchResults.join('\n\n')}`;
                 sendConfirmed = false;
                 updateInputState();
                 await saveAppData();
+                
+                // ✨✨✨ UI 修正邏輯 ✨✨✨
+                const lastMessageDiv = ALL_ELEMENTS.messageList.lastElementChild;
+                if (lastMessageDiv && lastMessageDiv.classList.contains('model-message')) {
+                    const bubble = lastMessageDiv.querySelector('.message-bubble');
+                    const content = lastMessageDiv.querySelector('.message-content');
+                    const aiMessageObject = conv.messages[conv.messages.length - 1];
+                    if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute')) {
+                        content.classList.add('pb-8');
+                        const timeString = formatFullTimestamp(aiMessageObject.createdAt);
+                        const actionButtonsHTML = `
+                            <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
+                                <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                </button>
+                                <span class="text-xs text-gray-400">${timeString}</span>
+                            </div>
+                        `;
+                        bubble.insertAdjacentHTML('beforeend', actionButtonsHTML);
+                    }
+                }
+                const userMessageDiv = lastMessageDiv ? lastMessageDiv.previousElementSibling : null;
+                if (userMessageDiv && userMessageDiv.classList.contains('user-message')) {
+                    const bubble = userMessageDiv.querySelector('.message-bubble');
+                    const content = userMessageDiv.querySelector('.message-content');
+                    if (bubble && content && !bubble.querySelector('.delete-message-btn')) {
+                        content.classList.add('pb-8');
+                        const deleteButtonHTML = `
+                            <div class="absolute bottom-2 left-2 flex items-center">
+                                <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                </button>
+                            </div>
+                        `;
+                        bubble.insertAdjacentHTML('beforeend', deleteButtonHTML);
+                    }
+                }
                 
                 if (fullReport && !config.isLearningMode) {
                      try {
