@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.5</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.4.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -20,6 +20,16 @@
     -ms-user-select: none;
     user-select: none;
 }
+    /* ✨ 新增：單一字元淡入動畫 ✨ */
+    @keyframes char-fade-in {
+        from { opacity: 0; transform: translateY(3px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .streaming-char {
+        display: inline-block; /* 為了讓 transform 生效 */
+        opacity: 0;
+        animation: char-fade-in 0.25s ease-out forwards;
+    }
     @keyframes indicator-enter {
     from {
         opacity: 0;
@@ -2517,21 +2527,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             </div>
         </div>
     </div>
-    <div id="research-plan-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[52]">
-    <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl p-6 w-full max-w-2xl flex flex-col" style="max-height: 90vh;">
-        <h2 id="research-plan-title" class="text-xl font-bold mb-2">檢視與編輯研究計畫</h2>
-        <p id="research-plan-message" class="text-sm text-[var(--text-secondary)] mb-4">AI 已根據您的問題規劃了以下研究步驟。您可以檢視、修改，或直接執行計畫。</p>
-        <div id="research-plan-steps-container" class="space-y-2 mb-4 flex-1 overflow-y-auto pr-2 scroll-area">
-            <!-- 計畫步驟將動態插入此處 -->
-        </div>
-        <div id="research-plan-buttons" class="flex justify-end gap-3 mt-4 pt-4 border-t border-[var(--border-color)]">
-            <button id="cancel-plan-btn" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]">取消</button>
-            <button id="edit-plan-btn" class="bg-blue-100 text-blue-800 px-4 py-2 rounded-md hover:bg-blue-200">編輯計畫</button>
-            <button id="save-plan-btn" class="px-4 py-2 rounded-md btn-primary hidden">儲存變更</button>
-            <button id="run-plan-btn" class="px-4 py-2 rounded-md btn-primary">確認並執行</button>
-        </div>
-    </div>
-</div>
     <input type="file" id="image-video-input" class="hidden" accept="image/*,video/*" multiple>
     <input type="file" id="file-upload-input" class="hidden" multiple>
     <input type="file" id="wallpaper-upload-input" class="hidden" accept="image/*">
@@ -3260,14 +3255,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             conv.folderId = null;
         }
         await saveAppData();
-
-
-        // ↓↓↓↓↓↓ 就是這裡被修改了 ↓↓↓↓↓↓
         if (activeConversationId === id) {
             startNewChat();
         } 
-        // ↑↑↑↑↑↑ 就是這裡被修改了 ↑↑↑↑↑↑
-        
         else {
             renderAll();
         }
@@ -4200,86 +4190,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (abortController) return;
             const userMessage = ALL_ELEMENTS.messageInput.value.trim();
             if (!userMessage && uploadedFiles.length === 0) return;
-            function showPlanReviewModal(plan) {
-    return new Promise((resolve) => {
-        const modal = document.getElementById('research-plan-modal');
-        const stepsContainer = document.getElementById('research-plan-steps-container');
-        const cancelBtn = document.getElementById('cancel-plan-btn');
-        const editBtn = document.getElementById('edit-plan-btn');
-        const saveBtn = document.getElementById('save-plan-btn');
-        const runBtn = document.getElementById('run-plan-btn');
-
-        // 渲染計畫步驟
-        const renderSteps = (isEditable = false) => {
-            stepsContainer.innerHTML = '';
-            plan.forEach((step, index) => {
-                const stepEl = document.createElement('div');
-                stepEl.className = 'p-3 rounded-md bg-[var(--input-field-bg)] border border-[var(--border-color)]';
-                if (isEditable) {
-                    stepEl.innerHTML = `
-                        <div class="font-semibold text-sm mb-1">${step.step}</div>
-                        <textarea data-index="${index}" class="w-full p-2 text-sm border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] resize-y" rows="2">${step.action}</textarea>
-                    `;
-                } else {
-                    stepEl.innerHTML = `
-                        <div class="font-semibold">${step.step}</div>
-                        <p class="text-sm text-[var(--text-secondary)]">${step.action}</p>
-                    `;
-                }
-                stepsContainer.appendChild(stepEl);
-            });
-        };
-
-        renderSteps(false); // 初始為檢視模式
-
-        const cleanupAndClose = (result) => {
-            toggleModal(modal, false);
-            // 移除事件監聽器以避免記憶體洩漏
-            cancelBtn.onclick = null;
-            editBtn.onclick = null;
-            saveBtn.onclick = null;
-            runBtn.onclick = null;
-            resolve(result);
-        };
-
-        cancelBtn.onclick = () => cleanupAndClose(null);
-
-        editBtn.onclick = () => {
-            renderSteps(true);
-            editBtn.classList.add('hidden');
-            saveBtn.classList.remove('hidden');
-        };
-
-        saveBtn.onclick = () => {
-            const textareas = stepsContainer.querySelectorAll('textarea');
-            const newPlan = [];
-            textareas.forEach(textarea => {
-                const index = parseInt(textarea.dataset.index);
-                newPlan.push({
-                    step: plan[index].step, // 步驟標題不變
-                    action: textarea.value.trim()
-                });
-            });
-            plan = newPlan; // 更新計畫
-            renderSteps(false);
-            saveBtn.classList.add('hidden');
-            editBtn.classList.remove('hidden');
-            showNotification('計畫已更新！', 'success');
-        };
-
-        runBtn.onclick = () => {
-            // 如果在編輯模式下直接點擊執行，先儲存
-            if (!saveBtn.classList.contains('hidden')) {
-                saveBtn.click();
-            }
-            cleanupAndClose(plan);
-        };
-        
-        toggleModal(modal, true);
-    });
-}
             
-            // ✨ 如果是深度研究模式，則呼叫專用函數
             if (config.isDeepResearchMode) {
                 handleDeepResearch(userMessage);
                 return;
@@ -4338,23 +4249,73 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             uploadedFiles = [];
             adjustTextareaHeight();
             renderFilePreviews();
+            
+            // ✨ --- MODIFICATION START --- ✨
             const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
             const contentDiv = loadingMessageDiv.querySelector('.message-content');
+            contentDiv.innerHTML = ''; // 清空 loading dots
+            const proseWrapper = document.createElement('div');
+            proseWrapper.className = 'prose prose-sm max-w-none';
+            contentDiv.appendChild(proseWrapper);
+
             let fullResponse = '';
             const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
+            let charQueue = [];
+            let isProcessingQueue = false;
+            let streamEnded = false;
+
+            const processCharQueue = () => {
+                if (charQueue.length === 0) {
+                    isProcessingQueue = false;
+                    if (streamEnded) {
+                        // 當串流結束且佇列清空後，進行最終的 Markdown 渲染
+                        contentDiv.innerHTML = renderMarkdown(fullResponse);
+                    }
+                    return;
+                }
+                isProcessingQueue = true;
+                
+                const char = charQueue.shift();
+                const span = document.createElement('span');
+                span.className = 'streaming-char';
+                span.textContent = char;
+                proseWrapper.appendChild(span);
+
+                const isNearBottom = ALL_ELEMENTS.chatContainer.scrollHeight - ALL_ELEMENTS.chatContainer.scrollTop <= ALL_ELEMENTS.chatContainer.clientHeight + 50;
+                if (isNearBottom) {
+                    ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'auto' });
+                }
+                
+                setTimeout(processCharQueue, 5); // 調整此處延遲時間可改變打字速度
+            };
+            
             try {
                 const completeResponse = await streamApiCall(
-    userParts,
-    (chunk) => {
-        fullResponse += chunk;
-        contentDiv.innerHTML = renderMarkdown(fullResponse);
-        const isNearBottom = ALL_ELEMENTS.chatContainer.scrollHeight - ALL_ELEMENTS.chatContainer.scrollTop <= ALL_ELEMENTS.chatContainer.clientHeight + 30;
-        if (isNearBottom) {
-            ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'auto' });
-        }
-    },
-    abortController.signal
-);
+                    userParts,
+                    (chunk) => {
+                        fullResponse += chunk;
+                        charQueue.push(...chunk.split(''));
+                        if (!isProcessingQueue) {
+                            processCharQueue();
+                        }
+                    },
+                    abortController.signal
+                );
+                
+                streamEnded = true;
+
+                // 等待佇列處理完畢
+                await new Promise(resolve => {
+                    const checkQueueEmpty = () => {
+                        if (charQueue.length === 0 && !isProcessingQueue) {
+                            resolve();
+                        } else {
+                            setTimeout(checkQueueEmpty, 50);
+                        }
+                    };
+                    checkQueueEmpty();
+                });
+
                 fullResponse = completeResponse;
                 finalAiMessage.parts = [{ text: fullResponse }];
                 conv.messages.push(finalAiMessage);
@@ -4367,17 +4328,20 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     await extractPersonalMemory(userMessage, fullResponse);
                 }
             } catch (error) {
-                if (error.name === 'AbortError') {
-                    contentDiv.innerHTML = renderMarkdown(fullResponse);
+                streamEnded = true;
+                 if (error.name === 'AbortError') {
+                    contentDiv.innerHTML = renderMarkdown(fullResponse); // 顯示已中斷的內容
                     finalAiMessage.parts = [{ text: fullResponse }];
                     conv.messages.push(finalAiMessage);
                 } else {
-                    contentDiv.textContent = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
+                    contentDiv.innerHTML = renderMarkdown(`${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`);
                     finalAiMessage.parts = [{ text: `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}` }];
                     conv.messages.push(finalAiMessage);
                 }
                 await saveAppData();
             } finally {
+            // ✨ --- MODIFICATION END --- ✨
+
                 abortController = null;
                 updateSubmitButtonState(false);
                 sendConfirmed = false;
@@ -4816,7 +4780,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 1.  從通過安全審查的、位於「安全探索區」的草圖中，精心挑選出 3 到 4 個。
 2.  **選擇標準：**
     *   **多樣性：** 盡量涵蓋不同類型（例如，一個「如何做」，一個「舉例子」，一個「是什麼」）。
-    *   **代表性：** 能最好地代表【AI上一則回應】的核心內容廣度。
+    *   **代表性：** 能最好地代表【AI的上一則回應】的核心內容廣度。
     *   **清晰度：** 措辭必須是最清晰、最沒有歧義的。
 3.  **最後打磨：** 確保每個問題的用詞都完全符合「使用者代理人」的自然口吻。
 ---
@@ -7262,9 +7226,9 @@ ${JSON.stringify(potentialMemories, null, 2)}
             overlay.addEventListener('click', closeMenu);
             let touchStartY = 0;
             let touchMoveY = 0;
-            menu.addEventListener('touchstart', (e) => { touchStartY = e.touches[0].clientY; }, { passive: true });
+            menu.addEventListener('touchstart', (e) => { touchStartY = e.touches.clientY; }, { passive: true });
             menu.addEventListener('touchmove', (e) => {
-                touchMoveY = e.touches[0].clientY;
+                touchMoveY = e.touches.clientY;
                 const deltaY = touchMoveY - touchStartY;
                 if (deltaY > 0) { menu.style.transform = `translateY(${deltaY}px)`; }
             }, { passive: true });
@@ -7390,7 +7354,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
         contentContainer.style.maxHeight = '60vh';
         contentContainer.style.overflowY = 'auto';
         toggleModal(ALL_ELEMENTS.latestUpdateModal, true);
-        const latestVersionInLog = newUpdates[0].version; // 因為我們已經排序了，所以 newUpdates[0] 現在是最新版
+        const latestVersionInLog = newUpdates.version; // 因為我們已經排序了，所以 newUpdates 現在是最新版
         config.lastSeenVersion = latestVersionInLog;
         await saveConfig();
     }
@@ -7696,107 +7660,14 @@ ${JSON.stringify(potentialMemories, null, 2)}
                     const titleElement = card.querySelector('h4');
                     if (titleElement) {
                         // 保持 spinner 不變，只更新文字
-                        titleElement.childNodes[1].textContent = ` ${newTitle}`;
+                        titleElement.childNodes.textContent = ` ${newTitle}`;
                     }
                 },
                 remove: () => card.remove()
             };
         }
         // ✨ 更新後的深度研究核心函數
-        /**
- * 顯示研究計畫審查 Modal 的函式
- * @param {Array} plan - AI 生成的研究計畫步驟
- * @returns {Promise<Array|null>} - 返回使用者確認後的計畫，如果取消則返回 null
- */
-function showPlanReviewModal(plan) {
-    return new Promise((resolve) => {
-        const modal = document.getElementById('research-plan-modal');
-        const stepsContainer = document.getElementById('research-plan-steps-container');
-        const cancelBtn = document.getElementById('cancel-plan-btn');
-        const editBtn = document.getElementById('edit-plan-btn');
-        const saveBtn = document.getElementById('save-plan-btn');
-        const runBtn = document.getElementById('run-plan-btn');
-
-        // 確保按鈕狀態重置
-        editBtn.classList.remove('hidden');
-        saveBtn.classList.add('hidden');
-
-        // 渲染計畫步驟
-        const renderSteps = (isEditable = false) => {
-            stepsContainer.innerHTML = '';
-            plan.forEach((step, index) => {
-                const stepEl = document.createElement('div');
-                stepEl.className = 'p-3 rounded-md bg-[var(--input-field-bg)] border border-[var(--border-color)]';
-                if (isEditable) {
-                    stepEl.innerHTML = `
-                        <div class="font-semibold text-sm mb-1">${step.step}</div>
-                        <textarea data-index="${index}" class="w-full p-2 text-sm border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] resize-y" rows="2">${step.action}</textarea>
-                    `;
-                } else {
-                    stepEl.innerHTML = `
-                        <div class="font-semibold">${step.step}</div>
-                        <p class="text-sm text-[var(--text-secondary)]">${step.action}</p>
-                    `;
-                }
-                stepsContainer.appendChild(stepEl);
-            });
-        };
-
-        renderSteps(false); // 初始為檢視模式
-
-        const cleanupAndClose = (result) => {
-            toggleModal(modal, false);
-            // 移除事件監聽器以避免記憶體洩漏
-            cancelBtn.onclick = null;
-            editBtn.onclick = null;
-            saveBtn.onclick = null;
-            runBtn.onclick = null;
-            resolve(result);
-        };
-
-        cancelBtn.onclick = () => cleanupAndClose(null);
-
-        editBtn.onclick = () => {
-            renderSteps(true);
-            editBtn.classList.add('hidden');
-            saveBtn.classList.remove('hidden');
-        };
-
-        saveBtn.onclick = () => {
-            const textareas = stepsContainer.querySelectorAll('textarea');
-            const newPlan = [];
-            textareas.forEach(textarea => {
-                const index = parseInt(textarea.dataset.index);
-                newPlan.push({
-                    step: plan[index].step, // 步驟標題不變
-                    action: textarea.value.trim()
-                });
-            });
-            plan = newPlan; // 更新計畫
-            renderSteps(false);
-            saveBtn.classList.add('hidden');
-            editBtn.classList.remove('hidden');
-            showNotification('計畫已更新！', 'success');
-        };
-
-        runBtn.onclick = () => {
-            // 如果在編輯模式下直接點擊執行，先儲存
-            if (!saveBtn.classList.contains('hidden')) {
-                saveBtn.click();
-            }
-            cleanupAndClose(plan);
-        };
-        
-        toggleModal(modal, true);
-    });
-}
-
-
-/**
- * 處理深度研究模式的核心函式
- * @param {string} userMessage - 使用者的輸入訊息
- */
-async function handleDeepResearch(userMessage) {
+        async function handleDeepResearch(userMessage) {
     renderFollowUpPrompts([]);
     const conv = getActiveConversation();
     if (conv.archived) return;
@@ -7805,11 +7676,18 @@ async function handleDeepResearch(userMessage) {
     updateSubmitButtonState(true);
 
     const hasFiles = uploadedFiles.length > 0;
+    const fileInfo = hasFiles 
+        ? `使用者同時上傳了 ${uploadedFiles.length} 個檔案/圖片 (${uploadedFiles.map(f => f.name).join(', ')})。` 
+        : "";
+
     const userParts = [{ text: userMessage }];
     if (hasFiles) {
         uploadedFiles.forEach(file => {
             userParts.push({
-                inlineData: { mimeType: file.type, data: file.base64.split(',')[1] }
+                inlineData: {
+                    mimeType: file.type,
+                    data: file.base64.split(',')
+                }
             });
         });
     }
@@ -7924,7 +7802,7 @@ async function handleDeepResearch(userMessage) {
             }
 
             const result = await plannerResponse.json();
-            const jsonString = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+            const jsonString = result?.candidates?.?.content?.parts?.?.text;
             if (jsonString) {
                 let cleanedJsonString = jsonString.trim().replace(/^```json|```$/g, '').trim();
                 researchPlan = JSON.parse(cleanedJsonString);
@@ -7941,22 +7819,11 @@ async function handleDeepResearch(userMessage) {
         }
         
         dashboard.remove();
-        const finalPlan = await showPlanReviewModal(researchPlan);
-
-        if (!finalPlan) {
-            showNotification('深度研究已取消。', 'warning');
-            if (abortController && !abortController.signal.aborted) {
-                abortController.abort();
-            }
-            return;
-        }
-
-        researchPlan = finalPlan;
-        
         dashboard = addResearchDashboardCard('正在執行研究計畫...', researchPlan.map(p => `${p.step}: ${p.action}`));
         
         const allSearchResults = [];
 
+        // --- 階段二：分步執行研究計畫 ---
         for (let i = 0; i < researchPlan.length; i++) {
             const planStep = researchPlan[i];
             dashboard.updateStep(i, 'running');
@@ -7993,6 +7860,7 @@ async function handleDeepResearch(userMessage) {
             dashboard.updateStep(i, 'completed');
         }
 
+        // --- 階段三：綜合報告 ---
         dashboard.setTitle('正在綜合所有資料...');
         dashboard.updateStep('synthesis', 'running');
         
@@ -8026,15 +7894,19 @@ ${hasFiles ? "此研究基於使用者提供的檔案，並結合了外部搜尋
 收集到的資料:
 ${allSearchResults.join('\n\n')}`;
 
-        const reportContainer = addMessageToUI({ role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
-        const reportContentDiv = reportContainer.querySelector('.message-content');
-        const renderer = smoothStreamRenderer(reportContentDiv);
-        
+        dashboard.remove();
+        const reportContentDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false).querySelector('.message-content');
+
         await streamApiCall(
             [{ text: synthesizerPrompt }],
             (chunk) => {
                 fullReport += chunk;
-                renderer.push(chunk);
+                reportContentDiv.innerHTML = renderMarkdown(fullReport);
+                const chatContainer = ALL_ELEMENTS.chatContainer;
+                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 30;
+                if (isNearBottom) {
+                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+                }
             },
             abortController.signal,
             false
@@ -8050,13 +7922,11 @@ ${allSearchResults.join('\n\n')}`;
             dashboard.updateStep('synthesis', 'error', `研究中止: ${error.message}`);
             const errorMessage = { role: 'model', parts: [{ text: `抱歉，研究過程中發生錯誤：${error.message}` }], createdAt: new Date().toISOString() };
             addMessageToUI(errorMessage, conv.messages.length, true);
-        } else if (dashboard && dashboard.cardElement && document.body.contains(dashboard.cardElement)) {
+        } else {
             dashboard.remove();
         }
     } finally {
-        if (abortController) {
-            abortController = null;
-        }
+        abortController = null;
         updateSubmitButtonState(false);
         sendConfirmed = false;
         updateInputState();
@@ -8067,7 +7937,7 @@ ${allSearchResults.join('\n\n')}`;
             const bubble = lastMessageDiv.querySelector('.message-bubble');
             const content = lastMessageDiv.querySelector('.message-content');
             const aiMessageObject = conv.messages[conv.messages.length - 1];
-            if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute') && aiMessageObject.parts.some(p => p.text)) {
+            if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute')) {
                 content.classList.add('pb-8');
                 const timeString = formatFullTimestamp(aiMessageObject.createdAt);
                 const actionButtonsHTML = `
@@ -8427,8 +8297,8 @@ const handleInputFocus = () => {
             spotlightElements.forEach(el => {
                 const handleMove = (e) => {
                     const rect = el.getBoundingClientRect();
-                    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-                    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+                    const x = (e.touches ? e.touches.clientX : e.clientX) - rect.left;
+                    const y = (e.touches ? e.touches.clientY : e.clientY) - rect.top;
                     el.style.setProperty('--spotlight-x', `${x}px`);
                     el.style.setProperty('--spotlight-y', `${y}px`);
                 };
