@@ -31,39 +31,6 @@
     }
 }
 
-@keyframes char-fade-in {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
-}
-
-/* 
-  為正在串流的訊息容器設定基礎樣式。
-  'white-space: pre-wrap' 很重要，它能保留 AI 回應中的換行符。
-*/
-.streaming-text {
-    white-space: pre-wrap; 
-    word-break: break-word;
-}
-
-/* 
-  為我們用 JavaScript 產生的每一個字元 <span> 套用動畫。
-  動畫預設是暫停的，我們會用 JS 加上 'play' class 來啟動它。
-*/
-.streaming-text > span {
-    opacity: 0;
-    animation-name: char-fade-in;
-    animation-duration: 0.3s;
-    animation-fill-mode: forwards; /* 動畫結束時停在最後一幀 */
-    animation-play-state: paused; /* 預設暫停 */
-}
-
-.streaming-text > span.play {
-    animation-play-state: running; /* 啟動動畫 */
-}
 
 @keyframes indicator-exit {
     from {
@@ -3711,16 +3678,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 if (separator) separator.style.display = 'none';
                 learningModeBtn.style.display = 'flex';
             } else { // Gemini
-                allButtons.forEach(btn => btn.style.display = 'flex');
-                if (separator) separator.style.display = 'block';
-
-                const shouldDisableMultimodal = config.isLearningMode || config.isDeepResearchMode;
-                 [cameraBtn, uploadImageBtn, uploadFileBtn].forEach(btn => {
-                    btn.disabled = shouldDisableMultimodal;
-                    btn.classList.toggle('opacity-50', shouldDisableMultimodal);
-                    btn.classList.toggle('cursor-not-allowed', shouldDisableMultimodal);
-                });
-            }
+    allButtons.forEach(btn => btn.style.display = 'flex');
+    if (separator) separator.style.display = 'block';
+}
         };
 
         const toggleLearningMode = async () => {
@@ -4139,7 +4099,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const isLoadingMessage = !isUser && msg.parts.length === 1 && msg.parts[0].text === '...';
             if (isLoadingMessage) {
                 contentHTML = `<div class="loading-dots"><span class="bg-gray-500 dark:bg-gray-400"></span><span class="bg-gray-500 dark:bg-gray-400"></span><span class="bg-gray-500 dark:bg-gray-400"></span></div>`;
-                messageDiv.classList.add('is-streaming');
             } else {
                 let textPartsContent = [];
                 let mediaPartsContent = [];
@@ -4209,37 +4168,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
             return messageDiv;
         };
-         /* --- ✨ 第二步：請在此處貼上新函式 --- */
-        /**
-         * 將文字字元逐一附加到容器中，並為每個字元設定淡入動畫延遲。
-         * @param {HTMLElement} container - 要附加字元的 DOM 元素。
-         * @param {string} textChunk - 新收到的文字片段。
-         * @param {object} state - 一個包含計數器的狀態物件 { charIndex }。
-         */
-        function appendCharsWithAnimation(container, textChunk, state) {
-            // 使用 DocumentFragment 來進行高效能的 DOM 操作，避免頻繁重繪
-            const fragment = document.createDocumentFragment();
-            
-            for (let i = 0; i < textChunk.length; i++) {
-                const char = textChunk[i];
-                const span = document.createElement('span');
-                span.textContent = char;
-
-                // 根據目前的總字元數，計算動畫延遲時間
-                // 每個字延遲 15 毫秒，你可以調整這個數值來改變打字速度
-                span.style.animationDelay = `${state.charIndex * 15}ms`;
-                
-                // 為 span 加上 'play' class 來啟動動畫
-                span.classList.add('play');
-
-                fragment.appendChild(span);
-                state.charIndex++;
-            }
-
-            // 一次性將所有新產生的 <span> 元素附加到容器中
-            container.appendChild(fragment);
-        }
-        /* --- ✨ 新函式結束 --- */
         const handleFormSubmit = async (e) => {
             e.preventDefault();
             if (abortController) return;
@@ -4307,70 +4235,48 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderFilePreviews();
             const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
             const contentDiv = loadingMessageDiv.querySelector('.message-content');
-            
-            // 將原本的點點動畫清空，並加上新的 class 來準備接收文字
-            contentDiv.innerHTML = '';
-            contentDiv.classList.add('streaming-text');
-            
             let fullResponse = '';
             const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
-            
-            // 建立一個狀態物件來追蹤字元總數
-            const streamState = { charIndex: 0 };
-
             try {
-                // --- 核心修改點在這裡 ---
-                fullResponse = await streamApiCall(
-                    userParts,
-                    (chunk) => {
-                        // 呼叫我們的新函式來處理字元動畫
-                        appendCharsWithAnimation(contentDiv, chunk, streamState);
-                        
-                        // 滾動邏輯保持不變
-                        const isNearBottom = ALL_ELEMENTS.chatContainer.scrollHeight - ALL_ELEMENTS.chatContainer.scrollTop <= ALL_ELEMENTS.chatContainer.clientHeight + 150;
-                        if (isNearBottom) {
-                            ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'auto' });
-                        }
-                    },
-                    abortController.signal
-                );
-
-                // --- 串流結束後，再一次性渲染 Markdown ---
-                contentDiv.innerHTML = renderMarkdown(fullResponse);
-                
+                const completeResponse = await streamApiCall(
+    userParts,
+    (chunk) => {
+        fullResponse += chunk;
+        contentDiv.innerHTML = renderMarkdown(fullResponse);
+        const isNearBottom = ALL_ELEMENTS.chatContainer.scrollHeight - ALL_ELEMENTS.chatContainer.scrollTop <= ALL_ELEMENTS.chatContainer.clientHeight + 30;
+        if (isNearBottom) {
+            ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'auto' });
+        }
+    },
+    abortController.signal
+);
+                fullResponse = completeResponse;
                 finalAiMessage.parts = [{ text: fullResponse }];
                 conv.messages.push(finalAiMessage);
                 conv.lastUpdatedAt = new Date().toISOString();
                 await saveAppData();
-                
                 if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
                     await generateFollowUpPrompts(userMessage, fullResponse);
                 }
                 if (config.memoryEnabled1 && config.enableAutoMemory) {
                     await extractPersonalMemory(userMessage, fullResponse);
                 }
-
             } catch (error) {
                 if (error.name === 'AbortError') {
-                    // 如果是使用者主動中斷，也將已接收的內容渲染成 Markdown
                     contentDiv.innerHTML = renderMarkdown(fullResponse);
                     finalAiMessage.parts = [{ text: fullResponse }];
+                    conv.messages.push(finalAiMessage);
                 } else {
                     contentDiv.textContent = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
                     finalAiMessage.parts = [{ text: `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}` }];
+                    conv.messages.push(finalAiMessage);
                 }
-                conv.messages.push(finalAiMessage); // 確保錯誤訊息或中斷的內容被儲存
                 await saveAppData();
             } finally {
-                // 移除 streaming-text class
-                contentDiv.classList.remove('streaming-text');
-
                 abortController = null;
                 updateSubmitButtonState(false);
                 sendConfirmed = false;
                 updateInputState();
-
-                // 更新 UI，加上複製按鈕等 (這部分邏輯不變)
                 const lastMessageDiv = ALL_ELEMENTS.messageList.lastElementChild;
                 if (lastMessageDiv && lastMessageDiv.classList.contains('model-message')) {
                     const bubble = lastMessageDiv.querySelector('.message-bubble');
@@ -7785,15 +7691,19 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 const reportContentDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false).querySelector('.message-content');
 
                 await streamApiCall(
-                    [{ text: synthesizerPrompt }],
-                    (chunk) => {
-                        fullReport += chunk;
-                        reportContentDiv.innerHTML = renderMarkdown(fullReport);
-                        ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'auto' });
-                    },
-                    abortController.signal,
-                    false
-                );
+    [{ text: synthesizerPrompt }],
+    (chunk) => {
+        fullReport += chunk;
+        reportContentDiv.innerHTML = renderMarkdown(fullReport);
+        const chatContainer = ALL_ELEMENTS.chatContainer;
+        const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 30;
+        if (isNearBottom) {
+            chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+        }
+    },
+    abortController.signal,
+    false
+);
                 
                 const finalReportMessage = { role: 'model', parts: [{ text: fullReport }], createdAt: new Date().toISOString() };
                 conv.messages.push(finalReportMessage);
