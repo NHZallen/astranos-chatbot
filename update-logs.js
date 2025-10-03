@@ -1,5 +1,30 @@
 const updateLogs = [
         {
+        version: "15.4.4",
+        date: "2025-10-3",
+        content: [
+            "<strong>修正：</strong>深度研究模式AI回覆泡泡複製與時間顯示功能失效的問題",
+            "<strong>修正：</strong>深度研究內容不連貫的問題",
+            "<strong>修正：</strong>深度研究圖像搜索時無法正常識別圖像的問題",
+        ]
+    },
+        {
+        version: "15.4.3",
+        date: "2025-10-3",
+        content: [
+            "<strong>修正：</strong>深度研究模式後續追問失效的問題",
+            "<strong>修正：</strong>深度研究，研究中的狀態UI",
+        ]
+    },
+        {
+        version: "15.4.2",
+        date: "2025-10-3",
+        content: [
+            "<strong>修正：</strong>深度研究模式Gemini模型無法上傳圖片與檔案的問題",
+            "<strong>優化：</strong>AI輸出時會強制ˋ捲動至下方的問題",
+        ]
+    },
+        {
         version: "15.4.1",
         date: "2025-10-3",
         content: [
