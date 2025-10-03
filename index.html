@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.4</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.4.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -2517,6 +2517,21 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             </div>
         </div>
     </div>
+    <div id="research-plan-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[52]">
+    <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl p-6 w-full max-w-2xl flex flex-col" style="max-height: 90vh;">
+        <h2 id="research-plan-title" class="text-xl font-bold mb-2">檢視與編輯研究計畫</h2>
+        <p id="research-plan-message" class="text-sm text-[var(--text-secondary)] mb-4">AI 已根據您的問題規劃了以下研究步驟。您可以檢視、修改，或直接執行計畫。</p>
+        <div id="research-plan-steps-container" class="space-y-2 mb-4 flex-1 overflow-y-auto pr-2 scroll-area">
+            <!-- 計畫步驟將動態插入此處 -->
+        </div>
+        <div id="research-plan-buttons" class="flex justify-end gap-3 mt-4 pt-4 border-t border-[var(--border-color)]">
+            <button id="cancel-plan-btn" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]">取消</button>
+            <button id="edit-plan-btn" class="bg-blue-100 text-blue-800 px-4 py-2 rounded-md hover:bg-blue-200">編輯計畫</button>
+            <button id="save-plan-btn" class="px-4 py-2 rounded-md btn-primary hidden">儲存變更</button>
+            <button id="run-plan-btn" class="px-4 py-2 rounded-md btn-primary">確認並執行</button>
+        </div>
+    </div>
+</div>
     <input type="file" id="image-video-input" class="hidden" accept="image/*,video/*" multiple>
     <input type="file" id="file-upload-input" class="hidden" multiple>
     <input type="file" id="wallpaper-upload-input" class="hidden" accept="image/*">
@@ -4185,6 +4200,84 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             if (abortController) return;
             const userMessage = ALL_ELEMENTS.messageInput.value.trim();
             if (!userMessage && uploadedFiles.length === 0) return;
+            function showPlanReviewModal(plan) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('research-plan-modal');
+        const stepsContainer = document.getElementById('research-plan-steps-container');
+        const cancelBtn = document.getElementById('cancel-plan-btn');
+        const editBtn = document.getElementById('edit-plan-btn');
+        const saveBtn = document.getElementById('save-plan-btn');
+        const runBtn = document.getElementById('run-plan-btn');
+
+        // 渲染計畫步驟
+        const renderSteps = (isEditable = false) => {
+            stepsContainer.innerHTML = '';
+            plan.forEach((step, index) => {
+                const stepEl = document.createElement('div');
+                stepEl.className = 'p-3 rounded-md bg-[var(--input-field-bg)] border border-[var(--border-color)]';
+                if (isEditable) {
+                    stepEl.innerHTML = `
+                        <div class="font-semibold text-sm mb-1">${step.step}</div>
+                        <textarea data-index="${index}" class="w-full p-2 text-sm border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] resize-y" rows="2">${step.action}</textarea>
+                    `;
+                } else {
+                    stepEl.innerHTML = `
+                        <div class="font-semibold">${step.step}</div>
+                        <p class="text-sm text-[var(--text-secondary)]">${step.action}</p>
+                    `;
+                }
+                stepsContainer.appendChild(stepEl);
+            });
+        };
+
+        renderSteps(false); // 初始為檢視模式
+
+        const cleanupAndClose = (result) => {
+            toggleModal(modal, false);
+            // 移除事件監聽器以避免記憶體洩漏
+            cancelBtn.onclick = null;
+            editBtn.onclick = null;
+            saveBtn.onclick = null;
+            runBtn.onclick = null;
+            resolve(result);
+        };
+
+        cancelBtn.onclick = () => cleanupAndClose(null);
+
+        editBtn.onclick = () => {
+            renderSteps(true);
+            editBtn.classList.add('hidden');
+            saveBtn.classList.remove('hidden');
+        };
+
+        saveBtn.onclick = () => {
+            const textareas = stepsContainer.querySelectorAll('textarea');
+            const newPlan = [];
+            textareas.forEach(textarea => {
+                const index = parseInt(textarea.dataset.index);
+                newPlan.push({
+                    step: plan[index].step, // 步驟標題不變
+                    action: textarea.value.trim()
+                });
+            });
+            plan = newPlan; // 更新計畫
+            renderSteps(false);
+            saveBtn.classList.add('hidden');
+            editBtn.classList.remove('hidden');
+            showNotification('計畫已更新！', 'success');
+        };
+
+        runBtn.onclick = () => {
+            // 如果在編輯模式下直接點擊執行，先儲存
+            if (!saveBtn.classList.contains('hidden')) {
+                saveBtn.click();
+            }
+            cleanupAndClose(plan);
+        };
+        
+        toggleModal(modal, true);
+    });
+}
             
             // ✨ 如果是深度研究模式，則呼叫專用函數
             if (config.isDeepResearchMode) {
@@ -7761,7 +7854,20 @@ ${JSON.stringify(potentialMemories, null, 2)}
             throw new Error('無法生成研究計畫。');
         }
         
-        dashboard.remove();
+        // ✨ 修改後：移除舊的儀表板，並呼叫新的審查 Modal
+        dashboard.remove(); // 移除初始的 "正在規劃" 儀表板
+        const finalPlan = await showPlanReviewModal(researchPlan);
+
+        // ✨ 修改後：檢查使用者是否取消
+        if (!finalPlan) { // 如果使用者點擊取消，finalPlan 會是 null
+            showNotification('深度研究已取消。', 'warning');
+            abortController.abort(); // 中止後續操作
+            return; // 直接結束函式
+        }
+
+        // ✨ 修改後：使用使用者確認後的計畫繼續執行
+        researchPlan = finalPlan;
+        
         dashboard = addResearchDashboardCard('正在執行研究計畫...', researchPlan.map(p => `${p.step}: ${p.action}`));
         
         const allSearchResults = [];
