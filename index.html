@@ -470,69 +470,6 @@ button:not(.btn-primary):active:not(:disabled) {
     white-space: pre-wrap; /* ---> 新增：允許程式碼在保留格式的情況下自動換行 <--- */
     word-break: break-all;  /* ---> 新增：強制過長的單詞(如URL)也能被斷開 <--- */
 }
-    .prose .sources-container {
-    margin-top: 1.25rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid rgba(128, 128, 128, 0.25);
-}
-
-.prose .sources-container h5 {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    margin-bottom: 0.75rem;
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-}
-
-.prose .source-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    background-color: var(--hover-bg);
-    border: 1px solid var(--border-color);
-    padding: 0.25rem 0.6rem;
-    border-radius: 9999px;
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-    text-decoration: none;
-    transition: all 0.2s ease;
-    max-width: 100%;
-}
-
-.prose .source-link:hover {
-    color: var(--text-primary);
-    background-color: var(--active-bg);
-    border-color: var(--text-primary);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.prose .source-index {
-    background-color: var(--border-color);
-    color: var(--text-secondary);
-    width: 1rem;
-    height: 1rem;
-    border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.65rem;
-    font-weight: bold;
-    flex-shrink: 0;
-}
-
-.prose .source-link:hover .source-index {
-    background-color: var(--text-primary);
-    color: var(--button-primary-text);
-}
-
-.prose .source-title {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
     .prose pre code { background-color: transparent; padding: 0; color: inherit; border: none; }
     .prose h1, .prose h2, .prose h3 { margin-top: 1.5em; margin-bottom: 0.5em; font-weight: bold; }
     .prose h1 { font-size: 1.875rem; }
@@ -1690,6 +1627,84 @@ body.custom-wallpaper-active .input-indicator-item {
 #input-bar-container .input-wrapper > .flex.items-end {
     width: 100%;
 }
+/* ✨ [新增] 深度研究儀表板樣式 ✨ */
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.research-dashboard {
+    background-color: var(--sidebar-bg);
+    border: 1px solid var(--border-color);
+    padding: 1rem 1.5rem;
+    border-radius: 0.75rem;
+    max-w-4xl mx-auto;
+    animation: subtleFadeInUp 0.4s ease-out;
+}
+.research-dashboard h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-primary);
+}
+.research-dashboard .main-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--hover-bg);
+    border-top-color: var(--button-primary-bg);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+.research-dashboard ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    space-y: 0.75rem;
+}
+.research-step {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    transition: color 0.3s ease;
+}
+.research-step .status-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.research-step .status-icon .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+.research-step.status-running {
+    color: var(--button-primary-bg);
+    font-weight: 500;
+}
+.research-step.status-completed {
+    color: #10b981;
+}
+.dark .research-step.status-completed {
+    color: #34d399;
+}
+.research-step.status-error {
+    color: #ef4444;
+}
+#research-plan-content ol {
+    list-style-type: decimal;
+    padding-left: 1.5rem;
+    space-y: 0.5rem;
+}
+#research-plan-content li {
+    padding-left: 0.5rem;
+}
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -2599,6 +2614,25 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     </div>
 </div>
     <div id="mobile-context-menu-wrapper"></div>
+
+    <!-- ✨ [新增] 研究計畫互動視窗 ✨ -->
+    <div id="research-plan-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[51]">
+        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-2xl flex flex-col" style="max-height: 90vh;">
+            <div class="p-6 border-b border-[var(--border-color)] flex justify-between items-center flex-shrink-0">
+                <h2 id="research-plan-title" class="text-2xl font-bold">檢視研究計畫</h2>
+                <button id="close-research-plan-modal-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
+            </div>
+            <div id="research-plan-content" class="p-6 overflow-y-auto space-y-4 scroll-area flex-1">
+                <!-- 計畫步驟將會被動態注入於此 -->
+            </div>
+            <div class="p-4 bg-[var(--sidebar-bg)] border-t border-[var(--border-color)] flex justify-end gap-3 flex-shrink-0">
+                <button id="research-plan-cancel-btn" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]">取消</button>
+                <button id="research-plan-refine-btn" class="px-4 py-2 rounded-md bg-yellow-500 text-white hover:bg-yellow-600">調整</button>
+                <button id="research-plan-proceed-btn" class="px-4 py-2 rounded-md btn-primary">執行計畫</button>
+            </div>
+        </div>
+    </div>
+
     <script src="./i18n.js"></script>
     <script src="./demo-conversations.js"></script>
     <script src="./astras-data.js"></script>
@@ -2850,7 +2884,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             closeTrashViewModalBtn: document.getElementById('close-trash-view-modal-btn'),
             trashViewCloseBtn: document.getElementById('trash-view-close-btn'),
             learningModeBtn: document.getElementById('learning-mode-btn'),
-            deepResearchBtn: document.getElementById('deep-research-btn'), // ✨ 新增元素
+            deepResearchBtn: document.getElementById('deep-research-btn'),
             feedbackTextarea: document.getElementById('feedback-textarea'),
             sendFeedbackBtn: document.getElementById('send-feedback-btn'),
             proposeAstrasBtn: document.getElementById('propose-astras-btn'),
@@ -2860,6 +2894,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             proposalInstructionsInput: document.getElementById('proposal-instructions-input'),
             cancelProposalBtn: document.getElementById('cancel-proposal-btn'),
             submitProposalBtn: document.getElementById('submit-proposal-btn'),
+            // ✨ [新增] 新增互動視窗的元素 ✨
+            researchPlanModal: document.getElementById('research-plan-modal'),
+            researchPlanTitle: document.getElementById('research-plan-title'),
+            researchPlanContent: document.getElementById('research-plan-content'),
+            closeResearchPlanModalBtn: document.getElementById('close-research-plan-modal-btn'),
+            researchPlanCancelBtn: document.getElementById('research-plan-cancel-btn'),
+            researchPlanRefineBtn: document.getElementById('research-plan-refine-btn'),
+            researchPlanProceedBtn: document.getElementById('research-plan-proceed-btn'),
         };
         const compareVersions = (v1, v2) => {
             if (!v2) return 1;
@@ -2875,15 +2917,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             return 0;
         };
         const MODELS = [
-            { id: 'gemini-2.5-pro', name: 'Astra-Pro Max (2.5-Pro)', provider: 'gemini', descriptionKey: 'model_ProMax_desc', limitsKey: 'model_ProMax_limits' },
-            { id: 'gemini-2.5-flash-preview-09-2025', name: 'Astra-Pro PV (2.5-Flash PV)', provider: 'gemini', descriptionKey: 'model_ProPV_desc', limitsKey: 'model_ProPV_limits' },
-            { id: 'gemini-2.5-flash', name: 'Astra-Pro (2.5-Flash)', provider: 'gemini', descriptionKey: 'model_Pro_desc', limitsKey: 'model_Pro_limits' },
-            { id: 'gemini-2.5-flash-lite-preview-09-2025', name: 'Astra-Plus PV (2.5-Flash-Lite PV)', provider: 'gemini', descriptionKey: 'model_PlusPV_desc', limitsKey: 'model_PlusPV_limits' },
-            { id: 'deepseek/deepseek-chat-v3.1:free', name: 'Astra-Mini (Deepseek-V3.1)', provider: 'openrouter', descriptionKey: 'model_Mini_desc', limitsKey: 'model_Mini_limits' },
-            { id: 'mistralai/mistral-small-3.2-24b-instruct:free', name: 'Astra-Mill (Mistral3.2)', provider: 'openrouter', descriptionKey: 'model_Mill_desc', limitsKey: 'model_Mill_limits' },
-            { id: 'qwen/qwen3-coder:free', name: 'Astra-Nano (Qwen3)', provider: 'openrouter', descriptionKey: 'model_Nano_desc', limitsKey: 'model_Nano_limits' },
+            { id: 'gemini-1.5-pro-latest', name: 'Astra-Pro Max (1.5-Pro)', provider: 'gemini', descriptionKey: 'model_ProMax_desc', limitsKey: 'model_ProMax_limits' },
+            { id: 'gemini-1.5-flash-latest', name: 'Astra-Pro (1.5-Flash)', provider: 'gemini', descriptionKey: 'model_Pro_desc', limitsKey: 'model_Pro_limits' },
+            { id: 'gemini-1.0-pro', name: 'Astra-Plus PV (1.0-Pro)', provider: 'gemini', descriptionKey: 'model_PlusPV_desc', limitsKey: 'model_PlusPV_limits' },
+            { id: 'deepseek/deepseek-chat', name: 'Astra-Mini (Deepseek-V2)', provider: 'openrouter', descriptionKey: 'model_Mini_desc', limitsKey: 'model_Mini_limits' },
+            { id: 'mistralai/mistral-7b-instruct', name: 'Astra-Mill (Mistral-7B)', provider: 'openrouter', descriptionKey: 'model_Mill_desc', limitsKey: 'model_Mill_limits' },
+            { id: 'qwen/qwen-72b-chat', name: 'Astra-Nano (Qwen-72B)', provider: 'openrouter', descriptionKey: 'model_Nano_desc', limitsKey: 'model_Nano_limits' },
             ];
-        const CHEAP_MODEL_ID = 'gemini-2.5-flash-lite';
+        const CHEAP_MODEL_ID = 'gemini-1.5-flash-latest';
         const FOLDER_COLORS = {
             gray: '#808080', red: '#f87171', yellow: '#facc15', green: '#4ade80',
             blue: '#60a5fa', indigo: '#818cf8', purple: '#a78bfa', pink: '#f472b6',
@@ -2954,8 +2995,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             enableUpdateNotifications: true,
             lastSeenVersion: '',
             isLearningMode: false,
-            isDeepResearchMode: false, // ✨ 新增狀態
-            deepResearchQueryCount: 0, // ✨ 新增這一行，0 代表自動
+            isDeepResearchMode: false,
+            deepResearchQueryCount: 0, 
         };
         let itemToRename = { id: null, type: null };
         let folderToCustomize = null;
@@ -2978,7 +3019,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let isAutoScrolling = false;
         let isTrashSelectionMode = false;
         let selectedTrashIds = new Set();
-        let originalMemorySettings = {}; // ✨ 新增：用於儲存原始記憶設定
+        let originalMemorySettings = {}; 
         const DB_NAME = 'ChatAppDB';
         const STORE_NAME = 'keyValue';
         let db;
@@ -3296,14 +3337,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             conv.folderId = null;
         }
         await saveAppData();
-
-
-        // ↓↓↓↓↓↓ 就是這裡被修改了 ↓↓↓↓↓↓
         if (activeConversationId === id) {
             startNewChat();
         } 
-        // ↑↑↑↑↑↑ 就是這裡被修改了 ↑↑↑↑↑↑
-        
         else {
             renderAll();
         }
@@ -3741,9 +3777,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 if (separator) separator.style.display = 'none';
                 learningModeBtn.style.display = 'flex';
             } else { // Gemini
-    allButtons.forEach(btn => btn.style.display = 'flex');
-    if (separator) separator.style.display = 'block';
-}
+                allButtons.forEach(btn => btn.style.display = 'flex');
+                if (separator) separator.style.display = 'block';
+            }
         };
 
         const toggleLearningMode = async () => {
@@ -3759,7 +3795,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             showNotification(config.isLearningMode ? (i18n[config.uiLanguage].learningModeEnabled || '學習與研究模式已開啟') : (i18n[config.uiLanguage].learningModeDisabled || '學習與研究模式已關閉'), 'success');
         };
 
-        // ✨ 新增：深度研究模式切換函數
         const toggleDeepResearchMode = async () => {
             const conv = getActiveConversation();
             if (!conv) return;
@@ -3777,7 +3812,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             config.isDeepResearchMode = !config.isDeepResearchMode;
 
             if (config.isDeepResearchMode) {
-                // 啟用模式：儲存並關閉記憶
                 originalMemorySettings = {
                     memoryEnabled1: config.memoryEnabled1,
                     memoryEnabled2: config.memoryEnabled2,
@@ -3788,7 +3822,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 config.enableAutoMemory = false;
                 showNotification('深度研究模式已啟用。記憶功能已暫時關閉。', 'success');
             } else {
-                // 關閉模式：還原記憶設定
                 if (originalMemorySettings) {
                     config.memoryEnabled1 = originalMemorySettings.memoryEnabled1;
                     config.memoryEnabled2 = originalMemorySettings.memoryEnabled2;
@@ -3818,7 +3851,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const activeIndicators = new Map();
             const astrasId = getActiveAstrasId();
 
-             // ✨ 新增：深度研究模式指示器邏輯
             if (config.isDeepResearchMode) {
                 activeIndicators.set('deep-research-indicator', {
                     id: 'deep-research-indicator',
@@ -4118,9 +4150,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             conv.provider = newModelInfo.provider;
                             config.lastUsedModel = newModelId;
 
-                            // ✨ 如果在新模型下深度研究模式不適用，則關閉它
                             if (config.isDeepResearchMode && newModelInfo.provider !== 'gemini') {
-                                toggleDeepResearchMode(); // It will turn itself off
+                                toggleDeepResearchMode(); 
                             }
 
                             saveAppData();
@@ -4191,38 +4222,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     });
                     mediaHTML += '</div>';
                     contentHTML += mediaHTML;
-                    if (!isUser && msg.sources && msg.sources.length > 0) {
-                const sourceMap = new Map();
-                msg.sources.forEach(source => {
-                    if (source.uri && !sourceMap.has(source.uri)) {
-                        sourceMap.set(source.uri, source);
-                    }
-                });
-
-                if (sourceMap.size > 0) {
-                    let sourcesHTML = `<div class="sources-container">
-                        <h5>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"></path></svg>
-                            <span>${i18n[config.uiLanguage].dataSources || '資料來源'}</span>
-                        </h5>
-                        <div class="flex flex-wrap gap-2">`;
-                    
-                    Array.from(sourceMap.values()).forEach((source, index) => {
-                        try {
-                            const url = new URL(source.uri);
-                            const title = source.title || url.hostname.replace(/^www\./, '');
-                            sourcesHTML += `
-                                <a href="${source.uri}" target="_blank" rel="noopener noreferrer" class="source-link" title="${source.uri}">
-                                   <span class="source-index">${index + 1}</span>
-                                   <span class="source-title">${title}</span>
-                                </a>`;
-                        } catch(e) { console.error("Invalid source URI:", source.uri); }
-                    });
-
-                    sourcesHTML += `</div></div>`;
-                    contentHTML += sourcesHTML;
-                }
-            }
                 }
                 if (!isUser) {
                     const timeString = formatFullTimestamp(msg.createdAt);
@@ -4269,7 +4268,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const userMessage = ALL_ELEMENTS.messageInput.value.trim();
             if (!userMessage && uploadedFiles.length === 0) return;
             
-            // ✨ 如果是深度研究模式，則呼叫專用函數
             if (config.isDeepResearchMode) {
                 handleDeepResearch(userMessage);
                 return;
@@ -4333,23 +4331,20 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             let fullResponse = '';
             const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
             try {
-                const { fullText, sources } = await streamApiCall(
-    userParts,
-    (chunk) => {
-        fullResponse += chunk;
-        contentDiv.innerHTML = renderMarkdown(fullResponse);
-        const isNearBottom = ALL_ELEMENTS.chatContainer.scrollHeight - ALL_ELEMENTS.chatContainer.scrollTop <= ALL_ELEMENTS.chatContainer.clientHeight + 30;
-        if (isNearBottom) {
-            ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'auto' });
-        }
-    },
-    abortController.signal
-);
-                fullResponse = fullText;
+                const completeResponse = await streamApiCall(
+                    userParts,
+                    (chunk) => {
+                        fullResponse += chunk;
+                        contentDiv.innerHTML = renderMarkdown(fullResponse);
+                        const isNearBottom = ALL_ELEMENTS.chatContainer.scrollHeight - ALL_ELEMENTS.chatContainer.scrollTop <= ALL_ELEMENTS.chatContainer.clientHeight + 30;
+                        if (isNearBottom) {
+                            ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'auto' });
+                        }
+                    },
+                    abortController.signal
+                );
+                fullResponse = completeResponse;
                 finalAiMessage.parts = [{ text: fullResponse }];
-                if (sources && sources.length > 0) {
-                    finalAiMessage.sources = sources;
-                }
                 conv.messages.push(finalAiMessage);
                 conv.lastUpdatedAt = new Date().toISOString();
                 await saveAppData();
@@ -4528,7 +4523,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
 
             if (provider === 'gemini') {
-                url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?key=${apiKey}`;
+                url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?alt=sse&key=${apiKey}`;
                 payload = {
                     contents: cleanGeminiHistory([...historyForApi, currentMessageForApi]),
                     generationConfig: {
@@ -4540,8 +4535,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 if (systemInstruction) {
                     payload.systemInstruction = systemInstruction;
                 }
-                if (conv.isWebSearchEnabled || isWebSearchForced) { // ✨ 修改點
-                    payload.tools = [{"googleSearch": {}}];
+                if (conv.isWebSearchEnabled || isWebSearchForced) {
+                    payload.tools = [{"google_search": {}}];
                 }
                 headers = { 'Content-Type': 'application/json' };
             } else {
@@ -4570,57 +4565,28 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const decoder = new TextDecoder();
             let buffer = '';
             let fullText = '';
-            const sourceMap = new Map();
             while (true) {
                 const { value, done } = await reader.read();
                 if (done) break;
                 buffer += decoder.decode(value, { stream: true });
                 if (provider === 'gemini') {
-                    while (true) {
-                        const firstBrace = buffer.indexOf('{');
-                        if (firstBrace === -1) {
-                            break;
-                        }
-
-                        let braceCount = 0;
-                        let endIndex = -1;
-                        for (let i = firstBrace; i < buffer.length; i++) {
-                            if (buffer[i] === '{') {
-                                braceCount++;
-                            } else if (buffer[i] === '}') {
-                                braceCount--;
-                            }
-                            if (braceCount === 0) {
-                                endIndex = i;
-                                break;
-                            }
-                        }
-
-                        if (endIndex !== -1) {
-                            const jsonStr = buffer.substring(firstBrace, endIndex + 1);
-                            buffer = buffer.substring(endIndex + 1);
-
+                     const lines = buffer.split('\n');
+                    buffer = lines.pop(); 
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.substring(6);
                             try {
-                                const parsed = JSON.parse(jsonStr);
-                                const textChunk = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
-                                const citationSources = parsed?.candidates?.[0]?.citationMetadata?.citationSources;
-                                if (citationSources) {
-                                    citationSources.forEach(source => {
-                                        if (source.uri && !sourceMap.has(source.uri)) {
-                                            sourceMap.set(source.uri, source);
-                                        }
-                                    });
-                                }
-
-                                if (textChunk) {
-                                    fullText += textChunk;
-                                    onChunk(textChunk);
+                                const parsed = JSON.parse(data);
+                                if (parsed.candidates && parsed.candidates[0].content && parsed.candidates[0].content.parts) {
+                                    const textChunk = parsed.candidates[0].content.parts[0].text;
+                                    if (textChunk) {
+                                        fullText += textChunk;
+                                        onChunk(textChunk);
+                                    }
                                 }
                             } catch (e) {
-                                console.warn("解析 Gemini 串流中的 JSON 區塊時出錯:", e, "區塊內容:", jsonStr);
+                                // console.warn("Error parsing Gemini stream chunk:", e, "Chunk content:", data);
                             }
-                        } else {
-                            break;
                         }
                     }
                 } else {
@@ -4642,8 +4608,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     }
                 }
             }
-            const sources = Array.from(sourceMap.values());
-            return { fullText, sources };
+            return fullText;
         }
         async function callApiWithSchema(prompt, responseSchema, signal) {
             const apiKey = config.apiKeys.gemini;
@@ -4655,7 +4620,19 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 contents: [{ role: 'user', parts: [{ text: prompt }] }],
                 generationConfig: {
                     responseMimeType: "application/json",
-                    responseSchema: responseSchema,
+                },
+                tools: [{
+                    function_declarations: [{
+                        name: "structured_response",
+                        description: "Returns a structured response based on the provided schema.",
+                        parameters: responseSchema
+                    }]
+                }],
+                tool_config: {
+                    function_calling_config: {
+                        mode: "ANY",
+                        allowed_function_names: ["structured_response"]
+                    }
                 }
             };
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${CHEAP_MODEL_ID}:generateContent?key=${apiKey}`;
@@ -4671,22 +4648,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     throw new Error(errorData.error?.message || 'API request failed');
                 }
                 const result = await response.json();
-                const jsonString = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (jsonString) {
-                    let cleanedJsonString = jsonString.trim();
-                    if (cleanedJsonString.startsWith("```json")) {
-                        cleanedJsonString = cleanedJsonString.substring(7).trim();
-                    }
-                    if (cleanedJsonString.endsWith("```")) {
-                        cleanedJsonString = cleanedJsonString.slice(0, -3).trim();
-                    }
-                    try {
-                        return JSON.parse(cleanedJsonString);
-                    } catch (e) {
-                        console.error("清理後的 JSON 解析失敗:", e);
-                        console.error("原始字串:", jsonString);
-                        throw new Error("無法解析 API 回傳的 JSON 字串。");
-                    }
+                const functionCall = result?.candidates?.[0]?.content?.parts?.[0]?.functionCall;
+                if (functionCall && functionCall.name === "structured_response") {
+                    return functionCall.args;
                 }
             } catch (error) {
                 console.error('Error generating structured response:', error);
@@ -4722,14 +4686,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         }
         const generateTitleAndSummary = async (conv) => {
             const conversationHistory = conv.messages.slice(0, 5).map(m => `${m.role}: ${m.parts.map(p => p.text).join(' ')}`).join('\n');
-            const prompt = `為以下對話生成一個簡潔且能代表核心主題的標題。標題應直接反映使用者詢問的主要內容，而不是以你的視角描述AI的行為，（例如，好的標題是「法國首都」，而不是「回答地理問題」）。標題限制在10個字以內。請嚴格按照以下 JSON 格式輸出，不要有任何額外的文字或解釋:\n{"title": "你的標題", "summary": "你的一句話摘要"}\n\n對話內容:\n${conversationHistory}`;
+            const prompt = `為以下對話生成一個簡潔且能代表核心主題的標題。標題應直接反映使用者詢問的主要內容，而不是以你的視角描述AI的行為，（例如，好的標題是「法國首都」，而不是「回答地理問題」）。標題限制在10個字以內。請使用名為 "structured_response" 的工具，並嚴格遵循指定的 schema 輸出，不要有任何額外的文字或解釋:\n\n對話內容:\n${conversationHistory}`;
             const responseSchema = {
                 type: "OBJECT",
                 properties: {
                     title: { type: "STRING" },
                     summary: { type: "STRING" }
                 },
-                propertyOrdering: ["title", "summary"]
+                required: ["title", "summary"]
             };
             const data = await callApiWithSchema(prompt, responseSchema);
             if (data && data.title && data.summary) {
@@ -4853,14 +4817,20 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 【使用者的原始問題】：${userMessage}
 【AI的上一則回應】：${responseText}`;
             const responseSchema = {
-                type: "ARRAY",
-                items: { type: "STRING" },
-                minItems: 4,
-                maxItems: 4
+                type: "OBJECT",
+                properties: {
+                    follow_up_prompts: {
+                        type: "ARRAY",
+                        items: { type: "STRING" },
+                        minItems: 3,
+                        maxItems: 4
+                    }
+                },
+                required: ["follow_up_prompts"]
             };
-            const followUpPrompts = await callApiWithSchema(prompt, responseSchema);
-            if (followUpPrompts && followUpPrompts.length > 0) {
-                renderFollowUpPrompts(followUpPrompts);
+            const data = await callApiWithSchema(prompt, responseSchema);
+            if (data && data.follow_up_prompts && data.follow_up_prompts.length > 0) {
+                renderFollowUpPrompts(data.follow_up_prompts);
             }
         };
         const renderFollowUpPrompts = (prompts) => {
@@ -4935,7 +4905,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
             if (conv.archived) {
                 ALL_ELEMENTS.messageInput.disabled = true;
-                submitButton.disabled = true;
                 ALL_ELEMENTS.messageInput.placeholder = i18n[config.uiLanguage].viewingArchived || '正在檢視封存的對話，無法傳送訊息。';
                 return;
             }
@@ -5025,7 +4994,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const selectedCustomColor = ALL_ELEMENTS.customColorSwatches.querySelector('.selected')?.dataset.color || config.uiTheme.customColor;
             const selectedStyle = document.querySelector('input[name="color-style"]:checked')?.value || 'single';
             const selectedGradientSwatch = ALL_ELEMENTS.gradientSwatches.querySelector('.selected-gradient');
-            const selectedGradient = selectedGradientSwatch ? selectedGradientSwatch.dataset.gradient : (config.uiTheme.adaptivePalette?.length > 1 ? `linear-gradient(to right, ${config.uiTheme.adaptivePalette[0]}, ${config.uiTheme.adaptivePalette[1]})` : '');
+            const selectedGradient = selectedGradientSwatch ? selectedGradientSwatch.dataset.gradient : (config.uiTheme.adaptivePalette?.length > 1 ? `linear-gradient(to right, ${config.uiTheme.adaptivePalette}, ${config.uiTheme.adaptivePalette})` : '');
             config.uiTheme.mode = selectedThemeMode;
             config.uiTheme.customColor = selectedCustomColor;
             config.uiTheme.style = selectedStyle;
@@ -5713,25 +5682,32 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             toggleModal(ALL_ELEMENTS.searchViewModal, true);
         };
         const generateSearchKeywords = async (naturalQuery) => {
-            const prompt = `分析以下自然語言查詢，提取 5-10 個最相關的核心關鍵字。對於每個關鍵字，根據其在查詢中的重要性，給予一個 1 到 10 的權重分數（10為最重要）。請嚴格按照以下 JSON 格式輸出，不要有任何額外的文字或解釋。
+            const prompt = `分析以下自然語言查詢，提取 5-10 個最相關的核心關鍵字。對於每個關鍵字，根據其在查詢中的重要性，給予一個 1 到 10 的權重分數（10為最重要）。請使用名為 "structured_response" 的工具，並嚴格遵循指定的 schema 輸出，不要有任何額外的文字或解釋。
 範例:
 查詢: "去年夏天在巴黎鐵塔附近吃的最好吃的法國可麗餅是什麼？"
-輸出: [{"keyword": "可麗餅", "weight": 10}, {"keyword": "巴黎鐵塔", "weight": 9}, {"keyword": "法國", "weight": 7}, {"keyword": "吃", "weight": 5}, {"keyword": "去年夏天", "weight": 4}]
+輸出: {"keywords": [{"keyword": "可麗餅", "weight": 10}, {"keyword": "巴黎鐵塔", "weight": 9}, {"keyword": "法國", "weight": 7}, {"keyword": "吃", "weight": 5}, {"keyword": "去年夏天", "weight": 4}]}
 查詢內容：${naturalQuery}`;
             const responseSchema = {
-                type: "ARRAY",
-                items: {
-                    type: "OBJECT",
-                    properties: {
-                        keyword: { type: "STRING" },
-                        weight: { type: "INTEGER", minimum: 1, maximum: 10 }
-                    },
-                    required: ["keyword", "weight"]
+                type: "OBJECT",
+                properties: {
+                    keywords: {
+                        type: "ARRAY",
+                        items: {
+                            type: "OBJECT",
+                            properties: {
+                                keyword: { type: "STRING" },
+                                weight: { type: "INTEGER", minimum: 1, maximum: 10 }
+                            },
+                            required: ["keyword", "weight"]
+                        },
+                        minItems: 3,
+                        maxItems: 10
+                    }
                 },
-                minItems: 3,
-                maxItems: 10
+                required: ["keywords"]
             };
-            return await callApiWithSchema(prompt, responseSchema);
+            const data = await callApiWithSchema(prompt, responseSchema);
+            return data ? data.keywords : null;
         };
         const calculateRelevanceScores = (weightedKeywords) => {
             let results = [];
@@ -5861,7 +5837,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 showNotification(i18n[config.uiLanguage].selectDataToExportNotice || '請至少選擇一項要匯出的資料。', 'warning');
                 return;
             }
-            const fileName = `chatbot_backup_${currentUser.username}_${new Date().toISOString().split('T')[0]}.json`;
+            const fileName = `chatbot_backup_${currentUser.username}_${new Date().toISOString().split('T')}.json`;
             const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
             try {
                 if ('showSaveFilePicker' in window) {
@@ -6313,20 +6289,27 @@ ${JSON.stringify(personalMemories, null, 2)}
 ${JSON.stringify(potentialMemories, null, 2)}
 `;
             const responseSchema = {
-                type: "ARRAY",
-                items: {
-                    type: "OBJECT",
-                    properties: {
-                        action: { type: "STRING", enum: ["ADD", "UPDATE", "IGNORE"] },
-                        id: { type: "STRING" },
-                        content: { type: "STRING" }
-                    },
-                    required: ["action", "content"]
-                }
+                type: "OBJECT",
+                properties: {
+                    actions: {
+                        type: "ARRAY",
+                        items: {
+                            type: "OBJECT",
+                            properties: {
+                                action: { type: "STRING", enum: ["ADD", "UPDATE", "IGNORE"] },
+                                id: { type: "STRING" },
+                                content: { type: "STRING" }
+                            },
+                            required: ["action", "content"]
+                        }
+                    }
+                },
+                required: ["actions"]
             };
 
             try {
-                const actions = await callApiWithSchema(prompt, responseSchema);
+                const data = await callApiWithSchema(prompt, responseSchema);
+                const actions = data ? data.actions : null;
                 if (actions && Array.isArray(actions)) {
                     let memoriesChanged = false;
                     actions.forEach(act => {
@@ -6413,12 +6396,18 @@ ${JSON.stringify(potentialMemories, null, 2)}
 # 待分析內容
 【使用者訊息】：${userMessage}`;
             const responseSchema = {
-                type: "ARRAY",
-                items: { type: "STRING" }
+                type: "OBJECT",
+                properties: {
+                    extracted_memories: {
+                        type: "ARRAY",
+                        items: { type: "STRING" }
+                    }
+                },
+                required: ["extracted_memories"]
             };
-            const extracted = await callApiWithSchema(prompt, responseSchema);
-            if (extracted && extracted.length > 0) {
-                await refineAndStoreMemories(extracted);
+            const data = await callApiWithSchema(prompt, responseSchema);
+            if (data && data.extracted_memories && data.extracted_memories.length > 0) {
+                await refineAndStoreMemories(data.extracted_memories);
             }
         };
         const updateApiKeyWarningBadge = () => {
@@ -6737,10 +6726,10 @@ ${JSON.stringify(potentialMemories, null, 2)}
             if(config.uiTheme.adaptivePalette && config.uiTheme.adaptivePalette.length > 1) {
                 const palette = config.uiTheme.adaptivePalette;
                 const combinations = [
-                    `linear-gradient(to right, ${palette[0]}, ${palette[1]})`,
-                    `linear-gradient(to right, ${palette[0]}, ${palette[2]})`,
-                    `linear-gradient(to right, ${palette[1]}, ${palette[2]})`,
-                    `linear-gradient(135deg, ${palette[0]}, ${palette[1]}, ${palette[2]})`
+                    `linear-gradient(to right, ${palette}, ${palette})`,
+                    `linear-gradient(to right, ${palette}, ${palette})`,
+                    `linear-gradient(to right, ${palette}, ${palette})`,
+                    `linear-gradient(135deg, ${palette}, ${palette}, ${palette})`
                 ];
                 combinations.forEach(grad => {
                     const swatch = document.createElement('div');
@@ -6882,10 +6871,10 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 ALL_ELEMENTS.appContainer.classList.add('hidden');
             }, { once: true });
             currentStoreCategory = '全部';
-    const mainContent = document.querySelector('#store-main-content');
-    if (mainContent) {
-        mainContent.scrollTop = 0;
-    }
+            const mainContent = document.querySelector('#store-main-content');
+            if (mainContent) {
+                mainContent.scrollTop = 0;
+            }
             renderStore();
         };
         const closeStore = () => {
@@ -6900,73 +6889,73 @@ ${JSON.stringify(potentialMemories, null, 2)}
         };
         const renderStore = () => {
             const mainContent = document.querySelector('#store-main-content');
-    if (mainContent) {
-        mainContent.scrollTop = 0;
-    }
-    const grid = ALL_ELEMENTS.storeGrid;
-    const categoryList = document.getElementById('store-category-list');
-    grid.innerHTML = '';
-    categoryList.innerHTML = '';
-    const translations = i18n[config.uiLanguage] || i18n['zh-TW'];
-    const translatedOfficialAstras = OFFICIAL_ASTRAS.map(ast => ({
-        ...ast,
-        name: translations['astras_' + ast.id.replace(/-/g, '_') + '_name'] || ast.name,
-        description: translations['astras_' + ast.id.replace(/-/g, '_') + '_desc'] || ast.description
-    }));
-    const userCreatedAstras = astras.filter(a => !a.officialId);
-    const allCategories = ['全部', ...new Set([
-        ...translatedOfficialAstras.map(a => a.category),
-        ...userCreatedAstras.map(a => a.category)
-    ].filter(Boolean))];
-    allCategories.forEach(category => {
-        const btn = document.createElement('button');
-        btn.className = 'store-category-btn';
-        btn.textContent = category;
-        if (category === currentStoreCategory) {
-            btn.classList.add('active');
-        }
-        btn.addEventListener('click', () => {
-            currentStoreCategory = category;
-            renderStore();
-        });
-        categoryList.appendChild(btn);
-    });
-    const allStoreAstras = [...translatedOfficialAstras, ...userCreatedAstras];
-    const filteredAstras = currentStoreCategory === '全部'
-        ? allStoreAstras
-        : allStoreAstras.filter(a => a.category === currentStoreCategory);
-    filteredAstras.forEach(ast => {
-        const card = document.createElement('div');
-        card.className = 'astras-store-card';
-        const originalId = ast.officialId || ast.id;
-        const isSubscribed = astras.some(userAstra => userAstra.officialId === originalId);
-        const isUserCreated = !ast.officialId && astras.some(userAstra => userAstra.id === originalId);
-        const avatarUrl = ast.avatarUrl;
-        const initials = ast.name.charAt(0);
-        const avatarElement = `<div class="astras-card-avatar">${avatarUrl ? `<img src="${avatarUrl}" alt="${ast.name}">` : initials}</div>`;
-        card.innerHTML = `
-            ${avatarElement}
-            <h3 class="astras-card-name">${ast.name}</h3>
-            <p class="astras-card-desc">${ast.description}</p>
-            <button class="subscribe-btn btn-primary" data-id="${originalId}"></button>
-        `;
-        const btn = card.querySelector('.subscribe-btn');
-        if (isSubscribed) {
-            btn.textContent = translations.unsubscribe || '取消訂閱';
-            btn.classList.add('subscribed');
-        } else if (isUserCreated) {
-            btn.textContent = translations.manage || '管理';
-            btn.disabled = true;
-            btn.classList.add('opacity-50', 'cursor-not-allowed');
-        } else {
-            btn.textContent = translations.subscribe || '訂閱';
-        }
-        btn.addEventListener('click', () => {
-            handleSubscription(originalId);
-        });
-        grid.appendChild(card);
-    });
-};
+            if (mainContent) {
+                mainContent.scrollTop = 0;
+            }
+            const grid = ALL_ELEMENTS.storeGrid;
+            const categoryList = document.getElementById('store-category-list');
+            grid.innerHTML = '';
+            categoryList.innerHTML = '';
+            const translations = i18n[config.uiLanguage] || i18n['zh-TW'];
+            const translatedOfficialAstras = OFFICIAL_ASTRAS.map(ast => ({
+                ...ast,
+                name: translations['astras_' + ast.id.replace(/-/g, '_') + '_name'] || ast.name,
+                description: translations['astras_' + ast.id.replace(/-/g, '_') + '_desc'] || ast.description
+            }));
+            const userCreatedAstras = astras.filter(a => !a.officialId);
+            const allCategories = ['全部', ...new Set([
+                ...translatedOfficialAstras.map(a => a.category),
+                ...userCreatedAstras.map(a => a.category)
+            ].filter(Boolean))];
+            allCategories.forEach(category => {
+                const btn = document.createElement('button');
+                btn.className = 'store-category-btn';
+                btn.textContent = category;
+                if (category === currentStoreCategory) {
+                    btn.classList.add('active');
+                }
+                btn.addEventListener('click', () => {
+                    currentStoreCategory = category;
+                    renderStore();
+                });
+                categoryList.appendChild(btn);
+            });
+            const allStoreAstras = [...translatedOfficialAstras, ...userCreatedAstras];
+            const filteredAstras = currentStoreCategory === '全部'
+                ? allStoreAstras
+                : allStoreAstras.filter(a => a.category === currentStoreCategory);
+            filteredAstras.forEach(ast => {
+                const card = document.createElement('div');
+                card.className = 'astras-store-card';
+                const originalId = ast.officialId || ast.id;
+                const isSubscribed = astras.some(userAstra => userAstra.officialId === originalId);
+                const isUserCreated = !ast.officialId && astras.some(userAstra => userAstra.id === originalId);
+                const avatarUrl = ast.avatarUrl;
+                const initials = ast.name.charAt(0);
+                const avatarElement = `<div class="astras-card-avatar">${avatarUrl ? `<img src="${avatarUrl}" alt="${ast.name}">` : initials}</div>`;
+                card.innerHTML = `
+                    ${avatarElement}
+                    <h3 class="astras-card-name">${ast.name}</h3>
+                    <p class="astras-card-desc">${ast.description}</p>
+                    <button class="subscribe-btn btn-primary" data-id="${originalId}"></button>
+                `;
+                const btn = card.querySelector('.subscribe-btn');
+                if (isSubscribed) {
+                    btn.textContent = translations.unsubscribe || '取消訂閱';
+                    btn.classList.add('subscribed');
+                } else if (isUserCreated) {
+                    btn.textContent = translations.manage || '管理';
+                    btn.disabled = true;
+                    btn.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    btn.textContent = translations.subscribe || '訂閱';
+                }
+                btn.addEventListener('click', () => {
+                    handleSubscription(originalId);
+                });
+                grid.appendChild(card);
+            });
+        };
         const handleSubscription = (officialId) => {
             const isSubscribed = astras.some(a => a.officialId === officialId);
             if (isSubscribed) {
@@ -7370,34 +7359,34 @@ ${JSON.stringify(potentialMemories, null, 2)}
             toggleModal(ALL_ELEMENTS.updateInfoModal, true);
         };
         const checkAndShowLatestUpdate = async () => {
-    if (!config.enableUpdateNotifications || typeof updateLogs === 'undefined' || updateLogs.length === 0) {
-        return;
-    }
-    const lastSeenVersion = config.lastSeenVersion || '0.0.0'; // 如果從未見過，則設為 '0.0.0'
-    const newUpdates = updateLogs.filter(log => compareVersions(log.version, lastSeenVersion) > 0);
-    if (newUpdates.length > 0) {
-        newUpdates.sort((a, b) => compareVersions(b.version, a.version));
-        const contentContainer = ALL_ELEMENTS.latestUpdateContent;
-        const modalTitle = document.querySelector('#latest-update-modal h2');
-        if (modalTitle) {
-            modalTitle.textContent = i18n[config.uiLanguage].newVersionsFound.replace('{count}', newUpdates.length);
-        }
-        contentContainer.innerHTML = newUpdates.map(log => `
-            <div class="prose prose-sm max-w-none mb-6 pb-4 border-b border-[var(--border-color)] last:border-b-0 last:mb-0 last:pb-0">
-                <h4 class="font-bold text-lg">${log.version} <span class="text-sm font-normal text-[var(--text-secondary)]">- ${log.date}</span></h4>
-                <ul>
-                    ${log.content.map(item => `<li>${item}</li>`).join('')}
-                </ul>
-            </div>
-        `).join('');
-        contentContainer.style.maxHeight = '60vh';
-        contentContainer.style.overflowY = 'auto';
-        toggleModal(ALL_ELEMENTS.latestUpdateModal, true);
-        const latestVersionInLog = newUpdates[0].version; // 因為我們已經排序了，所以 newUpdates[0] 現在是最新版
-        config.lastSeenVersion = latestVersionInLog;
-        await saveConfig();
-    }
-};
+            if (!config.enableUpdateNotifications || typeof updateLogs === 'undefined' || updateLogs.length === 0) {
+                return;
+            }
+            const lastSeenVersion = config.lastSeenVersion || '0.0.0'; 
+            const newUpdates = updateLogs.filter(log => compareVersions(log.version, lastSeenVersion) > 0);
+            if (newUpdates.length > 0) {
+                newUpdates.sort((a, b) => compareVersions(b.version, a.version));
+                const contentContainer = ALL_ELEMENTS.latestUpdateContent;
+                const modalTitle = document.querySelector('#latest-update-modal h2');
+                if (modalTitle) {
+                    modalTitle.textContent = i18n[config.uiLanguage].newVersionsFound.replace('{count}', newUpdates.length);
+                }
+                contentContainer.innerHTML = newUpdates.map(log => `
+                    <div class="prose prose-sm max-w-none mb-6 pb-4 border-b border-[var(--border-color)] last:border-b-0 last:mb-0 last:pb-0">
+                        <h4 class="font-bold text-lg">${log.version} <span class="text-sm font-normal text-[var(--text-secondary)]">- ${log.date}</span></h4>
+                        <ul>
+                            ${log.content.map(item => `<li>${item}</li>`).join('')}
+                        </ul>
+                    </div>
+                `).join('');
+                contentContainer.style.maxHeight = '60vh';
+                contentContainer.style.overflowY = 'auto';
+                toggleModal(ALL_ELEMENTS.latestUpdateModal, true);
+                const latestVersionInLog = newUpdates[0].version; 
+                config.lastSeenVersion = latestVersionInLog;
+                await saveConfig();
+            }
+        };
         const renderTrash = () => {
             const container = ALL_ELEMENTS.trashListContainer;
             const deletedConvs = conversations.filter(c => c.deletedAt).sort((a,b) => new Date(b.deletedAt) - new Date(a.deletedAt));
@@ -7550,97 +7539,14 @@ ${JSON.stringify(potentialMemories, null, 2)}
             showNotification(`${i18n[config.uiLanguage].trashEmptiedSuccess || '已成功清空垃圾桶，刪除了'} ${count} ${i18n[config.uiLanguage].items || '個項目'}。`, 'success');
         };
         const updateDisplayedVersion = () => {
-    const versionDisplayElement = document.getElementById('version-number-display');
-    if (versionDisplayElement && typeof updateLogs !== 'undefined' && updateLogs.length > 0) {
-        const latestVersionInLog = updateLogs.reduce((max, log) => 
-            compareVersions(log.version, max) > 0 ? log.version : max, '0.0.0');
-        versionDisplayElement.textContent = latestVersionInLog;
-    }
-};
-        // ✨ 新增：動態注入深度研究功能所需樣式的函數
-        function injectDeepResearchStyles() {
-            // 檢查樣式是否已存在，避免重複注入
-            if (document.getElementById('deep-research-styles')) {
-                return;
+            const versionDisplayElement = document.getElementById('version-number-display');
+            if (versionDisplayElement && typeof updateLogs !== 'undefined' && updateLogs.length > 0) {
+                const latestVersionInLog = updateLogs.reduce((max, log) => 
+                    compareVersions(log.version, max) > 0 ? log.version : max, '0.0.0');
+                versionDisplayElement.textContent = latestVersionInLog;
             }
-
-            const css = `
-                .research-dashboard {
-                    background-color: var(--sidebar-bg);
-                    border: 1px solid var(--border-color);
-                    padding: 1rem 1.5rem;
-                    border-radius: 0.75rem;
-                    max-w-4xl mx-auto;
-                    animation: subtleFadeInUp 0.4s ease-out;
-                }
-                .research-dashboard h4 {
-                    font-size: 1rem;
-                    font-weight: 600;
-                    margin-bottom: 1rem;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.5rem;
-                    color: var(--text-primary);
-                }
-                .research-dashboard .main-spinner {
-                    width: 18px;
-                    height: 18px;
-                    border: 2px solid var(--hover-bg);
-                    border-top-color: var(--button-primary-bg);
-                    border-radius: 50%;
-                    animation: spin 1s linear infinite;
-                }
-                .research-dashboard ul {
-                    list-style: none;
-                    padding: 0;
-                    margin: 0;
-                    space-y: 0.75rem;
-                }
-                .research-step {
-                    display: flex;
-                    align-items: center;
-                    gap: 0.75rem;
-                    font-size: 0.875rem;
-                    color: var(--text-secondary);
-                    transition: color 0.3s ease;
-                }
-                .research-step .status-icon {
-                    width: 20px;
-                    height: 20px;
-                    flex-shrink: 0;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-                .research-step .status-icon .spinner {
-                    width: 16px;
-                    height: 16px;
-                    border: 2px solid currentColor;
-                    border-top-color: transparent;
-                    border-radius: 50%;
-                    animation: spin 0.8s linear infinite;
-                }
-                .research-step.status-running {
-                    color: var(--button-primary-bg);
-                    font-weight: 500;
-                }
-                .research-step.status-completed {
-                    color: #10b981; /* Green-500 */
-                }
-                .dark .research-step.status-completed {
-                    color: #34d399; /* Green-400 */
-                }
-                .research-step.status-error {
-                    color: #ef4444; /* Red-500 */
-                }
-            `;
-
-            const styleSheet = document.createElement("style");
-            styleSheet.id = 'deep-research-styles';
-            styleSheet.innerText = css;
-            document.head.appendChild(styleSheet);
-        }
-        // ✨ 新增：生成深度研究儀表板卡片的輔助函數
+        };
+        
         function addResearchDashboardCard(title, steps) {
             const card = document.createElement('div');
             card.className = 'message-item';
@@ -7671,7 +7577,6 @@ ${JSON.stringify(potentialMemories, null, 2)}
             ALL_ELEMENTS.messageList.appendChild(card);
             ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
 
-            // 返回一個可以控制儀表板狀態的物件
             return {
                 cardElement: card,
                 updateStep: (index, status, text) => {
@@ -7698,14 +7603,52 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 setTitle: (newTitle) => {
                     const titleElement = card.querySelector('h4');
                     if (titleElement) {
-                        // 保持 spinner 不變，只更新文字
                         titleElement.childNodes[1].textContent = ` ${newTitle}`;
                     }
                 },
                 remove: () => card.remove()
             };
         }
-        // ✨ 更新後的深度研究核心函數
+        
+        // ✨ [新增] 生成研究計畫的函數
+        async function generateResearchPlan(userMessage, refinement = null) {
+            const excellentExample = `如果使用者詢問：「台灣老齡化對未來半導體產業帶來的影響與相關性」，一個卓越的研究計畫應該是像這樣結構化、描述性的步驟：
+1. 數據收集：收集台灣未來幾十年內（例如到 2035 年和 2050 年）的人口老化趨勢、勞動力結構變化以及潛在勞動力短缺的最新數據與預測報告。
+2. 供需分析：分析台灣半導體產業對人力資源的特殊需求（例如研發工程師、高技術操作員）與老化人口結構之間的潛在不匹配程度。
+3. 企業策略檢視：檢視台灣主要的半導體製造商針對勞動力挑戰所採取的應對措施，特別是智慧製造、工廠自動化、AI 應用以及遠距/彈性工作模式的採用情況。
+4. 政府政策研究：研究台灣政府在吸引、培育和留住國內外半導體人才方面所推動的相關政策、教育改革和產業激勵措施。
+5. 創新能力評估：探討人口老化是否會間接影響半導體產業的創新能力與研發投入，並尋找業界或學術界對此的評估和觀點。
+6. 國際經驗比較：比較台灣與其他同樣面臨人口老化挑戰的國家（例如日本、韓國）的科技或製造業，它們在解決勞動力問題上的成功或失敗經驗。
+7. 非傳統勞動力評估：評估台灣半導體產業如何利用非傳統勞動力來源（如中高齡員工再僱用、女性勞動力回歸、國際人才引進）來彌補人口結構帶來的衝擊。
+8. 綜合風險與機遇評估：綜合所有信息，評估人口老化對台灣半導體產業長期全球競爭力（包括成本結構和供應鏈穩定性）的整體風險與機遇。`;
+            
+            let prompt = `你是一位頂尖的策略顧問與研究分析師。你的任務是為給定的研究主題，設計一份清晰、有邏輯、步驟化的「研究計畫」。
+- **學習範例:** ${excellentExample}
+- 這份計畫不該只是零散的關鍵字，而應該是一系列（5到8個）完整的行動綱領，勾勒出你將如何探討這個主題。
+- 每個步驟都應該是一個描述性的句子，清楚說明該步驟要執行的研究任務。
+- 請嚴格以 JSON 物件格式回傳，物件中只有一個名為 "plan" 的鍵，其值為一個包含所有研究步驟字串的陣列。例如: {"plan": ["步驟一...", "步驟二...", "步驟三..."]}`;
+
+            if (refinement) {
+                prompt += `\n\n使用者對上一個計畫提出了調整建議，請根據以下建議重新生成一份更完善的研究計畫：\n使用者建議: "${refinement}"`;
+            }
+
+            prompt += `\n\n請為以下主題生成研究計畫：\n主題: "${userMessage}"`;
+            
+            const schema = {
+                type: "OBJECT",
+                properties: {
+                    plan: {
+                        type: "ARRAY",
+                        items: { type: "STRING" }
+                    }
+                },
+                required: ["plan"]
+            };
+
+            const result = await callApiWithSchema(prompt, schema, abortController.signal);
+            return result ? result.plan : null;
+        }
+
         async function handleDeepResearch(userMessage) {
             renderFollowUpPrompts([]);
             const conv = getActiveConversation();
@@ -7737,105 +7680,125 @@ ${JSON.stringify(potentialMemories, null, 2)}
             let dashboard = addResearchDashboardCard('啟動深度研究...', ['正在分析主題並規劃研究步驟...']);
             dashboard.updateStep(0, 'running');
 
+            let currentPlan = null;
+            let refinementInstruction = null;
+            let planApproved = false;
             let fullReport = '';
 
             try {
-                // 1. 規劃階段 (PLANNING)
-                const aggregatedSourcesMap = new Map();
-                const userQueryCount = config.deepResearchQueryCount;
-                const promptModeInstruction = userQueryCount === 0 
-                    ? "請先分析下方主題的複雜度，自行決定一個最合適的搜尋查詢數量（介於 2 到 8 之間），然後生成這些查詢。"
-                    : `使用者已指定需要 ${userQueryCount} 個搜尋查詢，請嚴格生成這個數量。`;
-                
-                const plannerPrompt = `你是一個資深研究員。你的任務是為給定的研究主題生成一系列 Google 搜尋查詢。
-        ${promptModeInstruction}
-        查詢應具備多樣性，能從不同角度涵蓋主題的核心。請嚴格以 JSON 陣列格式回傳，例如: ["查詢1", "查詢2", "查詢3"]
+                // --- 規劃與審閱循環 ---
+                while (!planApproved) {
+                    if (abortController.signal.aborted) {
+                        throw new Error("研究已由使用者取消。");
+                    }
+                    
+                    dashboard.updateStep(0, 'running', refinementInstruction ? '正在根據您的建議調整計畫...' : '正在分析主題並規劃研究步驟...');
 
-        主題: "${userMessage}"`;
+                    currentPlan = await generateResearchPlan(userMessage, refinementInstruction);
 
-                const plannerSchema = { 
-                    type: "ARRAY", 
-                    items: { type: "STRING" }
-                };
+                    if (!currentPlan || currentPlan.length === 0) {
+                        throw new Error('無法生成研究計畫，請嘗試更換主題或檢查 API 金鑰。');
+                    }
+                    
+                    dashboard.updateStep(0, 'completed', '研究計畫已生成，待您檢視。');
 
-                const searchQueries = await callApiWithSchema(plannerPrompt, plannerSchema, abortController.signal);
+                    const userDecision = await showResearchPlanModal(currentPlan);
 
-                if (!searchQueries || searchQueries.length === 0) {
-                    throw new Error('無法生成研究計畫。');
+                    switch (userDecision.action) {
+                        case 'proceed':
+                            planApproved = true;
+                            break;
+                        case 'refine':
+                            refinementInstruction = userDecision.feedback;
+                            break; // 循環將繼續，並使用新的指示
+                        case 'cancel':
+                            throw new Error("研究已由使用者取消。");
+                    }
                 }
-                
-                dashboard.remove();
-                dashboard = addResearchDashboardCard('正在執行研究計畫...', searchQueries);
 
-                // 2. 執行階段 (EXECUTION) - 平行化處理
+                // --- 執行階段 ---
+                dashboard.remove(); // 移除規劃階段的儀表板
+                dashboard = addResearchDashboardCard('正在執行研究計畫...', currentPlan);
+
                 dashboard.setTitle('正在平行搜尋資料...');
-                const searchPromises = searchQueries.map((query, index) => {
+                const searchPromises = currentPlan.map((step, index) => {
                     return (async () => {
                         try {
-                            dashboard.updateStep(index, 'running', query);
-                            const { fullText: searchResultText, sources } = await streamApiCall(
-                                [{ text: query }], 
+                            if (abortController.signal.aborted) return `--- 任務 "${step}" 已取消 ---\n`;
+                            dashboard.updateStep(index, 'running', step);
+                            // 將每個步驟作為搜尋查詢
+                            const searchResultText = await streamApiCall(
+                                [{ text: `關於 "${userMessage}" 這個主題，請深入研究以下方面: "${step}"` }], 
                                 () => {}, 
                                 abortController.signal,
-                                true
+                                true // 強制使用網路搜尋
                             );
-                            if (sources) { // ✨ 新增: 將來源加入 Map
-                                sources.forEach(s => {
-                                    if(s.uri) aggregatedSourcesMap.set(s.uri, s);
-                                });
-                            }
-                            dashboard.updateStep(index, 'completed', query);
-                            return `--- 關於 "${query}" 的搜尋結果 ---\n${searchResultText}\n`;
+                            dashboard.updateStep(index, 'completed', step);
+                            return `--- 關於 "${step}" 的研究資料 ---\n${searchResultText}\n\n`;
                         } catch (err) {
-                            dashboard.updateStep(index, 'error', `搜尋失敗: ${query}`);
-                            console.error(`Search failed for query: ${query}`, err);
-                            return `--- 關於 "${query}" 的搜尋失敗 ---\n錯誤訊息: ${err.message}\n`;
+                            if (err.name === 'AbortError') return `--- 任務 "${step}" 已取消 ---\n`;
+                            dashboard.updateStep(index, 'error', `研究失敗: ${step}`);
+                            console.error(`Research failed for step: ${step}`, err);
+                            return `--- 關於 "${step}" 的研究失敗 ---\n錯誤訊息: ${err.message}\n\n`;
                         }
                     })();
                 });
 
                 const searchResults = await Promise.all(searchPromises);
+                
+                if (abortController.signal.aborted) {
+                    throw new Error("研究已由使用者取消。");
+                }
 
-                // 3. 綜合階段 (SYNTHESIZING)
+                // --- 綜合階段 ---
                 dashboard.setTitle('正在綜合所有資料...');
                 dashboard.updateStep('synthesis', 'running');
-                const uniqueAggregatedSources = Array.from(aggregatedSourcesMap.values());
-                const synthesizerPrompt = `你是一位專業分析師。請根據以下原始任務和收集到的多份資料，撰寫一份全面、結構化的 Markdown 報告。報告應包含標題、摘要、條列式重點、數據（如果有的話）。請整合資訊，去除冗餘，並確保邏輯清晰。\n\n原始任務: "${userMessage}"\n\n收集到的資料:\n${searchResults.join('\n')}`;
+                const synthesizerPrompt = `你是一位專業的分析師與報告撰寫員。請根據以下【原始任務】和收集到的多份【研究資料】，撰寫一份全面、結構化、條理分明的 Markdown 格式報告。
+
+報告要求：
+1.  **整合與提煉：** 不要只是簡單地羅列資料，你需要深入理解、整合所有資訊，去除重複、矛盾或無關的內容，並提煉出核心觀點。
+2.  **結構清晰：** 報告必須包含一個總標題、引言（摘要）、條列式的核心重點、以及分段的詳細論述。適當地使用 H2 (##) 和 H3 (###) 標題來組織內容。
+3.  **數據呈現：** 如果資料中有具體的數據或統計，請以清晰的方式呈現它們（例如，使用表格或重點標示）。
+4.  **客觀中立：** 以客觀的第三方視角進行分析與撰寫，避免使用第一人稱（我認為、我覺得）。
+5.  **流暢可讀：** 確保最終的報告文字流暢、易於理解。
+
+【原始任務】: "${userMessage}"
+
+【研究資料】:
+${searchResults.join('\n')}
+`;
 
                 dashboard.remove();
                 const reportContentDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false).querySelector('.message-content');
 
-                const { fullText: finalReportText } = await streamApiCall(
-    [{ text: synthesizerPrompt }],
-    (chunk) => {
-        fullReport += chunk;
-        reportContentDiv.innerHTML = renderMarkdown(fullReport);
-        const chatContainer = ALL_ELEMENTS.chatContainer;
-        const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 30;
-        if (isNearBottom) {
-            chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
-        }
-    },
-    abortController.signal,
-    false
-);
+                fullReport = await streamApiCall(
+                    [{ text: synthesizerPrompt }],
+                    (chunk) => {
+                        fullReport += chunk;
+                        reportContentDiv.innerHTML = renderMarkdown(fullReport);
+                        const chatContainer = ALL_ELEMENTS.chatContainer;
+                        const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 30;
+                        if (isNearBottom) {
+                            chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+                        }
+                    },
+                    abortController.signal,
+                    false // 綜合階段不需要網路搜尋
+                );
                 
                 const finalReportMessage = { role: 'model', parts: [{ text: fullReport }], createdAt: new Date().toISOString() };
-                if (uniqueAggregatedSources.length > 0) { // ✨ 新增: 附加所有來源到最終報告
-                    finalReportMessage.sources = uniqueAggregatedSources;
-                }
                 conv.messages.push(finalReportMessage);
 
             } catch (error) {
-                if (error.name !== 'AbortError') {
+                if (error.message.includes("使用者取消")) {
+                    showNotification(error.message, 'warning');
+                } else {
                     console.error('深度研究失敗:', error);
-                    dashboard.setTitle('研究失敗!');
-                    dashboard.updateStep('synthesis', 'error', `研究中止: ${error.message}`);
+                    showNotification(`研究過程中發生錯誤：${error.message}`, 'error');
                     const errorMessage = { role: 'model', parts: [{ text: `抱歉，研究過程中發生錯誤：${error.message}` }], createdAt: new Date().toISOString() };
                     conv.messages.push(errorMessage);
-                } else {
-                    dashboard.remove();
                 }
+                if(dashboard) dashboard.remove();
             } finally {
                 abortController = null;
                 updateSubmitButtonState(false);
@@ -7853,7 +7816,6 @@ ${JSON.stringify(potentialMemories, null, 2)}
             }
         }
         async function initChatApp() {
-            injectDeepResearchStyles(); // ✨ 注入樣式
             await loadConfig();
             await loadAppData();
             applyCustomWallpaper();
@@ -8016,21 +7978,21 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 }
             });
             ALL_ELEMENTS.messageInput.addEventListener('input', adjustTextareaHeight);
-const expandBtn = document.getElementById('expand-input-btn');
-if (expandBtn) {
-    expandBtn.addEventListener('click', () => {
-        ALL_ELEMENTS.messageInput.classList.toggle('expanded');
-        expandBtn.classList.toggle('rotated');
-        adjustTextareaHeight(); // 點擊後重新計算一次高度
-    });
-}
+            const expandBtn = document.getElementById('expand-input-btn');
+            if (expandBtn) {
+                expandBtn.addEventListener('click', () => {
+                    ALL_ELEMENTS.messageInput.classList.toggle('expanded');
+                    expandBtn.classList.toggle('rotated');
+                    adjustTextareaHeight();
+                });
+            }
             ALL_ELEMENTS.messageInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && e.shiftKey) { 
-        e.preventDefault(); // 阻止 Shift+Enter 的默認換行行為
-        ALL_ELEMENTS.submitButton.click();
-    }
-});
-const handleInputFocus = () => {
+                if (e.key === 'Enter' && e.shiftKey) { 
+                    e.preventDefault(); 
+                    ALL_ELEMENTS.submitButton.click();
+                }
+            });
+            const handleInputFocus = () => {
                 if (window.visualViewport) {
                     const smoothScrollToTarget = () => {
                         const inputBarContainer = document.getElementById('input-bar-container');
@@ -8165,115 +8127,102 @@ const handleInputFocus = () => {
             ALL_ELEMENTS.trashBatchRestoreBtn.addEventListener('click', handleBatchRestoreFromTrash);
             ALL_ELEMENTS.trashBatchDeleteBtn.addEventListener('click', handleBatchDeleteFromTrash);
             ALL_ELEMENTS.emptyTrashBtn.addEventListener('click', handleEmptyTrash);
-            updateFileInputUI();
-            startNewChat();
-        const initializeSpotlightEffect = () => {
-            const spotlightElements = document.querySelectorAll('.spotlight-effect');
-            spotlightElements.forEach(el => {
-                const handleMove = (e) => {
-                    const rect = el.getBoundingClientRect();
-                    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-                    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-                    el.style.setProperty('--spotlight-x', `${x}px`);
-                    el.style.setProperty('--spotlight-y', `${y}px`);
-                };
-                el.addEventListener('mousemove', handleMove);
-                el.addEventListener('touchmove', handleMove, { passive: true });
-            });
-        };
+            const initializeSpotlightEffect = () => {
+                const spotlightElements = document.querySelectorAll('.spotlight-effect');
+                spotlightElements.forEach(el => {
+                    const handleMove = (e) => {
+                        const rect = el.getBoundingClientRect();
+                        const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+                        const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+                        el.style.setProperty('--spotlight-x', `${x}px`);
+                        el.style.setProperty('--spotlight-y', `${y}px`);
+                    };
+                    el.addEventListener('mousemove', handleMove);
+                    el.addEventListener('touchmove', handleMove, { passive: true });
+                });
+            };
             ALL_ELEMENTS.sendFeedbackBtn.addEventListener('click', async () => {
-    const feedbackContent = ALL_ELEMENTS.feedbackTextarea.value.trim();
-    const sendButton = ALL_ELEMENTS.sendFeedbackBtn;
-    
-    if (!feedbackContent) {
-        showNotification('請先輸入您的意見！', 'warning');
-        return;
-    }
-    const FORM_ENDPOINT = 'https://formspree.io/f/mjkabkko'; 
+                const feedbackContent = ALL_ELEMENTS.feedbackTextarea.value.trim();
+                const sendButton = ALL_ELEMENTS.sendFeedbackBtn;
+                
+                if (!feedbackContent) {
+                    showNotification('請先輸入您的意見！', 'warning');
+                    return;
+                }
+                const FORM_ENDPOINT = 'https://formspree.io/f/mjkabkko'; 
 
+                const originalButtonText = sendButton.textContent;
+                sendButton.disabled = true;
+                sendButton.textContent = '發送中...';
 
-    const originalButtonText = sendButton.textContent;
-    sendButton.disabled = true;
-    sendButton.textContent = '發送中...';
+                try {
+                    const response = await fetch(FORM_ENDPOINT, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        body: JSON.stringify({ message: feedbackContent, source: 'Astra Feedback Form' })
+                    });
 
-
-    try {
-        const response = await fetch(FORM_ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({ message: feedbackContent, source: 'Astra Feedback Form' })
-        });
-
-
-        if (response.ok) {
-            showNotification('反饋已成功發送，感謝您！', 'success');
-            ALL_ELEMENTS.feedbackTextarea.value = '';
-        } else {
-            throw new Error('伺服器發生錯誤，請稍後再試。');
-        }
-    } catch (error) {
-        console.error('發送反饋時出錯:', error);
-        showNotification('發送失敗，請檢查您的網路連線。', 'error');
-    } finally {
-        sendButton.disabled = false;
-        sendButton.textContent = originalButtonText;
-    }
-});
+                    if (response.ok) {
+                        showNotification('反饋已成功發送，感謝您！', 'success');
+                        ALL_ELEMENTS.feedbackTextarea.value = '';
+                    } else {
+                        throw new Error('伺服器發生錯誤，請稍後再試。');
+                    }
+                } catch (error) {
+                    console.error('發送反饋時出錯:', error);
+                    showNotification('發送失敗，請檢查您的網路連線。', 'error');
+                } finally {
+                    sendButton.disabled = false;
+                    sendButton.textContent = originalButtonText;
+                }
+            });
             ALL_ELEMENTS.proposeAstrasBtn.addEventListener('click', () => {
-    ALL_ELEMENTS.proposalNameInput.value = '';
-    ALL_ELEMENTS.proposalDescInput.value = '';
-    ALL_ELEMENTS.proposalInstructionsInput.value = '';
-    toggleModal(ALL_ELEMENTS.astrasProposalModal, true);
-});
+                ALL_ELEMENTS.proposalNameInput.value = '';
+                ALL_ELEMENTS.proposalDescInput.value = '';
+                ALL_ELEMENTS.proposalInstructionsInput.value = '';
+                toggleModal(ALL_ELEMENTS.astrasProposalModal, true);
+            });
+            ALL_ELEMENTS.cancelProposalBtn.addEventListener('click', () => {
+                toggleModal(ALL_ELEMENTS.astrasProposalModal, false);
+            });
+            ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
+                const name = ALL_ELEMENTS.proposalNameInput.value.trim();
+                const description = ALL_ELEMENTS.proposalDescInput.value.trim();
+                const instructions = ALL_ELEMENTS.proposalInstructionsInput.value.trim();
+                const submitButton = ALL_ELEMENTS.submitProposalBtn;
 
+                if (!name || !instructions) {
+                    showNotification('提案的「名稱」和「指令」是必填的喔！', 'warning');
+                    return;
+                }
+                const FORM_ENDPOINT = 'https://formspree.io/f/mzzjpzzw';
 
-ALL_ELEMENTS.cancelProposalBtn.addEventListener('click', () => {
-    toggleModal(ALL_ELEMENTS.astrasProposalModal, false);
-});
+                const originalButtonText = submitButton.textContent;
+                submitButton.disabled = true;
+                submitButton.textContent = '提交中...';
 
+                try {
+                    const response = await fetch(FORM_ENDPOINT, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        body: JSON.stringify({ "提案名稱": name, "功能說明": description, "核心指令": instructions })
+                    });
 
-ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
-    const name = ALL_ELEMENTS.proposalNameInput.value.trim();
-    const description = ALL_ELEMENTS.proposalDescInput.value.trim();
-    const instructions = ALL_ELEMENTS.proposalInstructionsInput.value.trim();
-    const submitButton = ALL_ELEMENTS.submitProposalBtn;
-
-
-    if (!name || !instructions) {
-        showNotification('提案的「名稱」和「指令」是必填的喔！', 'warning');
-        return;
-    }
-    const FORM_ENDPOINT = 'https://formspree.io/f/mzzjpzzw';
-
-
-    const originalButtonText = submitButton.textContent;
-    submitButton.disabled = true;
-    submitButton.textContent = '提交中...';
-
-
-    try {
-        const response = await fetch(FORM_ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({ "提案名稱": name, "功能說明": description, "核心指令": instructions })
-        });
-
-
-        if (response.ok) {
-            toggleModal(ALL_ELEMENTS.astrasProposalModal, false);
-            showNotification('感謝您的提案，已成功發送！', 'success');
-        } else {
-            throw new Error('伺服器發生錯誤，請稍後再試。');
-        }
-    } catch (error) {
-        console.error('提交提案時出錯:', error);
-        showNotification('提交失敗，請檢查您的網路連線。', 'error');
-    } finally {
-        submitButton.disabled = false;
-        submitButton.textContent = originalButtonText;
-    }
-});
-        initializeSpotlightEffect();
+                    if (response.ok) {
+                        toggleModal(ALL_ELEMENTS.astrasProposalModal, false);
+                        showNotification('感謝您的提案，已成功發送！', 'success');
+                    } else {
+                        throw new Error('伺服器發生錯誤，請稍後再試。');
+                    }
+                } catch (error) {
+                    console.error('提交提案時出錯:', error);
+                    showNotification('提交失敗，請檢查您的網路連線。', 'error');
+                } finally {
+                    submitButton.disabled = false;
+                    submitButton.textContent = originalButtonText;
+                }
+            });
+            initializeSpotlightEffect();
         }
         const handleDeleteMessagePair = async (index) => {
             const confirmed = await showCustomDialog({
@@ -8313,37 +8262,37 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
             })();
             const FOLDER_ICONS = ['📁', '📂', '🗂️', '📚', '📝', '🗃️', '📘', '📙', '📗', '📕'];
             const adjustTextareaHeight = () => {
-    const textarea = ALL_ELEMENTS.messageInput;
-    const expandBtn = document.getElementById('expand-input-btn');
-    if (!textarea || !expandBtn) return;
+                const textarea = ALL_ELEMENTS.messageInput;
+                const expandBtn = document.getElementById('expand-input-btn');
+                if (!textarea || !expandBtn) return;
 
-    textarea.style.height = 'auto';
+                textarea.style.height = 'auto';
 
-    const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight);
-    const paddingTop = parseFloat(getComputedStyle(textarea).paddingTop);
-    const paddingBottom = parseFloat(getComputedStyle(textarea).paddingBottom);
-    
-    const maxHeight = (lineHeight * 8) + paddingTop + paddingBottom;
-    const scrollHeight = textarea.scrollHeight;
+                const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight);
+                const paddingTop = parseFloat(getComputedStyle(textarea).paddingTop);
+                const paddingBottom = parseFloat(getComputedStyle(textarea).paddingBottom);
+                
+                const maxHeight = (lineHeight * 8) + paddingTop + paddingBottom;
+                const scrollHeight = textarea.scrollHeight;
 
-    if (scrollHeight > maxHeight + 2) {
-        expandBtn.classList.remove('hidden');
-        expandBtn.classList.add('flex');
-    } else {
-        expandBtn.classList.add('hidden');
-        expandBtn.classList.remove('flex');
-        if (textarea.classList.contains('expanded')) {
-            textarea.classList.remove('expanded');
-            expandBtn.classList.remove('rotated');
-        }
-    }
+                if (scrollHeight > maxHeight + 2) {
+                    expandBtn.classList.remove('hidden');
+                    expandBtn.classList.add('flex');
+                } else {
+                    expandBtn.classList.add('hidden');
+                    expandBtn.classList.remove('flex');
+                    if (textarea.classList.contains('expanded')) {
+                        textarea.classList.remove('expanded');
+                        expandBtn.classList.remove('rotated');
+                    }
+                }
 
-    if (textarea.classList.contains('expanded')) {
-        textarea.style.height = `${scrollHeight}px`;
-    } else {
-        textarea.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
-    }
-};
+                if (textarea.classList.contains('expanded')) {
+                    textarea.style.height = `${scrollHeight}px`;
+                } else {
+                    textarea.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
+                }
+            };
             ALL_ELEMENTS.loginLangBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 ALL_ELEMENTS.loginLangMenu.classList.toggle('visible');
@@ -8363,6 +8312,39 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
                     ALL_ELEMENTS.loginLangMenu.classList.remove('visible');
                 }
             });
+
+            // ✨ [新增] 研究計畫互動視窗的事件監聽器 ✨
+            function showResearchPlanModal(plan) {
+                return new Promise((resolve) => {
+                    const { researchPlanModal, researchPlanContent, closeResearchPlanModalBtn, researchPlanCancelBtn, researchPlanRefineBtn, researchPlanProceedBtn } = ALL_ELEMENTS;
+                    
+                    researchPlanContent.innerHTML = `<ol>${plan.map(step => `<li>${step}</li>`).join('')}</ol>`;
+                    
+                    const cleanupAndResolve = (decision) => {
+                        toggleModal(researchPlanModal, false);
+                        closeResearchPlanModalBtn.onclick = null;
+                        researchPlanCancelBtn.onclick = null;
+                        researchPlanRefineBtn.onclick = null;
+                        researchPlanProceedBtn.onclick = null;
+                        resolve(decision);
+                    };
+
+                    closeResearchPlanModalBtn.onclick = () => cleanupAndResolve({ action: 'cancel' });
+                    researchPlanCancelBtn.onclick = () => cleanupAndResolve({ action: 'cancel' });
+                    researchPlanProceedBtn.onclick = () => cleanupAndResolve({ action: 'proceed' });
+                    researchPlanRefineBtn.onclick = async () => {
+                        const feedback = await showCustomPrompt(
+                            i18n[config.uiLanguage].refinePlanPrompt || '請輸入您的調整建議，AI 將根據您的回饋重新生成計畫。', 
+                            i18n[config.uiLanguage].refinePlanTitle || '調整研究計畫'
+                        );
+                        if (feedback !== null) {
+                            cleanupAndResolve({ action: 'refine', feedback: feedback });
+                        }
+                    };
+
+                    toggleModal(researchPlanModal, true);
+                });
+            }
     </script>
     <script>
     document.addEventListener('touchstart', function(event) {
