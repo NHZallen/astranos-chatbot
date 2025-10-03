@@ -1639,150 +1639,6 @@ body.custom-wallpaper-active .input-indicator-item {
 #input-bar-container .input-wrapper > .flex.items-end {
     width: 100%;
 }
-    /* ✨ 新增：資料來源區塊樣式 */
-    .source-container {
-        font-size: 0.875rem;
-        color: var(--text-secondary);
-    }
-    .dark .source-container {
-        border-color: rgba(255, 255, 255, 0.2);
-    }
-    .source-title {
-        color: var(--text-primary);
-    }
-    .source-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-    .source-link {
-        display: flex;
-        align-items: flex-start;
-        gap: 0.5rem;
-        padding: 0.5rem;
-        border-radius: 0.375rem;
-        background-color: var(--hover-bg);
-        transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
-        text-decoration: none;
-    }
-    .source-link:hover {
-        background-color: var(--active-bg);
-    }
-    .source-index {
-        font-weight: 500;
-        flex-shrink: 0;
-    }
-    .source-link-title {
-        font-size: 0.8rem;
-        line-height: 1.4;
-        word-break: break-all;
-    }
-    .model-message .prose .source-link,
-    .model-message .prose .source-link .source-link-title,
-    .model-message .prose .source-link .source-index {
-        color: var(--text-secondary);
-    }
-    .model-message .prose .source-link:hover,
-    .model-message .prose .source-link:hover .source-link-title,
-    .model-message .prose .source-link:hover .source-index {
-        color: var(--text-primary);
-    }
-    .dark .model-message .prose .source-link,
-    .dark .model-message .prose .source-link * {
-        color: var(--text-secondary) !important;
-    }
-    .dark .model-message .prose .source-link:hover,
-    .dark .model-message .prose .source-link:hover * {
-        color: var(--text-primary) !important;
-    }
-    body.custom-wallpaper-active .model-message .source-container {
-        border-color: rgba(0,0,0,0.2) !important;
-    }
-    body.custom-wallpaper-active .model-message .source-link {
-        background-color: rgba(0,0,0,0.05) !important;
-    }
-    body.custom-wallpaper-active .model-message .source-link *,
-    body.custom-wallpaper-active .model-message .source-title {
-        color: #111827 !important;
-    }
-    body.custom-wallpaper-active .model-message .source-link:hover {
-        background-color: rgba(0,0,0,0.1) !important;
-    }
-    /* ✨ 新增：深度研究儀表板樣式 */
-    .research-dashboard {
-        background-color: var(--sidebar-bg);
-        border: 1px solid var(--border-color);
-        padding: 1rem 1.5rem;
-        border-radius: 0.75rem;
-        max-width: 4xl;
-        margin-left: auto;
-        margin-right: auto;
-        animation: subtleFadeInUp 0.4s ease-out;
-    }
-    .research-dashboard h4 {
-        font-size: 1rem;
-        font-weight: 600;
-        margin-bottom: 1rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        color: var(--text-primary);
-    }
-    .research-dashboard .main-spinner {
-        width: 18px;
-        height: 18px;
-        border: 2px solid var(--hover-bg);
-        border-top-color: var(--button-primary-bg);
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-    }
-    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    .research-dashboard ul {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        space-y: 0.75rem;
-    }
-    .research-step {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        font-size: 0.875rem;
-        color: var(--text-secondary);
-        transition: color 0.3s ease;
-    }
-    .research-step .status-icon {
-        width: 20px;
-        height: 20px;
-        flex-shrink: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .research-step .status-icon .spinner {
-        width: 16px;
-        height: 16px;
-        border: 2px solid currentColor;
-        border-top-color: transparent;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-    }
-    .research-step.status-running {
-        color: var(--button-primary-bg);
-        font-weight: 500;
-    }
-    .research-step.status-completed {
-        color: #10b981;
-    }
-    .dark .research-step.status-completed {
-        color: #34d399;
-    }
-    .research-step.status-error {
-        color: #ef4444;
-    }
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -3148,6 +3004,15 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const getConfigKey = () => `chatConfig_v_v8.6_${currentUser.username}`;
         const getAppDataKey = () => `chatAppData_v8.6_${currentUser.username}`;
         const getUserKey = (username) => `chatUser_${username}`;
+        function triggerHapticFeedback(pattern = 10) {
+        if (window.navigator && window.navigator.vibrate) {
+            try {
+                window.navigator.vibrate(pattern);
+            } catch (e) {
+                console.log("Haptic feedback failed.", e);
+            }
+        }
+    }
         const showNotification = (message, type = 'success') => {
             const notification = document.createElement('div');
             notification.className = `notification ${type}`;
@@ -3196,6 +3061,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     button.textContent = btnInfo.text;
                     button.className = btnInfo.class;
                     button.onclick = () => {
+                        triggerHapticFeedback();
                         toggleModal(ALL_ELEMENTS.customDialogModal, false);
                         if (dialogClass) {
                             dialogBox.classList.remove(dialogClass);
@@ -3378,6 +3244,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         const deleteChat = async (id, event) => {
     event?.stopPropagation();
+    triggerHapticFeedback();
     const conv = conversations.find(c => c.id === id);
     if (conv) {
         conv.deletedAt = new Date().toISOString();
@@ -3405,6 +3272,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 };
         const archiveChat = async (id, event) => {
             event?.stopPropagation();
+            triggerHapticFeedback();
             const conv = conversations.find(c => c.id === id);
             if(conv) conv.archived = true;
             await saveAppData();
@@ -3419,6 +3287,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         const unarchiveChat = async (id, event) => {
             event?.stopPropagation();
+            triggerHapticFeedback();
             const conv = conversations.find(c => c.id === id);
             if(conv) conv.archived = false;
             await saveAppData();
@@ -3464,6 +3333,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         const togglePinChat = async (id, event) => {
             event?.stopPropagation();
+            triggerHapticFeedback();
             const conv = conversations.find(c => c.id === id);
             if (conv) {
                 conv.pinned = !conv.pinned;
@@ -3840,6 +3710,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
 
         const toggleLearningMode = async () => {
+            triggerHapticFeedback();
             if (config.isDeepResearchMode) {
                 showNotification('深度研究模式啟用時，無法切換學習模式。', 'warning');
                 return;
@@ -3854,6 +3725,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
         // ✨ 新增：深度研究模式切換函數
         const toggleDeepResearchMode = async () => {
+            triggerHapticFeedback();
             const conv = getActiveConversation();
             if (!conv) return;
 
@@ -4030,6 +3902,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         };
         const deactivateAstras = () => {
+            triggerHapticFeedback();
             const conv = getActiveConversation();
             if (conv) {
                 conv.astrasId = null;
@@ -4048,6 +3921,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             toggleModal(ALL_ELEMENTS.astrasCreateModal, true);
         };
         const handleSaveAstras = async () => {
+            triggerHapticFeedback();
             const name = ALL_ELEMENTS.astrasNameInput.value.trim();
             const description = ALL_ELEMENTS.astrasDescInput.value.trim();
             const instructions = ALL_ELEMENTS.astrasInstructionsInput.value.trim();
@@ -4086,6 +3960,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         const deleteAstras = async (id) => {
             if (!(await showCustomConfirm(i18n[config.uiLanguage].confirmDeleteAstras || '確定刪除此 Astras？'))) return;
+            triggerHapticFeedback([10, 5, 10]);
             astras = astras.filter(a => a.id !== id);
             conversations.forEach(c => {
                 if (c.astrasId === id) c.astrasId = null;
@@ -4330,6 +4205,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const userMessage = ALL_ELEMENTS.messageInput.value.trim();
             if (!userMessage && uploadedFiles.length === 0) return;
             
+            triggerHapticFeedback(20);
+            
             // ✨ 如果是深度研究模式，則呼叫專用函數
             if (config.isDeepResearchMode) {
                 handleDeepResearch(userMessage);
@@ -4392,30 +4269,22 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
             const contentDiv = loadingMessageDiv.querySelector('.message-content');
             let fullResponse = '';
-            let sources = [];
             const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
             try {
-                const apiResult = await streamApiCall(
-                    userParts,
-                    (chunk) => {
-                        fullResponse += chunk;
-                        contentDiv.innerHTML = renderMarkdown(fullResponse);
-                        const isNearBottom = ALL_ELEMENTS.chatContainer.scrollHeight - ALL_ELEMENTS.chatContainer.scrollTop <= ALL_ELEMENTS.chatContainer.clientHeight + 30;
-                        if (isNearBottom) {
-                            ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'auto' });
-                        }
-                    },
-                    abortController.signal
-                );
-                fullResponse = apiResult.fullText;
-                sources = apiResult.sources;
-
+                const completeResponse = await streamApiCall(
+    userParts,
+    (chunk) => {
+        fullResponse += chunk;
+        contentDiv.innerHTML = renderMarkdown(fullResponse);
+        const isNearBottom = ALL_ELEMENTS.chatContainer.scrollHeight - ALL_ELEMENTS.chatContainer.scrollTop <= ALL_ELEMENTS.chatContainer.clientHeight + 30;
+        if (isNearBottom) {
+            ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'auto' });
+        }
+    },
+    abortController.signal
+);
+                fullResponse = completeResponse;
                 finalAiMessage.parts = [{ text: fullResponse }];
-                if (sources && sources.length > 0) {
-                    finalAiMessage.sources = sources; // ✨ 儲存資料來源
-                    contentDiv.innerHTML = renderMarkdown(fullResponse) + renderSources(sources);
-                }
-
                 conv.messages.push(finalAiMessage);
                 conv.lastUpdatedAt = new Date().toISOString();
                 await saveAppData();
@@ -4429,10 +4298,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 if (error.name === 'AbortError') {
                     contentDiv.innerHTML = renderMarkdown(fullResponse);
                     finalAiMessage.parts = [{ text: fullResponse }];
-                    if (sources && sources.length > 0) {
-                        finalAiMessage.sources = sources;
-                        contentDiv.innerHTML += renderSources(sources);
-                    }
                     conv.messages.push(finalAiMessage);
                 } else {
                     contentDiv.textContent = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
@@ -4511,7 +4376,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const coverageRatio = score / keywords.length;
             return score * (1 + coverageRatio);
         }
-        // ✨ 更新 streamApiCall 函數以返回資料來源
         async function streamApiCall(parts, onChunk, signal, isWebSearchForced = false) {
             const conv = getActiveConversation();
             const modelInfo = MODELS.find(m => m.id === conv.model);
@@ -4599,7 +4463,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
 
             if (provider === 'gemini') {
-                url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?key=${apiKey}&alt=sse`; // ✨ 修改點: 增加 alt=sse
+                url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?key=${apiKey}`;
                 payload = {
                     contents: cleanGeminiHistory([...historyForApi, currentMessageForApi]),
                     generationConfig: {
@@ -4613,10 +4477,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
                 if (conv.isWebSearchEnabled || isWebSearchForced) { // ✨ 修改點
                     payload.tools = [{"googleSearch": {}}];
-                    payload.toolConfig = { "googleSearch": { "resultCount": 5 } }; // ✨ 新增: 要求返回 5 筆搜尋結果
                 }
                 headers = { 'Content-Type': 'application/json' };
-            } else { // OpenRouter 邏輯不變
+            } else {
                 url = 'https://openrouter.ai/api/v1/chat/completions';
                 const messages = [];
                 if (systemInstruction) {
@@ -4642,39 +4505,51 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const decoder = new TextDecoder();
             let buffer = '';
             let fullText = '';
-            let sources = [];
-
             while (true) {
                 const { value, done } = await reader.read();
                 if (done) break;
                 buffer += decoder.decode(value, { stream: true });
                 if (provider === 'gemini') {
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop(); // 保留不完整的行
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            const jsonStr = line.substring(6);
+                    while (true) {
+                        const firstBrace = buffer.indexOf('{');
+                        if (firstBrace === -1) {
+                            break;
+                        }
+
+                        let braceCount = 0;
+                        let endIndex = -1;
+                        for (let i = firstBrace; i < buffer.length; i++) {
+                            if (buffer[i] === '{') {
+                                braceCount++;
+                            } else if (buffer[i] === '}') {
+                                braceCount--;
+                            }
+                            if (braceCount === 0) {
+                                endIndex = i;
+                                break;
+                            }
+                        }
+
+                        if (endIndex !== -1) {
+                            const jsonStr = buffer.substring(firstBrace, endIndex + 1);
+                            buffer = buffer.substring(endIndex + 1);
+
                             try {
                                 const parsed = JSON.parse(jsonStr);
                                 const textChunk = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
+
                                 if (textChunk) {
                                     fullText += textChunk;
                                     onChunk(textChunk);
                                 }
-                                // ✨ 新增：擷取資料來源
-                                const toolCallChunk = parsed?.candidates?.[0]?.content?.parts?.[0]?.toolCall;
-                                if (toolCallChunk?.name === 'googleSearch' && toolCallChunk?.args?.results) {
-                                    sources = toolCallChunk.args.results.map(res => ({
-                                        uri: res.url,
-                                        title: res.title
-                                    }));
-                                }
                             } catch (e) {
-                                console.warn("解析 Gemini SSE 區塊時出錯:", e, "區塊內容:", jsonStr);
+                                console.warn("解析 Gemini 串流中的 JSON 區塊時出錯:", e, "區塊內容:", jsonStr);
                             }
+                        } else {
+                            break;
                         }
                     }
-                } else { // OpenRouter 邏輯不變
+                } else {
                     const lines = buffer.split('\n');
                     buffer = lines.pop();
                     for (const line of lines) {
@@ -4693,7 +4568,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     }
                 }
             }
-            return { fullText, sources }; // ✨ 返回包含文字和資料來源的物件
+            return fullText;
         }
         async function callApiWithSchema(prompt, responseSchema, signal) {
             const apiKey = config.apiKeys.gemini;
@@ -5054,6 +4929,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
         };
         const saveSettings = async () => {
+            triggerHapticFeedback();
             config.apiKeys.gemini = ALL_ELEMENTS.geminiApiKeyInput.value.trim();
             config.apiKeys.openrouter = ALL_ELEMENTS.openrouterApiKeyInputAll.value.trim();
             config.enableFollowUp = ALL_ELEMENTS.followUpToggleSwitch.checked;
@@ -5287,6 +5163,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         };
         const setTheme = async (theme) => {
+            triggerHapticFeedback();
             if (document.body.classList.contains('custom-wallpaper-active')) {
                 return;
             }
@@ -5361,6 +5238,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 ]
             });
             if (confirmation === 'DELETE') {
+                triggerHapticFeedback([10, 5, 10, 5, 10]);
                 try {
                     const idb = await openDB();
                     const tx = idb.transaction(STORE_NAME, 'readwrite');
@@ -5416,6 +5294,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 ? i18n[config.uiLanguage].confirmDeleteFolderWithChats
                 : i18n[config.uiLanguage].confirmDeleteEmptyFolder;
             if (!(await showCustomConfirm(confirmMsg, i18n[config.uiLanguage].deleteFolderTitle))) return;
+            triggerHapticFeedback([10, 5, 10]);
             conversations.forEach(c => {
                 if (c.folderId === id) {
                     c.folderId = null;
@@ -5464,6 +5343,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             toggleModal(ALL_ELEMENTS.folderSettingsModal, true);
         };
         const handleSaveFolderSettings = async () => {
+            triggerHapticFeedback();
             const folder = folders.find(f => f.id === folderToCustomize);
             if (!folder) return;
             const selectedColor = ALL_ELEMENTS.colorSwatchesContainer.querySelector('.selected')?.dataset.color;
@@ -5530,6 +5410,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const count = selectedConversationIds.size;
             if (count === 0) return;
             if (!(await showCustomConfirm(`${i18n[config.uiLanguage].confirmBatchMoveToTrash || '您確定要將這'} ${count} ${i18n[config.uiLanguage].conversations || '個對話'} ${i18n[config.uiLanguage].moveToTrashConfirmText || '移至垃圾桶嗎？'}`))) return;
+            triggerHapticFeedback([10, 5, 10]);
             selectedConversationIds.forEach(id => {
                 const conv = conversations.find(c => c.id === id);
                 if (conv) {
@@ -5548,6 +5429,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const handleBatchArchive = async () => {
             const count = selectedConversationIds.size;
             if (count === 0) return;
+            triggerHapticFeedback();
             conversations.forEach(c => {
                 if (selectedConversationIds.has(c.id)) {
                     c.archived = true;
@@ -5602,6 +5484,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
         };
         const batchMoveToFolder = async (folderId) => {
+            triggerHapticFeedback();
             const singleConvId = ALL_ELEMENTS.batchMoveFolderList.dataset.singleConvId;
             let idsToMove;
             if (singleConvId) {
@@ -7315,9 +7198,9 @@ ${JSON.stringify(potentialMemories, null, 2)}
             overlay.addEventListener('click', closeMenu);
             let touchStartY = 0;
             let touchMoveY = 0;
-            menu.addEventListener('touchstart', (e) => { touchStartY = e.touches.clientY; }, { passive: true });
+            menu.addEventListener('touchstart', (e) => { touchStartY = e.touches[0].clientY; }, { passive: true });
             menu.addEventListener('touchmove', (e) => {
-                touchMoveY = e.touches.clientY;
+                touchMoveY = e.touches[0].clientY;
                 const deltaY = touchMoveY - touchStartY;
                 if (deltaY > 0) { menu.style.transform = `translateY(${deltaY}px)`; }
             }, { passive: true });
@@ -7443,7 +7326,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
         contentContainer.style.maxHeight = '60vh';
         contentContainer.style.overflowY = 'auto';
         toggleModal(ALL_ELEMENTS.latestUpdateModal, true);
-        const latestVersionInLog = newUpdates.version; // 因為我們已經排序了，所以 newUpdates 現在是最新版
+        const latestVersionInLog = newUpdates[0].version; // 因為我們已經排序了，所以 newUpdates[0] 現在是最新版
         config.lastSeenVersion = latestVersionInLog;
         await saveConfig();
     }
@@ -7607,26 +7490,153 @@ ${JSON.stringify(potentialMemories, null, 2)}
         versionDisplayElement.textContent = latestVersionInLog;
     }
 };
-        // ✨ 新增：渲染資料來源的輔助函數
-        function renderSources(sources) {
-            if (!sources || sources.length === 0) return '';
-            const listItems = sources.map((source, index) => `
-                <li>
-                    <a href="${source.uri}" target="_blank" rel="noopener noreferrer" class="source-link">
-                        <span class="source-index">${index + 1}</span>
-                        <span class="source-link-title">${source.title}</span>
-                    </a>
+        // ✨ 新增：動態注入深度研究功能所需樣式的函數
+        function injectDeepResearchStyles() {
+            // 檢查樣式是否已存在，避免重複注入
+            if (document.getElementById('deep-research-styles')) {
+                return;
+            }
+
+            const css = `
+                .research-dashboard {
+                    background-color: var(--sidebar-bg);
+                    border: 1px solid var(--border-color);
+                    padding: 1rem 1.5rem;
+                    border-radius: 0.75rem;
+                    max-w-4xl mx-auto;
+                    animation: subtleFadeInUp 0.4s ease-out;
+                }
+                .research-dashboard h4 {
+                    font-size: 1rem;
+                    font-weight: 600;
+                    margin-bottom: 1rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    color: var(--text-primary);
+                }
+                .research-dashboard .main-spinner {
+                    width: 18px;
+                    height: 18px;
+                    border: 2px solid var(--hover-bg);
+                    border-top-color: var(--button-primary-bg);
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                }
+                .research-dashboard ul {
+                    list-style: none;
+                    padding: 0;
+                    margin: 0;
+                    space-y: 0.75rem;
+                }
+                .research-step {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                    font-size: 0.875rem;
+                    color: var(--text-secondary);
+                    transition: color 0.3s ease;
+                }
+                .research-step .status-icon {
+                    width: 20px;
+                    height: 20px;
+                    flex-shrink: 0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .research-step .status-icon .spinner {
+                    width: 16px;
+                    height: 16px;
+                    border: 2px solid currentColor;
+                    border-top-color: transparent;
+                    border-radius: 50%;
+                    animation: spin 0.8s linear infinite;
+                }
+                .research-step.status-running {
+                    color: var(--button-primary-bg);
+                    font-weight: 500;
+                }
+                .research-step.status-completed {
+                    color: #10b981; /* Green-500 */
+                }
+                .dark .research-step.status-completed {
+                    color: #34d399; /* Green-400 */
+                }
+                .research-step.status-error {
+                    color: #ef4444; /* Red-500 */
+                }
+            `;
+
+            const styleSheet = document.createElement("style");
+            styleSheet.id = 'deep-research-styles';
+            styleSheet.innerText = css;
+            document.head.appendChild(styleSheet);
+        }
+        // ✨ 新增：生成深度研究儀表板卡片的輔助函數
+        function addResearchDashboardCard(title, steps) {
+            const card = document.createElement('div');
+            card.className = 'message-item';
+
+            const stepsHTML = steps.map((step, index) => `
+                <li class="research-step status-pending" id="research-step-${index}">
+                    <div class="status-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle></svg>
+                    </div>
+                    <span class="step-text">${step}</span>
                 </li>
             `).join('');
 
-            return `
-                <div class="source-container mt-4 pt-3 border-t border-[var(--border-color)]">
-                    <h4 class="source-title text-sm font-semibold mb-2">資料來源</h4>
-                    <ul class="source-list">
-                        ${listItems}
+            card.innerHTML = `
+                <div class="research-dashboard">
+                    <h4><div class="main-spinner"></div><span>${title}</span></h4>
+                    <ul>
+                        ${stepsHTML}
+                        <li class="research-step status-pending" id="research-step-synthesis">
+                            <div class="status-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle></svg>
+                            </div>
+                            <span class="step-text">綜合所有資料並撰寫報告</span>
+                        </li>
                     </ul>
                 </div>
             `;
+            ALL_ELEMENTS.messageList.appendChild(card);
+            ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
+
+            // 返回一個可以控制儀表板狀態的物件
+            return {
+                cardElement: card,
+                updateStep: (index, status, text) => {
+                    const stepId = index === 'synthesis' ? 'research-step-synthesis' : `research-step-${index}`;
+                    const stepElement = card.querySelector(`#${stepId}`);
+                    if (stepElement) {
+                        stepElement.className = `research-step status-${status}`;
+                        const iconContainer = stepElement.querySelector('.status-icon');
+                        const textElement = stepElement.querySelector('.step-text');
+                        
+                        if (status === 'running') {
+                            iconContainer.innerHTML = '<div class="spinner"></div>';
+                        } else if (status === 'completed') {
+                            iconContainer.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>';
+                        } else if (status === 'error') {
+                            iconContainer.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>';
+                        }
+                        
+                        if (text) {
+                            textElement.textContent = text;
+                        }
+                    }
+                },
+                setTitle: (newTitle) => {
+                    const titleElement = card.querySelector('h4');
+                    if (titleElement) {
+                        // 保持 spinner 不變，只更新文字
+                        titleElement.childNodes[1].textContent = ` ${newTitle}`;
+                    }
+                },
+                remove: () => card.remove()
+            };
         }
         // ✨ 更新後的深度研究核心函數
         async function handleDeepResearch(userMessage) {
@@ -7648,7 +7658,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
             userParts.push({
                 inlineData: {
                     mimeType: file.type,
-                    data: file.base64.split(',')
+                    data: file.base64.split(',')[1]
                 }
             });
         });
@@ -7680,7 +7690,6 @@ ${JSON.stringify(potentialMemories, null, 2)}
     dashboard.updateStep(0, 'running');
 
     let fullReport = '';
-    let allSources = [];
 
     try {
         // --- 階段一：生成研究計畫 ---
@@ -7716,7 +7725,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
 \`\`\`
 
 # 本次研究主題
-"${userMessage}" ${fileInfo}`;
+"${userMessage}"`;
 
         const plannerSchema = { 
             type: "ARRAY", 
@@ -7730,7 +7739,52 @@ ${JSON.stringify(potentialMemories, null, 2)}
             }
         };
 
-        const researchPlan = await callApiWithSchema(plannerPrompt, plannerSchema, abortController.signal);
+        let researchPlan;
+        try {
+            const apiKey = config.apiKeys.gemini;
+            if (!apiKey) throw new Error('Gemini API 金鑰未設定。');
+
+            const plannerPayload = {
+                contents: [
+                    {
+                        role: 'user',
+                        parts: [
+                            ...userParts.filter(p => p.inlineData),
+                            { text: plannerPrompt }
+                        ]
+                    }
+                ],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: plannerSchema,
+                }
+            };
+
+            const plannerApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${CHEAP_MODEL_ID}:generateContent?key=${apiKey}`;
+            const plannerResponse = await fetch(plannerApiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(plannerPayload),
+                signal: abortController.signal
+            });
+
+            if (!plannerResponse.ok) {
+                const errorData = await plannerResponse.json();
+                throw new Error(`研究計畫生成失敗: ${errorData.error?.message || 'API request failed'}`);
+            }
+
+            const result = await plannerResponse.json();
+            const jsonString = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (jsonString) {
+                let cleanedJsonString = jsonString.trim().replace(/^```json|```$/g, '').trim();
+                researchPlan = JSON.parse(cleanedJsonString);
+            } else {
+                throw new Error('API 未回傳有效的研究計畫 JSON。');
+            }
+        } catch (error) {
+            console.error('生成研究計畫時出錯:', error);
+            throw error;
+        }
 
         if (!researchPlan || researchPlan.length === 0) {
             throw new Error('無法生成研究計畫。');
@@ -7766,12 +7820,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
                     () => {}, 
                     abortController.signal,
                     true
-                ).then(result => {
-                    if (result.sources && result.sources.length > 0) {
-                        allSources.push(...result.sources);
-                    }
-                    return `--- 關於 "${query}" 的搜尋結果 ---\n${result.fullText}\n`;
-                })
+                ).then(result => `--- 關於 "${query}" 的搜尋結果 ---\n${result}\n`)
                  .catch(err => {
                      console.error(`Search failed for query: ${query}`, err);
                      return `--- 關於 "${query}" 的搜尋失敗 ---\n錯誤訊息: ${err.message}\n`;
@@ -7820,7 +7869,7 @@ ${allSearchResults.join('\n\n')}`;
         dashboard.remove();
         const reportContentDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false).querySelector('.message-content');
 
-        const finalApiResult = await streamApiCall(
+        await streamApiCall(
             [{ text: synthesizerPrompt }],
             (chunk) => {
                 fullReport += chunk;
@@ -7832,23 +7881,10 @@ ${allSearchResults.join('\n\n')}`;
                 }
             },
             abortController.signal,
-            false // 綜合階段不需要再次搜尋
+            false
         );
         
-        fullReport = finalApiResult.fullText;
-        const uniqueSources = [...new Map(allSources.map(item => [item["uri"], item])).values()];
-
-        const finalReportMessage = { 
-            role: 'model', 
-            parts: [{ text: fullReport }], 
-            createdAt: new Date().toISOString(),
-            sources: uniqueSources // ✨ 儲存唯一的資料來源
-        };
-
-        if (uniqueSources.length > 0) {
-            reportContentDiv.innerHTML = renderMarkdown(fullReport) + renderSources(uniqueSources);
-        }
-
+        const finalReportMessage = { role: 'model', parts: [{ text: fullReport }], createdAt: new Date().toISOString() };
         conv.messages.push(finalReportMessage);
 
     } catch (error) {
@@ -7914,6 +7950,7 @@ ${allSearchResults.join('\n\n')}`;
     }
 }
         async function initChatApp() {
+            injectDeepResearchStyles(); // ✨ 注入樣式
             await loadConfig();
             await loadAppData();
             applyCustomWallpaper();
@@ -8232,8 +8269,8 @@ const handleInputFocus = () => {
             spotlightElements.forEach(el => {
                 const handleMove = (e) => {
                     const rect = el.getBoundingClientRect();
-                    const x = (e.touches ? e.touches.clientX : e.clientX) - rect.left;
-                    const y = (e.touches ? e.touches.clientY : e.clientY) - rect.top;
+                    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+                    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
                     el.style.setProperty('--spotlight-x', `${x}px`);
                     el.style.setProperty('--spotlight-y', `${y}px`);
                 };
@@ -8346,6 +8383,7 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
                 ]
             });
             if (confirmed) {
+                triggerHapticFeedback([10, 5, 10]);
                     const conv = getActiveConversation();
                     if (conv && conv.messages[index] && conv.messages[index + 1]) {
                         conv.messages.splice(index, 2);
