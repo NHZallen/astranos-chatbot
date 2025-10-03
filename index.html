@@ -7822,15 +7822,23 @@ ${searchResults.join('\n')}
             applyUiTheme();
             setTheme(config.theme);
             ALL_ELEMENTS.usernameDisplay.textContent = currentUser.username;
-            if (!conversations.find(c => !c.archived && !c.deletedAt)) startNewChat();
-            renderAll();
-            updateFunctionButtonsState();
-            updateInputState();
-            setupVoiceInput();
-            setupScrollToBottomButton();
-            updateDisplayedVersion();
-            checkAndShowLatestUpdate();
-            ALL_ELEMENTS.menuToggleBtn.addEventListener('click', () => toggleSidebar());
+            const latestConv = conversations
+    .filter(c => !c.archived && !c.deletedAt && !c.isTemporary)
+    .sort((a, b) => new Date(b.lastUpdatedAt || b.createdAt) - new Date(a.lastUpdatedAt || a.createdAt))[0];
+
+if (latestConv) {
+    loadChat(latestConv.id); // 使用 loadChat 載入最新對話
+} else {
+    startNewChat(); // 如果沒有任何對話紀錄，則開始新對話
+}
+// loadChat() 和 startNewChat() 內部已經會呼叫 renderAll() 和其他更新 UI 的函數，所以後續不需要再重複呼叫
+
+updateFunctionButtonsState();
+setupVoiceInput();
+setupScrollToBottomButton();
+updateDisplayedVersion();
+checkAndShowLatestUpdate();
+ALL_ELEMENTS.menuToggleBtn.addEventListener('click', () => toggleSidebar());
             ALL_ELEMENTS.sidebarOverlay.addEventListener('click', () => toggleSidebar(false));
             ALL_ELEMENTS.newChatBtn.addEventListener('click', () => startNewChat());
             ALL_ELEMENTS.openSearchBtn.addEventListener('click', () => {
