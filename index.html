@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.2</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.4.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -7618,7 +7618,25 @@ ${JSON.stringify(potentialMemories, null, 2)}
             abortController = new AbortController();
             updateSubmitButtonState(true);
 
-            const userMessageObject = { role: 'user', parts: [{ text: userMessage }], createdAt: new Date().toISOString() };
+            // 判斷是否有檔案上傳
+            const hasFiles = uploadedFiles.length > 0;
+            const fileInfo = hasFiles 
+                ? `使用者同時上傳了 ${uploadedFiles.length} 個檔案/圖片 (${uploadedFiles.map(f => f.name).join(', ')})。` 
+                : "";
+
+            const userParts = [{ text: userMessage }];
+            if (hasFiles) {
+                uploadedFiles.forEach(file => {
+                    userParts.push({
+                        inlineData: {
+                            mimeType: file.type,
+                            data: file.base64.split(',')[1]
+                        }
+                    });
+                });
+            }
+
+            const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
             addMessageToUI(userMessageObject, conv.messages.length, true);
             conv.lastUpdatedAt = new Date().toISOString();
             conv.unsentMessage = '';
@@ -7636,7 +7654,9 @@ ${JSON.stringify(potentialMemories, null, 2)}
             }
 
             ALL_ELEMENTS.messageInput.value = '';
+            uploadedFiles = [];
             adjustTextareaHeight();
+            renderFilePreviews();
             
             let dashboard = addResearchDashboardCard('啟動深度研究...', ['正在分析主題並規劃研究步驟...']);
             dashboard.updateStep(0, 'running');
@@ -7644,78 +7664,149 @@ ${JSON.stringify(potentialMemories, null, 2)}
             let fullReport = '';
 
             try {
-                // 1. 規劃階段 (PLANNING)
-                const userQueryCount = config.deepResearchQueryCount;
-                const promptModeInstruction = userQueryCount === 0 
-                    ? "請先分析下方主題的複雜度，自行決定一個最合適的搜尋查詢數量（介於 2 到 8 之間），然後生成這些查詢。"
-                    : `使用者已指定需要 ${userQueryCount} 個搜尋查詢，請嚴格生成這個數量。`;
-                
-                const plannerPrompt = `你是一個資深研究員。你的任務是為給定的研究主題生成一系列 Google 搜尋查詢。
-        ${promptModeInstruction}
-        查詢應具備多樣性，能從不同角度涵蓋主題的核心。請嚴格以 JSON 陣列格式回傳，例如: ["查詢1", "查詢2", "查詢3"]
+                // --- 階段一：生成研究計畫 ---
+                const plannerPrompt = `# 核心身份：首席研究策略師
+你的任務是為給定的研究主題和相關資料（如果有的話）設計一份全面、結構化的「研究計畫」。這份計畫應包含一系列清晰、有邏輯的行動步驟，勾勒出你將如何探討此主題。
 
-        主題: "${userMessage}"`;
+# 最高指導原則：從「為什麼」到「怎麼做」
+不要只思考「要搜尋什麼」，而是要思考「為了回答最終問題，我需要完成哪些分析步驟」。每個步驟都應該是一個帶有明確目的的探究動作。
+
+# 檔案處理邏輯
+${fileInfo ? fileInfo + "在制定計畫時，你必須首先判斷這些檔案的角色：是作為分析的【主要資料來源】，還是作為需要被研究的【核心主體】。你的計畫步驟需要明確體現出這一點（例如：'步驟1: 深度分析提供的PDF檔案...' 或 '步驟1: 辨識並研究圖片中的建築風格...'）。" : "此次研究無使用者提供的檔案，所有資訊均需從外部搜尋獲取。"}
+
+# 計畫結構要求
+*   計畫應包含 5 到 8 個步驟。
+*   步驟應具備邏輯順序，例如：從定義和數據收集開始，到分析、比較，最後到綜合評估。
+*   每個步驟的描述都應該是一個清晰的行動指令。
+
+# 卓越典範 (純文字研究)
+如果主題是「台灣老齡化對未來半導體產業的影響」，一個好的計畫是：
+1.  **數據收集**: 收集台灣人口老化趨勢及半導體勞動力結構的最新數據。
+2.  **供需分析**: 分析半導體產業的人力需求與老化人口結構之間的潛在不匹配。
+3.  **企業策略檢視**: 檢視主要半導體企業在自動化與人才方面的應對措施。
+4.  **政府政策研究**: 研究政府吸引和培育半導體人才的相關政策。
+5.  **創新能力評估**: 探討人口老化對產業創新能力的間接影響。
+6.  **國際經驗比較**: 比較日韓等國在應對類似挑戰時的經驗。
+7.  **綜合評估**: 綜合所有信息，評估對台灣半導體長期競爭力的風險與機遇。
+
+# 輸出格式
+你必須嚴格地以一個 JSON 陣列的形式回覆，每個物件代表一個計畫步驟。不要包含任何 JSON 以外的解釋或文字。
+\`\`\`json
+[
+  {
+    "step": "1. 數據收集",
+    "action": "收集台灣未來幾十年內的人口老化趨勢、勞動力結構變化以及潛在勞動力短缺的最新數據與預測報告。"
+  },
+  {
+    "step": "2. 供需分析",
+    "action": "分析台灣半導體產業對人力資源的特殊需求與老化人口結構之間的潛在不匹配程度。"
+  }
+]
+\`\`\`
+
+# 本次研究主題
+"${userMessage}"`;
 
                 const plannerSchema = { 
                     type: "ARRAY", 
-                    items: { type: "STRING" }
+                    items: { 
+                        type: "OBJECT",
+                        properties: {
+                            step: { type: "STRING" },
+                            action: { type: "STRING" }
+                        },
+                        required: ["step", "action"]
+                    }
                 };
 
-                const searchQueries = await callApiWithSchema(plannerPrompt, plannerSchema, abortController.signal);
+                const researchPlan = await callApiWithSchema(plannerPrompt, plannerSchema, abortController.signal);
 
-                if (!searchQueries || searchQueries.length === 0) {
+                if (!researchPlan || researchPlan.length === 0) {
                     throw new Error('無法生成研究計畫。');
                 }
                 
                 dashboard.remove();
-                dashboard = addResearchDashboardCard('正在執行研究計畫...', searchQueries);
+                dashboard = addResearchDashboardCard('正在執行研究計畫...', researchPlan.map(p => `${p.step}: ${p.action}`));
+                
+                const allSearchResults = [];
 
-                // 2. 執行階段 (EXECUTION) - 平行化處理
-                dashboard.setTitle('正在平行搜尋資料...');
-                const searchPromises = searchQueries.map((query, index) => {
-                    return (async () => {
-                        try {
-                            dashboard.updateStep(index, 'running', query);
-                            const searchResultText = await streamApiCall(
-                                [{ text: query }], 
-                                () => {}, 
-                                abortController.signal,
-                                true
-                            );
-                            dashboard.updateStep(index, 'completed', query);
-                            return `--- 關於 "${query}" 的搜尋結果 ---\n${searchResultText}\n`;
-                        } catch (err) {
-                            dashboard.updateStep(index, 'error', `搜尋失敗: ${query}`);
-                            console.error(`Search failed for query: ${query}`, err);
-                            return `--- 關於 "${query}" 的搜尋失敗 ---\n錯誤訊息: ${err.message}\n`;
-                        }
-                    })();
-                });
+                // --- 階段二：分步執行研究計畫 ---
+                for (let i = 0; i < researchPlan.length; i++) {
+                    const planStep = researchPlan[i];
+                    dashboard.updateStep(i, 'running');
 
-                const searchResults = await Promise.all(searchPromises);
+                    // 為每個步驟生成具體的搜尋關鍵字
+                    const queryGenPrompt = `基於以下總體研究目標和當前具體的研究步驟，生成 2-3 個最有效的 Google 搜尋關鍵字。請嚴格以 JSON 陣列格式回傳。
 
-                // 3. 綜合階段 (SYNTHESIZING)
+總體目標: "${userMessage}"
+當前步驟: "${planStep.step}: ${planStep.action}"`;
+                    
+                    const queryGenSchema = { type: "ARRAY", items: { type: "STRING" }, maxItems: 3 };
+                    const searchQueries = await callApiWithSchema(queryGenPrompt, queryGenSchema, abortController.signal);
+
+                    if (!searchQueries || searchQueries.length === 0) {
+                        allSearchResults.push(`--- 步驟 "${planStep.step}" 的資料收集失敗：無法生成有效的搜尋關鍵字 ---\n`);
+                        dashboard.updateStep(i, 'error');
+                        continue;
+                    }
+                    
+                    // 平行執行搜尋
+                    const searchPromises = searchQueries.map(query => 
+                        streamApiCall(
+                            [{ text: query }], 
+                            () => {}, 
+                            abortController.signal,
+                            true // 強制使用網路搜尋
+                        ).then(result => `--- 關於 "${query}" 的搜尋結果 ---\n${result}\n`)
+                         .catch(err => {
+                             console.error(`Search failed for query: ${query}`, err);
+                             return `--- 關於 "${query}" 的搜尋失敗 ---\n錯誤訊息: ${err.message}\n`;
+                         })
+                    );
+                    
+                    const stepResults = await Promise.all(searchPromises);
+                    allSearchResults.push(`## 來自研究步驟「${planStep.step}」的資料：\n\n` + stepResults.join('\n'));
+                    dashboard.updateStep(i, 'completed');
+                }
+
+                // --- 階段三：綜合報告 ---
                 dashboard.setTitle('正在綜合所有資料...');
                 dashboard.updateStep('synthesis', 'running');
-                const synthesizerPrompt = `你是一位專業分析師。請根據以下原始任務和收集到的多份資料，撰寫一份全面、結構化的 Markdown 報告。報告應包含標題、摘要、條列式重點、數據（如果有的話）。請整合資訊，去除冗餘，並確保邏輯清晰。\n\n原始任務: "${userMessage}"\n\n收集到的資料:\n${searchResults.join('\n')}`;
+                
+                const synthesizerPrompt = `你是一位專業分析師。請根據以下原始任務和按照研究計畫收集到的多份資料，撰寫一份全面、結構化、深入的 Markdown 格式報告。
+
+報告應包含：
+- 一個清晰的標題。
+- 一段簡潔的執行摘要（Executive Summary）。
+- 根據研究計畫的步驟，分點詳細闡述，並整合所有相關資料。
+- 去除冗餘資訊，確保邏輯連貫。
+- 如果資料包含數據，請適當引用。
+- 最後提出一個總結或結論。
+
+原始任務: "${userMessage}"
+
+${hasFiles ? "此研究基於使用者提供的檔案，並結合了外部搜尋資料。" : ""}
+
+收集到的資料:
+${allSearchResults.join('\n\n')}`;
 
                 dashboard.remove();
                 const reportContentDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false).querySelector('.message-content');
 
                 await streamApiCall(
-    [{ text: synthesizerPrompt }],
-    (chunk) => {
-        fullReport += chunk;
-        reportContentDiv.innerHTML = renderMarkdown(fullReport);
-        const chatContainer = ALL_ELEMENTS.chatContainer;
-        const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 30;
-        if (isNearBottom) {
-            chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
-        }
-    },
-    abortController.signal,
-    false
-);
+                    [{ text: synthesizerPrompt }],
+                    (chunk) => {
+                        fullReport += chunk;
+                        reportContentDiv.innerHTML = renderMarkdown(fullReport);
+                        const chatContainer = ALL_ELEMENTS.chatContainer;
+                        const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 30;
+                        if (isNearBottom) {
+                            chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+                        }
+                    },
+                    abortController.signal,
+                    false
+                );
                 
                 const finalReportMessage = { role: 'model', parts: [{ text: fullReport }], createdAt: new Date().toISOString() };
                 conv.messages.push(finalReportMessage);
@@ -7726,7 +7817,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
                     dashboard.setTitle('研究失敗!');
                     dashboard.updateStep('synthesis', 'error', `研究中止: ${error.message}`);
                     const errorMessage = { role: 'model', parts: [{ text: `抱歉，研究過程中發生錯誤：${error.message}` }], createdAt: new Date().toISOString() };
-                    conv.messages.push(errorMessage);
+                    addMessageToUI(errorMessage, conv.messages.length, true);
                 } else {
                     dashboard.remove();
                 }
