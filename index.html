@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.4</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.4.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -3301,6 +3301,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     }));
                     astras = (data.astras || []).map(a => ({ avatarUrl: null, officialId: null, ...a }));
                     personalMemories = data.personalMemories || [];
+                    let stuckCount = 0;
+                    conversations.forEach(c => {
+                        if (c.isNaming) {
+                            c.isNaming = false;
+                            stuckCount++;
+                        }
+                    });
+                    if (stuckCount > 0) {
+                        console.log(`Fixed ${stuckCount} conversation(s) stuck in a naming state.`);
+                    }
                 } catch (e) {
                     console.error("Failed to parse app data:", e);
                     showNotification("讀取對話紀錄失敗，資料可能已損毀。", "error");
@@ -3397,12 +3407,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         await saveAppData();
 
 
-        // ↓↓↓↓↓↓ 就是這裡被修改了 ↓↓↓↓↓↓
         if (activeConversationId === id) {
             startNewChat();
         } 
-        // ↑↑↑↑↑↑ 就是這裡被修改了 ↑↑↑↑↑↑
-        
         else {
             renderAll();
         }
