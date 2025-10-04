@@ -8140,26 +8140,6 @@ ${JSON.stringify(potentialMemories, null, 2)}
                     } else {
                         throw new Error('API 未回傳有效的研究計畫 JSON。');
                     }
-                    #### **步驟 3：插入修正數量的程式碼**
-
-現在，請在上方程式碼區塊的 `}` 結束大括號的**正下方**，也就是 `if (!initialResearchPlan ...)` 這一行的**正上方**，插入以下這段新的程式碼。
-
-**複製並貼上下方程式碼：**
-```javascript
-                    // --- ✨ 步驟 1: 新增程式碼以修正研究計畫數量 ---
-                    // 檢查使用者在「設定」中的選擇（自動或指定數量）
-                    let limit = config.deepResearchQueryCount;
-
-                    // 如果是「自動」模式 (值為 0)，我們將上限設為 10
-                    if (limit === 0) {
-                        limit = 10;
-                    }
-
-                    // 如果 AI 生成的計畫步驟數量超過了我們的限制，就把它裁切成符合限制的數量
-                    if (initialResearchPlan.length > limit) {
-                        showNotification(`AI 生成的計畫過長，已自動截斷為 ${limit} 個步驟。`, 'warning'); // 友好提示
-                        initialResearchPlan = initialResearchPlan.slice(0, limit);
-                    }
                 } catch (error) {
                     console.error('生成研究計畫時出錯:', error);
                     throw error;
@@ -8255,61 +8235,22 @@ ${allSearchResults.join('\n\n')}`;
                 dashboard.remove();
                 const reportContentDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false).querySelector('.message-content');
                 let fullReport = '';
-
-                // 1. 先呼叫 API，但這次只接收完整的文字，不在過程中更新畫面
-                const completeReport = await streamApiCall(
+                await streamApiCall(
                     [{ text: synthesizerPrompt }],
-                    () => {}, // 傳入一個空函數，因為我們不需要在串流過程中做任何事
+                    (chunk) => {
+                        fullReport += chunk;
+                        reportContentDiv.innerHTML = renderMarkdown(fullReport);
+                        const chatContainer = ALL_ELEMENTS.chatContainer;
+                        if (isAutoScrolling) {
+                           chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+                        }
+                    },
                     abortController.signal,
                     false
                 );
-                fullReport = completeReport;
-
-                // 2. 將完整的最終報告儲存到對話紀錄中
+                
                 const finalReportMessage = { role: 'model', parts: [{ text: fullReport }], createdAt: new Date().toISOString() };
                 conv.messages.push(finalReportMessage);
-                
-                // 3. 啟動打字機動畫來顯示報告
-                await (async () => {
-                    return new Promise(resolve => {
-                        reportContentDiv.innerHTML = ''; // 先清空等待的 "..."
-                        let currentIndex = 0;
-                        const typingSpeed = 15; // 打字速度，數字越小越快
-
-                        function type() {
-                            if (currentIndex < fullReport.length && !abortController.signal.aborted) {
-                                // 逐步顯示文字，並在結尾加上閃爍的游標
-                                const currentText = fullReport.substring(0, currentIndex + 1);
-                                reportContentDiv.innerHTML = renderMarkdown(currentText + '▋');
-
-                                // 遇到程式碼區塊時，可以稍微加快速度
-                                let step = 1;
-                                if (currentText.includes('```')) {
-                                    step = 5;
-                                }
-                                
-                                currentIndex += step;
-
-                                // 保持畫面捲動到底部
-                                const chatContainer = ALL_ELEMENTS.chatContainer;
-                                if (isAutoScrolling) {
-                                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
-                                }
-
-                                setTimeout(type, typingSpeed);
-                            } else {
-                                // 動畫完成或被中止時，顯示最終的完整內容 (移除游標)
-                                reportContentDiv.innerHTML = renderMarkdown(fullReport);
-
-                                resolve(); // 通知程式動畫已結束，可以繼續往下執行
-                            }
-                        }
-                        
-                        type(); // 啟動打字機
-                    });
-                })();
-
-                // 4. 打字機動畫結束後，才生成後續追問
                 if (fullReport && !config.isLearningMode) {
                     await generateFollowUpPrompts(userMessage, fullReport);
                 }
