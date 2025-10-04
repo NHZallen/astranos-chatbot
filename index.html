@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.5</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.4.7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -31,7 +31,7 @@
     }
 }
 
-
+  
 @keyframes indicator-exit {
     from {
         opacity: 1;
@@ -1167,6 +1167,9 @@ body.custom-wallpaper-active .voice-input-btn.active {
         from { opacity: 0; }
         to { opacity: 1; }
     }
+    .message-content {
+    transition: opacity 0.2s ease-in-out;
+}
     .astras-store-card {
         background-color: var(--sidebar-bg);
         border: 1px solid var(--border-color);
@@ -4504,39 +4507,74 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
             const contentDiv = loadingMessageDiv.querySelector('.message-content');
             
-            // 清空 loading dots，準備接收打字機內容
-            contentDiv.innerHTML = '';
-
             try {
-                // ✨【核心修改】使用新的 typewriterStream 函數來處理串流和動畫
-                const fullResponse = await typewriterStream(
-                    contentDiv,
-                    // 將 streamApiCall 作為一個回調函數傳入
-                    (onChunk) => streamApiCall(userParts, onChunk, abortController.signal),
+                let fullResponse = '';
+                const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
+
+                // ✨ 【核心修改】使用 streamApiCall 並結合定時器來實現微批次渲染
+                const completeResponse = await streamApiCall(
+                    userParts,
+                    (chunk) => {
+                        // 每次收到新的 chunk，都將其附加到 fullResponse 上
+                        fullResponse += chunk;
+                        // 注意：我們不在這裡直接更新 DOM，以避免過於頻繁的渲染
+                    },
                     abortController.signal
                 );
-                
-                // 在打字機動畫全部結束後，才用 renderMarkdown 完整渲染一次
-                // 這樣可以確保程式碼塊、表格等所有格式都正確顯示
-                if (!abortController.signal.aborted) {
-                    contentDiv.innerHTML = renderMarkdown(fullResponse);
-                }
 
-                // 將完整的訊息存檔
-                const finalAiMessage = { role: 'model', parts: [{ text: fullResponse }], createdAt: new Date().toISOString() };
+                // API 資料流完成後，將最終的完整內容賦值
+                fullResponse = completeResponse;
+
+                // 在串流結束後，一次性保存
+                finalAiMessage.parts = [{ text: fullResponse }];
                 conv.messages.push(finalAiMessage);
                 conv.lastUpdatedAt = new Date().toISOString();
                 await saveAppData();
+                
+                // ✨ 接下來進行逐字渲染動畫
+                contentDiv.innerHTML = ''; // 清空 loading dots
+                let currentIndex = 0;
+                const typingSpeed = 15; // 每個字元出現的間隔（毫秒），數值越小越快
 
-                // 產生後續追問和記憶提取
+                function type() {
+                    if (currentIndex < fullResponse.length) {
+                        // 每次渲染都從頭開始，到當前進度為止
+                        const currentText = fullResponse.substring(0, currentIndex + 1);
+                        contentDiv.innerHTML = renderMarkdown(currentText + '▋'); // 加上閃爍游標
+
+                        // 智慧調整每次前進的步長，遇到程式碼塊時可以加速
+                        let step = 1;
+                        if (currentText.includes('```')) {
+                            step = 5; // 在程式碼塊中，可以一次多顯示幾個字元
+                        }
+                        
+                        currentIndex += step;
+
+                        // 保持捲動到底部
+                        const chatContainer = ALL_ELEMENTS.chatContainer;
+                        const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
+                        if (isNearBottom) {
+                            chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+                        }
+
+                        setTimeout(type, typingSpeed);
+                    } else {
+                        // 全部完成後，做最後一次不帶游標的渲染
+                        contentDiv.innerHTML = renderMarkdown(fullResponse);
+                    }
+                }
+                
+                type(); // 啟動打字機動畫
+
+                // 異步處理後續任務
                 if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
-                    await generateFollowUpPrompts(userMessage, fullResponse);
+                    generateFollowUpPrompts(userMessage, fullResponse);
+                }
+                if (config.memoryEnabled1 && config.enableAutoMemory) {
+                    extractPersonalMemory(userMessage, fullResponse);
                 }
 
-                if (config.memoryEnabled1 && config.enableAutoMemory) {
-                    await extractPersonalMemory(userMessage, fullResponse);
-                }
-                // 如果不是使用者主動中止，則顯示錯誤訊息
+            } catch (error) {
                 if (error.name !== 'AbortError') {
                     const errorMessage = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
                     contentDiv.innerHTML = renderMarkdown(errorMessage);
@@ -4544,9 +4582,8 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     conv.messages.push(finalAiMessage);
                     await saveAppData();
                 }
-                // 如果是使用者中止，typewriterStream 內部會處理好動畫停止，這裡不需額外操作
             } finally {
-                // finally 區塊的邏輯和原本一樣，保持不變
+                // ... finally 區塊的程式碼保持不變 ...
                 abortController = null;
                 updateSubmitButtonState(false);
                 sendConfirmed = false;
