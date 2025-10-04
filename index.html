@@ -4290,8 +4290,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             let contentPaddingClass = '';
             const isLoadingMessage = !isUser && msg.parts.length === 1 && msg.parts[0].text === '...';
             if (isLoadingMessage) {
-                contentHTML = `<div class="loading-dots"><span class="bg-gray-500 dark:bg-gray-400"></span><span class="bg-gray-500 dark:bg-gray-400"></span><span class="bg-gray-500 dark:bg-gray-400"></span></div>`;
-            } else {
+            contentHTML = `<div class="typing-cursor">&nbsp;</div>`;
+        } else {
                 let textPartsContent = [];
                 let mediaPartsContent = [];
                 msg.parts.forEach(part => {
@@ -4511,67 +4511,68 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 let fullResponse = '';
                 const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
 
-                // ✨ 【核心修改】使用 streamApiCall 並結合定時器來實現微批次渲染
+                // 1. 先等待 API 回應完全結束，獲取完整文字
                 const completeResponse = await streamApiCall(
                     userParts,
                     (chunk) => {
-                        // 每次收到新的 chunk，都將其附加到 fullResponse 上
-                        fullResponse += chunk;
-                        // 注意：我們不在這裡直接更新 DOM，以避免過於頻繁的渲染
+                        // 在 streamApiCall 內部，我們只收集文字，不渲染
                     },
                     abortController.signal
                 );
 
-                // API 資料流完成後，將最終的完整內容賦值
                 fullResponse = completeResponse;
 
-                // 在串流結束後，一次性保存
+                // 2. 將完整的最終訊息保存到對話紀錄中
                 finalAiMessage.parts = [{ text: fullResponse }];
                 conv.messages.push(finalAiMessage);
                 conv.lastUpdatedAt = new Date().toISOString();
                 await saveAppData();
                 
-                // ✨ 接下來進行逐字渲染動畫
-                contentDiv.innerHTML = ''; // 清空 loading dots
-                let currentIndex = 0;
-                const typingSpeed = 15; // 每個字元出現的間隔（毫秒），數值越小越快
+                // 3. ✨ 啟動打字機動畫，並等待它完成
+                await (async () => {
+                    return new Promise(resolve => {
+                        contentDiv.innerHTML = ''; // 清空等待樣式
+                        let currentIndex = 0;
+                        const typingSpeed = 15;
 
-                function type() {
-                    if (currentIndex < fullResponse.length) {
-                        // 每次渲染都從頭開始，到當前進度為止
-                        const currentText = fullResponse.substring(0, currentIndex + 1);
-                        contentDiv.innerHTML = renderMarkdown(currentText + '▋'); // 加上閃爍游標
+                        function type() {
+                            if (currentIndex < fullResponse.length && !abortController.signal.aborted) {
+                                const currentText = fullResponse.substring(0, currentIndex + 1);
+                                contentDiv.innerHTML = renderMarkdown(currentText + '▋');
 
-                        // 智慧調整每次前進的步長，遇到程式碼塊時可以加速
-                        let step = 1;
-                        if (currentText.includes('```')) {
-                            step = 5; // 在程式碼塊中，可以一次多顯示幾個字元
+                                let step = 1;
+                                if (currentText.includes('```')) {
+                                    step = 5;
+                                }
+                                
+                                currentIndex += step;
+
+                                const chatContainer = ALL_ELEMENTS.chatContainer;
+                                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
+                                if (isNearBottom) {
+                                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+                                }
+
+                                setTimeout(type, typingSpeed);
+                            } else {
+                                // 動畫完成或被中止
+                                contentDiv.innerHTML = renderMarkdown(fullResponse); // 最終清理，移除游標
+                                resolve(); // ✨ Promise 完成，通知 await
+                            }
                         }
                         
-                        currentIndex += step;
+                        type(); // 啟動
+                    });
+                })();
 
-                        // 保持捲動到底部
-                        const chatContainer = ALL_ELEMENTS.chatContainer;
-                        const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
-                        if (isNearBottom) {
-                            chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
-                        }
-
-                        setTimeout(type, typingSpeed);
-                    } else {
-                        // 全部完成後，做最後一次不帶游標的渲染
-                        contentDiv.innerHTML = renderMarkdown(fullResponse);
+                // 4. ✨ 只有在打字機動畫結束後，才執行後續任務
+                if (!abortController.signal.aborted) {
+                    if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
+                        await generateFollowUpPrompts(userMessage, fullResponse);
                     }
-                }
-                
-                type(); // 啟動打字機動畫
-
-                // 異步處理後續任務
-                if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
-                    generateFollowUpPrompts(userMessage, fullResponse);
-                }
-                if (config.memoryEnabled1 && config.enableAutoMemory) {
-                    extractPersonalMemory(userMessage, fullResponse);
+                    if (config.memoryEnabled1 && config.enableAutoMemory) {
+                        await extractPersonalMemory(userMessage, fullResponse);
+                    }
                 }
 
             } catch (error) {
