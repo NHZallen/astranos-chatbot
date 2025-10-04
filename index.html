@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.8</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.4.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -31,7 +31,7 @@
     }
 }
 
-  
+
 @keyframes indicator-exit {
     from {
         opacity: 1;
@@ -454,33 +454,6 @@ button:not(.btn-primary):active:not(:disabled) {
     @keyframes fadeInRight { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
     @keyframes fadeOutRight { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(100%); } }
     @keyframes slideInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes fadeInChar {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.fade-in-char {
-    display: inline-block; /* 讓 transform 生效 */
-    animation: fadeInChar 0.25s ease-out forwards;
-}
-
-/* ✨ 新增：打字機游標效果 (可選) */
-.typing-cursor::after {
-    content: '▋';
-    display: inline-block;
-    animation: blink 0.7s infinite;
-}
-
-@keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
-}
     .loading-dots { display: flex; align-items: center; justify-content: center; height: 1.25rem; }
     .loading-dots span { display: inline-block; width: 8px; height: 8px; margin: 0 2px; background-color: var(--text-secondary); border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both; }
     .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
@@ -1167,9 +1140,6 @@ body.custom-wallpaper-active .voice-input-btn.active {
         from { opacity: 0; }
         to { opacity: 1; }
     }
-    .message-content {
-    transition: opacity 0.2s ease-in-out;
-}
     .astras-store-card {
         background-color: var(--sidebar-bg);
         border: 1px solid var(--border-color);
@@ -1683,60 +1653,6 @@ body.custom-wallpaper-active .input-indicator-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 0.5rem; /* 為按鈕增加間距 */
-}
-.plan-editor-step .step-controls {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-}
-.plan-editor-step .move-step-btn {
-    color: var(--text-secondary);
-    padding: 0.25rem;
-    border-radius: 9999px;
-}
-.plan-editor-step .move-step-btn:hover:not(:disabled) {
-    background-color: var(--hover-bg);
-    color: var(--text-primary);
-}
-.plan-editor-step .move-step-btn:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-}
-.insert-step-divider {
-    position: relative;
-    height: 1px;
-    background-color: transparent;
-    margin: -0.5rem 0;
-}
-.insert-step-btn {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.25rem 0.75rem;
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-    background-color: var(--sidebar-bg);
-    border: 1px dashed var(--border-color);
-    border-radius: 9999px;
-    cursor: pointer;
-    opacity: 0;
-    transition: opacity 0.2s ease-in-out, background-color 0.2s ease-in-out;
-}
-.plan-editor-steps-container:hover .insert-step-btn {
-    opacity: 1;
-}
-.insert-step-btn:hover {
-    opacity: 1;
-    background-color: var(--hover-bg);
-    border-style: solid;
-    color: var(--text-primary);
 }
 .plan-editor-step .step-header label {
     font-weight: 600;
@@ -4344,8 +4260,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             let contentPaddingClass = '';
             const isLoadingMessage = !isUser && msg.parts.length === 1 && msg.parts[0].text === '...';
             if (isLoadingMessage) {
-            contentHTML = `<div class="typing-cursor">&nbsp;</div>`;
-        } else {
+                contentHTML = `<div class="loading-dots"><span class="bg-gray-500 dark:bg-gray-400"></span><span class="bg-gray-500 dark:bg-gray-400"></span><span class="bg-gray-500 dark:bg-gray-400"></span></div>`;
+            } else {
                 let textPartsContent = [];
                 let mediaPartsContent = [];
                 msg.parts.forEach(part => {
@@ -4414,85 +4330,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
             return messageDiv;
         };
-         /**
- * ✨ 全新重構：打字機效果渲染函數 (v2)
- *    - 使用 setInterval 達到勻速輸出
- *    - 隱藏 Markdown 特殊字元，避免渲染過程中的視覺干擾
- * @param {HTMLElement} targetElement 要顯示文字的目標 DOM 元素
- * @param {function(function(string): void): Promise<void>} streamApiCallFn 啟動 API 呼叫的函數
- * @param {AbortSignal} signal 用於中止操作的 AbortSignal
- * @returns {Promise<string>} 返回完整的 AI 回應字串
- */
-function typewriterStream(targetElement, streamApiCallFn, signal) {
-    return new Promise((resolve, reject) => {
-        let fullText = '';
-        let textQueue = '';
-        let isStreaming = true;
-        
-        // ✨ [新增] 定義在打字過程中需要隱藏的 Markdown 特殊字元
-        const MARKDOWN_CHARS_TO_HIDE = new Set(['*', '_', '#', '`', '[', ']', '(', ')', '|', '-', '=', '~']);
-        
-        // ✨ [新增] 控制打字速度 (毫秒)，數值越小越快
-        const typingSpeed = 25; 
-
-        targetElement.innerHTML = '';
-        targetElement.classList.add('typing-cursor');
-
-        const intervalId = setInterval(() => {
-            if (signal.aborted) {
-                clearInterval(intervalId);
-                targetElement.classList.remove('typing-cursor');
-                // 雖然被中止，但仍然解析當前已收到的內容
-                resolve(fullText); 
-                return;
-            }
-
-            if (textQueue.length > 0) {
-                const char = textQueue.charAt(0);
-                textQueue = textQueue.substring(1);
-                
-                fullText += char;
-
-                // ✨ [核心修改] 只有當字元不是特殊 Markdown 字元時，才創建 DOM 元素來顯示它
-                if (!MARKDOWN_CHARS_TO_HIDE.has(char)) {
-                    const span = document.createElement('span');
-                    span.className = 'fade-in-char';
-
-                    if (char === '\n') {
-                        targetElement.appendChild(document.createElement('br'));
-                    } else {
-                        span.textContent = char;
-                        targetElement.appendChild(span);
-                    }
-                }
-                
-                // 保持捲動到底部
-                const chatContainer = ALL_ELEMENTS.chatContainer;
-                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
-                if (isNearBottom) {
-                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
-                }
-            } else if (!isStreaming) {
-                // 資料流結束且佇列已空
-                clearInterval(intervalId);
-                targetElement.classList.remove('typing-cursor');
-                resolve(fullText); // 成功完成，返回完整字串
-            }
-        }, typingSpeed);
-
-        // 啟動 API 呼叫，並在結束時更新 isStreaming 狀態
-        streamApiCallFn((chunk) => {
-            textQueue += chunk;
-        }).catch(error => {
-            clearInterval(intervalId);
-            targetElement.classList.remove('typing-cursor');
-            reject(error); // 如果 API 呼叫出錯，則拒絕 Promise
-        }).finally(() => {
-            isStreaming = false;
-        });
-    });
-}
-
         const handleFormSubmit = async (e) => {
             e.preventDefault();
             if (abortController) return;
@@ -4560,85 +4397,44 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             renderFilePreviews();
             const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
             const contentDiv = loadingMessageDiv.querySelector('.message-content');
-            
+            let fullResponse = '';
+            const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
             try {
-                let fullResponse = '';
-                const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
-
-                // 1. 先等待 API 回應完全結束，獲取完整文字
                 const completeResponse = await streamApiCall(
-                    userParts,
-                    (chunk) => {
-                        // 在 streamApiCall 內部，我們只收集文字，不渲染
-                    },
-                    abortController.signal
-                );
-
+    userParts,
+    (chunk) => {
+        fullResponse += chunk;
+        contentDiv.innerHTML = renderMarkdown(fullResponse);
+        const isNearBottom = ALL_ELEMENTS.chatContainer.scrollHeight - ALL_ELEMENTS.chatContainer.scrollTop <= ALL_ELEMENTS.chatContainer.clientHeight + 30;
+        if (isNearBottom) {
+            ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'auto' });
+        }
+    },
+    abortController.signal
+);
                 fullResponse = completeResponse;
-
-                // 2. 將完整的最終訊息保存到對話紀錄中
                 finalAiMessage.parts = [{ text: fullResponse }];
                 conv.messages.push(finalAiMessage);
                 conv.lastUpdatedAt = new Date().toISOString();
                 await saveAppData();
-                
-                // 3. ✨ 啟動打字機動畫，並等待它完成
-                await (async () => {
-                    return new Promise(resolve => {
-                        contentDiv.innerHTML = ''; // 清空等待樣式
-                        let currentIndex = 0;
-                        const typingSpeed = 15;
-
-                        function type() {
-                            if (currentIndex < fullResponse.length && !abortController.signal.aborted) {
-                                const currentText = fullResponse.substring(0, currentIndex + 1);
-                                contentDiv.innerHTML = renderMarkdown(currentText + '▋');
-
-                                let step = 1;
-                                if (currentText.includes('```')) {
-                                    step = 5;
-                                }
-                                
-                                currentIndex += step;
-
-                                const chatContainer = ALL_ELEMENTS.chatContainer;
-                                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
-                                if (isNearBottom) {
-                                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
-                                }
-
-                                setTimeout(type, typingSpeed);
-                            } else {
-                                // 動畫完成或被中止
-                                contentDiv.innerHTML = renderMarkdown(fullResponse); // 最終清理，移除游標
-                                resolve(); // ✨ Promise 完成，通知 await
-                            }
-                        }
-                        
-                        type(); // 啟動
-                    });
-                })();
-
-                // 4. ✨ 只有在打字機動畫結束後，才執行後續任務
-                if (!abortController.signal.aborted) {
-                    if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
-                        await generateFollowUpPrompts(userMessage, fullResponse);
-                    }
-                    if (config.memoryEnabled1 && config.enableAutoMemory) {
-                        await extractPersonalMemory(userMessage, fullResponse);
-                    }
+                if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
+                    await generateFollowUpPrompts(userMessage, fullResponse);
                 }
-
+                if (config.memoryEnabled1 && config.enableAutoMemory) {
+                    await extractPersonalMemory(userMessage, fullResponse);
+                }
             } catch (error) {
-                if (error.name !== 'AbortError') {
-                    const errorMessage = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
-                    contentDiv.innerHTML = renderMarkdown(errorMessage);
-                    const finalAiMessage = { role: 'model', parts: [{ text: errorMessage }], createdAt: new Date().toISOString() };
+                if (error.name === 'AbortError') {
+                    contentDiv.innerHTML = renderMarkdown(fullResponse);
+                    finalAiMessage.parts = [{ text: fullResponse }];
                     conv.messages.push(finalAiMessage);
-                    await saveAppData();
+                } else {
+                    contentDiv.textContent = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
+                    finalAiMessage.parts = [{ text: `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}` }];
+                    conv.messages.push(finalAiMessage);
                 }
+                await saveAppData();
             } finally {
-                // ... finally 區塊的程式碼保持不變 ...
                 abortController = null;
                 updateSubmitButtonState(false);
                 sendConfirmed = false;
@@ -7966,175 +7762,117 @@ ${JSON.stringify(potentialMemories, null, 2)}
         
         // ✨ 新增：處理互動式計畫的核心邏輯
         function showInteractivePlanEditor(initialPlan) {
-    return new Promise((resolve) => {
-        const { interactivePlanModal, planEditorStepsContainer, addPlanStepBtn, confirmPlanBtn, cancelPlanBtn } = ALL_ELEMENTS;
+            return new Promise((resolve) => {
+                const { interactivePlanModal, planEditorStepsContainer, addPlanStepBtn, confirmPlanBtn, cancelPlanBtn } = ALL_ELEMENTS;
+                
+                let dashboardCard = null; // 用來追蹤儀表板卡片
 
-        // 移除舊的監聽器，避免重複綁定
-        const newConfirmBtn = confirmPlanBtn.cloneNode(true);
-        confirmPlanBtn.parentNode.replaceChild(newConfirmBtn, confirmPlanBtn);
-        const newCancelBtn = cancelPlanBtn.cloneNode(true);
-        cancelPlanBtn.parentNode.replaceChild(newCancelBtn, cancelPlanBtn);
-        const newAddBtn = addPlanStepBtn.cloneNode(true);
-        addPlanStepBtn.parentNode.replaceChild(newAddBtn, addPlanStepBtn);
-
-        let currentPlan = [...initialPlan];
-
-        function renderPlanSteps() {
-            planEditorStepsContainer.innerHTML = '';
-            
-            // 新增頂部插入按鈕
-            planEditorStepsContainer.appendChild(createInsertDivider(0));
-
-            currentPlan.forEach((plan, index) => {
-                const stepElement = document.createElement('div');
-                stepElement.className = 'plan-editor-step';
-                stepElement.dataset.index = index;
-                stepElement.innerHTML = `
-                    <div class="step-header">
-                        <label>步驟 ${index + 1}</label>
-                        <div class="step-controls">
-                            <button class="move-step-btn move-up-btn" title="上移此步驟">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
-                            </button>
-                            <button class="move-step-btn move-down-btn" title="下移此步驟">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
-                            </button>
-                            <button class="remove-step-btn" title="移除此步驟">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                            </button>
-                        </div>
-                    </div>
-                    <input type="text" class="step-title-input" placeholder="步驟標題" value="${plan.step}">
-                    <textarea class="step-action-input" placeholder="步驟具體行動">${plan.action}</textarea>
-                `;
-                planEditorStepsContainer.appendChild(stepElement);
-                // 在每個步驟後新增插入按鈕
-                planEditorStepsContainer.appendChild(createInsertDivider(index + 1));
-            });
-            updateControlButtonsState();
-        }
-
-        function createInsertDivider(index) {
-            const divider = document.createElement('div');
-            divider.className = 'insert-step-divider';
-            divider.innerHTML = `
-                <button class="insert-step-btn" data-index="${index}" title="在此處插入新步驟">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                    插入步驟
-                </button>
-            `;
-            return divider;
-        }
-
-        function updateControlButtonsState() {
-            const stepElements = planEditorStepsContainer.querySelectorAll('.plan-editor-step');
-            stepElements.forEach((el, index) => {
-                el.querySelector('.move-up-btn').disabled = (index === 0);
-                el.querySelector('.move-down-btn').disabled = (index === stepElements.length - 1);
-                el.querySelector('.remove-step-btn').disabled = (stepElements.length <= 1);
-            });
-        }
-
-        function handleAddStep(insertIndex = -1) {
-            const stepCount = currentPlan.length;
-            if (stepCount >= 10) {
-                showNotification('最多只能新增 10 個步驟。', 'warning');
-                return;
-            }
-            const newStep = { step: `新步驟 ${stepCount + 1}`, action: '' };
-            if (insertIndex === -1 || insertIndex >= currentPlan.length) {
-                currentPlan.push(newStep);
-            } else {
-                currentPlan.splice(insertIndex, 0, newStep);
-            }
-            renderPlanSteps();
-        }
-        
-        function handleRemoveStep(index) {
-            if (currentPlan.length > 1) {
-                currentPlan.splice(index, 1);
-                renderPlanSteps();
-            }
-        }
-        
-        function handleMoveStep(index, direction) {
-            if (direction === 'up' && index > 0) {
-                [currentPlan[index], currentPlan[index - 1]] = [currentPlan[index - 1], currentPlan[index]];
-            } else if (direction === 'down' && index < currentPlan.length - 1) {
-                [currentPlan[index], currentPlan[index + 1]] = [currentPlan[index + 1], currentPlan[index]];
-            }
-            renderPlanSteps();
-        }
-
-        function cleanupAndClose() {
-            toggleModal(interactivePlanModal, false);
-        }
-        
-        function onConfirm() {
-            const finalPlan = [];
-            const stepElements = planEditorStepsContainer.querySelectorAll('.plan-editor-step');
-            let isValid = true;
-            stepElements.forEach(el => {
-                const title = el.querySelector('.step-title-input').value.trim();
-                const action = el.querySelector('.step-action-input').value.trim();
-                if (!title || !action) {
-                    isValid = false;
+                function renderPlanSteps() {
+                    planEditorStepsContainer.innerHTML = '';
+                    const steps = planEditorStepsContainer.querySelectorAll('.plan-editor-step').length;
+                    
+                    initialPlan.forEach((plan, index) => {
+                        const stepElement = document.createElement('div');
+                        stepElement.className = 'plan-editor-step';
+                        stepElement.innerHTML = `
+                            <div class="step-header">
+                                <label>步驟 ${index + 1}</label>
+                                <button class="remove-step-btn" title="移除此步驟">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                </button>
+                            </div>
+                            <input type="text" class="step-title-input" placeholder="步驟標題" value="${plan.step}">
+                            <textarea class="step-action-input" placeholder="步驟具體行動">${plan.action}</textarea>
+                        `;
+                        planEditorStepsContainer.appendChild(stepElement);
+                    });
+                    updateRemoveButtonsState();
                 }
-                finalPlan.push({ step: title, action: action });
+
+                function updateRemoveButtonsState() {
+                    const removeButtons = planEditorStepsContainer.querySelectorAll('.remove-step-btn');
+                    removeButtons.forEach(btn => {
+                        btn.disabled = removeButtons.length <= 1;
+                    });
+                }
+
+                function handleAddStep() {
+                    const stepCount = planEditorStepsContainer.querySelectorAll('.plan-editor-step').length;
+                    if (stepCount >= 10) {
+                        showNotification('最多只能新增 10 個步驟。', 'warning');
+                        return;
+                    }
+                    initialPlan.push({ step: `新步驟 ${stepCount + 1}`, action: '' });
+                    renderPlanSteps();
+                }
+                
+                function handleRemoveStep(buttonElement) {
+                    const stepElement = buttonElement.closest('.plan-editor-step');
+                    const index = Array.from(planEditorStepsContainer.children).indexOf(stepElement);
+                    if (index > -1) {
+                        initialPlan.splice(index, 1);
+                        renderPlanSteps();
+                    }
+                }
+
+                function cleanupAndClose() {
+                    toggleModal(interactivePlanModal, false);
+                    // 移除事件監聽器以避免記憶體洩漏
+                    confirmPlanBtn.removeEventListener('click', onConfirm);
+                    cancelPlanBtn.removeEventListener('click', onCancel);
+                    addPlanStepBtn.removeEventListener('click', handleAddStep);
+                    planEditorStepsContainer.removeEventListener('click', onStepContainerClick);
+                }
+                
+                function onConfirm() {
+                    const finalPlan = [];
+                    const stepElements = planEditorStepsContainer.querySelectorAll('.plan-editor-step');
+                    let isValid = true;
+                    stepElements.forEach(el => {
+                        const title = el.querySelector('.step-title-input').value.trim();
+                        const action = el.querySelector('.step-action-input').value.trim();
+                        if (!title || !action) {
+                            isValid = false;
+                        }
+                        finalPlan.push({ step: title, action: action });
+                    });
+                    
+                    if (!isValid) {
+                        showNotification('所有步驟的標題和內容都不能為空！', 'error');
+                        return;
+                    }
+                    
+                    cleanupAndClose();
+                    resolve(finalPlan); // 返回最終確認的計畫
+                }
+                
+                function onCancel() {
+                    cleanupAndClose();
+                    if (dashboardCard) {
+                        dashboardCard.remove();
+                    }
+                    resolve(null); // 返回 null 表示使用者取消
+                }
+                
+                function onStepContainerClick(e) {
+                    if (e.target.closest('.remove-step-btn')) {
+                        handleRemoveStep(e.target.closest('.remove-step-btn'));
+                    }
+                }
+
+                // 初始化
+                renderPlanSteps();
+                
+                // 綁定事件
+                confirmPlanBtn.addEventListener('click', onConfirm);
+                cancelPlanBtn.addEventListener('click', onCancel);
+                addPlanStepBtn.addEventListener('click', handleAddStep);
+                planEditorStepsContainer.addEventListener('click', onStepContainerClick);
+
+                // 顯示 Modal
+                toggleModal(interactivePlanModal, true);
             });
-            
-            if (!isValid) {
-                showNotification('所有步驟的標題和內容都不能為空！', 'error');
-                return;
-            }
-            
-            cleanupAndClose();
-            resolve(finalPlan);
         }
-        
-        function onCancel() {
-            cleanupAndClose();
-            resolve(null);
-        }
-        
-        function onStepContainerClick(e) {
-            const removeBtn = e.target.closest('.remove-step-btn');
-            const upBtn = e.target.closest('.move-up-btn');
-            const downBtn = e.target.closest('.move-down-btn');
-            const insertBtn = e.target.closest('.insert-step-btn');
-
-            if (removeBtn) {
-                const index = parseInt(removeBtn.closest('.plan-editor-step').dataset.index, 10);
-                handleRemoveStep(index);
-            } else if (upBtn) {
-                const index = parseInt(upBtn.closest('.plan-editor-step').dataset.index, 10);
-                handleMoveStep(index, 'up');
-            } else if (downBtn) {
-                const index = parseInt(downBtn.closest('.plan-editor-step').dataset.index, 10);
-                handleMoveStep(index, 'down');
-            } else if (insertBtn) {
-                const index = parseInt(insertBtn.dataset.index, 10);
-                handleAddStep(index);
-            }
-        }
-
-        // Initialize
-        renderPlanSteps();
-        
-        // Bind events to the new cloned buttons
-        ALL_ELEMENTS.confirmPlanBtn = newConfirmBtn;
-        ALL_ELEMENTS.cancelPlanBtn = newCancelBtn;
-        ALL_ELEMENTS.addPlanStepBtn = newAddBtn;
-
-        newConfirmBtn.addEventListener('click', onConfirm);
-        newCancelBtn.addEventListener('click', onCancel);
-        newAddBtn.addEventListener('click', () => handleAddStep(-1)); // -1 means add to end
-        planEditorStepsContainer.addEventListener('click', onStepContainerClick);
-
-        // Show Modal
-        toggleModal(interactivePlanModal, true);
-    });
-}
         
         // ✨ 更新後的深度研究核心函數
         async function handleDeepResearch(userMessage) {
@@ -8280,17 +8018,12 @@ ${JSON.stringify(potentialMemories, null, 2)}
                     const planStep = finalResearchPlan[i];
                     dashboard.updateStep(i, 'running');
 
-                    const queryCount = config.deepResearchQueryCount;
-const queryGenPrompt = `基於以下總體研究目標和當前具體的研究步驟，生成 ${queryCount === 0 ? '幾個最有效' : ` ${queryCount} 個`} 的 Google 搜尋關鍵字。請嚴格以 JSON 陣列格式回傳。
+                    const queryGenPrompt = `基於以下總體研究目標和當前具體的研究步驟，生成 2-3 個最有效的 Google 搜尋關鍵字。請嚴格以 JSON 陣列格式回傳。
 
 總體目標: "${userMessage}"
 當前步驟: "${planStep.step}: ${planStep.action}"`;
-
-const queryGenSchema = { 
-    type: "ARRAY", 
-    items: { type: "STRING" }, 
-    ...(queryCount > 0 && { maxItems: queryCount, minItems: queryCount })
-};
+                    
+                    const queryGenSchema = { type: "ARRAY", items: { type: "STRING" }, maxItems: 3 };
                     const searchQueries = await callApiWithSchema(queryGenPrompt, queryGenSchema, abortController.signal);
 
                     if (!searchQueries || searchQueries.length === 0) {
@@ -8349,33 +8082,22 @@ ${hasFiles ? "此研究基於使用者提供的檔案，並結合了外部搜尋
 收集到的資料:
 ${allSearchResults.join('\n\n')}`;
 
-                dashboard.remove(); // 移除儀表板
-                const reportMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
-                const reportContentDiv = reportMessageDiv.querySelector('.message-content');
-                
+                dashboard.remove();
+                const reportContentDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false).querySelector('.message-content');
                 let fullReport = '';
-                try {
-                    // 使用 typewriterStream 函數來實現打字機效果
-                    fullReport = await typewriterStream(
-                        reportContentDiv,
-                        (onChunk) => streamApiCall(
-                            [{ text: synthesizerPrompt }],
-                            onChunk,
-                            abortController.signal,
-                            false
-                        ),
-                        abortController.signal
-                    );
-                    
-                    // 打字機效果完成後，用最終的、渲染好的 HTML 更新內容
-                    reportContentDiv.innerHTML = renderMarkdown(fullReport);
-
-                } catch (streamError) {
-                    if (streamError.name !== 'AbortError') {
-                        console.error("Stream error during deep research report rendering:", streamError);
-                        reportContentDiv.innerHTML = renderMarkdown(`報告生成時發生錯誤: ${streamError.message}`);
-                    }
-                }
+                await streamApiCall(
+                    [{ text: synthesizerPrompt }],
+                    (chunk) => {
+                        fullReport += chunk;
+                        reportContentDiv.innerHTML = renderMarkdown(fullReport);
+                        const chatContainer = ALL_ELEMENTS.chatContainer;
+                        if (isAutoScrolling) {
+                           chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+                        }
+                    },
+                    abortController.signal,
+                    false
+                );
                 
                 const finalReportMessage = { role: 'model', parts: [{ text: fullReport }], createdAt: new Date().toISOString() };
                 conv.messages.push(finalReportMessage);
@@ -8952,3 +8674,5 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
 </script>
 </body>
 </html>
+
+
