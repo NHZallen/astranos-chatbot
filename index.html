@@ -3,13 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.5</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.4.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="./i18n.js"></script>
+    <script src="./demo-conversations.js"></script>
+    <script src="./astras-data.js"></script>
     <style>
     body {
     touch-action: manipulation;
@@ -2672,6 +2676,27 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     </div>
 </div>
     <div id="mobile-context-menu-wrapper"></div>
+    <div id="export-pdf-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[51]">
+        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-2xl flex flex-col" style="max-height: 90vh;">
+            <div class="p-6 border-b border-[var(--border-color)] flex justify-between items-center flex-shrink-0">
+                <h2 id="export-pdf-title" class="text-2xl font-bold" data-lang-key="exportToPdf">匯出成 PDF</h2>
+                <div class="flex items-center gap-4">
+                    <button id="pdf-select-all-btn" class="text-sm font-medium text-blue-600 hover:underline" data-lang-key="selectAll">全選</button>
+                    <button id="close-export-pdf-modal-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
+                </div>
+            </div>
+            <div id="pdf-selection-content" class="p-6 overflow-y-auto space-y-4 scroll-area flex-1">
+                <!-- 對話內容將會動態插入此處 -->
+            </div>
+            <div class="p-4 bg-[var(--sidebar-bg)] border-t border-[var(--border-color)] flex justify-end gap-3 flex-shrink-0">
+                <button id="cancel-export-pdf-btn" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]" data-lang-key="cancel">取消</button>
+                <button id="confirm-export-pdf-btn" class="px-4 py-2 rounded-md btn-primary flex items-center gap-2" data-lang-key="confirmAndExport">
+                    <span id="pdf-export-btn-text">確認並匯出</span>
+                    <div id="pdf-export-spinner" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin hidden"></div>
+                </button>
+            </div>
+        </div>
+    </div>
     
     <!-- ✨ 新增：互動式計畫編輯器 Modal -->
     <div id="interactive-plan-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[52]">
@@ -2953,6 +2978,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             proposalInstructionsInput: document.getElementById('proposal-instructions-input'),
             cancelProposalBtn: document.getElementById('cancel-proposal-btn'),
             submitProposalBtn: document.getElementById('submit-proposal-btn'),
+            exportPdfModal: document.getElementById('export-pdf-modal'),
+            closeExportPdfModalBtn: document.getElementById('close-export-pdf-modal-btn'),
+            pdfSelectionContent: document.getElementById('pdf-selection-content'),
+            pdfSelectAllBtn: document.getElementById('pdf-select-all-btn'),
+            cancelExportPdfBtn: document.getElementById('cancel-export-pdf-btn'),
+            confirmExportPdfBtn: document.getElementById('confirm-export-pdf-btn'),
             // ✨ 新增互動式計畫編輯器元素
             interactivePlanModal: document.getElementById('interactive-plan-modal'),
             planEditorStepsContainer: document.getElementById('plan-editor-steps-container'),
@@ -5264,6 +5295,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 <button data-id="${convId}" class="pin-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${pinText}</button>
                 ${moveOptionsHTML}
                 <button data-id="${convId}" class="archive-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].archive || '封存'}</button>
+                <button data-id="${convId}" class="export-pdf-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    <span>${i18n[config.uiLanguage].exportToPdf || '匯出成 PDF'}</span>
+                </button>
                 <div class="border-t my-1 border-[var(--border-color)]"></div>
                 <button data-id="${convId}" class="delete-btn w-full text-left px-4 py-2 text-red-600 hover:bg-red-500/10 text-sm">${i18n[config.uiLanguage].delete || '刪除'}</button>
             `;
@@ -7134,6 +7169,10 @@ ${JSON.stringify(potentialMemories, null, 2)}
                     <div class="menu-item" data-action="pin"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 3.75V16.5L12 14.25 7.5 16.5V3.75m9 0H18A2.25 2.25 0 0 1 20.25 6v12A2.25 2.25 0 0 1 18 20.25H6A2.25 2.25 0 0 1 3.75 18V6A2.25 2.25 0 0 1 6 3.75h1.5m9 0h-9" /></svg><span>${pinText}</span></div>
                     ${moveOptionsHTML}
                     <div class="menu-item" data-action="archive"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4" /></svg><span>${i18n[config.uiLanguage].archive || '封存'}</span></div>
+                    <div class="menu-item" data-action="export-pdf">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m.75 12 3 3m0 0 3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>
+                        <span>${i18n[config.uiLanguage].exportToPdf || '匯出成 PDF'}</span>
+                    </div>
                     <div class="menu-item delete" data-action="delete"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.067-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg><span>${i18n[config.uiLanguage].delete || '刪除'}</span></div>
                 </div>
             `;
@@ -7356,6 +7395,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 }, 300);
             });
         };
+         
         const setupScrollToBottomButton = () => {
             const { scrollToBottomBtn, chatContainer } = ALL_ELEMENTS;
             scrollToBottomBtn.addEventListener('click', () => {
@@ -8145,6 +8185,170 @@ ${allSearchResults.join('\n\n')}`;
                 }
             }
         }
+         const renderPdfMessageItem = (msg) => {
+            const isUser = msg.role === 'user';
+            const wrapper = document.createElement('div');
+            wrapper.className = 'pdf-message-item flex items-start gap-4';
+        
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = true; // 預設全選
+            checkbox.className = 'mt-3 flex-shrink-0 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500';
+        
+            const messageContent = document.createElement('div');
+            messageContent.className = 'flex-1';
+        
+            const icon = isUser 
+                ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>`
+                : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
+            
+            let contentHTML = '';
+            msg.parts.forEach(part => {
+                if (part.text) {
+                    contentHTML += `<div>${isUser ? part.text.replace(/\n/g, '<br>') : renderMarkdown(part.text)}</div>`;
+                } else if (part.inlineData) {
+                    const src = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+                    if (part.inlineData.mimeType.startsWith('image/')) {
+                        contentHTML += `<img src="${src}" class="mt-2 max-w-xs max-h-48 rounded-lg object-cover border border-[var(--border-color)]">`;
+                    }
+                }
+            });
+        
+            const authorName = isUser ? (currentUser.username || 'User') : 'ASTRA';
+            const authorClass = isUser ? 'text-blue-600' : 'text-gray-600 dark:text-gray-400';
+
+            const messageBubble = `
+                <div class="flex items-center gap-3 mb-2">
+                    ${icon}
+                    <div class="flex flex-col">
+                        <span class="font-bold ${authorClass}">${authorName}</span>
+                        <span class="text-xs text-gray-400">${formatFullTimestamp(msg.createdAt)}</span>
+                    </div>
+                </div>
+                <div class="p-3 md:p-4 rounded-lg message-bubble prose prose-sm max-w-none" style="background-color: var(${isUser ? '--user-bubble-bg' : '--ai-bubble-bg'}); color: var(${isUser ? '--button-primary-text' : '--text-primary'});">
+                    ${contentHTML}
+                </div>
+            `;
+            
+            messageContent.innerHTML = messageBubble;
+            
+            wrapper.appendChild(checkbox);
+            wrapper.appendChild(messageContent);
+            
+            return wrapper;
+        };
+        
+        /**
+         * 顯示匯出 PDF 的訊息選擇視窗
+         */
+        const showExportPdfModal = (convId) => {
+            const conv = conversations.find(c => c.id === convId);
+            if (!conv) return;
+
+            const { exportPdfModal, pdfSelectionContent, pdfSelectAllBtn, closeExportPdfModalBtn, cancelExportPdfBtn, confirmExportPdfBtn } = ALL_ELEMENTS;
+
+            pdfSelectionContent.innerHTML = '';
+            if (conv.messages.length > 0) {
+                conv.messages.forEach(msg => {
+                    const item = renderPdfMessageItem(msg);
+                    pdfSelectionContent.appendChild(item);
+                });
+            } else {
+                pdfSelectionContent.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].noMessagesToExport || '沒有可匯出的訊息。'}</p>`;
+            }
+            
+            // "全選/取消全選" 按鈕邏輯
+            pdfSelectAllBtn.textContent = i18n[config.uiLanguage].unselectAll || '取消全選';
+            pdfSelectAllBtn.onclick = () => {
+                const checkboxes = pdfSelectionContent.querySelectorAll('input[type="checkbox"]');
+                const isAllSelected = Array.from(checkboxes).every(cb => cb.checked);
+                checkboxes.forEach(cb => cb.checked = !isAllSelected);
+                pdfSelectAllBtn.textContent = !isAllSelected 
+                    ? (i18n[config.uiLanguage].unselectAll || '取消全選')
+                    : (i18n[config.uiLanguage].selectAll || '全選');
+            };
+            
+            // 綁定關閉與確認事件 (先移除舊的，再綁定新的)
+            const confirmHandler = () => generatePdf(conv);
+            confirmExportPdfBtn.replaceWith(confirmExportPdfBtn.cloneNode(true));
+            ALL_ELEMENTS.confirmExportPdfBtn = document.getElementById('confirm-export-pdf-btn');
+            ALL_ELEMENTS.confirmExportPdfBtn.addEventListener('click', confirmHandler);
+
+            const cancelHandler = () => toggleModal(exportPdfModal, false);
+            closeExportPdfModalBtn.onclick = cancelHandler;
+            cancelExportPdfBtn.onclick = cancelHandler;
+
+            toggleModal(exportPdfModal, true);
+        };
+        
+        /**
+         * 生成並下載 PDF 檔案
+         */
+        const generatePdf = async (conv) => {
+            const { confirmExportPdfBtn } = ALL_ELEMENTS;
+            const btnText = confirmExportPdfBtn.querySelector('#pdf-export-btn-text');
+            const spinner = confirmExportPdfBtn.querySelector('#pdf-export-spinner');
+
+            // 顯示載入狀態
+            confirmExportPdfBtn.disabled = true;
+            btnText.textContent = i18n[config.uiLanguage].generating || '生成中...';
+            spinner.classList.remove('hidden');
+
+            try {
+                // 1. 建立一個離線的容器來渲染要匯出的內容
+                const exportContainer = document.createElement('div');
+                exportContainer.style.position = 'absolute';
+                exportContainer.style.left = '-9999px';
+                exportContainer.style.width = '800px'; // 固定寬度以確保排版一致
+                exportContainer.style.padding = '20px';
+                exportContainer.style.fontFamily = 'sans-serif';
+                exportContainer.style.color = '#111827'; // 預設文字顏色
+                document.body.appendChild(exportContainer);
+
+                // 2. 加上浮水印和標題
+                exportContainer.innerHTML = `
+                    <div style="position: absolute; top: 20px; left: 20px; font-size: 24px; font-weight: bold; color: rgba(0, 0, 0, 0.08); z-index: -1;">ASTRA</div>
+                    <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 20px; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px;">${conv.title}</h1>
+                `;
+                
+                // 3. 找出所有被勾選的訊息並加入容器
+                const selectedItems = ALL_ELEMENTS.pdfSelectionContent.querySelectorAll('.pdf-message-item');
+                selectedItems.forEach(item => {
+                    if (item.querySelector('input[type="checkbox"]').checked) {
+                        const messageClone = item.querySelector('.flex-1').cloneNode(true);
+                        // 移除 checkbox 留下的空間
+                        messageClone.style.paddingLeft = '0';
+                        exportContainer.appendChild(messageClone);
+                    }
+                });
+
+                // 4. 設定 html2pdf 選項
+                const opt = {
+                    margin:       1,
+                    filename:     `${conv.title.replace(/[\/\\?%*:|"<>]/g, '-')}.pdf`,
+                    image:        { type: 'jpeg', quality: 0.98 },
+                    html2canvas:  { scale: 2, useCORS: true, logging: false },
+                    jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+                };
+                
+                // 5. 呼叫函式庫生成並儲存 PDF
+                await html2pdf().from(exportContainer).set(opt).save();
+
+                // 6. 清理
+                document.body.removeChild(exportContainer);
+                toggleModal(ALL_ELEMENTS.exportPdfModal, false);
+                showNotification(i18n[config.uiLanguage].pdfExportSuccess || 'PDF 匯出成功！', 'success');
+
+            } catch (error) {
+                console.error("PDF generation failed:", error);
+                showNotification(i18n[config.uiLanguage].pdfExportFailed || 'PDF 匯出失敗。', 'error');
+            } finally {
+                // 還原按鈕狀態
+                confirmExportPdfBtn.disabled = false;
+                btnText.textContent = i18n[config.uiLanguage].confirmAndExport || '確認並匯出';
+                spinner.classList.add('hidden');
+            }
+        };
         async function initChatApp() {
             injectDeepResearchStyles(); // ✨ 注入樣式
             await loadConfig();
@@ -8566,6 +8770,8 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
         submitButton.textContent = originalButtonText;
     }
 });
+            ALL_ELEMENTS.closeExportPdfModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.exportPdfModal, false));
+            ALL_ELEMENTS.cancelExportPdfBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.exportPdfModal, false));
         initializeSpotlightEffect();
         }
         const handleDeleteMessagePair = async (index) => {
