@@ -505,32 +505,11 @@ button:not(.btn-primary):active:not(:disabled) {
     .prose p { margin-bottom: 1em; }
     .prose table {
   border-collapse: collapse;
+  margin-bottom: 1em;
+}
+  border-collapse: collapse;
   margin-bottom: 0; /* ✨ 注意：間距將由外層容器控制，所以這裡歸零 */
   min-width: 600px; /* ✨ 新增：給表格一個最小寬度，即使內容很少看起來也不會太窄 */
-}
-    .prose .table-container {
-    overflow-x: auto; /* 這是最重要的！當內容超出寬度時，顯示水平滾動條 */
-    -webkit-overflow-scrolling: touch; /* 在 iOS 等行動裝置上提供更流暢的慣性滾動效果 */
-    margin-bottom: 1em; /* 把之前從 table 移除的底部間距加到這裡 */
-    border: 1px solid var(--border-color); /* 可選：加個外框讓它更明顯 */
-    border-radius: 0.5rem; /* 可選：圓角，使其與其他UI風格一致 */
-}
-
-/* ✨ 可選優化：美化滾動條的樣式，讓它更好看 */
-.prose .table-container::-webkit-scrollbar {
-    height: 8px; /* 滾動條的高度 */
-}
-.prose .table-container::-webkit-scrollbar-track {
-    background: transparent; /* 軌道背景透明 */
-}
-.prose .table-container::-webkit-scrollbar-thumb {
-    background-color: var(--border-color); /* 滾動條本身的顏色 */
-    border-radius: 10px;
-    border: 2px solid transparent;
-    background-clip: content-box;
-}
-.prose .table-container::-webkit-scrollbar-thumb:hover {
-    background-color: var(--text-secondary); /* 滑鼠懸停時的顏色 */
 }
     .prose table th, .prose table td { border: 1px solid var(--border-color); padding: 0.75rem; text-align: left; }
     .prose table thead { background-color: var(--hover-bg); }
@@ -1472,26 +1451,28 @@ body.custom-wallpaper-active .store-category-btn.active {
         user-select: none;
     }
     .model-message .prose {
-        overflow-x: auto;
-        -ms-overflow-style: auto;
-        scrollbar-width: thin;
-        scrollbar-color: var(--border-color) transparent;
-    }
-    .model-message .prose::-webkit-scrollbar {
-        height: 8px;
-    }
-    .model-message .prose::-webkit-scrollbar-track {
-        background: transparent;
-    }
-    .model-message .prose::-webkit-scrollbar-thumb {
-        background-color: var(--border-color);
-        border-radius: 10px;
-        border: 2px solid transparent;
-        background-clip: content-box;
-    }
-    .model-message .prose::-webkit-scrollbar-thumb:hover {
-        background-color: var(--text-secondary);
-    }
+    overflow-x: auto; /* 當內容超出時，只在 .prose 內部產生水平滾動 */
+    -ms-overflow-style: auto; /* 兼容 IE 和 Edge */
+    scrollbar-width: thin; /* 兼容 Firefox，讓滾動條細一點 */
+    scrollbar-color: var(--border-color) transparent; /* 兼容 Firefox */
+}
+
+/* ✨ 美化 Webkit 瀏覽器 (Chrome, Safari) 的滾動條 */
+.model-message .prose::-webkit-scrollbar {
+    height: 8px; /* 滾動條高度 */
+}
+.model-message .prose::-webkit-scrollbar-track {
+    background: transparent; /* 軌道設為透明 */
+}
+.model-message .prose::-webkit-scrollbar-thumb {
+    background-color: var(--border-color); /* 滾動條滑塊顏色 */
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+.model-message .prose::-webkit-scrollbar-thumb:hover {
+    background-color: var(--text-secondary); /* 滑鼠懸停時的顏色 */
+}
     @keyframes jelly-bounce {
         0%, 100% { transform: scale(1) translateX(-50%); }
         25% { transform: scale(0.9, 1.1) translateX(-50%); }
@@ -3282,9 +3263,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         const renderMarkdown = (text) => {
     const dirty = marked.parse(text);
-    let clean = DOMPurify.sanitize(dirty);
-    clean = clean.replace(/<table/g, '<div class="table-container"><table').replace(/<\/table>/g, '</table></div>');
-
+    const clean = DOMPurify.sanitize(dirty);
     return clean;
 };
         const saveConfig = async () => { if (currentUser) await setItem(getConfigKey(), JSON.stringify(config)); };
