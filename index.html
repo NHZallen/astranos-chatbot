@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.8</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.4.7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -504,12 +504,13 @@ button:not(.btn-primary):active:not(:disabled) {
     .prose h3 { font-size: 1.25rem; }
     .prose p { margin-bottom: 1em; }
     .prose table {
+  display: block;          /* ✨ 關鍵變更 1：讓表格在區塊內滾動 */
+  width: max-content;      /* ✨ 關鍵變更 2：讓表格的寬度由其內容決定，能撐多寬就多寬 */
+  max-width: none;         /* ✨ 關鍵變更 3：移除最大寬度限制，允許它超出父容器 */
+  min-width: 100%;         /* ✨ 視覺優化：確保內容不多的表格也能至少填滿泡泡寬度 */
   border-collapse: collapse;
   margin-bottom: 1em;
-}
-  border-collapse: collapse;
-  margin-bottom: 0; /* ✨ 注意：間距將由外層容器控制，所以這裡歸零 */
-  min-width: 600px; /* ✨ 新增：給表格一個最小寬度，即使內容很少看起來也不會太窄 */
+  word-break: normal;      /* ✨ 建議變更：避免表格內的英文單字或數字被強制斷開，更易讀 */
 }
     .prose table th, .prose table td { border: 1px solid var(--border-color); padding: 0.75rem; text-align: left; }
     .prose table thead { background-color: var(--hover-bg); }
@@ -1450,50 +1451,27 @@ body.custom-wallpaper-active .store-category-btn.active {
         -ms-user-select: none;
         user-select: none;
     }
-    .prose .table-wrapper {
-    max-width: 100%;             /* 關鍵①：限制這個盒子的最大寬度，不讓它撐開對話泡泡 */
-    overflow-x: auto;            /* 關鍵②：讓這個盒子內部可以水平滾動 */
-    -webkit-overflow-scrolling: touch; /* 讓手機上的滑動體驗更流暢 */
-    margin-bottom: 1em;          /* 將表格的底部間距移到外層容器上 */
-}
-
-.prose .table-wrapper table {
-    margin-bottom: 0; /* 表格本身的 margin 歸零，避免雙重間距 */
-}
-
-/* 可選：美化滾動條 */
-.prose .table-wrapper::-webkit-scrollbar {
-    height: 8px;
-}
-.prose .table-wrapper::-webkit-scrollbar-track {
-    background: transparent;
-}
-.prose .table-wrapper::-webkit-scrollbar-thumb {
-    background-color: var(--border-color);
-    border-radius: 10px;
-    border: 2px solid transparent;
-    background-clip: content-box;
-}
-.prose .table-wrapper::-webkit-scrollbar-thumb:hover {
-    background-color: var(--text-secondary);
-}
-
-/* ✨ 美化 Webkit 瀏覽器 (Chrome, Safari) 的滾動條 */
-.model-message .prose::-webkit-scrollbar {
-    height: 8px; /* 滾動條高度 */
-}
-.model-message .prose::-webkit-scrollbar-track {
-    background: transparent; /* 軌道設為透明 */
-}
-.model-message .prose::-webkit-scrollbar-thumb {
-    background-color: var(--border-color); /* 滾動條滑塊顏色 */
-    border-radius: 10px;
-    border: 2px solid transparent;
-    background-clip: content-box;
-}
-.model-message .prose::-webkit-scrollbar-thumb:hover {
-    background-color: var(--text-secondary); /* 滑鼠懸停時的顏色 */
-}
+    .model-message .prose {
+        overflow-x: auto;
+        -ms-overflow-style: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border-color) transparent;
+    }
+    .model-message .prose::-webkit-scrollbar {
+        height: 8px;
+    }
+    .model-message .prose::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .model-message .prose::-webkit-scrollbar-thumb {
+        background-color: var(--border-color);
+        border-radius: 10px;
+        border: 2px solid transparent;
+        background-clip: content-box;
+    }
+    .model-message .prose::-webkit-scrollbar-thumb:hover {
+        background-color: var(--text-secondary);
+    }
     @keyframes jelly-bounce {
         0%, 100% { transform: scale(1) translateX(-50%); }
         25% { transform: scale(0.9, 1.1) translateX(-50%); }
@@ -3283,14 +3261,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             };
         };
         const renderMarkdown = (text) => {
-    const dirty = marked.parse(text);
-    let clean = DOMPurify.sanitize(dirty);
-
-    // ✨ 最終方案：使用新的 class 'table-wrapper' 來包裹表格
-    clean = clean.replace(/<table/g, '<div class="table-wrapper"><table').replace(/<\/table>/g, '</table></div>');
-
-    return clean;
-};
+            const dirty = marked.parse(text);
+            const clean = DOMPurify.sanitize(dirty);
+            return clean;
+        };
         const saveConfig = async () => { if (currentUser) await setItem(getConfigKey(), JSON.stringify(config)); };
         const loadConfig = async () => {
             if (!currentUser) return;
