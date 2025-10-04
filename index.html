@@ -8281,15 +8281,15 @@ ${allSearchResults.join('\n\n')}`;
                     : (i18n[config.uiLanguage].selectAll || '全選');
             };
             
-            // 綁定關閉與確認事件 (先移除舊的，再綁定新的)
+            // --- START: 這是主要的修正部分 ---
+            // 使用 .onclick 直接指派函式，這會自動覆蓋掉舊的監聽器，更簡單可靠。
             const confirmHandler = () => generatePdf(conv);
-            confirmExportPdfBtn.replaceWith(confirmExportPdfBtn.cloneNode(true));
-            ALL_ELEMENTS.confirmExportPdfBtn = document.getElementById('confirm-export-pdf-btn');
-            ALL_ELEMENTS.confirmExportPdfBtn.addEventListener('click', confirmHandler);
-
             const cancelHandler = () => toggleModal(exportPdfModal, false);
+
+            confirmExportPdfBtn.onclick = confirmHandler;
             closeExportPdfModalBtn.onclick = cancelHandler;
             cancelExportPdfBtn.onclick = cancelHandler;
+            // --- END: 這是主要的修正部分 ---
 
             toggleModal(exportPdfModal, true);
         };
@@ -8783,8 +8783,7 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
         submitButton.textContent = originalButtonText;
     }
 });
-            ALL_ELEMENTS.closeExportPdfModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.exportPdfModal, false));
-            ALL_ELEMENTS.cancelExportPdfBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.exportPdfModal, false));
+            
         initializeSpotlightEffect();
         }
         const handleDeleteMessagePair = async (index) => {
