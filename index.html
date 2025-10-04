@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.5</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.4.7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -31,7 +31,7 @@
     }
 }
 
-
+  
 @keyframes indicator-exit {
     from {
         opacity: 1;
@@ -454,6 +454,33 @@ button:not(.btn-primary):active:not(:disabled) {
     @keyframes fadeInRight { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
     @keyframes fadeOutRight { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(100%); } }
     @keyframes slideInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeInChar {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in-char {
+    display: inline-block; /* 讓 transform 生效 */
+    animation: fadeInChar 0.25s ease-out forwards;
+}
+
+/* ✨ 新增：打字機游標效果 (可選) */
+.typing-cursor::after {
+    content: '▋';
+    display: inline-block;
+    animation: blink 0.7s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
     .loading-dots { display: flex; align-items: center; justify-content: center; height: 1.25rem; }
     .loading-dots span { display: inline-block; width: 8px; height: 8px; margin: 0 2px; background-color: var(--text-secondary); border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both; }
     .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
@@ -1140,6 +1167,9 @@ body.custom-wallpaper-active .voice-input-btn.active {
         from { opacity: 0; }
         to { opacity: 1; }
     }
+    .message-content {
+    transition: opacity 0.2s ease-in-out;
+}
     .astras-store-card {
         background-color: var(--sidebar-bg);
         border: 1px solid var(--border-color);
@@ -4260,8 +4290,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             let contentPaddingClass = '';
             const isLoadingMessage = !isUser && msg.parts.length === 1 && msg.parts[0].text === '...';
             if (isLoadingMessage) {
-                contentHTML = `<div class="loading-dots"><span class="bg-gray-500 dark:bg-gray-400"></span><span class="bg-gray-500 dark:bg-gray-400"></span><span class="bg-gray-500 dark:bg-gray-400"></span></div>`;
-            } else {
+            contentHTML = `<div class="typing-cursor">&nbsp;</div>`;
+        } else {
                 let textPartsContent = [];
                 let mediaPartsContent = [];
                 msg.parts.forEach(part => {
@@ -4330,6 +4360,85 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
             return messageDiv;
         };
+         /**
+ * ✨ 全新重構：打字機效果渲染函數 (v2)
+ *    - 使用 setInterval 達到勻速輸出
+ *    - 隱藏 Markdown 特殊字元，避免渲染過程中的視覺干擾
+ * @param {HTMLElement} targetElement 要顯示文字的目標 DOM 元素
+ * @param {function(function(string): void): Promise<void>} streamApiCallFn 啟動 API 呼叫的函數
+ * @param {AbortSignal} signal 用於中止操作的 AbortSignal
+ * @returns {Promise<string>} 返回完整的 AI 回應字串
+ */
+function typewriterStream(targetElement, streamApiCallFn, signal) {
+    return new Promise((resolve, reject) => {
+        let fullText = '';
+        let textQueue = '';
+        let isStreaming = true;
+        
+        // ✨ [新增] 定義在打字過程中需要隱藏的 Markdown 特殊字元
+        const MARKDOWN_CHARS_TO_HIDE = new Set(['*', '_', '#', '`', '[', ']', '(', ')', '|', '-', '=', '~']);
+        
+        // ✨ [新增] 控制打字速度 (毫秒)，數值越小越快
+        const typingSpeed = 25; 
+
+        targetElement.innerHTML = '';
+        targetElement.classList.add('typing-cursor');
+
+        const intervalId = setInterval(() => {
+            if (signal.aborted) {
+                clearInterval(intervalId);
+                targetElement.classList.remove('typing-cursor');
+                // 雖然被中止，但仍然解析當前已收到的內容
+                resolve(fullText); 
+                return;
+            }
+
+            if (textQueue.length > 0) {
+                const char = textQueue.charAt(0);
+                textQueue = textQueue.substring(1);
+                
+                fullText += char;
+
+                // ✨ [核心修改] 只有當字元不是特殊 Markdown 字元時，才創建 DOM 元素來顯示它
+                if (!MARKDOWN_CHARS_TO_HIDE.has(char)) {
+                    const span = document.createElement('span');
+                    span.className = 'fade-in-char';
+
+                    if (char === '\n') {
+                        targetElement.appendChild(document.createElement('br'));
+                    } else {
+                        span.textContent = char;
+                        targetElement.appendChild(span);
+                    }
+                }
+                
+                // 保持捲動到底部
+                const chatContainer = ALL_ELEMENTS.chatContainer;
+                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
+                if (isNearBottom) {
+                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+                }
+            } else if (!isStreaming) {
+                // 資料流結束且佇列已空
+                clearInterval(intervalId);
+                targetElement.classList.remove('typing-cursor');
+                resolve(fullText); // 成功完成，返回完整字串
+            }
+        }, typingSpeed);
+
+        // 啟動 API 呼叫，並在結束時更新 isStreaming 狀態
+        streamApiCallFn((chunk) => {
+            textQueue += chunk;
+        }).catch(error => {
+            clearInterval(intervalId);
+            targetElement.classList.remove('typing-cursor');
+            reject(error); // 如果 API 呼叫出錯，則拒絕 Promise
+        }).finally(() => {
+            isStreaming = false;
+        });
+    });
+}
+
         const handleFormSubmit = async (e) => {
             e.preventDefault();
             if (abortController) return;
@@ -4397,44 +4506,85 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderFilePreviews();
             const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
             const contentDiv = loadingMessageDiv.querySelector('.message-content');
-            let fullResponse = '';
-            const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
+            
             try {
+                let fullResponse = '';
+                const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
+
+                // 1. 先等待 API 回應完全結束，獲取完整文字
                 const completeResponse = await streamApiCall(
-    userParts,
-    (chunk) => {
-        fullResponse += chunk;
-        contentDiv.innerHTML = renderMarkdown(fullResponse);
-        const isNearBottom = ALL_ELEMENTS.chatContainer.scrollHeight - ALL_ELEMENTS.chatContainer.scrollTop <= ALL_ELEMENTS.chatContainer.clientHeight + 30;
-        if (isNearBottom) {
-            ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'auto' });
-        }
-    },
-    abortController.signal
-);
+                    userParts,
+                    (chunk) => {
+                        // 在 streamApiCall 內部，我們只收集文字，不渲染
+                    },
+                    abortController.signal
+                );
+
                 fullResponse = completeResponse;
+
+                // 2. 將完整的最終訊息保存到對話紀錄中
                 finalAiMessage.parts = [{ text: fullResponse }];
                 conv.messages.push(finalAiMessage);
                 conv.lastUpdatedAt = new Date().toISOString();
                 await saveAppData();
-                if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
-                    await generateFollowUpPrompts(userMessage, fullResponse);
+                
+                // 3. ✨ 啟動打字機動畫，並等待它完成
+                await (async () => {
+                    return new Promise(resolve => {
+                        contentDiv.innerHTML = ''; // 清空等待樣式
+                        let currentIndex = 0;
+                        const typingSpeed = 15;
+
+                        function type() {
+                            if (currentIndex < fullResponse.length && !abortController.signal.aborted) {
+                                const currentText = fullResponse.substring(0, currentIndex + 1);
+                                contentDiv.innerHTML = renderMarkdown(currentText + '▋');
+
+                                let step = 1;
+                                if (currentText.includes('```')) {
+                                    step = 5;
+                                }
+                                
+                                currentIndex += step;
+
+                                const chatContainer = ALL_ELEMENTS.chatContainer;
+                                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
+                                if (isNearBottom) {
+                                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+                                }
+
+                                setTimeout(type, typingSpeed);
+                            } else {
+                                // 動畫完成或被中止
+                                contentDiv.innerHTML = renderMarkdown(fullResponse); // 最終清理，移除游標
+                                resolve(); // ✨ Promise 完成，通知 await
+                            }
+                        }
+                        
+                        type(); // 啟動
+                    });
+                })();
+
+                // 4. ✨ 只有在打字機動畫結束後，才執行後續任務
+                if (!abortController.signal.aborted) {
+                    if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
+                        await generateFollowUpPrompts(userMessage, fullResponse);
+                    }
+                    if (config.memoryEnabled1 && config.enableAutoMemory) {
+                        await extractPersonalMemory(userMessage, fullResponse);
+                    }
                 }
-                if (config.memoryEnabled1 && config.enableAutoMemory) {
-                    await extractPersonalMemory(userMessage, fullResponse);
-                }
+
             } catch (error) {
-                if (error.name === 'AbortError') {
-                    contentDiv.innerHTML = renderMarkdown(fullResponse);
-                    finalAiMessage.parts = [{ text: fullResponse }];
+                if (error.name !== 'AbortError') {
+                    const errorMessage = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
+                    contentDiv.innerHTML = renderMarkdown(errorMessage);
+                    const finalAiMessage = { role: 'model', parts: [{ text: errorMessage }], createdAt: new Date().toISOString() };
                     conv.messages.push(finalAiMessage);
-                } else {
-                    contentDiv.textContent = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
-                    finalAiMessage.parts = [{ text: `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}` }];
-                    conv.messages.push(finalAiMessage);
+                    await saveAppData();
                 }
-                await saveAppData();
             } finally {
+                // ... finally 區塊的程式碼保持不變 ...
                 abortController = null;
                 updateSubmitButtonState(false);
                 sendConfirmed = false;
@@ -8082,22 +8232,33 @@ ${hasFiles ? "此研究基於使用者提供的檔案，並結合了外部搜尋
 收集到的資料:
 ${allSearchResults.join('\n\n')}`;
 
-                dashboard.remove();
-                const reportContentDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false).querySelector('.message-content');
+                dashboard.remove(); // 移除儀表板
+                const reportMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
+                const reportContentDiv = reportMessageDiv.querySelector('.message-content');
+                
                 let fullReport = '';
-                await streamApiCall(
-                    [{ text: synthesizerPrompt }],
-                    (chunk) => {
-                        fullReport += chunk;
-                        reportContentDiv.innerHTML = renderMarkdown(fullReport);
-                        const chatContainer = ALL_ELEMENTS.chatContainer;
-                        if (isAutoScrolling) {
-                           chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
-                        }
-                    },
-                    abortController.signal,
-                    false
-                );
+                try {
+                    // 使用 typewriterStream 函數來實現打字機效果
+                    fullReport = await typewriterStream(
+                        reportContentDiv,
+                        (onChunk) => streamApiCall(
+                            [{ text: synthesizerPrompt }],
+                            onChunk,
+                            abortController.signal,
+                            false
+                        ),
+                        abortController.signal
+                    );
+                    
+                    // 打字機效果完成後，用最終的、渲染好的 HTML 更新內容
+                    reportContentDiv.innerHTML = renderMarkdown(fullReport);
+
+                } catch (streamError) {
+                    if (streamError.name !== 'AbortError') {
+                        console.error("Stream error during deep research report rendering:", streamError);
+                        reportContentDiv.innerHTML = renderMarkdown(`報告生成時發生錯誤: ${streamError.message}`);
+                    }
+                }
                 
                 const finalReportMessage = { role: 'model', parts: [{ text: fullReport }], createdAt: new Date().toISOString() };
                 conv.messages.push(finalReportMessage);
@@ -8674,5 +8835,3 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
 </script>
 </body>
 </html>
-
-
