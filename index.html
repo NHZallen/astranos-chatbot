@@ -454,20 +454,72 @@ button:not(.btn-primary):active:not(:disabled) {
     @keyframes fadeInRight { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
     @keyframes fadeOutRight { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(100%); } }
     @keyframes slideInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes fadeInChar {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
 
-.fade-in-char {
-    display: inline-block; /* 讓 transform 生效 */
-    animation: fadeInChar 0.25s ease-out forwards;
+    /**
+ * ✨ V2 版：打字機效果渲染函數 (支援即時 Markdown 渲染)
+ * @param {HTMLElement} targetElement 要顯示文字的目標 DOM 元素
+ * @param {function(function(string): void): Promise<string>} streamApiCallFn 啟動 API 呼叫的函數
+ * @param {AbortSignal} signal 用於中止操作的 AbortSignal
+ * @returns {Promise<string>} 返回完整的 AI 回應字串
+ */
+function typewriterStream(targetElement, streamApiCallFn, signal) {
+    return new Promise(async (resolve, reject) => {
+        let fullText = '';
+        let textQueue = '';
+        let isStreaming = true;
+        let intervalId = null;
+
+        // 監聽中止信號
+        signal.addEventListener('abort', () => {
+            clearInterval(intervalId);
+            // 中止時，也進行一次最終渲染，確保已輸出的內容格式正確
+            targetElement.innerHTML = renderMarkdown(fullText);
+            // 因為是中止，所以我們 resolve 已有的文字
+            resolve(fullText); 
+        });
+
+        // 啟動 API 資料流，並將收到的 chunk 推入佇列
+        streamApiCallFn(chunk => {
+            textQueue += chunk;
+        }).catch(err => {
+            // 如果 API 呼叫本身出錯，要 reject Promise
+            isStreaming = false;
+            reject(err);
+        }).finally(() => {
+            isStreaming = false;
+        });
+
+        // 設定一個固定時間間隔的渲染迴圈，來模擬穩定的打字速度
+        const TYPING_SPEED = 20; // 毫秒，數值越小打字越快
+        intervalId = setInterval(() => {
+            if (signal.aborted) return;
+
+            if (textQueue.length > 0) {
+                // 從佇列中取出一個字元
+                const char = textQueue.substring(0, 1);
+                textQueue = textQueue.substring(1);
+                fullText += char;
+
+                // ✨ 核心：每次都重新渲染 accumulatedText 的 Markdown
+                // 加上游標字元 ▋ 讓使用者知道還在輸入中
+                targetElement.innerHTML = renderMarkdown(fullText + '▋');
+
+                // 保持捲動到底部
+                const chatContainer = ALL_ELEMENTS.chatContainer;
+                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 80; // 增加容錯值
+                if (isNearBottom) {
+                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+                }
+            } else if (!isStreaming) {
+                // 當資料流結束，且佇列也空了，就停止迴圈
+                clearInterval(intervalId);
+                // 進行最後一次不含游標的渲染
+                targetElement.innerHTML = renderMarkdown(fullText);
+                // Promise 完成，返回完整文字
+                resolve(fullText);
+            }
+        }, TYPING_SPEED);
+    });
 }
 
 /* ✨ 新增：打字機游標效果 (可選) */
@@ -4502,39 +4554,34 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
             contentDiv.innerHTML = '';
 
             try {
-                // ✨【核心修改】使用新的 typewriterStream 函數來處理串流和動畫
+                // ✨【核心修改】使用新的 typewriterStream 函數
                 const fullResponse = await typewriterStream(
                     contentDiv,
                     (onChunk) => streamApiCall(userParts, onChunk, abortController.signal),
                     abortController.signal
                 );
                 
-                // 在打字機動畫全部結束後，才用 renderMarkdown 完整渲染一次
-                // 這樣可以確保程式碼塊、列表等格式都正確顯示
-                if (!abortController.signal.aborted) {
-                    contentDiv.innerHTML = renderMarkdown(fullResponse);
-                }
-
-                // 將完整的訊息存檔
+                // 當 typewriterStream 完成後，fullResponse 已經是完整文字
+                // 儲存最終訊息
                 const finalAiMessage = { role: 'model', parts: [{ text: fullResponse }], createdAt: new Date().toISOString() };
                 conv.messages.push(finalAiMessage);
                 conv.lastUpdatedAt = new Date().toISOString();
                 await saveAppData();
 
                 // 產生後續追問和記憶提取
-                if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
+                if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode && !abortController.signal.aborted) {
                     await generateFollowUpPrompts(userMessage, fullResponse);
                 }
-
-                if (config.memoryEnabled1 && config.enableAutoMemory) {
+                if (config.memoryEnabled1 && config.enableAutoMemory && !abortController.signal.aborted) {
                     await extractPersonalMemory(userMessage, fullResponse);
                 }
 
             } catch (error) {
                 // 如果不是使用者主動中止，則顯示錯誤訊息
                 if (error.name !== 'AbortError') {
+                    console.error("Stream API Call failed:", error);
                     const errorMessage = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
-                    contentDiv.innerHTML = renderMarkdown(errorMessage);
+                    contentDiv.innerHTML = renderMarkdown(errorMessage); // 錯誤訊息也用 Markdown 渲染
                     const finalAiMessage = { role: 'model', parts: [{ text: errorMessage }], createdAt: new Date().toISOString() };
                     conv.messages.push(finalAiMessage);
                     await saveAppData();
