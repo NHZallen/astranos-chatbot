@@ -1683,6 +1683,60 @@ body.custom-wallpaper-active .input-indicator-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 0.5rem; /* 為按鈕增加間距 */
+}
+.plan-editor-step .step-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+.plan-editor-step .move-step-btn {
+    color: var(--text-secondary);
+    padding: 0.25rem;
+    border-radius: 9999px;
+}
+.plan-editor-step .move-step-btn:hover:not(:disabled) {
+    background-color: var(--hover-bg);
+    color: var(--text-primary);
+}
+.plan-editor-step .move-step-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+.insert-step-divider {
+    position: relative;
+    height: 1px;
+    background-color: transparent;
+    margin: -0.5rem 0;
+}
+.insert-step-btn {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background-color: var(--sidebar-bg);
+    border: 1px dashed var(--border-color);
+    border-radius: 9999px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
+.plan-editor-steps-container:hover .insert-step-btn {
+    opacity: 1;
+}
+.insert-step-btn:hover {
+    opacity: 1;
+    background-color: var(--hover-bg);
+    border-style: solid;
+    color: var(--text-primary);
 }
 .plan-editor-step .step-header label {
     font-weight: 600;
@@ -1792,75 +1846,6 @@ body.custom-wallpaper-active .input-indicator-item {
 }
 @keyframes spin {
     to { transform: rotate(360deg); }
-}
-        .plan-editor-step {
-    position: relative;
-    padding-top: 2rem; /* 為控制按鈕留出空間 */
-}
-
-.plan-editor-step .step-header {
-    position: absolute;
-    top: 0.75rem;
-    left: 1rem;
-    right: 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.plan-step-controls {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-}
-
-.plan-step-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    color: var(--text-secondary);
-    background-color: transparent;
-}
-.plan-step-btn:hover:not(:disabled) {
-    background-color: var(--hover-bg);
-    color: var(--text-primary);
-}
-.plan-step-btn:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-}
-
-.add-step-interstitial {
-    position: relative;
-    height: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: -0.5rem 0;
-}
-.add-step-interstitial button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background-color: var(--button-primary-bg);
-    color: var(--button-primary-text);
-    border: 2px solid var(--modal-bg);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    opacity: 0;
-    transform: scale(0.8);
-    transition: all 0.2s ease-out;
-    cursor: pointer;
-}
-.plan-editor-step:hover + .add-step-interstitial button,
-.add-step-interstitial:hover button {
-    opacity: 1;
-    transform: scale(1);
 }
 </style>
 <script>
@@ -7983,16 +7968,22 @@ ${JSON.stringify(potentialMemories, null, 2)}
         function showInteractivePlanEditor(initialPlan) {
     return new Promise((resolve) => {
         const { interactivePlanModal, planEditorStepsContainer, addPlanStepBtn, confirmPlanBtn, cancelPlanBtn } = ALL_ELEMENTS;
-        let currentPlan = [...initialPlan]; // 創建一個可變的副本
+
+        // 移除舊的監聽器，避免重複綁定
+        const newConfirmBtn = confirmPlanBtn.cloneNode(true);
+        confirmPlanBtn.parentNode.replaceChild(newConfirmBtn, confirmPlanBtn);
+        const newCancelBtn = cancelPlanBtn.cloneNode(true);
+        cancelPlanBtn.parentNode.replaceChild(newCancelBtn, cancelPlanBtn);
+        const newAddBtn = addPlanStepBtn.cloneNode(true);
+        addPlanStepBtn.parentNode.replaceChild(newAddBtn, addPlanStepBtn);
+
+        let currentPlan = [...initialPlan];
 
         function renderPlanSteps() {
             planEditorStepsContainer.innerHTML = '';
             
-            // 新增一個可以在最頂部插入的按鈕
-            const topInterstitial = document.createElement('div');
-            topInterstitial.className = 'add-step-interstitial';
-            topInterstitial.innerHTML = `<button data-index="0" title="在此處插入新步驟">+</button>`;
-            planEditorStepsContainer.appendChild(topInterstitial);
+            // 新增頂部插入按鈕
+            planEditorStepsContainer.appendChild(createInsertDivider(0));
 
             currentPlan.forEach((plan, index) => {
                 const stepElement = document.createElement('div');
@@ -8001,14 +7992,14 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 stepElement.innerHTML = `
                     <div class="step-header">
                         <label>步驟 ${index + 1}</label>
-                        <div class="plan-step-controls">
-                            <button class="plan-step-btn move-step-up-btn" title="上移步驟" ${index === 0 ? 'disabled' : ''}>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+                        <div class="step-controls">
+                            <button class="move-step-btn move-up-btn" title="上移此步驟">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
                             </button>
-                            <button class="plan-step-btn move-step-down-btn" title="下移步驟" ${index === currentPlan.length - 1 ? 'disabled' : ''}>
-                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+                            <button class="move-step-btn move-down-btn" title="下移此步驟">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
                             </button>
-                            <button class="plan-step-btn remove-step-btn" title="移除此步驟" ${currentPlan.length <= 1 ? 'disabled' : ''}>
+                            <button class="remove-step-btn" title="移除此步驟">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                             </button>
                         </div>
@@ -8017,36 +8008,58 @@ ${JSON.stringify(potentialMemories, null, 2)}
                     <textarea class="step-action-input" placeholder="步驟具體行動">${plan.action}</textarea>
                 `;
                 planEditorStepsContainer.appendChild(stepElement);
+                // 在每個步驟後新增插入按鈕
+                planEditorStepsContainer.appendChild(createInsertDivider(index + 1));
+            });
+            updateControlButtonsState();
+        }
 
-                // 在每個步驟後面新增插入按鈕
-                const interstitial = document.createElement('div');
-                interstitial.className = 'add-step-interstitial';
-                interstitial.innerHTML = `<button data-index="${index + 1}" title="在此處插入新步驟">+</button>`;
-                planEditorStepsContainer.appendChild(interstitial);
+        function createInsertDivider(index) {
+            const divider = document.createElement('div');
+            divider.className = 'insert-step-divider';
+            divider.innerHTML = `
+                <button class="insert-step-btn" data-index="${index}" title="在此處插入新步驟">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    插入步驟
+                </button>
+            `;
+            return divider;
+        }
+
+        function updateControlButtonsState() {
+            const stepElements = planEditorStepsContainer.querySelectorAll('.plan-editor-step');
+            stepElements.forEach((el, index) => {
+                el.querySelector('.move-up-btn').disabled = (index === 0);
+                el.querySelector('.move-down-btn').disabled = (index === stepElements.length - 1);
+                el.querySelector('.remove-step-btn').disabled = (stepElements.length <= 1);
             });
         }
 
-        function handleAddStepAtEnd() {
-            if (currentPlan.length >= 10) {
+        function handleAddStep(insertIndex = -1) {
+            const stepCount = currentPlan.length;
+            if (stepCount >= 10) {
                 showNotification('最多只能新增 10 個步驟。', 'warning');
                 return;
             }
-            currentPlan.push({ step: `新步驟 ${currentPlan.length + 1}`, action: '' });
+            const newStep = { step: `新步驟 ${stepCount + 1}`, action: '' };
+            if (insertIndex === -1 || insertIndex >= currentPlan.length) {
+                currentPlan.push(newStep);
+            } else {
+                currentPlan.splice(insertIndex, 0, newStep);
+            }
             renderPlanSteps();
         }
         
-        function handleInsertStep(index) {
-             if (currentPlan.length >= 10) {
-                showNotification('最多只能新增 10 個步驟。', 'warning');
-                return;
+        function handleRemoveStep(index) {
+            if (currentPlan.length > 1) {
+                currentPlan.splice(index, 1);
+                renderPlanSteps();
             }
-            currentPlan.splice(index, 0, { step: '新步驟', action: '' });
-            renderPlanSteps();
         }
-
+        
         function handleMoveStep(index, direction) {
             if (direction === 'up' && index > 0) {
-                [currentPlan[index - 1], currentPlan[index]] = [currentPlan[index], currentPlan[index - 1]];
+                [currentPlan[index], currentPlan[index - 1]] = [currentPlan[index - 1], currentPlan[index]];
             } else if (direction === 'down' && index < currentPlan.length - 1) {
                 [currentPlan[index], currentPlan[index + 1]] = [currentPlan[index + 1], currentPlan[index]];
             }
@@ -8055,19 +8068,19 @@ ${JSON.stringify(potentialMemories, null, 2)}
 
         function cleanupAndClose() {
             toggleModal(interactivePlanModal, false);
-            confirmPlanBtn.removeEventListener('click', onConfirm);
-            cancelPlanBtn.removeEventListener('click', onCancel);
-            addPlanStepBtn.removeEventListener('click', handleAddStepAtEnd);
-            planEditorStepsContainer.removeEventListener('click', onStepContainerClick);
-            planEditorStepsContainer.removeEventListener('input', onStepInputChange);
         }
         
         function onConfirm() {
+            const finalPlan = [];
+            const stepElements = planEditorStepsContainer.querySelectorAll('.plan-editor-step');
             let isValid = true;
-            currentPlan.forEach(plan => {
-                if (!plan.step || !plan.action) {
+            stepElements.forEach(el => {
+                const title = el.querySelector('.step-title-input').value.trim();
+                const action = el.querySelector('.step-action-input').value.trim();
+                if (!title || !action) {
                     isValid = false;
                 }
+                finalPlan.push({ step: title, action: action });
             });
             
             if (!isValid) {
@@ -8076,67 +8089,52 @@ ${JSON.stringify(potentialMemories, null, 2)}
             }
             
             cleanupAndClose();
-            resolve(currentPlan); // 返回最終確認的計畫
+            resolve(finalPlan);
         }
         
         function onCancel() {
             cleanupAndClose();
-            resolve(null); // 返回 null 表示使用者取消
+            resolve(null);
         }
         
         function onStepContainerClick(e) {
             const removeBtn = e.target.closest('.remove-step-btn');
-            const upBtn = e.target.closest('.move-step-up-btn');
-            const downBtn = e.target.closest('.move-step-down-btn');
-            const insertBtn = e.target.closest('.add-step-interstitial button');
+            const upBtn = e.target.closest('.move-up-btn');
+            const downBtn = e.target.closest('.move-down-btn');
+            const insertBtn = e.target.closest('.insert-step-btn');
 
             if (removeBtn) {
-                const stepElement = removeBtn.closest('.plan-editor-step');
-                const index = parseInt(stepElement.dataset.index);
-                currentPlan.splice(index, 1);
-                renderPlanSteps();
+                const index = parseInt(removeBtn.closest('.plan-editor-step').dataset.index, 10);
+                handleRemoveStep(index);
             } else if (upBtn) {
-                const stepElement = upBtn.closest('.plan-editor-step');
-                const index = parseInt(stepElement.dataset.index);
+                const index = parseInt(upBtn.closest('.plan-editor-step').dataset.index, 10);
                 handleMoveStep(index, 'up');
             } else if (downBtn) {
-                const stepElement = downBtn.closest('.plan-editor-step');
-                const index = parseInt(stepElement.dataset.index);
+                const index = parseInt(downBtn.closest('.plan-editor-step').dataset.index, 10);
                 handleMoveStep(index, 'down');
             } else if (insertBtn) {
-                const index = parseInt(insertBtn.dataset.index);
-                handleInsertStep(index);
+                const index = parseInt(insertBtn.dataset.index, 10);
+                handleAddStep(index);
             }
         }
 
-        function onStepInputChange(e) {
-            const input = e.target.closest('.step-title-input, .step-action-input');
-            if (input) {
-                const stepElement = input.closest('.plan-editor-step');
-                const index = parseInt(stepElement.dataset.index);
-                if (input.classList.contains('step-title-input')) {
-                    currentPlan[index].step = input.value;
-                } else {
-                    currentPlan[index].action = input.value;
-                }
-            }
-        }
-
-        // 初始化
+        // Initialize
         renderPlanSteps();
         
-        // 綁定事件
-        confirmPlanBtn.addEventListener('click', onConfirm);
-        cancelPlanBtn.addEventListener('click', onCancel);
-        addPlanStepBtn.addEventListener('click', handleAddStepAtEnd);
-        planEditorStepsContainer.addEventListener('click', onStepContainerClick);
-        planEditorStepsContainer.addEventListener('input', onStepInputChange);
+        // Bind events to the new cloned buttons
+        ALL_ELEMENTS.confirmPlanBtn = newConfirmBtn;
+        ALL_ELEMENTS.cancelPlanBtn = newCancelBtn;
+        ALL_ELEMENTS.addPlanStepBtn = newAddBtn;
 
-        // 顯示 Modal
+        newConfirmBtn.addEventListener('click', onConfirm);
+        newCancelBtn.addEventListener('click', onCancel);
+        newAddBtn.addEventListener('click', () => handleAddStep(-1)); // -1 means add to end
+        planEditorStepsContainer.addEventListener('click', onStepContainerClick);
+
+        // Show Modal
         toggleModal(interactivePlanModal, true);
     });
 }
-
         
         // ✨ 更新後的深度研究核心函數
         async function handleDeepResearch(userMessage) {
@@ -8221,9 +8219,6 @@ ${JSON.stringify(potentialMemories, null, 2)}
 # 本次研究主題
 "${userMessage}"`;
 
-                if (config.deepResearchQueryCount > 0) {
-    plannerPrompt += `\n\n# 數量限制\n你必須精確地生成 ${config.deepResearchQueryCount} 個研究步驟。不多也不少。`;
-}
                 const plannerSchema = { 
                     type: "ARRAY", 
                     items: { 
@@ -8285,12 +8280,17 @@ ${JSON.stringify(potentialMemories, null, 2)}
                     const planStep = finalResearchPlan[i];
                     dashboard.updateStep(i, 'running');
 
-                    const queryGenPrompt = `基於以下總體研究目標和當前具體的研究步驟，生成 2-3 個最有效的 Google 搜尋關鍵字。請嚴格以 JSON 陣列格式回傳。
+                    const queryCount = config.deepResearchQueryCount;
+const queryGenPrompt = `基於以下總體研究目標和當前具體的研究步驟，生成 ${queryCount === 0 ? '幾個最有效' : ` ${queryCount} 個`} 的 Google 搜尋關鍵字。請嚴格以 JSON 陣列格式回傳。
 
 總體目標: "${userMessage}"
 當前步驟: "${planStep.step}: ${planStep.action}"`;
-                    
-                    const queryGenSchema = { type: "ARRAY", items: { type: "STRING" }, maxItems: 3 };
+
+const queryGenSchema = { 
+    type: "ARRAY", 
+    items: { type: "STRING" }, 
+    ...(queryCount > 0 && { maxItems: queryCount, minItems: queryCount })
+};
                     const searchQueries = await callApiWithSchema(queryGenPrompt, queryGenSchema, abortController.signal);
 
                     if (!searchQueries || searchQueries.length === 0) {
