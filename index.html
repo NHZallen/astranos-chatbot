@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.5</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.4.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -563,6 +563,43 @@ button:not(.btn-primary):active:not(:disabled) {
     box-shadow:
         inset 0 2px 4px rgba(0, 0, 0, 0.3);
     transition-duration: 0.05s;
+}
+    .insert-step-divider {
+    position: relative;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.insert-step-divider .line {
+    width: 100%;
+    height: 1px;
+    background-color: var(--border-color);
+}
+.insert-step-divider .add-step-here-btn {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    background-color: var(--modal-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    cursor: pointer;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.2s ease-out;
+}
+.insert-step-divider:hover .add-step-here-btn {
+    opacity: 1;
+    transform: scale(1);
+    background-color: var(--hover-bg);
+}
+.add-step-here-btn svg {
+    width: 14px;
+    height: 14px;
 }
     .theme-btn.active {
         background: var(--button-primary-bg);
@@ -7769,6 +7806,42 @@ ${JSON.stringify(potentialMemories, null, 2)}
 
                 function renderPlanSteps() {
                     planEditorStepsContainer.innerHTML = '';
+                    const createInsertDivider = (index) => {
+        const divider = document.createElement('div');
+        divider.className = 'insert-step-divider';
+        divider.innerHTML = `
+            <div class="line"></div>
+            <button class="add-step-here-btn" data-index="${index}">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>
+                在此插入步驟
+            </button>
+        `;
+        return divider;
+    };
+
+    // 在所有步驟的最前面，加上第一個插入點
+    planEditorStepsContainer.appendChild(createInsertDivider(0));
+
+    initialPlan.forEach((plan, index) => {
+        const stepElement = document.createElement('div');
+        stepElement.className = 'plan-editor-step';
+        stepElement.innerHTML = `
+            <div class="step-header">
+                <label>步驟 ${index + 1}</label>
+                <button class="remove-step-btn" title="移除此步驟">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <input type="text" class="step-title-input" placeholder="步驟標題" value="${plan.step}">
+            <textarea class="step-action-input" placeholder="步驟具體行動">${plan.action}</textarea>
+        `;
+        planEditorStepsContainer.appendChild(stepElement);
+
+        // 在每個步驟後面，都加上一個插入點
+        planEditorStepsContainer.appendChild(createInsertDivider(index + 1));
+    });
+    updateRemoveButtonsState();
+}
                     const steps = planEditorStepsContainer.querySelectorAll('.plan-editor-step').length;
                     
                     initialPlan.forEach((plan, index) => {
@@ -7797,14 +7870,15 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 }
 
                 function handleAddStep() {
-                    const stepCount = planEditorStepsContainer.querySelectorAll('.plan-editor-step').length;
-                    if (stepCount >= 10) {
-                        showNotification('最多只能新增 10 個步驟。', 'warning');
-                        return;
-                    }
-                    initialPlan.push({ step: `新步驟 ${stepCount + 1}`, action: '' });
-                    renderPlanSteps();
-                }
+    const stepCount = initialPlan.length;
+    if (stepCount >= 10) {
+        showNotification('最多只能有 10 個步驟。', 'warning');
+        return;
+    }
+    // 直接在陣列最後 push 一個新步驟
+    initialPlan.push({ step: `新步驟 ${stepCount + 1}`, action: '' });
+    renderPlanSteps();
+}
                 
                 function handleRemoveStep(buttonElement) {
                     const stepElement = buttonElement.closest('.plan-editor-step');
@@ -7855,10 +7929,23 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 }
                 
                 function onStepContainerClick(e) {
-                    if (e.target.closest('.remove-step-btn')) {
-                        handleRemoveStep(e.target.closest('.remove-step-btn'));
-                    }
-                }
+    const removeBtn = e.target.closest('.remove-step-btn');
+    const insertBtn = e.target.closest('.add-step-here-btn'); // ✨ 新增這行
+
+    if (removeBtn) {
+        handleRemoveStep(removeBtn);
+    } else if (insertBtn) { // ✨ 新增這個 else if 區塊
+        const index = parseInt(insertBtn.dataset.index, 10);
+        const stepCount = initialPlan.length;
+        if (stepCount >= 10) {
+            showNotification('最多只能有 10 個步驟。', 'warning');
+            return;
+        }
+        // 使用 splice 在指定位置插入新步驟
+        initialPlan.splice(index, 0, { step: `新步驟 ${stepCount + 1}`, action: '' });
+        renderPlanSteps();
+    }
+}
 
                 // 初始化
                 renderPlanSteps();
