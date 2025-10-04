@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.7</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.4.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -3364,39 +3364,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const clean = DOMPurify.sanitize(dirty);
             return clean;
         };
-         const renderCharts = (container) => {
-    const chartBlocks = container.querySelectorAll('code.language-chart');
-    chartBlocks.forEach((block, index) => {
-        const preElement = block.parentElement;
-        if (preElement.dataset.rendered) return;
-
-        try {
-            const chartJson = block.textContent;
-            const chartConfig = JSON.parse(chartJson);
-            
-            const canvasContainer = document.createElement('div');
-            canvasContainer.className = 'my-4 p-4 border rounded-lg bg-[var(--hover-bg)]';
-            canvasContainer.style.maxWidth = '100%';
-            
-            const canvas = document.createElement('canvas');
-            canvas.id = `chart-${Date.now()}-${index}`;
-
-            canvasContainer.appendChild(canvas);
-            
-            // 將 pre 元素替換為 canvas 容器
-            preElement.parentNode.replaceChild(canvasContainer, preElement);
-            preElement.dataset.rendered = 'true'; // 標記為已渲染
-
-            // 將原始 JSON 存儲起來，供複製功能使用
-            canvasContainer.dataset.chartJson = chartJson;
-
-            new Chart(canvas, chartConfig);
-        } catch (error) {
-            console.error('圖表 JSON 解析或渲染失敗:', error);
-            block.textContent = `[圖表渲染錯誤: ${error.message}]`;
-        }
-    });
-};
         const saveConfig = async () => { if (currentUser) await setItem(getConfigKey(), JSON.stringify(config)); };
         const loadConfig = async () => {
             if (!currentUser) return;
@@ -4486,9 +4453,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             messageDiv.innerHTML = isUser ? `${messageBubble}${icon}` : `${icon}${messageBubble}`;
             if (ALL_ELEMENTS.messageList.querySelector('.text-center')) ALL_ELEMENTS.messageList.innerHTML = '';
             ALL_ELEMENTS.messageList.appendChild(messageDiv);
-            if (!isUser) {
-            renderCharts(messageDiv);
-        }
             if (shouldScroll) {
                 if (isAutoScrolling) {
                     ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
@@ -4571,7 +4535,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     (chunk) => {
         fullResponse += chunk;
         contentDiv.innerHTML = renderMarkdown(fullResponse);
-        renderCharts(contentDiv);
         const isNearBottom = ALL_ELEMENTS.chatContainer.scrollHeight - ALL_ELEMENTS.chatContainer.scrollTop <= ALL_ELEMENTS.chatContainer.clientHeight + 30;
         if (isNearBottom) {
             ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'auto' });
@@ -8476,23 +8439,6 @@ ${allSearchResults.join('\n\n')}`;
                         const conv = getActiveConversation();
                         const msg = conv?.messages[messageIndex];
                         if (msg && msg.role === 'model') {
-                            let textToCopy = '';
-            const chartContainers = messageItem.querySelectorAll('[data-chart-json]');
-
-            if (chartContainers.length > 0) {
-                // 如果訊息中包含圖表，我們複製原始的文字和圖表JSON
-                textToCopy = msg.parts.map(p => {
-                    if (p.text.includes('```chart')) {
-                        // 從渲染後的元素中找回原始JSON
-                        const matchingContainer = Array.from(chartContainers).find(c => c.dataset.chartJson.includes(p.text.substring(p.text.indexOf('{'))));
-                        return matchingContainer ? `\`\`\`chart\n${matchingContainer.dataset.chartJson}\n\`\`\`` : p.text;
-                    }
-                    return p.text;
-                }).join('\n');
-            } else {
-                // 如果沒有圖表，維持原樣
-                textToCopy = msg.parts.map(p => p.text).join('\n');
-            }
                             const textToCopy = msg.parts.map(p => p.text).join('\n');
                             copyTextToClipboard(textToCopy)
                                 .then(() => showNotification(i18n[config.uiLanguage].copySuccess || '內容已複製！', 'success'))
