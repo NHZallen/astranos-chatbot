@@ -10,6 +10,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
     body {
     touch-action: manipulation;
@@ -1643,24 +1645,36 @@ body.custom-wallpaper-active .input-indicator-item {
 .plan-editor-step {
     background-color: var(--input-field-bg);
     border: 1px solid var(--border-color);
-    border-radius: 0.5rem;
+    border-radius: 0.75rem; /* 圓角稍大 */
     padding: 1rem;
     padding-left: 3rem; /* 為左側控制按鈕留出空間 */
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
     position: relative;
+    transition: box-shadow 0.2s ease-in-out;
 }
+
+.plan-editor-step:hover {
+    box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.08);
+}
+
+.dark .plan-editor-step:hover {
+    box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.2);
+}
+
 .plan-editor-step .step-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
+
 .plan-editor-step .step-header label {
     font-weight: 600;
     font-size: 0.875rem;
     color: var(--text-secondary);
 }
+
 .plan-editor-step .step-controls {
     position: absolute;
     left: 0.5rem;
@@ -1669,12 +1683,14 @@ body.custom-wallpaper-active .input-indicator-item {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    opacity: 0.3;
+    opacity: 0; /* 預設隱藏 */
     transition: opacity 0.2s ease-in-out;
 }
+
 .plan-editor-step:hover .step-controls {
-    opacity: 1;
+    opacity: 1; /* 滑鼠懸浮時顯示 */
 }
+
 .plan-editor-step .step-controls button {
     width: 1.75rem;
     height: 1.75rem;
@@ -1686,32 +1702,40 @@ body.custom-wallpaper-active .input-indicator-item {
     justify-content: center;
     color: var(--text-secondary);
 }
+
 .plan-editor-step .step-controls button:hover:not(:disabled) {
     background-color: var(--active-bg);
     color: var(--text-primary);
+    transform: scale(1.1);
 }
+
 .plan-editor-step .step-controls button:disabled {
     opacity: 0.4;
     cursor: not-allowed;
 }
+
 .insert-step-container {
     height: 1.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
 }
+
 .insert-step-btn {
     width: 100%;
-    height: 3px;
+    height: 2px; /* 將線條變細 */
     background-color: transparent;
     border: none;
     cursor: pointer;
     position: relative;
     transition: background-color 0.2s ease;
 }
-.insert-step-btn:hover {
+
+.insert-step-container:hover .insert-step-btn {
     background-color: var(--button-primary-bg);
 }
+
 .insert-step-btn::before {
     content: '+';
     position: absolute;
@@ -1731,24 +1755,31 @@ body.custom-wallpaper-active .input-indicator-item {
     line-height: 1;
     opacity: 0;
     transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 1;
 }
+
 .insert-step-container:hover .insert-step-btn::before {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
 }
+
+
 .plan-editor-step .remove-step-btn {
     color: var(--text-secondary);
     padding: 0.25rem;
     border-radius: 9999px;
 }
+
 .plan-editor-step .remove-step-btn:hover {
     background-color: var(--hover-bg);
     color: #ef4444; /* red-500 */
 }
+
 .plan-editor-step .remove-step-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
+
 .plan-editor-step input[type="text"],
 .plan-editor-step textarea {
     width: 100%;
@@ -1758,11 +1789,22 @@ body.custom-wallpaper-active .input-indicator-item {
     background-color: var(--modal-bg);
     color: var(--text-primary);
     font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
+
+.plan-editor-step input[type="text"]:focus,
+.plan-editor-step textarea:focus {
+    outline: none;
+    border-color: var(--button-primary-bg);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--button-primary-bg) 20%, transparent);
+}
+
+
 .dark .plan-editor-step input[type="text"],
 .dark .plan-editor-step textarea {
     background-color: var(--input-field-bg);
 }
+
 .plan-editor-step textarea {
     min-height: 80px;
     resize: vertical;
@@ -7856,7 +7898,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
             };
         }
         
-        // ✨ 新增：處理互動式計畫的核心邏輯
+        // ✨ 更新後的互動式計畫編輯器核心邏輯
         function showInteractivePlanEditor(initialPlan) {
             return new Promise((resolve) => {
                 const { interactivePlanModal, planEditorStepsContainer, addPlanStepToEndBtn, confirmPlanBtn, cancelPlanBtn } = ALL_ELEMENTS;
@@ -8019,6 +8061,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 toggleModal(interactivePlanModal, true);
             });
         }
+
         
         // ✨ 更新後的深度研究核心函數
         async function handleDeepResearch(userMessage) {
@@ -8202,7 +8245,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
 你的任務是將下方所有零散的研究資料，綜合成一份結構清晰、文筆專業、**直接呈現給使用者**的深度分析報告。
 
 # 最高指導原則：成為思想的建築師，而非資訊的搬運工
-你的目標是產出一份**全面而詳細，目標長度至少為 5000-無上限 字**的權威報告。你必須對資訊進行**綜合、比較和對比**，找出其中的關聯、矛盾或資訊缺口，並提供有見地的分析，而不僅僅是摘要。你的目標讀者就是提出原始問題的使用者，因此你的報告必須是**成品**，而不是你的思考過程。
+你的目標是產出一份**全面而詳細，目標長度至少為 7000-無上限 字**的權威報告。你必須對資訊進行**綜合、比較和對比**，找出其中的關聯、矛盾或資訊缺口，並提供有見地的分析，而不僅僅是摘要。你的目標讀者就是提出原始問題的使用者，因此你的報告必須是**成品**，而不是你的思考過程。
 
 # 絕對禁令：禁止任何形式的「元對話」或自我提及！
 在最終的報告中，**絕對不允許**出現以下類型的內容：
