@@ -7919,7 +7919,6 @@ ${JSON.stringify(potentialMemories, null, 2)}
 
                 function renderPlanSteps() {
                     planEditorStepsContainer.innerHTML = '';
-                    const steps = planEditorStepsContainer.querySelectorAll('.plan-editor-step').length;
                     
                     initialPlan.forEach((plan, index) => {
                         const stepElement = document.createElement('div');
@@ -7941,33 +7940,42 @@ ${JSON.stringify(potentialMemories, null, 2)}
 
                 function updateRemoveButtonsState() {
                     const removeButtons = planEditorStepsContainer.querySelectorAll('.remove-step-btn');
+                    const canRemove = removeButtons.length > 1;
                     removeButtons.forEach(btn => {
-                        btn.disabled = removeButtons.length <= 1;
+                        btn.disabled = !canRemove;
                     });
                 }
 
                 function handleAddStep() {
-                    const stepCount = planEditorStepsContainer.querySelectorAll('.plan-editor-step').length;
+                    const stepCount = initialPlan.length;
                     if (stepCount >= 10) {
                         showNotification('最多只能新增 10 個步驟。', 'warning');
                         return;
                     }
-                    initialPlan.push({ step: `新步驟 ${stepCount + 1}`, action: '' });
+                    // 我們只加入空的內容，讓 renderPlanSteps 自動產生標題和編號
+                    initialPlan.push({ step: '', action: '' });
                     renderPlanSteps();
+
+                    // 新增後，自動將焦點設定到新的輸入框中
+                    const lastStep = planEditorStepsContainer.lastElementChild;
+                    if (lastStep) {
+                       lastStep.querySelector('.step-title-input').focus();
+                    }
                 }
                 
                 function handleRemoveStep(buttonElement) {
                     const stepElement = buttonElement.closest('.plan-editor-step');
+                    // 透過在 DOM 中的位置來找到它在陣列中的索引
                     const index = Array.from(planEditorStepsContainer.children).indexOf(stepElement);
                     if (index > -1) {
                         initialPlan.splice(index, 1);
+                        // 移除後，直接重新渲染整個列表，編號就會自動更新
                         renderPlanSteps();
                     }
                 }
 
                 function cleanupAndClose() {
                     toggleModal(interactivePlanModal, false);
-                    // 移除事件監聽器以避免記憶體洩漏
                     confirmPlanBtn.removeEventListener('click', onConfirm);
                     cancelPlanBtn.removeEventListener('click', onCancel);
                     addPlanStepBtn.removeEventListener('click', handleAddStep);
@@ -7993,7 +8001,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
                     }
                     
                     cleanupAndClose();
-                    resolve(finalPlan); // 返回最終確認的計畫
+                    resolve(finalPlan);
                 }
                 
                 function onCancel() {
@@ -8001,12 +8009,13 @@ ${JSON.stringify(potentialMemories, null, 2)}
                     if (dashboardCard) {
                         dashboardCard.remove();
                     }
-                    resolve(null); // 返回 null 表示使用者取消
+                    resolve(null);
                 }
                 
                 function onStepContainerClick(e) {
-                    if (e.target.closest('.remove-step-btn')) {
-                        handleRemoveStep(e.target.closest('.remove-step-btn'));
+                    const removeBtn = e.target.closest('.remove-step-btn');
+                    if (removeBtn) {
+                        handleRemoveStep(removeBtn);
                     }
                 }
 
@@ -8149,38 +8158,37 @@ ${JSON.stringify(potentialMemories, null, 2)}
                     throw new Error('無法生成研究計畫。');
                 }
                 
-                dashboard.remove(); // 移除初始的 "正在規劃..." 卡片
+                dashboard.remove();
 
                 // --- 階段二：使用者互動式編輯計畫 ---
-                const finalResearchPlan = await showInteractivePlanEditor(initialResearchPlan);
+                let finalResearchPlan = await showInteractivePlanEditor(initialResearchPlan);
 
-if (!finalResearchPlan) { // 使用者點擊了取消
-    abortController.abort();
-    throw new Error("使用者取消了研究。");
-}
+                if (!finalResearchPlan) { 
+                    abortController.abort();
+                    throw new Error("使用者取消了研究。");
+                }
 
-// --- 階段三：執行編輯後的計畫 ---
-// ✨【核心修正】✨
-// 我們在這裡先根據設定，決定真正要執行的步驟
-const queryCountSetting = config.deepResearchQueryCount;
-let stepsToExecute = finalResearchPlan;
+                // --- 【第二部分修正】在這裡加入擋位設定 ---
+                const queryLimit = config.deepResearchQueryCount;
+                const originalPlanLength = finalResearchPlan.length;
 
-if (queryCountSetting > 0) {
-    // 如果使用者設定了具體數量，就只取指定的數量
-    stepsToExecute = finalResearchPlan.slice(0, queryCountSetting);
-} else if (finalResearchPlan.length > 10) {
-    // 如果是「自動」(0)，且原計畫超過 10 步，才限制在 10 步
-    stepsToExecute = finalResearchPlan.slice(0, 10);
-}
+                if (queryLimit > 0 && finalResearchPlan.length > queryLimit) {
+                    finalResearchPlan = finalResearchPlan.slice(0, queryLimit);
+                    showNotification(`研究計畫已根據設定，從 ${originalPlanLength} 個步驟強制縮減為 ${queryLimit} 個步驟。`, 'warning');
+                } else if (queryLimit === 0 && finalResearchPlan.length > 10) {
+                    // 自動模式，最多不超過 10
+                    finalResearchPlan = finalResearchPlan.slice(0, 10);
+                     showNotification(`在自動模式下，研究計畫已從 ${originalPlanLength} 個步驟自動限制為 10 個步驟。`, 'warning');
+                }
+                // --- 擋位設定結束 ---
+                
+                // --- 階段三：執行編輯後的計畫 ---
+                dashboard = addResearchDashboardCard('正在執行您確認的研究計畫...', finalResearchPlan.map(p => `${p.step}: ${p.action}`));
+                const allSearchResults = [];
 
-// 現在，我們用【真正要執行的步驟】來建立儀表板，這樣畫面上顯示的步驟數量才會是正確的
-dashboard = addResearchDashboardCard('正在執行您確認的研究計畫...', stepsToExecute.map(p => `${p.step}: ${p.action}`));
-const allSearchResults = [];
-
-// 最後，讓迴圈也只跑我們要執行的步驟
-for (let i = 0; i < stepsToExecute.length; i++) {
-    if (abortController.signal.aborted) throw new Error("研究已中止。");
-    const planStep = stepsToExecute[i]; // ✨ 注意：這裡也從 finalResearchPlan 改為 stepsToExecute
+                for (let i = 0; i < finalResearchPlan.length; i++) {
+                    if (abortController.signal.aborted) throw new Error("研究已中止。");
+                    const planStep = finalResearchPlan[i];
                     dashboard.updateStep(i, 'running');
 
                     const queryGenPrompt = `基於以下總體研究目標和當前具體的研究步驟，生成 2-3 個最有效的 Google 搜尋關鍵字。請嚴格以 JSON 陣列格式回傳。
@@ -8202,7 +8210,7 @@ for (let i = 0; i < stepsToExecute.length; i++) {
                             [{ text: query }], 
                             () => {}, 
                             abortController.signal,
-                            true // 強制使用 Web Search
+                            true 
                         ).then(result => `--- 關於 "${query}" 的搜尋結果 ---\n${result}\n`)
                          .catch(err => `--- 關於 "${query}" 的搜尋失敗 ---\n錯誤訊息: ${err.message}\n`)
                     );
@@ -8248,71 +8256,60 @@ ${hasFiles ? "此研究基於使用者提供的檔案，並結合了外部搜尋
 ${allSearchResults.join('\n\n')}`;
 
                 dashboard.remove();
-const reportMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
-const reportContentDiv = reportMessageDiv.querySelector('.message-content');
-
-let fullReport = '';
-
-// ✨ 第二項修改：我們將修改這裡的 AI 回覆方式
-
-// 1. 首先，呼叫 API 以獲取完整的報告文字，但先不顯示出來。
-const completeReport = await streamApiCall(
-    [{ text: synthesizerPrompt }],
-    () => {}, // 這裡給一個空的函式，因為我們不想在接收過程中更新畫面
-    abortController.signal,
-    false
-);
-
-fullReport = completeReport;
-
-// 2. 將完整的最終報告訊息儲存到對話紀錄中。
-const finalReportMessage = { role: 'model', parts: [{ text: fullReport }], createdAt: new Date().toISOString() };
-conv.messages.push(finalReportMessage);
-
-// 3. 接著，使用和普通模式一樣的「打字機效果」來顯示完整的報告。
-await (async () => {
-    return new Promise(resolve => {
-        reportContentDiv.innerHTML = ''; // 清空原本的 "..." 等待提示
-        let currentIndex = 0;
-        const typingSpeed = 15; // 每個字顯示的速度（毫秒）
-
-        function type() {
-            if (currentIndex < fullReport.length && !abortController.signal.aborted) {
-                const currentText = fullReport.substring(0, currentIndex + 1);
-                // 加上一個閃爍的游標 "▋" 來模擬打字效果
-                reportContentDiv.innerHTML = renderMarkdown(currentText + '▋');
-
-                let step = 1;
-                // 如果內容包含程式碼區塊，可以加快速度
-                if (currentText.includes('```')) {
-                    step = 5;
-                }
+                const reportMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
+                const reportContentDiv = reportMessageDiv.querySelector('.message-content');
                 
-                currentIndex += step;
+                // --- 【第一部分修正】在這裡使用新的動畫邏輯 ---
+                const fullReport = await streamApiCall(
+                    [{ text: synthesizerPrompt }],
+                    () => {}, // Chunk callback is empty, we wait for the full response
+                    abortController.signal,
+                    false
+                );
 
-                // 讓畫面自動滾動到底部
-                const chatContainer = ALL_ELEMENTS.chatContainer;
-                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
-                if (isNearBottom) {
-                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+                const finalReportMessage = { role: 'model', parts: [{ text: fullReport }], createdAt: new Date().toISOString() };
+                conv.messages.push(finalReportMessage);
+                
+                // 使用與普通模式相同的打字機效果來顯示報告
+                await (async () => {
+                    return new Promise(resolve => {
+                        reportContentDiv.innerHTML = ''; // 清空等待樣式
+                        let currentIndex = 0;
+                        const typingSpeed = 15;
+
+                        function type() {
+                            if (currentIndex < fullReport.length && !abortController.signal.aborted) {
+                                const currentText = fullReport.substring(0, currentIndex + 1);
+                                reportContentDiv.innerHTML = renderMarkdown(currentText + '▋');
+
+                                let step = 1;
+                                if (currentText.includes('```')) {
+                                    step = 5;
+                                }
+                                
+                                currentIndex += step;
+
+                                const chatContainer = ALL_ELEMENTS.chatContainer;
+                                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
+                                if (isNearBottom) {
+                                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+                                }
+
+                                setTimeout(type, typingSpeed);
+                            } else {
+                                reportContentDiv.innerHTML = renderMarkdown(fullReport);
+                                resolve();
+                            }
+                        }
+                        
+                        type();
+                    });
+                })();
+                // --- 動畫邏輯結束 ---
+
+                if (fullReport && !config.isLearningMode) {
+                    await generateFollowUpPrompts(userMessage, fullReport);
                 }
-
-                setTimeout(type, typingSpeed);
-            } else {
-                // 打字完成或被中斷後，顯示最終的完整內容（不含游標）
-                reportContentDiv.innerHTML = renderMarkdown(fullReport);
-                resolve();
-            }
-        }
-        
-        type(); // 啟動打字機
-    });
-})();
-
-// 4. 在報告顯示完畢後，再生成後續追問建議。
-if (fullReport && !config.isLearningMode) {
-    await generateFollowUpPrompts(userMessage, fullReport);
-}
 
             } catch (error) {
                 if (error.name !== 'AbortError' && error.message !== "使用者取消了研究。") {
@@ -8334,7 +8331,6 @@ if (fullReport && !config.isLearningMode) {
                 updateInputState();
                 await saveAppData();
                 
-                // 為最後一則訊息添加複製按鈕等
                 const lastMessageDiv = ALL_ELEMENTS.messageList.lastElementChild;
                 if (lastMessageDiv && lastMessageDiv.classList.contains('model-message') && !lastMessageDiv.querySelector('.research-dashboard')) {
                     const bubble = lastMessageDiv.querySelector('.message-bubble');
