@@ -503,15 +503,49 @@ button:not(.btn-primary):active:not(:disabled) {
     .prose h2 { font-size: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
     .prose h3 { font-size: 1.25rem; }
     .prose p { margin-bottom: 1em; }
-    .prose table {
-  display: block;          /* 關鍵：讓表格可以在區塊內獨立滾動 */
-  width: max-content;      /* 關鍵：讓表格的寬度由其內容撐開，想多寬就多寬 */
-  max-width: none;         /* 關鍵：解除最大寬度限制，允許它超出泡泡的寬度 */
-  min-width: 100%;         /* 優化：確保內容少的表格也能至少填滿泡泡寬度，不會太窄 */
-  border-collapse: collapse;
-  margin-bottom: 1em;
-  word-break: normal;      /* 優化：讓表格內的單字正常顯示，不要被強制切斷 */
+    .prose .table-container {
+    overflow-x: auto; /* 這是關鍵！啟用水平滾動條 */
+    -webkit-overflow-scrolling: touch; /* 在 iOS 裝置上提供更流暢的慣性滾動體驗 */
+    margin-bottom: 1em; /* 維持表格與下方內容的間距 */
+    border: 1px solid var(--border-color); /* (可選) 給滾動容器一個淡淡的邊框，視覺上更清晰 */
+    border-radius: 0.5rem; /* (可選) 圓角，使其與訊息泡泡風格一致 */
+    scrollbar-width: thin; /* (美化) 讓滾動條細一點 */
+    scrollbar-color: var(--text-secondary) transparent; /* (美化) 滾動條顏色 */
 }
+
+/* ✨ 新增：美化 Webkit 瀏覽器 (Chrome, Safari) 的滾動條 */
+.prose .table-container::-webkit-scrollbar {
+    height: 8px; /* 滾動條的高度 */
+}
+.prose .table-container::-webkit-scrollbar-track {
+    background: transparent; /* 軌道背景透明 */
+}
+.prose .table-container::-webkit-scrollbar-thumb {
+    background-color: var(--border-color); /* 滾動條本身的顏色 */
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+.prose .table-container::-webkit-scrollbar-thumb:hover {
+    background-color: var(--text-secondary); /* 滑鼠懸停時的顏色 */
+}
+
+/* ✨ 修改：讓表格本身不再被限制寬度，可以自由伸展 */
+.prose table {
+  /* 移除了 width, max-width, table-layout, word-break */
+  border-collapse: collapse;
+  white-space: nowrap; /* 核心之一：確保表格單元格內的文字不會輕易換行，讓表格可以撐開 */
+}
+
+/* 保持你原本的 th, td, thead, tr 樣式不變 */
+.prose table th, .prose table td { 
+    border: 1px solid var(--border-color); 
+    padding: 0.75rem; 
+    text-align: left; 
+    white-space: normal; /* 讓單元格內的長文字可以正常換行 */
+}
+.prose table thead { background-color: var(--hover-bg); }
+.prose table tr:nth-child(even) { background-color: var(--hover-bg); }
     .prose table th, .prose table td { border: 1px solid var(--border-color); padding: 0.75rem; text-align: left; }
     .prose table thead { background-color: var(--hover-bg); }
     .prose table tr:nth-child(even) { background-color: var(--hover-bg); }
@@ -3265,6 +3299,38 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const clean = DOMPurify.sanitize(dirty);
             return clean;
         };
+         /**
+ * 渲染 Markdown 並自動為表格添加可滾動的容器
+ * @param {string} text - 原始 Markdown 文本
+ * @returns {string} - 處理過的 HTML 字符串
+ */
+const renderMarkdownWithScrollableTables = (text) => {
+    // 首先，像往常一樣將 Markdown 轉換為乾淨的 HTML
+    const cleanHtml = renderMarkdown(text);
+
+    // 建立一個暫時的 div 元素，以便我們能像操作真實 DOM 一樣操作 HTML 字串
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = cleanHtml;
+
+    // 找出這個 div 中所有的 <table> 元素
+    const tables = tempDiv.querySelectorAll('table');
+
+    // 遍歷所有找到的表格
+    tables.forEach(table => {
+        // 建立我們的滾動容器 div
+        const tableContainer = document.createElement('div');
+        tableContainer.className = 'table-container';
+
+        // 在 DOM 結構中，將滾動容器插入到表格的前面
+        table.parentNode.insertBefore(tableContainer, table);
+
+        // 然後，將表格本身移動到滾動容器的內部
+        tableContainer.appendChild(table);
+    });
+
+    // 返回處理後、包含了滾動容器的完整 HTML 內容
+    return tempDiv.innerHTML;
+};
         const saveConfig = async () => { if (currentUser) await setItem(getConfigKey(), JSON.stringify(config)); };
         const loadConfig = async () => {
             if (!currentUser) return;
@@ -4304,7 +4370,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 });
                 if (textPartsContent.length > 0) {
                     const combinedText = textPartsContent.join('\n');
-                    contentHTML += `<div>${isUser ? combinedText.replace(/\n/g, '<br>') : renderMarkdown(combinedText)}</div>`;
+                    contentHTML += `<div>${isUser ? combinedText.replace(/\n/g, '<br>') : renderMarkdownWithScrollableTables(combinedText)}</div>`;
                 }
                 if (mediaPartsContent.length > 0) {
                     let mediaHTML = '<div class="mt-2 flex flex-wrap gap-2">';
