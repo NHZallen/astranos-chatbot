@@ -1,5 +1,19 @@
 const updateLogs = [
         {
+        version: "15.4.7",
+        date: "2025-10-5",
+        content: [
+            "<strong>優化：</strong>深度研究模式文字輸出樣式",
+        ]
+    },
+        {
+        version: "15.4.6",
+        date: "2025-10-5",
+        content: [
+            "<strong>優化：</strong>文字輸出樣式",
+        ]
+    },
+        {
         version: "15.4.5",
         date: "2025-10-4",
         content: [
