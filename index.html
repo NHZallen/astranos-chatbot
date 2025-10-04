@@ -7918,34 +7918,26 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 let dashboardCard = null; // 用來追蹤儀表板卡片
 
                 function renderPlanSteps() {
-    // 1. 先清空整個列表容器，這是確保重新渲染的關鍵
-    planEditorStepsContainer.innerHTML = '';
-
-    // 2. 遍歷我們最新的計畫陣列 (initialPlan)
-    initialPlan.forEach((plan, index) => {
-        const stepElement = document.createElement('div');
-        stepElement.className = 'plan-editor-step';
-        
-        // 3. 重新產生每一個步驟的 HTML，注意這裡的 ${index + 1}
-        //    因為我們是根據陣列的順序重新產生，所以編號永遠會是正確的 (1, 2, 3...)
-        stepElement.innerHTML = `
-            <div class="step-header">
-                <label>步驟 ${index + 1}</label>
-                <button class="remove-step-btn" title="移除此步驟">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </button>
-            </div>
-            <input type="text" class="step-title-input" placeholder="步驟標題" value="${plan.step}">
-            <textarea class="step-action-input" placeholder="步驟具體行動">${plan.action}</textarea>
-        `;
-        
-        // 4. 將新產生的步驟元素加回容器中
-        planEditorStepsContainer.appendChild(stepElement);
-    });
-    
-    // 5. 更新一下「移除」按鈕的狀態（例如，如果只剩一個步驟，就不能移除）
-    updateRemoveButtonsState();
-}
+                    planEditorStepsContainer.innerHTML = '';
+                    const steps = planEditorStepsContainer.querySelectorAll('.plan-editor-step').length;
+                    
+                    initialPlan.forEach((plan, index) => {
+                        const stepElement = document.createElement('div');
+                        stepElement.className = 'plan-editor-step';
+                        stepElement.innerHTML = `
+                            <div class="step-header">
+                                <label>步驟 ${index + 1}</label>
+                                <button class="remove-step-btn" title="移除此步驟">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                </button>
+                            </div>
+                            <input type="text" class="step-title-input" placeholder="步驟標題" value="${plan.step}">
+                            <textarea class="step-action-input" placeholder="步驟具體行動">${plan.action}</textarea>
+                        `;
+                        planEditorStepsContainer.appendChild(stepElement);
+                    });
+                    updateRemoveButtonsState();
+                }
 
                 function updateRemoveButtonsState() {
                     const removeButtons = planEditorStepsContainer.querySelectorAll('.remove-step-btn');
@@ -8240,69 +8232,39 @@ ${hasFiles ? "此研究基於使用者提供的檔案，並結合了外部搜尋
 收集到的資料:
 ${allSearchResults.join('\n\n')}`;
 
-                dashboard.remove(); // 移除「正在撰寫報告」的儀表板
-// 建立一個空的訊息泡泡，準備用來顯示打字機效果
-const reportContentDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false).querySelector('.message-content');
-let fullReport = '';
-
-// 1. 先呼叫 API 等它把完整的報告內容一次性回傳，過程中不更新畫面
-//    注意：這裡的第二個參數 (回調函數) 是空的，我們只在最後接收結果
-fullReport = await streamApiCall(
-    [{ text: synthesizerPrompt }],
-    (chunk) => { /* 這裡故意留空，因為我們不要即時串流顯示 */ },
-    abortController.signal,
-    false
-);
-
-// 2. 將完整的報告儲存到對話紀錄中
-const finalReportMessage = { role: 'model', parts: [{ text: fullReport }], createdAt: new Date().toISOString() };
-conv.messages.push(finalReportMessage);
-// 提前儲存一次，確保紀錄完整
-await saveAppData();
-
-// 3. 使用和一般模式一樣的打字機效果來顯示完整報告
-await (async () => {
-    return new Promise(resolve => {
-        reportContentDiv.innerHTML = ''; // 清空原本的 "..." 等待動畫
-        let currentIndex = 0;
-        const typingSpeed = 15; // 打字速度，數字越小越快
-
-        function type() {
-            // 如果還沒打完，且使用者沒有中途取消
-            if (currentIndex < fullReport.length && !abortController.signal.aborted) {
-                // 逐步增加顯示的文字長度，並加上一個模擬游標 "▋"
-                const currentText = fullReport.substring(0, currentIndex + 1);
-                reportContentDiv.innerHTML = renderMarkdown(currentText + '▋');
+                dashboard.remove(); // 移除儀表板
+                const reportMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
+                const reportContentDiv = reportMessageDiv.querySelector('.message-content');
                 
-                // 如果是程式碼區塊，可以加速顯示
-                let step = currentText.includes('```') ? 5 : 1;
-                currentIndex += step;
+                let fullReport = '';
+                try {
+                    // 使用 typewriterStream 函數來實現打字機效果
+                    fullReport = await typewriterStream(
+                        reportContentDiv,
+                        (onChunk) => streamApiCall(
+                            [{ text: synthesizerPrompt }],
+                            onChunk,
+                            abortController.signal,
+                            false
+                        ),
+                        abortController.signal
+                    );
+                    
+                    // 打字機效果完成後，用最終的、渲染好的 HTML 更新內容
+                    reportContentDiv.innerHTML = renderMarkdown(fullReport);
 
-                // 保持畫面捲動到底部
-                const chatContainer = ALL_ELEMENTS.chatContainer;
-                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
-                if (isNearBottom) {
-                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+                } catch (streamError) {
+                    if (streamError.name !== 'AbortError') {
+                        console.error("Stream error during deep research report rendering:", streamError);
+                        reportContentDiv.innerHTML = renderMarkdown(`報告生成時發生錯誤: ${streamError.message}`);
+                    }
                 }
-
-                // 設定下一個字的顯示延遲
-                setTimeout(type, typingSpeed);
-            } else {
-                // 打字完成或被中止，顯示最終的完整內容 (不含游標)
-                reportContentDiv.innerHTML = renderMarkdown(fullReport);
-                resolve(); // 告訴程式打字動畫已結束
-            }
-        }
-        
-        type(); // 啟動打字機！
-    });
-})();
-
-
-// 4. 在打字機動畫結束後，才去產生後續追問建議
-if (fullReport && !config.isLearningMode && !abortController.signal.aborted) {
-    await generateFollowUpPrompts(userMessage, fullReport);
-}
+                
+                const finalReportMessage = { role: 'model', parts: [{ text: fullReport }], createdAt: new Date().toISOString() };
+                conv.messages.push(finalReportMessage);
+                if (fullReport && !config.isLearningMode) {
+                    await generateFollowUpPrompts(userMessage, fullReport);
+                }
 
             } catch (error) {
                 if (error.name !== 'AbortError' && error.message !== "使用者取消了研究。") {
