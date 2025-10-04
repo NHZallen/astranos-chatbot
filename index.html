@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.6</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.4.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -454,6 +454,33 @@ button:not(.btn-primary):active:not(:disabled) {
     @keyframes fadeInRight { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
     @keyframes fadeOutRight { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(100%); } }
     @keyframes slideInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeInChar {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in-char {
+    display: inline-block; /* 讓 transform 生效 */
+    animation: fadeInChar 0.25s ease-out forwards;
+}
+
+/* ✨ 新增：打字機游標效果 (可選) */
+.typing-cursor::after {
+    content: '▋';
+    display: inline-block;
+    animation: blink 0.7s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
     .loading-dots { display: flex; align-items: center; justify-content: center; height: 1.25rem; }
     .loading-dots span { display: inline-block; width: 8px; height: 8px; margin: 0 2px; background-color: var(--text-secondary); border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both; }
     .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
@@ -1762,38 +1789,6 @@ body.custom-wallpaper-active .input-indicator-item {
 }
 @keyframes spin {
     to { transform: rotate(360deg); }
-}
-    /* ✨ 新增：單一字元淡入動畫 */
-@keyframes fadeInChar {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.fade-in-char {
-    display: inline-block; /* 讓 transform 生效 */
-    animation: fadeInChar 0.25s ease-out forwards;
-}
-
-/* ✨ 新增：打字機游標效果 (可選) */
-.typing-cursor::after {
-    content: '▋';
-    display: inline-block;
-    animation: blink 0.7s infinite;
-    -webkit-user-select: none; /* 讓游標無法被選取 */
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-}
-
-@keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
 }
 </style>
 <script>
@@ -4500,86 +4495,6 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
             uploadedFiles = [];
             adjustTextareaHeight();
             renderFilePreviews();
-            const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
-            const contentDiv = loadingMessageDiv.querySelector('.message-content');
-            let fullResponse = '';
-            const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
-            try {
-                const completeResponse = await streamApiCall(
-    userParts,
-    (chunk) => {
-        fullResponse += chunk;
-        contentDiv.innerHTML = renderMarkdown(fullResponse);
-        const isNearBottom = ALL_ELEMENTS.chatContainer.scrollHeight - ALL_ELEMENTS.chatContainer.scrollTop <= ALL_ELEMENTS.chatContainer.clientHeight + 30;
-        if (isNearBottom) {
-            ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'auto' });
-        }
-    },
-    abortController.signal
-);
-                fullResponse = completeResponse;
-                finalAiMessage.parts = [{ text: fullResponse }];
-                conv.messages.push(finalAiMessage);
-                conv.lastUpdatedAt = new Date().toISOString();
-                await saveAppData();
-                if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
-                    await generateFollowUpPrompts(userMessage, fullResponse);
-                }
-                if (config.memoryEnabled1 && config.enableAutoMemory) {
-                    await extractPersonalMemory(userMessage, fullResponse);
-                }
-            } catch (error) {
-                if (error.name === 'AbortError') {
-                    contentDiv.innerHTML = renderMarkdown(fullResponse);
-                    finalAiMessage.parts = [{ text: fullResponse }];
-                    conv.messages.push(finalAiMessage);
-                } else {
-                    contentDiv.textContent = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
-                    finalAiMessage.parts = [{ text: `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}` }];
-                    conv.messages.push(finalAiMessage);
-                }
-                await saveAppData();
-            } finally {
-                abortController = null;
-                updateSubmitButtonState(false);
-                sendConfirmed = false;
-                updateInputState();
-                const lastMessageDiv = ALL_ELEMENTS.messageList.lastElementChild;
-                if (lastMessageDiv && lastMessageDiv.classList.contains('model-message')) {
-                    const bubble = lastMessageDiv.querySelector('.message-bubble');
-                    const content = lastMessageDiv.querySelector('.message-content');
-                    const aiMessageObject = conv.messages[conv.messages.length - 1];
-                    if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute')) {
-                        content.classList.add('pb-8');
-                        const timeString = formatFullTimestamp(aiMessageObject.createdAt);
-                        const actionButtonsHTML = `
-                            <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
-                                <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                                </button>
-                                <span class="text-xs text-gray-400">${timeString}</span>
-                            </div>
-                        `;
-                        bubble.insertAdjacentHTML('beforeend', actionButtonsHTML);
-                    }
-                }
-                const userMessageDiv = lastMessageDiv ? lastMessageDiv.previousElementSibling : null;
-                if (userMessageDiv && userMessageDiv.classList.contains('user-message')) {
-                    const bubble = userMessageDiv.querySelector('.message-bubble');
-                    const content = userMessageDiv.querySelector('.message-content');
-                    if (bubble && content && !bubble.querySelector('.delete-message-btn')) {
-                        content.classList.add('pb-8');
-                        const deleteButtonHTML = `
-                            <div class="absolute bottom-2 left-2 flex items-center">
-                                <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                </button>
-                            </div>
-                        `;
-                        bubble.insertAdjacentHTML('beforeend', deleteButtonHTML);
-                    }
-                }
-            }
             const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
             const contentDiv = loadingMessageDiv.querySelector('.message-content');
             
