@@ -8154,28 +8154,31 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 // --- 階段二：使用者互動式編輯計畫 ---
                 const finalResearchPlan = await showInteractivePlanEditor(initialResearchPlan);
 
-                if (!finalResearchPlan) { // 使用者點擊了取消
-                    abortController.abort();
-                    throw new Error("使用者取消了研究。");
-                }
-                
-                // --- 階段三：執行編輯後的計畫 ---
-                dashboard = addResearchDashboardCard('正在執行您確認的研究計畫...', finalResearchPlan.map(p => `${p.step}: ${p.action}`));
-const allSearchResults = [];
+if (!finalResearchPlan) { // 使用者點擊了取消
+    abortController.abort();
+    throw new Error("使用者取消了研究。");
+}
 
-// ✨ 第一項修改：從設定中讀取搜尋次數，並決定要執行多少研究步驟
+// --- 階段三：執行編輯後的計畫 ---
+// ✨【核心修正】✨
+// 我們在這裡先根據設定，決定真正要執行的步驟
 const queryCountSetting = config.deepResearchQueryCount;
 let stepsToExecute = finalResearchPlan;
 
 if (queryCountSetting > 0) {
-    // 如果使用者設定了具體數量 (例如 5)，我們就只執行前 5 個步驟
+    // 如果使用者設定了具體數量，就只取指定的數量
     stepsToExecute = finalResearchPlan.slice(0, queryCountSetting);
-} else {
-    // 如果使用者選擇「自動」(設定值為 0)，最多執行 10 個步驟，避免執行過久
+} else if (finalResearchPlan.length > 10) {
+    // 如果是「自動」(0)，且原計畫超過 10 步，才限制在 10 步
     stepsToExecute = finalResearchPlan.slice(0, 10);
 }
 
-for (let i = 0; i < stepsToExecute.length; i++) { // ✨ 注意：這裡也從 finalResearchPlan 改為 stepsToExecute
+// 現在，我們用【真正要執行的步驟】來建立儀表板，這樣畫面上顯示的步驟數量才會是正確的
+dashboard = addResearchDashboardCard('正在執行您確認的研究計畫...', stepsToExecute.map(p => `${p.step}: ${p.action}`));
+const allSearchResults = [];
+
+// 最後，讓迴圈也只跑我們要執行的步驟
+for (let i = 0; i < stepsToExecute.length; i++) {
     if (abortController.signal.aborted) throw new Error("研究已中止。");
     const planStep = stepsToExecute[i]; // ✨ 注意：這裡也從 finalResearchPlan 改為 stepsToExecute
                     dashboard.updateStep(i, 'running');
