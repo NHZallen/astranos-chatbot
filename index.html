@@ -4358,78 +4358,84 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             return messageDiv;
         };
          /**
- * ✨ 新增：打字機效果渲染函數
+ * ✨ 全新重構：打字機效果渲染函數 (v2)
+ *    - 使用 setInterval 達到勻速輸出
+ *    - 隱藏 Markdown 特殊字元，避免渲染過程中的視覺干擾
  * @param {HTMLElement} targetElement 要顯示文字的目標 DOM 元素
- * @param {function(function(string): void): Promise<string>} streamApiCallFn 一個啟動 API 呼叫並接收 chunk 回調的函數
+ * @param {function(function(string): void): Promise<void>} streamApiCallFn 啟動 API 呼叫的函數
  * @param {AbortSignal} signal 用於中止操作的 AbortSignal
  * @returns {Promise<string>} 返回完整的 AI 回應字串
  */
-async function typewriterStream(targetElement, streamApiCallFn, signal) {
-    let fullText = '';
-    let textQueue = '';
-    let isStreaming = true;
-    let renderFrameRequest = null;
-
-    // 清空目標並加上打字游標效果
-    targetElement.innerHTML = '';
-    targetElement.classList.add('typing-cursor');
-
-    const streamPromise = streamApiCallFn((chunk) => {
-        textQueue += chunk;
-    }).finally(() => {
-        isStreaming = false;
-    });
-
-    const renderLoop = () => {
-        if (signal.aborted) {
-            targetElement.classList.remove('typing-cursor');
-            cancelAnimationFrame(renderFrameRequest);
-            return;
-        }
-
-        if (textQueue.length > 0) {
-            // 為了流暢度，一次渲染多個字元
-            const charsToRender = textQueue.substring(0, Math.max(1, Math.floor(textQueue.length / 4)));
-            textQueue = textQueue.substring(charsToRender.length);
-
-            for (const char of charsToRender) {
-                const span = document.createElement('span');
-                span.className = 'fade-in-char';
-                // 處理換行符
-                if (char === '\n') {
-                    targetElement.appendChild(document.createElement('br'));
-                } else {
-                    span.textContent = char;
-                    targetElement.appendChild(span);
-                }
-                fullText += char;
-            }
-
-            // 保持捲動到底部
-            const chatContainer = ALL_ELEMENTS.chatContainer;
-            const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
-            if (isNearBottom) {
-                chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
-            }
-        }
+function typewriterStream(targetElement, streamApiCallFn, signal) {
+    return new Promise((resolve, reject) => {
+        let fullText = '';
+        let textQueue = '';
+        let isStreaming = true;
         
-        // 如果資料流結束且佇列也空了，就結束動畫
-        if (!isStreaming && textQueue.length === 0) {
+        // ✨ [新增] 定義在打字過程中需要隱藏的 Markdown 特殊字元
+        const MARKDOWN_CHARS_TO_HIDE = new Set(['*', '_', '#', '`', '[', ']', '(', ')', '|', '-', '=', '~']);
+        
+        // ✨ [新增] 控制打字速度 (毫秒)，數值越小越快
+        const typingSpeed = 25; 
+
+        targetElement.innerHTML = '';
+        targetElement.classList.add('typing-cursor');
+
+        const intervalId = setInterval(() => {
+            if (signal.aborted) {
+                clearInterval(intervalId);
+                targetElement.classList.remove('typing-cursor');
+                // 雖然被中止，但仍然解析當前已收到的內容
+                resolve(fullText); 
+                return;
+            }
+
+            if (textQueue.length > 0) {
+                const char = textQueue.charAt(0);
+                textQueue = textQueue.substring(1);
+                
+                fullText += char;
+
+                // ✨ [核心修改] 只有當字元不是特殊 Markdown 字元時，才創建 DOM 元素來顯示它
+                if (!MARKDOWN_CHARS_TO_HIDE.has(char)) {
+                    const span = document.createElement('span');
+                    span.className = 'fade-in-char';
+
+                    if (char === '\n') {
+                        targetElement.appendChild(document.createElement('br'));
+                    } else {
+                        span.textContent = char;
+                        targetElement.appendChild(span);
+                    }
+                }
+                
+                // 保持捲動到底部
+                const chatContainer = ALL_ELEMENTS.chatContainer;
+                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
+                if (isNearBottom) {
+                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+                }
+            } else if (!isStreaming) {
+                // 資料流結束且佇列已空
+                clearInterval(intervalId);
+                targetElement.classList.remove('typing-cursor');
+                resolve(fullText); // 成功完成，返回完整字串
+            }
+        }, typingSpeed);
+
+        // 啟動 API 呼叫，並在結束時更新 isStreaming 狀態
+        streamApiCallFn((chunk) => {
+            textQueue += chunk;
+        }).catch(error => {
+            clearInterval(intervalId);
             targetElement.classList.remove('typing-cursor');
-            cancelAnimationFrame(renderFrameRequest);
-            return;
-        }
-
-        renderFrameRequest = requestAnimationFrame(renderLoop);
-    };
-    
-    renderFrameRequest = requestAnimationFrame(renderLoop);
-
-    // 等待 streamApiCallFn 內部的 Promise 完成
-    await streamPromise; 
-    // 返回最終的完整字串
-    return fullText; 
+            reject(error); // 如果 API 呼叫出錯，則拒絕 Promise
+        }).finally(() => {
+            isStreaming = false;
+        });
+    });
 }
+
         const handleFormSubmit = async (e) => {
             e.preventDefault();
             if (abortController) return;
@@ -4505,12 +4511,13 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
                 // ✨【核心修改】使用新的 typewriterStream 函數來處理串流和動畫
                 const fullResponse = await typewriterStream(
                     contentDiv,
+                    // 將 streamApiCall 作為一個回調函數傳入
                     (onChunk) => streamApiCall(userParts, onChunk, abortController.signal),
                     abortController.signal
                 );
                 
                 // 在打字機動畫全部結束後，才用 renderMarkdown 完整渲染一次
-                // 這樣可以確保程式碼塊、列表等格式都正確顯示
+                // 這樣可以確保程式碼塊、表格等所有格式都正確顯示
                 if (!abortController.signal.aborted) {
                     contentDiv.innerHTML = renderMarkdown(fullResponse);
                 }
@@ -4529,8 +4536,6 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
                 if (config.memoryEnabled1 && config.enableAutoMemory) {
                     await extractPersonalMemory(userMessage, fullResponse);
                 }
-
-            } catch (error) {
                 // 如果不是使用者主動中止，則顯示錯誤訊息
                 if (error.name !== 'AbortError') {
                     const errorMessage = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
