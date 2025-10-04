@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.6</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.4.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -7768,26 +7768,44 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 let dashboardCard = null; // 用來追蹤儀表板卡片
 
                 function renderPlanSteps() {
-                    planEditorStepsContainer.innerHTML = '';
-                    const steps = planEditorStepsContainer.querySelectorAll('.plan-editor-step').length;
-                    
-                    initialPlan.forEach((plan, index) => {
-                        const stepElement = document.createElement('div');
-                        stepElement.className = 'plan-editor-step';
-                        stepElement.innerHTML = `
-                            <div class="step-header">
-                                <label>步驟 ${index + 1}</label>
-                                <button class="remove-step-btn" title="移除此步驟">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                </button>
-                            </div>
-                            <input type="text" class="step-title-input" placeholder="步驟標題" value="${plan.step}">
-                            <textarea class="step-action-input" placeholder="步驟具體行動">${plan.action}</textarea>
-                        `;
-                        planEditorStepsContainer.appendChild(stepElement);
-                    });
-                    updateRemoveButtonsState();
-                }
+    planEditorStepsContainer.innerHTML = '';
+
+    // 函數：創建一個插入按鈕
+    const createInsertButton = (index) => {
+        const insertContainer = document.createElement('div');
+        insertContainer.className = 'relative h-8 flex items-center justify-center';
+        insertContainer.innerHTML = `
+            <div class="w-full border-t border-dashed border-[var(--border-color)]"></div>
+            <button class="insert-step-btn absolute bg-[var(--modal-bg)] px-2" data-index="${index}" title="在此處插入新步驟">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--text-secondary)] hover:text-[var(--button-primary-bg)] transition-colors"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+        `;
+        return insertContainer;
+    };
+
+    // 在所有步驟的最頂部，新增一個插入按鈕 (用於在最前面插入)
+    planEditorStepsContainer.appendChild(createInsertButton(0));
+
+    initialPlan.forEach((plan, index) => {
+        const stepElement = document.createElement('div');
+        stepElement.className = 'plan-editor-step';
+        stepElement.innerHTML = `
+            <div class="step-header">
+                <label>步驟 ${index + 1}</label>
+                <button class="remove-step-btn" title="移除此步驟">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <input type="text" class="step-title-input" placeholder="步驟標題" value="${plan.step}">
+            <textarea class="step-action-input" placeholder="步驟具體行動">${plan.action}</textarea>
+        `;
+        planEditorStepsContainer.appendChild(stepElement);
+
+        // 在每個步驟下方，都新增一個插入按鈕
+        planEditorStepsContainer.appendChild(createInsertButton(index + 1));
+    });
+    updateRemoveButtonsState();
+}
 
                 function updateRemoveButtonsState() {
                     const removeButtons = planEditorStepsContainer.querySelectorAll('.remove-step-btn');
@@ -7796,15 +7814,23 @@ ${JSON.stringify(potentialMemories, null, 2)}
                     });
                 }
 
-                function handleAddStep() {
-                    const stepCount = planEditorStepsContainer.querySelectorAll('.plan-editor-step').length;
-                    if (stepCount >= 10) {
-                        showNotification('最多只能新增 10 個步驟。', 'warning');
-                        return;
-                    }
-                    initialPlan.push({ step: `新步驟 ${stepCount + 1}`, action: '' });
-                    renderPlanSteps();
-                }
+                function handleAddStep(index = -1) { // 預設值 -1 表示附加到最後
+    const stepCount = initialPlan.length;
+    if (stepCount >= 10) {
+        showNotification('最多只能新增 10 個步驟。', 'warning');
+        return;
+    }
+
+    const newStep = { step: `新步驟 ${stepCount + 1}`, action: '' };
+    
+    if (index === -1 || index >= initialPlan.length) {
+        initialPlan.push(newStep);
+    } else {
+        initialPlan.splice(index, 0, newStep);
+    }
+    
+    renderPlanSteps();
+}
                 
                 function handleRemoveStep(buttonElement) {
                     const stepElement = buttonElement.closest('.plan-editor-step');
@@ -7855,10 +7881,18 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 }
                 
                 function onStepContainerClick(e) {
-                    if (e.target.closest('.remove-step-btn')) {
-                        handleRemoveStep(e.target.closest('.remove-step-btn'));
-                    }
-                }
+    const removeBtn = e.target.closest('.remove-step-btn');
+    if (removeBtn) {
+        handleRemoveStep(removeBtn);
+        return; // 處理完畢，提前退出
+    }
+
+    const insertBtn = e.target.closest('.insert-step-btn');
+    if (insertBtn) {
+        const index = parseInt(insertBtn.dataset.index, 10);
+        handleAddStep(index);
+    }
+}
 
                 // 初始化
                 renderPlanSteps();
@@ -7866,7 +7900,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 // 綁定事件
                 confirmPlanBtn.addEventListener('click', onConfirm);
                 cancelPlanBtn.addEventListener('click', onCancel);
-                addPlanStepBtn.addEventListener('click', handleAddStep);
+                addPlanStepBtn.addEventListener('click', () => handleAddStep(-1));
                 planEditorStepsContainer.addEventListener('click', onStepContainerClick);
 
                 // 顯示 Modal
@@ -8053,33 +8087,32 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 dashboard.updateStep('synthesis', 'running');
                 
                 const synthesizerPrompt = `# 核心身份：首席情報分析師暨報告撰寫員
-你的任務是將下方所有零散、片段化的研究資料，綜合成一份結構完整、內容詳實、論述深入、文筆專業的深度分析報告，並直接呈現給使用者。
-最高指導原則：從「資料整合者」蛻變為「知識建構者」
-你的目標不是簡單地將資料分點列出，而是要跨越資料的邊界，進行比較、對比、歸納和演繹，從而建構出一個有深度、有見解的知識體系。報告的價值不在於資訊的堆砌，而在於你提供的洞察 (Insight)。
-絕對禁令：嚴禁任何形式的「元評論」或「過程描述」！
-在最終報告中，絕對不允許出現任何關於你自身行為的描述。你的輸出就是報告本身。
-❌ "好的，我已收集完畢..."
-❌ "接下來，我將為您總結..."
-❌ "根據步驟一的資料..."
-報告結構的黃金標準 (必須嚴格遵守 Markdown 格式):
-報告標題 (H1: #)
-要求：必須精準反映使用者的核心問題，並帶有專業報告的風格。
-範例：`# [品牌名稱] [產品名稱]：市場定位與消費者評價深度分析報告`
-執行摘要 (Executive Summary)
-要求：報告的靈魂。在開頭用一個資訊密度極高的段落（約 100-150 字），直接、清晰地回答使用者的核心問題，並概括整個報告的關鍵發現與最終結論。讓使用者讀完這一段就能掌握 80% 的重點。
-主體分析 (Detailed Analysis)
-要求：這是報告的核心肉體，必須展現深度。
-結構：你必須根據所有資料的內容，自主地將報告拆分為至少 3-5 個有邏輯關聯的子主題 (H2: ##)。例如：「品牌歷史與發展」、「核心技術解析」、「主要產品線比較」、「市場評價與競品分析」、「未來趨勢展望」等。
-內容：在每個子主題下，充分利用收集到的資料進行詳細闡述。
-要深入，不要只羅列：不僅要說「是什麼」，更要解釋「為什麼」、「如何影響」。
-要綜合，不要分塊：如果多個資料來源都提到了同一個觀點，你需要將它們綜合起來，而不是簡單地重複。
-善用格式：大量使用粗體來標示關鍵字，使用條列式清單 (bullet points) 來呈現並列的資訊點，以極大地提升報告的可讀性。
-字數要求：主體分析的總字數應力求充實，目標是提供比普通回答多 3-5 倍的資訊量，但前提是每一句話都有價值，避免空話和贅述。
-結論 (Conclusion)
-要求：在報告的結尾，用一個簡潔有力的段落，重新總結你的核心發現，並可以基於分析提出一個具有前瞻性的觀點或建議。
-待處理資料
+你的任務是將下方所有零散的研究資料，綜合成一份結構清晰、文筆專業、**直接呈現給使用者**的深度分析報告。
+
+# 最高指導原則：你是為使用者而寫！
+你的目標讀者就是提出原始問題的使用者。因此，你的報告必須是**成品**，而不是你的思考過程。你必須採用客觀、權威的語氣，直接陳述分析結果。
+
+# 絕對禁令：禁止任何形式的「自言自語」或元註解！
+在最終的報告中，**絕對不允許**出現以下類型的內容：
+- ❌ "好的，我已經收集了所有資料。"
+- ❌ "現在，我將綜合這些資訊來回答你的問題。"
+- ❌ "根據我的研究步驟..."
+- ❌ "在分析了資料後，我的結論是..."
+你的輸出**就是報告本身**，不要有任何關於你正在寫報告的描述。
+
+# 報告結構要求 (Markdown 格式):
+1.  **報告標題**: 為報告起一個精確且具吸引力的標題 (例如：\`# [品牌名稱] [產品名稱] 綜合分析報告\`)。
+2.  **執行摘要 (Executive Summary)**: 在報告開頭，用 2-3 句話直接回答使用者的核心問題，並概括整個報告的關鍵發現。
+3.  **主體分析**:
+    *   根據你對所有資料的理解，重新組織報告的結構。你可以圍繞幾個核心主題（例如：「品牌背景」、「產品特點」、「市場評價」）來展開。
+    *   **不要**按照原始的研究步驟來分段。你必須跨越步驟的界線，將資料重新組合，形成流暢的敘事。
+    *   使用條列式清單、粗體等格式來增強可讀性。
+4.  **結論 (Conclusion)**: 在報告結尾，提出一個基於前面分析的綜合性結論或建議。
+
+# 待處理資料
 原始任務: "${userMessage}"
 ${hasFiles ? "此研究基於使用者提供的檔案，並結合了外部搜尋資料。" : ""}
+
 收集到的資料:
 ${allSearchResults.join('\n\n')}`;
 
