@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.5</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.4.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -454,6 +454,33 @@ button:not(.btn-primary):active:not(:disabled) {
     @keyframes fadeInRight { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
     @keyframes fadeOutRight { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(100%); } }
     @keyframes slideInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeInChar {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in-char {
+    display: inline-block; /* 讓 transform 生效 */
+    animation: fadeInChar 0.25s ease-out forwards;
+}
+
+/* ✨ 新增：打字機游標效果 (可選) */
+.typing-cursor::after {
+    content: '▋';
+    display: inline-block;
+    animation: blink 0.7s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
     .loading-dots { display: flex; align-items: center; justify-content: center; height: 1.25rem; }
     .loading-dots span { display: inline-block; width: 8px; height: 8px; margin: 0 2px; background-color: var(--text-secondary); border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both; }
     .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
@@ -4330,6 +4357,79 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
             return messageDiv;
         };
+         /**
+ * ✨ 新增：打字機效果渲染函數
+ * @param {HTMLElement} targetElement 要顯示文字的目標 DOM 元素
+ * @param {function(function(string): void): Promise<string>} streamApiCallFn 一個啟動 API 呼叫並接收 chunk 回調的函數
+ * @param {AbortSignal} signal 用於中止操作的 AbortSignal
+ * @returns {Promise<string>} 返回完整的 AI 回應字串
+ */
+async function typewriterStream(targetElement, streamApiCallFn, signal) {
+    let fullText = '';
+    let textQueue = '';
+    let isStreaming = true;
+    let renderFrameRequest = null;
+
+    // 清空目標並加上打字游標效果
+    targetElement.innerHTML = '';
+    targetElement.classList.add('typing-cursor');
+
+    const streamPromise = streamApiCallFn((chunk) => {
+        textQueue += chunk;
+    }).finally(() => {
+        isStreaming = false;
+    });
+
+    const renderLoop = () => {
+        if (signal.aborted) {
+            targetElement.classList.remove('typing-cursor');
+            cancelAnimationFrame(renderFrameRequest);
+            return;
+        }
+
+        if (textQueue.length > 0) {
+            // 為了流暢度，一次渲染多個字元
+            const charsToRender = textQueue.substring(0, Math.max(1, Math.floor(textQueue.length / 4)));
+            textQueue = textQueue.substring(charsToRender.length);
+
+            for (const char of charsToRender) {
+                const span = document.createElement('span');
+                span.className = 'fade-in-char';
+                // 處理換行符
+                if (char === '\n') {
+                    targetElement.appendChild(document.createElement('br'));
+                } else {
+                    span.textContent = char;
+                    targetElement.appendChild(span);
+                }
+                fullText += char;
+            }
+
+            // 保持捲動到底部
+            const chatContainer = ALL_ELEMENTS.chatContainer;
+            const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
+            if (isNearBottom) {
+                chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+            }
+        }
+        
+        // 如果資料流結束且佇列也空了，就結束動畫
+        if (!isStreaming && textQueue.length === 0) {
+            targetElement.classList.remove('typing-cursor');
+            cancelAnimationFrame(renderFrameRequest);
+            return;
+        }
+
+        renderFrameRequest = requestAnimationFrame(renderLoop);
+    };
+    
+    renderFrameRequest = requestAnimationFrame(renderLoop);
+
+    // 等待 streamApiCallFn 內部的 Promise 完成
+    await streamPromise; 
+    // 返回最終的完整字串
+    return fullText; 
+}
         const handleFormSubmit = async (e) => {
             e.preventDefault();
             if (abortController) return;
@@ -4397,44 +4497,51 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderFilePreviews();
             const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
             const contentDiv = loadingMessageDiv.querySelector('.message-content');
-            let fullResponse = '';
-            const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
+            
+            // 清空 loading dots，準備接收打字機內容
+            contentDiv.innerHTML = '';
+
             try {
-                const completeResponse = await streamApiCall(
-    userParts,
-    (chunk) => {
-        fullResponse += chunk;
-        contentDiv.innerHTML = renderMarkdown(fullResponse);
-        const isNearBottom = ALL_ELEMENTS.chatContainer.scrollHeight - ALL_ELEMENTS.chatContainer.scrollTop <= ALL_ELEMENTS.chatContainer.clientHeight + 30;
-        if (isNearBottom) {
-            ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'auto' });
-        }
-    },
-    abortController.signal
-);
-                fullResponse = completeResponse;
-                finalAiMessage.parts = [{ text: fullResponse }];
+                // ✨【核心修改】使用新的 typewriterStream 函數來處理串流和動畫
+                const fullResponse = await typewriterStream(
+                    contentDiv,
+                    (onChunk) => streamApiCall(userParts, onChunk, abortController.signal),
+                    abortController.signal
+                );
+                
+                // 在打字機動畫全部結束後，才用 renderMarkdown 完整渲染一次
+                // 這樣可以確保程式碼塊、列表等格式都正確顯示
+                if (!abortController.signal.aborted) {
+                    contentDiv.innerHTML = renderMarkdown(fullResponse);
+                }
+
+                // 將完整的訊息存檔
+                const finalAiMessage = { role: 'model', parts: [{ text: fullResponse }], createdAt: new Date().toISOString() };
                 conv.messages.push(finalAiMessage);
                 conv.lastUpdatedAt = new Date().toISOString();
                 await saveAppData();
+
+                // 產生後續追問和記憶提取
                 if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
                     await generateFollowUpPrompts(userMessage, fullResponse);
                 }
+
                 if (config.memoryEnabled1 && config.enableAutoMemory) {
                     await extractPersonalMemory(userMessage, fullResponse);
                 }
+
             } catch (error) {
-                if (error.name === 'AbortError') {
-                    contentDiv.innerHTML = renderMarkdown(fullResponse);
-                    finalAiMessage.parts = [{ text: fullResponse }];
+                // 如果不是使用者主動中止，則顯示錯誤訊息
+                if (error.name !== 'AbortError') {
+                    const errorMessage = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
+                    contentDiv.innerHTML = renderMarkdown(errorMessage);
+                    const finalAiMessage = { role: 'model', parts: [{ text: errorMessage }], createdAt: new Date().toISOString() };
                     conv.messages.push(finalAiMessage);
-                } else {
-                    contentDiv.textContent = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
-                    finalAiMessage.parts = [{ text: `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}` }];
-                    conv.messages.push(finalAiMessage);
+                    await saveAppData();
                 }
-                await saveAppData();
+                // 如果是使用者中止，typewriterStream 內部會處理好動畫停止，這裡不需額外操作
             } finally {
+                // finally 區塊的邏輯和原本一樣，保持不變
                 abortController = null;
                 updateSubmitButtonState(false);
                 sendConfirmed = false;
