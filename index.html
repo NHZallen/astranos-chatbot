@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.5</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.4.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -1639,15 +1639,17 @@ body.custom-wallpaper-active .input-indicator-item {
 #input-bar-container .input-wrapper > .flex.items-end {
     width: 100%;
 }
-/* ✨ 新增：互動式計畫編輯器樣式 */
+/* ✨ START: 互動式計畫編輯器樣式 (已更新) */
 .plan-editor-step {
     background-color: var(--input-field-bg);
     border: 1px solid var(--border-color);
     border-radius: 0.5rem;
     padding: 1rem;
+    padding-left: 3rem; /* 為左側控制按鈕留出空間 */
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+    position: relative;
 }
 .plan-editor-step .step-header {
     display: flex;
@@ -1658,6 +1660,81 @@ body.custom-wallpaper-active .input-indicator-item {
     font-weight: 600;
     font-size: 0.875rem;
     color: var(--text-secondary);
+}
+.plan-editor-step .step-controls {
+    position: absolute;
+    left: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    opacity: 0.3;
+    transition: opacity 0.2s ease-in-out;
+}
+.plan-editor-step:hover .step-controls {
+    opacity: 1;
+}
+.plan-editor-step .step-controls button {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 9999px;
+    background-color: var(--hover-bg);
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+}
+.plan-editor-step .step-controls button:hover:not(:disabled) {
+    background-color: var(--active-bg);
+    color: var(--text-primary);
+}
+.plan-editor-step .step-controls button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.insert-step-container {
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.insert-step-btn {
+    width: 100%;
+    height: 3px;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    transition: background-color 0.2s ease;
+}
+.insert-step-btn:hover {
+    background-color: var(--button-primary-bg);
+}
+.insert-step-btn::before {
+    content: '+';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    background-color: var(--modal-bg);
+    color: var(--button-primary-bg);
+    border: 1px solid var(--button-primary-bg);
+    border-radius: 9999px;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    line-height: 1;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.insert-step-container:hover .insert-step-btn::before {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
 }
 .plan-editor-step .remove-step-btn {
     color: var(--text-secondary);
@@ -1690,8 +1767,9 @@ body.custom-wallpaper-active .input-indicator-item {
     min-height: 80px;
     resize: vertical;
 }
+/* ✨ END: 互動式計畫編輯器樣式 */
 
-/* ✨ 新增：深度研究儀表板樣式 */
+/* ✨ START: 深度研究儀表板樣式 (已更新) */
 .research-dashboard {
     background-color: var(--sidebar-bg);
     border: 1px solid var(--border-color);
@@ -1721,7 +1799,9 @@ body.custom-wallpaper-active .input-indicator-item {
     list-style: none;
     padding: 0;
     margin: 0;
-    space-y: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
 }
 .research-step {
     display: flex;
@@ -1729,7 +1809,10 @@ body.custom-wallpaper-active .input-indicator-item {
     gap: 0.75rem;
     font-size: 0.875rem;
     color: var(--text-secondary);
-    transition: color 0.3s ease;
+    transition: color 0.3s ease, opacity 0.3s ease;
+}
+.research-step.status-pending {
+    opacity: 0.6;
 }
 .research-step .status-icon {
     width: 20px;
@@ -1750,19 +1833,23 @@ body.custom-wallpaper-active .input-indicator-item {
 .research-step.status-running {
     color: var(--button-primary-bg);
     font-weight: 500;
+    opacity: 1;
 }
 .research-step.status-completed {
     color: #10b981; /* Green-500 */
+    opacity: 1;
 }
 .dark .research-step.status-completed {
     color: #34d399; /* Green-400 */
 }
 .research-step.status-error {
     color: #ef4444; /* Red-500 */
+    opacity: 1;
 }
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+/* ✨ END: 深度研究儀表板樣式 */
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -2673,16 +2760,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 </div>
     <div id="mobile-context-menu-wrapper"></div>
     
-    <!-- ✨ 新增：互動式計畫編輯器 Modal -->
+    <!-- ✨ START: 互動式計畫編輯器 Modal (已更新) -->
     <div id="interactive-plan-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[52]">
         <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-2xl flex flex-col" style="max-height: 90vh;">
             <div class="p-6 border-b border-[var(--border-color)] flex justify-between items-center">
                 <h2 class="text-2xl font-bold" data-lang-key="editResearchPlan">編輯研究計畫</h2>
-                <button id="add-plan-step-btn" class="px-3 py-1.5 rounded-md btn-primary text-sm" data-lang-key="addStep">
-                    新增步驟
+                 <button id="add-plan-step-to-end-btn" class="px-3 py-1.5 rounded-md btn-primary text-sm" data-lang-key="addStepToEnd">
+                    新增步驟至結尾
                 </button>
             </div>
-            <div id="plan-editor-steps-container" class="p-6 overflow-y-auto scroll-area space-y-4">
+            <div id="plan-editor-steps-container" class="p-6 overflow-y-auto scroll-area">
                 <!-- 計畫步驟將會動態插入此處 -->
             </div>
             <div class="p-4 bg-[var(--sidebar-bg)] border-t border-[var(--border-color)] flex justify-end gap-3">
@@ -2691,6 +2778,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             </div>
         </div>
     </div>
+    <!-- ✨ END: 互動式計畫編輯器 Modal -->
 
     <script src="./i18n.js"></script>
     <script src="./demo-conversations.js"></script>
@@ -2956,7 +3044,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             // ✨ 新增互動式計畫編輯器元素
             interactivePlanModal: document.getElementById('interactive-plan-modal'),
             planEditorStepsContainer: document.getElementById('plan-editor-steps-container'),
-            addPlanStepBtn: document.getElementById('add-plan-step-btn'),
+            addPlanStepToEndBtn: document.getElementById('add-plan-step-to-end-btn'),
             confirmPlanBtn: document.getElementById('confirm-plan-btn'),
             cancelPlanBtn: document.getElementById('cancel-plan-btn'),
         };
@@ -7648,7 +7736,9 @@ ${JSON.stringify(potentialMemories, null, 2)}
                     list-style: none;
                     padding: 0;
                     margin: 0;
-                    space-y: 0.75rem;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.75rem;
                 }
                 .research-step {
                     display: flex;
@@ -7656,7 +7746,10 @@ ${JSON.stringify(potentialMemories, null, 2)}
                     gap: 0.75rem;
                     font-size: 0.875rem;
                     color: var(--text-secondary);
-                    transition: color 0.3s ease;
+                    transition: color 0.3s ease, opacity 0.3s ease;
+                }
+                .research-step.status-pending {
+                    opacity: 0.6;
                 }
                 .research-step .status-icon {
                     width: 20px;
@@ -7677,15 +7770,18 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 .research-step.status-running {
                     color: var(--button-primary-bg);
                     font-weight: 500;
+                    opacity: 1;
                 }
                 .research-step.status-completed {
                     color: #10b981; /* Green-500 */
+                    opacity: 1;
                 }
                 .dark .research-step.status-completed {
                     color: #34d399; /* Green-400 */
                 }
                 .research-step.status-error {
                     color: #ef4444; /* Red-500 */
+                    opacity: 1;
                 }
             `;
 
@@ -7763,18 +7859,29 @@ ${JSON.stringify(potentialMemories, null, 2)}
         // ✨ 新增：處理互動式計畫的核心邏輯
         function showInteractivePlanEditor(initialPlan) {
             return new Promise((resolve) => {
-                const { interactivePlanModal, planEditorStepsContainer, addPlanStepBtn, confirmPlanBtn, cancelPlanBtn } = ALL_ELEMENTS;
+                const { interactivePlanModal, planEditorStepsContainer, addPlanStepToEndBtn, confirmPlanBtn, cancelPlanBtn } = ALL_ELEMENTS;
                 
-                let dashboardCard = null; // 用來追蹤儀表板卡片
+                let currentPlan = [...initialPlan];
 
                 function renderPlanSteps() {
                     planEditorStepsContainer.innerHTML = '';
-                    const steps = planEditorStepsContainer.querySelectorAll('.plan-editor-step').length;
                     
-                    initialPlan.forEach((plan, index) => {
+                    // 插入第一個新增按鈕
+                    planEditorStepsContainer.appendChild(createInsertStepElement(0));
+
+                    currentPlan.forEach((plan, index) => {
                         const stepElement = document.createElement('div');
                         stepElement.className = 'plan-editor-step';
+                        stepElement.dataset.index = index;
                         stepElement.innerHTML = `
+                            <div class="step-controls">
+                                <button class="move-step-up-btn" title="上移">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+                                </button>
+                                <button class="move-step-down-btn" title="下移">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+                                </button>
+                            </div>
                             <div class="step-header">
                                 <label>步驟 ${index + 1}</label>
                                 <button class="remove-step-btn" title="移除此步驟">
@@ -7785,42 +7892,64 @@ ${JSON.stringify(potentialMemories, null, 2)}
                             <textarea class="step-action-input" placeholder="步驟具體行動">${plan.action}</textarea>
                         `;
                         planEditorStepsContainer.appendChild(stepElement);
+                        planEditorStepsContainer.appendChild(createInsertStepElement(index + 1));
                     });
-                    updateRemoveButtonsState();
+                    updateControlButtonsState();
+                }
+                
+                function createInsertStepElement(index) {
+                    const container = document.createElement('div');
+                    container.className = 'insert-step-container';
+                    const button = document.createElement('button');
+                    button.className = 'insert-step-btn';
+                    button.dataset.index = index;
+                    button.title = '在此處插入新步驟';
+                    container.appendChild(button);
+                    return container;
                 }
 
-                function updateRemoveButtonsState() {
-                    const removeButtons = planEditorStepsContainer.querySelectorAll('.remove-step-btn');
-                    removeButtons.forEach(btn => {
-                        btn.disabled = removeButtons.length <= 1;
+                function updateControlButtonsState() {
+                    const stepElements = planEditorStepsContainer.querySelectorAll('.plan-editor-step');
+                    const stepCount = stepElements.length;
+
+                    stepElements.forEach((step, index) => {
+                        step.querySelector('.move-step-up-btn').disabled = (index === 0);
+                        step.querySelector('.move-step-down-btn').disabled = (index === stepCount - 1);
+                        step.querySelector('.remove-step-btn').disabled = (stepCount <= 1);
                     });
                 }
-
-                function handleAddStep() {
-                    const stepCount = planEditorStepsContainer.querySelectorAll('.plan-editor-step').length;
+                
+                function handleAddStep(index) {
+                    const stepCount = currentPlan.length;
                     if (stepCount >= 10) {
                         showNotification('最多只能新增 10 個步驟。', 'warning');
                         return;
                     }
-                    initialPlan.push({ step: `新步驟 ${stepCount + 1}`, action: '' });
+                    currentPlan.splice(index, 0, { step: `新步驟`, action: '' });
                     renderPlanSteps();
                 }
                 
-                function handleRemoveStep(buttonElement) {
-                    const stepElement = buttonElement.closest('.plan-editor-step');
-                    const index = Array.from(planEditorStepsContainer.children).indexOf(stepElement);
-                    if (index > -1) {
-                        initialPlan.splice(index, 1);
+                function handleMoveStep(index, direction) {
+                    if (direction === 'up' && index > 0) {
+                        [currentPlan[index], currentPlan[index - 1]] = [currentPlan[index - 1], currentPlan[index]];
+                    } else if (direction === 'down' && index < currentPlan.length - 1) {
+                        [currentPlan[index], currentPlan[index + 1]] = [currentPlan[index + 1], currentPlan[index]];
+                    }
+                    renderPlanSteps();
+                }
+                
+                function handleRemoveStep(index) {
+                    if (currentPlan.length > 1) {
+                        currentPlan.splice(index, 1);
                         renderPlanSteps();
                     }
                 }
 
                 function cleanupAndClose() {
                     toggleModal(interactivePlanModal, false);
-                    // 移除事件監聽器以避免記憶體洩漏
                     confirmPlanBtn.removeEventListener('click', onConfirm);
                     cancelPlanBtn.removeEventListener('click', onCancel);
-                    addPlanStepBtn.removeEventListener('click', handleAddStep);
+                    addPlanStepToEndBtn.removeEventListener('click', onAddStepToEnd);
                     planEditorStepsContainer.removeEventListener('click', onStepContainerClick);
                 }
                 
@@ -7843,33 +7972,50 @@ ${JSON.stringify(potentialMemories, null, 2)}
                     }
                     
                     cleanupAndClose();
-                    resolve(finalPlan); // 返回最終確認的計畫
+                    resolve(finalPlan);
                 }
                 
                 function onCancel() {
                     cleanupAndClose();
-                    if (dashboardCard) {
-                        dashboardCard.remove();
-                    }
-                    resolve(null); // 返回 null 表示使用者取消
+                    resolve(null);
                 }
                 
+                function onAddStepToEnd() {
+                    handleAddStep(currentPlan.length);
+                }
+
                 function onStepContainerClick(e) {
-                    if (e.target.closest('.remove-step-btn')) {
-                        handleRemoveStep(e.target.closest('.remove-step-btn'));
+                    const insertBtn = e.target.closest('.insert-step-btn');
+                    const moveUpBtn = e.target.closest('.move-step-up-btn');
+                    const moveDownBtn = e.target.closest('.move-step-down-btn');
+                    const removeBtn = e.target.closest('.remove-step-btn');
+
+                    if (insertBtn) {
+                        handleAddStep(parseInt(insertBtn.dataset.index));
+                        return;
+                    }
+                    
+                    const stepElement = e.target.closest('.plan-editor-step');
+                    if (!stepElement) return;
+                    
+                    const index = parseInt(stepElement.dataset.index);
+
+                    if (moveUpBtn) {
+                        handleMoveStep(index, 'up');
+                    } else if (moveDownBtn) {
+                        handleMoveStep(index, 'down');
+                    } else if (removeBtn) {
+                        handleRemoveStep(index);
                     }
                 }
 
-                // 初始化
                 renderPlanSteps();
                 
-                // 綁定事件
                 confirmPlanBtn.addEventListener('click', onConfirm);
                 cancelPlanBtn.addEventListener('click', onCancel);
-                addPlanStepBtn.addEventListener('click', handleAddStep);
+                addPlanStepToEndBtn.addEventListener('click', onAddStepToEnd);
                 planEditorStepsContainer.addEventListener('click', onStepContainerClick);
 
-                // 顯示 Modal
                 toggleModal(interactivePlanModal, true);
             });
         }
@@ -8689,5 +8835,3 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
 </script>
 </body>
 </html>
-
-
