@@ -8161,11 +8161,23 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 
                 // --- 階段三：執行編輯後的計畫 ---
                 dashboard = addResearchDashboardCard('正在執行您確認的研究計畫...', finalResearchPlan.map(p => `${p.step}: ${p.action}`));
-                const allSearchResults = [];
+const allSearchResults = [];
 
-                for (let i = 0; i < finalResearchPlan.length; i++) {
-                    if (abortController.signal.aborted) throw new Error("研究已中止。");
-                    const planStep = finalResearchPlan[i];
+// ✨ 第一項修改：從設定中讀取搜尋次數，並決定要執行多少研究步驟
+const queryCountSetting = config.deepResearchQueryCount;
+let stepsToExecute = finalResearchPlan;
+
+if (queryCountSetting > 0) {
+    // 如果使用者設定了具體數量 (例如 5)，我們就只執行前 5 個步驟
+    stepsToExecute = finalResearchPlan.slice(0, queryCountSetting);
+} else {
+    // 如果使用者選擇「自動」(設定值為 0)，最多執行 10 個步驟，避免執行過久
+    stepsToExecute = finalResearchPlan.slice(0, 10);
+}
+
+for (let i = 0; i < stepsToExecute.length; i++) { // ✨ 注意：這裡也從 finalResearchPlan 改為 stepsToExecute
+    if (abortController.signal.aborted) throw new Error("研究已中止。");
+    const planStep = stepsToExecute[i]; // ✨ 注意：這裡也從 finalResearchPlan 改為 stepsToExecute
                     dashboard.updateStep(i, 'running');
 
                     const queryGenPrompt = `基於以下總體研究目標和當前具體的研究步驟，生成 2-3 個最有效的 Google 搜尋關鍵字。請嚴格以 JSON 陣列格式回傳。
@@ -8233,27 +8245,71 @@ ${hasFiles ? "此研究基於使用者提供的檔案，並結合了外部搜尋
 ${allSearchResults.join('\n\n')}`;
 
                 dashboard.remove();
-                const reportContentDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false).querySelector('.message-content');
-                let fullReport = '';
-                await streamApiCall(
-                    [{ text: synthesizerPrompt }],
-                    (chunk) => {
-                        fullReport += chunk;
-                        reportContentDiv.innerHTML = renderMarkdown(fullReport);
-                        const chatContainer = ALL_ELEMENTS.chatContainer;
-                        if (isAutoScrolling) {
-                           chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
-                        }
-                    },
-                    abortController.signal,
-                    false
-                );
-                
-                const finalReportMessage = { role: 'model', parts: [{ text: fullReport }], createdAt: new Date().toISOString() };
-                conv.messages.push(finalReportMessage);
-                if (fullReport && !config.isLearningMode) {
-                    await generateFollowUpPrompts(userMessage, fullReport);
+const reportMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
+const reportContentDiv = reportMessageDiv.querySelector('.message-content');
+
+let fullReport = '';
+
+// ✨ 第二項修改：我們將修改這裡的 AI 回覆方式
+
+// 1. 首先，呼叫 API 以獲取完整的報告文字，但先不顯示出來。
+const completeReport = await streamApiCall(
+    [{ text: synthesizerPrompt }],
+    () => {}, // 這裡給一個空的函式，因為我們不想在接收過程中更新畫面
+    abortController.signal,
+    false
+);
+
+fullReport = completeReport;
+
+// 2. 將完整的最終報告訊息儲存到對話紀錄中。
+const finalReportMessage = { role: 'model', parts: [{ text: fullReport }], createdAt: new Date().toISOString() };
+conv.messages.push(finalReportMessage);
+
+// 3. 接著，使用和普通模式一樣的「打字機效果」來顯示完整的報告。
+await (async () => {
+    return new Promise(resolve => {
+        reportContentDiv.innerHTML = ''; // 清空原本的 "..." 等待提示
+        let currentIndex = 0;
+        const typingSpeed = 15; // 每個字顯示的速度（毫秒）
+
+        function type() {
+            if (currentIndex < fullReport.length && !abortController.signal.aborted) {
+                const currentText = fullReport.substring(0, currentIndex + 1);
+                // 加上一個閃爍的游標 "▋" 來模擬打字效果
+                reportContentDiv.innerHTML = renderMarkdown(currentText + '▋');
+
+                let step = 1;
+                // 如果內容包含程式碼區塊，可以加快速度
+                if (currentText.includes('```')) {
+                    step = 5;
                 }
+                
+                currentIndex += step;
+
+                // 讓畫面自動滾動到底部
+                const chatContainer = ALL_ELEMENTS.chatContainer;
+                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
+                if (isNearBottom) {
+                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+                }
+
+                setTimeout(type, typingSpeed);
+            } else {
+                // 打字完成或被中斷後，顯示最終的完整內容（不含游標）
+                reportContentDiv.innerHTML = renderMarkdown(fullReport);
+                resolve();
+            }
+        }
+        
+        type(); // 啟動打字機
+    });
+})();
+
+// 4. 在報告顯示完畢後，再生成後續追問建議。
+if (fullReport && !config.isLearningMode) {
+    await generateFollowUpPrompts(userMessage, fullReport);
+}
 
             } catch (error) {
                 if (error.name !== 'AbortError' && error.message !== "使用者取消了研究。") {
