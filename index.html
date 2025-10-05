@@ -1861,6 +1861,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body class="font-sans bg-gray-50">
+    <body class="font-sans bg-gray-50">
     <div id="video-splash-screen">
         <!-- 電腦版影片 -->
         <video id="splash-video-desktop" class="splash-video" autoplay muted playsinline>
@@ -1870,6 +1871,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         <video id="splash-video-mobile" class="splash-video" autoplay muted playsinline>
             <source src="splash_mobile.mp4" type="video/mp4">
         </video>
+        
+        <!-- ✨ 把按鈕程式碼貼在這裡 ✨ -->
+        <button id="skip-video-btn" style="position: absolute; bottom: 30px; right: 30px; z-index: 10000; background-color: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.5); padding: 8px 16px; border-radius: 9999px; cursor: pointer; font-size: 14px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.4)'" onmouseout="this.style.backgroundColor='rgba(255, 255, 255, 0.2)'">跳過</button>
+        
     </div>
     <div id="wallpaper-container"></div>
     <div id="auth-container">
@@ -2799,25 +2804,33 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     <script src="./update-logs.js"></script>
     <script src="./main.js"></script>
      <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const videoSplashScreen = document.getElementById('video-splash-screen');
-    // 現在我們要同時選取兩個影片
-    const splashVideoDesktop = document.getElementById('splash-video-desktop');
-    const splashVideoMobile = document.getElementById('splash-video-mobile');
-    const authContainerForSplash = document.getElementById('auth-container');
+    document.addEventListener('DOMContentLoaded', () => {
+        const videoSplashScreen = document.getElementById('video-splash-screen');
+        // 現在我們要同時選取兩個影片
+        const splashVideoDesktop = document.getElementById('splash-video-desktop');
+        const splashVideoMobile = document.getElementById('splash-video-mobile');
+        const authContainerForSplash = document.getElementById('auth-container');
 
-    // 建立一個共用的函式來處理影片結束後的邏輯
-    const handleVideoEnd = () => {
-        videoSplashScreen.classList.add('hidden');
-        authContainerForSplash.classList.add('visible');
+        // ✨ 步驟 2.1: 取得我們剛剛新增的按鈕
+        const skipBtn = document.getElementById('skip-video-btn');
 
-        videoSplashScreen.addEventListener('transitionend', () => {
-            videoSplashScreen.remove();
-        }, { once: true });
-    };
+        // 建立一個共用的函式來處理影片結束後的邏輯
+        const handleVideoEnd = () => {
+            videoSplashScreen.classList.add('hidden');
+            authContainerForSplash.classList.add('visible');
 
-    // 建立一個共用的函式來處理影片播放錯誤
-    const handleVideoError = (e) => {
+            videoSplashScreen.addEventListener('transitionend', () => {
+                videoSplashScreen.remove();
+            }, { once: true });
+        };
+
+        // ✨ 步驟 2.2: 監聽按鈕的點擊事件，並執行跳過影片的動作
+        if (skipBtn) {
+            skipBtn.addEventListener('click', handleVideoEnd);
+        }
+
+        // 建立一個共用的函式來處理影片播放錯誤
+        const handleVideoError = (e) => {
         console.error("影片播放錯誤:", e.target.id, "直接顯示主頁。");
         videoSplashScreen.remove();
         authContainerForSplash.classList.add('visible');
