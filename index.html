@@ -1866,9 +1866,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     </button>
 </div>
 <div class="mt-3 border-t border-gray-200 pt-3 space-y-3">
-    <button type="submit" id="register-btn" class="w-full p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300 transition-colors" data-lang-key="loginRegisterButton">
-        使用密碼登入 / 註冊
-    </button>
+    <button type="submit" id="register-btn" class="w-full p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed" data-lang-key="loginRegisterButton" disabled>
+    登入 / 註冊
+</button>
     <button type="button" id="import-btn-auth" class="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed" disabled data-lang-key="importRecords">
         匯入紀錄
     </button>
@@ -2912,6 +2912,7 @@ async function loginWithBiometric() {
             authForm: document.getElementById('auth-form'),
             usernameInput: document.getElementById('username-input'),
             passwordInput: document.getElementById('password-input'),
+            registerBtn: document.getElementById('register-btn'),
             importBtnAuth: document.getElementById('import-btn-auth'),
             importDataModalAuth: document.getElementById('import-data-modal-auth'),
             importFileInputAuth: document.getElementById('import-file-input-auth'),
@@ -8972,14 +8973,22 @@ if (registerBiometricBtn) {
 if (loginBiometricBtn) {
     loginBiometricBtn.addEventListener('click', loginWithBiometric);
 }
-            const toggleAuthImportButton = () => {
-                const username = ALL_ELEMENTS.usernameInput.value.trim();
-                const password = ALL_ELEMENTS.passwordInput.value;
-                ALL_ELEMENTS.importBtnAuth.disabled = !(username && password);
-            };
-            ALL_ELEMENTS.usernameInput.addEventListener('input', toggleAuthImportButton);
-            ALL_ELEMENTS.passwordInput.addEventListener('input', toggleAuthImportButton);
-            ALL_ELEMENTS.importBtnAuth.addEventListener('click', handleImportOnAuth);
+            const updateAuthButtonsState = () => {
+            const username = ALL_ELEMENTS.usernameInput.value.trim();
+            const password = ALL_ELEMENTS.passwordInput.value;
+            const hasInput = username && password; // 判斷是否有輸入
+
+            // 同時更新兩個按鈕的狀態
+            ALL_ELEMENTS.importBtnAuth.disabled = !hasInput;
+            ALL_ELEMENTS.registerBtn.disabled = !hasInput; 
+        };
+
+        // 將事件監聽器指向新的函式
+        ALL_ELEMENTS.usernameInput.addEventListener('input', updateAuthButtonsState);
+        ALL_ELEMENTS.passwordInput.addEventListener('input', updateAuthButtonsState);
+
+        // 保持原本的功能不變
+        ALL_ELEMENTS.importBtnAuth.addEventListener('click', handleImportOnAuth);
             ALL_ELEMENTS.confirmImportBtnAuth.addEventListener('click', processAuthImport);
             ALL_ELEMENTS.cancelImportBtnAuth.addEventListener('click', () => toggleModal(ALL_ELEMENTS.importDataModalAuth, false));
             (async function prefillLastUser() {
