@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.5.0</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.4.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -1857,22 +1857,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                         <label for="password-input" class="block text-sm font-medium text-gray-700 mb-1" data-lang-key="password">密碼</label>
                                         <input type="password" id="password-input" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50" placeholder="用於登入驗證" required data-lang-key-placeholder="passwordPlaceholder">
                                     </div>
-                                    <div class="grid grid-cols-2 gap-3">
-    <button type="button" id="register-biometric-btn" class="w-full p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors">
-        註冊生物辨識
-    </button>
-    <button type="button" id="login-biometric-btn" class="w-full p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 font-semibold text-white bg-teal-600 hover:bg-teal-700 transition-colors">
-        生物辨識登入
-    </button>
-</div>
-<div class="mt-3 border-t border-gray-200 pt-3 space-y-3">
-    <button type="submit" id="register-btn" class="w-full p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed" data-lang-key="loginRegisterButton" disabled>
-    登入 / 註冊
-</button>
-    <button type="button" id="import-btn-auth" class="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed" disabled data-lang-key="importRecords">
-        匯入紀錄-限密碼登入方式可使用
-    </button>
-</div>
+                                    <div class="space-y-3">
+                                        <button type="submit" id="register-btn" class="w-full p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors" data-lang-key="loginRegisterButton">
+                                            登入 / 註冊
+                                        </button>
+                                        <button type="button" id="import-btn-auth" class="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed" disabled data-lang-key="importRecords">
+                                            匯入紀錄
+                                        </button>
+                                    </div>
                                 </form>
                             </div>
                         </div>
@@ -2736,134 +2728,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     <script src="./update-logs.js"></script>
     <script src="./main.js"></script>
      <script>
-         function bufferDecode(value) {
-    const s = atob(value.replace(/_/g, '/').replace(/-/g, '+'));
-    const a = new Uint8Array(s.length);
-    for (let i = 0; i < s.length; i++) {
-        a[i] = s.charCodeAt(i);
-    }
-    return a;
-}
-
-// 將 ArrayBuffer 編碼為 Base64URL 字符串
-function bufferEncode(value) {
-    return btoa(String.fromCharCode.apply(null, new Uint8Array(value)))
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=/g, '');
-}
-         async function registerBiometric() {
-    const username = ALL_ELEMENTS.usernameInput.value.trim();
-    if (!username) {
-        showNotification('請先輸入使用者名稱以註冊生物辨識', 'warning');
-        return;
-    }
-
-    // 在真實世界中，challenge 和 userID 應該由後端伺服器產生
-    const challenge = new Uint8Array(32);
-    window.crypto.getRandomValues(challenge);
-
-    const userID = new Uint8Array(16);
-    window.crypto.getRandomValues(userID);
-
-    const publicKeyCredentialCreationOptions = {
-        challenge: challenge,
-        rp: { // rp = Relying Party，也就是您的網站
-    name: "Astra AI Chat"
-},
-        user: {
-            id: userID,
-            name: username,
-            displayName: username,
-        },
-        pubKeyCredParams: [{ alg: -7, type: "public-key" }], // ES256 演算法
-        authenticatorSelection: {
-            authenticatorAttachment: "platform", // "platform" 代表使用內建的驗證器，如 Face ID, 指紋
-            userVerification: "required", // 強制要求使用者驗證 (例如掃描指紋)
-        },
-        timeout: 60000,
-        attestation: "direct"
-    };
-
-    try {
-        const credential = await navigator.credentials.create({
-            publicKey: publicKeyCredentialCreationOptions
-        });
-
-        // 註冊成功！在我們的演示中，我們將金鑰 ID 存到 localStorage
-        // 在真實世界中，您應該將 credential.rawId 和 credential.response.attestationObject 送到後端伺服器
-        const credentialId = bufferEncode(credential.rawId);
-        localStorage.setItem(`webauthn_credential_id_for_${username}`, credentialId);
-
-        showNotification('生物辨識註冊成功！', 'success');
-
-    } catch (err) {
-        console.error("生物辨識註冊失敗:", err);
-        showNotification(`註冊失敗: ${err.message}`, 'error');
-    }
-}
-
-/**
- * 處理生物辨識登入
- */
-async function loginWithBiometric() {
-    const username = ALL_ELEMENTS.usernameInput.value.trim();
-    if (!username) {
-        showNotification('請輸入您的使用者名稱以進行生物辨識登入', 'warning');
-        return;
-    }
-
-    const credentialId = localStorage.getItem(`webauthn_credential_id_for_${username}`);
-    if (!credentialId) {
-        showNotification('此使用者尚未註冊生物辨識功能，請先註冊。', 'warning');
-        return;
-    }
-
-    // 同樣，challenge 應該由伺服器提供
-    const challenge = new Uint8Array(32);
-    window.crypto.getRandomValues(challenge);
-
-    const publicKeyCredentialRequestOptions = {
-        challenge: challenge,
-        allowCredentials: [{
-            type: 'public-key',
-            id: bufferDecode(credentialId),
-            transports: ['internal'],
-        }],
-        timeout: 60000,
-        userVerification: "required"
-    };
-
-    try {
-        const assertion = await navigator.credentials.get({
-            publicKey: publicKeyCredentialRequestOptions
-        });
-
-        // 登入成功！
-        // 在真實世界中，您會將 assertion 的內容送到後端伺服器進行驗證
-        showNotification('生物辨識成功！正在登入...', 'success');
-
-        // 模擬登入成功後的流程
-        currentUser = { username: username }; // 簡易設定當前使用者
-        await setItem('chat_lastUser', username); // 記錄最後登入者
-
-        // 執行您原本的登入成功後的畫面轉換
-        ALL_ELEMENTS.authContainer.classList.add('fade-out');
-        ALL_ELEMENTS.appContainer.classList.remove('hidden');
-        requestAnimationFrame(() => {
-            ALL_ELEMENTS.appContainer.classList.add('visible');
-        });
-        ALL_ELEMENTS.authContainer.addEventListener('transitionend', () => {
-            ALL_ELEMENTS.authContainer.style.display = 'none';
-        }, { once: true });
-
-        initChatApp(); // 初始化主應用程式
-
-    } catch (err) {
-        console.error("生物辨識登入失敗:", err);
-        showNotification(`登入失敗: ${err.message}`, 'error');
-    }
-}
         document.addEventListener('DOMContentLoaded', () => {
             const demoModels = [
   { id: 'proMax', name: 'Astra-Pro Max', title: 'Astra-Pro Max 對話範例', desc: '深度決策，商業研究最佳拍檔' },
@@ -2912,7 +2776,6 @@ async function loginWithBiometric() {
             authForm: document.getElementById('auth-form'),
             usernameInput: document.getElementById('username-input'),
             passwordInput: document.getElementById('password-input'),
-            registerBtn: document.getElementById('register-btn'),
             importBtnAuth: document.getElementById('import-btn-auth'),
             importDataModalAuth: document.getElementById('import-data-modal-auth'),
             importFileInputAuth: document.getElementById('import-file-input-auth'),
@@ -8938,57 +8801,14 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
                 }
             };
             ALL_ELEMENTS.authForm.addEventListener('submit', handleLogin);
-            const registerBiometricBtn = document.getElementById('register-biometric-btn');
-const loginBiometricBtn = document.getElementById('login-biometric-btn');
-
-/**
- * 檢查瀏覽器是否支援平台驗證器 (如 Face ID, 指紋)
- * 如果不支援，就隱藏相關按鈕
- */
-async function checkBiometricSupport() {
-    if (window.PublicKeyCredential && 
-        PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
-        
-        const isSupported = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-        
-        if (!isSupported) {
-            console.log("此瀏覽器不支援平台生物辨識功能。");
-            if (registerBiometricBtn) registerBiometricBtn.style.display = 'none';
-            if (loginBiometricBtn) loginBiometricBtn.style.display = 'none';
-        }
-    } else {
-        console.log("此瀏覽器不支援 WebAuthn API。");
-        if (registerBiometricBtn) registerBiometricBtn.style.display = 'none';
-        if (loginBiometricBtn) loginBiometricBtn.style.display = 'none';
-    }
-}
-
-// 在頁面載入後立即執行檢查
-checkBiometricSupport();
-
-// 綁定點擊事件
-if (registerBiometricBtn) {
-    registerBiometricBtn.addEventListener('click', registerBiometric);
-}
-if (loginBiometricBtn) {
-    loginBiometricBtn.addEventListener('click', loginWithBiometric);
-}
-            const updateAuthButtonsState = () => {
-            const username = ALL_ELEMENTS.usernameInput.value.trim();
-            const password = ALL_ELEMENTS.passwordInput.value;
-            const hasInput = username && password; // 判斷是否有輸入
-
-            // 同時更新兩個按鈕的狀態
-            ALL_ELEMENTS.importBtnAuth.disabled = !hasInput;
-            ALL_ELEMENTS.registerBtn.disabled = !hasInput; 
-        };
-
-        // 將事件監聽器指向新的函式
-        ALL_ELEMENTS.usernameInput.addEventListener('input', updateAuthButtonsState);
-        ALL_ELEMENTS.passwordInput.addEventListener('input', updateAuthButtonsState);
-
-        // 保持原本的功能不變
-        ALL_ELEMENTS.importBtnAuth.addEventListener('click', handleImportOnAuth);
+            const toggleAuthImportButton = () => {
+                const username = ALL_ELEMENTS.usernameInput.value.trim();
+                const password = ALL_ELEMENTS.passwordInput.value;
+                ALL_ELEMENTS.importBtnAuth.disabled = !(username && password);
+            };
+            ALL_ELEMENTS.usernameInput.addEventListener('input', toggleAuthImportButton);
+            ALL_ELEMENTS.passwordInput.addEventListener('input', toggleAuthImportButton);
+            ALL_ELEMENTS.importBtnAuth.addEventListener('click', handleImportOnAuth);
             ALL_ELEMENTS.confirmImportBtnAuth.addEventListener('click', processAuthImport);
             ALL_ELEMENTS.cancelImportBtnAuth.addEventListener('click', () => toggleModal(ALL_ELEMENTS.importDataModalAuth, false));
             (async function prefillLastUser() {
