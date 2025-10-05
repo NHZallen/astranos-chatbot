@@ -10,7 +10,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-    <link rel="preload" as="video" href="./assets/intro.mp4" type="video/mp4">
     <style>
     body {
     touch-action: manipulation;
@@ -792,31 +791,6 @@ button:not(.btn-primary):active:not(:disabled) {
     .pinned-icon {
         color: #fbbf24;
     }
-    <div id="intro-overlay"
-     class="fixed inset-0 z-[9999] bg-black flex items-center justify-center transition-opacity duration-500">
-  <!-- 影片：必須 muted + playsinline 才能自動播放（行動裝置規則） -->
-  <video id="intro-video"
-         class="w-full h-full object-cover"
-         src="./assets/intro.mp4"
-         autoplay
-         muted
-         playsinline
-         webkit-playsinline
-         preload="auto">
-  </video>
-
-  <!-- 跳過按鈕（可立刻進首頁） -->
-  <button id="skip-intro-btn"
-          class="absolute bottom-8 right-8 px-4 py-2 rounded-lg text-white bg-black/60 hover:bg-black/80 border border-white/30">
-    跳過
-  </button>
-
-  <!-- 若瀏覽器禁止自動播放，提示點一下影片 -->
-  <div id="intro-tap-hint"
-       class="absolute inset-0 flex items-center justify-center text-white text-sm bg-black/20 hidden">
-    點一下播放影片（或按右下角「跳過」）
-  </div>
-</div>
     #wallpaper-container {
     position: fixed;
     top: 0;
@@ -1819,6 +1793,46 @@ body.custom-wallpaper-active .input-indicator-item {
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+#video-splash-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #000; /* 影片加載時的純黑背景色 */
+    z-index: 9999; /* 確保這個區塊在所有東西的最上層 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.5s ease-out; /* 為了之後的淡出效果 */
+}
+
+/* 這個 class 會由 JavaScript 加入，用來隱藏影片畫面 */
+#video-splash-screen.hidden {
+    opacity: 0;
+    pointer-events: none; /* 淡出後就不能再被點擊或互動 */
+}
+
+#splash-video {
+    width: 100%;
+    height: 100%;
+    /* 這一行很重要，它會讓影片填滿整個螢幕，多餘的部分會被裁切掉 */
+    object-fit: cover; 
+}
+
+/* 在影片播放時，先將原本的主頁面隱藏起來 */
+#auth-container {
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.5s ease-in; /* 讓主頁面能優雅地淡入 */
+}
+
+/* 這個 class 會由 JavaScript 加入，用來顯示主頁面 */
+#auth-container.visible {
+    visibility: visible;
+    opacity: 1;
+}
+
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -1826,6 +1840,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body class="font-sans bg-gray-50">
+    <div id="video-splash-screen">
+        <video id="splash-video" autoplay muted playsinline>
+            <source src="intro.mp4" type="video/mp4">
+            您的瀏覽器不支援影片標籤。
+        </video>
+    </div>
     <div id="wallpaper-container"></div>
     <div id="auth-container">
         <div class="min-h-screen flex flex-col">
@@ -2755,6 +2775,31 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     <script src="./main.js"></script>
      <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const videoSplashScreen = document.getElementById('video-splash-screen');
+    const splashVideo = document.getElementById('splash-video');
+    const authContainerForSplash = document.getElementById('auth-container'); 
+
+    // 監聽影片是否播放結束
+    splashVideo.addEventListener('ended', () => {
+        // 1. 幫影片容器加上 hidden class 來觸發 CSS 的淡出效果
+        videoSplashScreen.classList.add('hidden');
+
+        // 2. 幫主頁面容器加上 visible class 來觸發淡入效果
+        authContainerForSplash.classList.add('visible');
+
+        // 3. (優化) 當淡出動畫結束後，可以把整個影片區塊從網頁中移除，以釋放記憶體資源
+        videoSplashScreen.addEventListener('transitionend', () => {
+            videoSplashScreen.remove();
+        }, { once: true }); // once: true 讓這個監聽只執行一次後就自動移除
+    });
+
+    // 備用方案：如果影片因故無法播放 (例如檔案損毀或網路問題)
+    splashVideo.addEventListener('error', () => {
+        console.error("影片播放錯誤，直接顯示主頁。");
+        // 如果影片出錯，就立刻移除影片並顯示主頁，避免使用者卡住
+        videoSplashScreen.remove();
+        authContainerForSplash.classList.add('visible');
+    });
             const demoModels = [
   { id: 'proMax', name: 'Astra-Pro Max', title: 'Astra-Pro Max 對話範例', desc: '深度決策，商業研究最佳拍檔' },
   { id: 'proPV', name: 'Astra-Pro PV', title: 'Astra-Pro PV 對話範例', desc: '預覽新技術，多模態高速體驗' },
@@ -8909,55 +8954,6 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
         }
         lastTouchEnd = now;
     }, false);
-</script>
-<script>
-  // ✅ 首次載入時播放 8 秒開場影片，結束/跳過就淡出
-  document.addEventListener('DOMContentLoaded', () => {
-    const overlay = document.getElementById('intro-overlay');
-    const video   = document.getElementById('intro-video');
-    const skipBtn = document.getElementById('skip-intro-btn');
-    const tapHint = document.getElementById('intro-tap-hint');
-
-    // (可選) 想只播一次：打開下面兩行即可
-    // if (localStorage.getItem('introSeen') === '1') { overlay.remove(); return; }
-
-    // 如果使用者偏好「降低動態」，尊重設定直接略過
-    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      overlay.remove(); return;
-    }
-
-    // 完成後關閉覆蓋層
-    const finish = () => {
-      // (可選) 下次不再播放：打開下面一行
-      // localStorage.setItem('introSeen', '1');
-
-      overlay.classList.add('opacity-0');
-      // 等淡出動畫結束再移除節點
-      overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
-    };
-
-    // 確保各種情況都能離開覆蓋層
-    video.addEventListener('ended', finish);
-    skipBtn.addEventListener('click', finish);
-    // 安全保險：最久 9 秒就自動關
-    const safetyTimer = setTimeout(finish, 9000);
-
-    // 嘗試自動播放（有些瀏覽器需要使用者互動）
-    const tryPlay = async () => {
-      try {
-        await video.play(); // 成功就什麼都不做
-      } catch (err) {
-        // 若被擋，請求使用者點一下
-        tapHint.classList.remove('hidden');
-        // 點一下畫面就再試一次
-        overlay.addEventListener('click', async () => {
-          tapHint.classList.add('hidden');
-          try { await video.play(); } catch (e) { /* 還是不行就讓他按跳過 */ }
-        }, { once: true });
-      }
-    };
-    tryPlay();
-  });
 </script>
 </body>
 </html>
