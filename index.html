@@ -11,6 +11,46 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <style>
+    #loading-screen {
+        position: fixed; /* 固定在畫面上 */
+        top: 0;
+        left: 0;
+        width: 100vw; /* 100% 畫面寬度 */
+        height: 100vh; /* 100% 畫面高度 */
+        background-color: #111; /* 影片載入前的背景色 */
+        z-index: 9999; /* 確保在最上層 */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: opacity 0.8s ease-out; /* 設定淡出動畫效果 */
+    }
+
+    /* 載入影片樣式 */
+    #loading-video {
+        max-width: 100%;
+        max-height: 100%;
+        width: auto;
+        height: auto;
+    }
+
+    /* 用於隱藏載入畫面的 class */
+    #loading-screen.hidden {
+        opacity: 0;
+        pointer-events: none; /* 讓滑鼠可以點擊下方的內容 */
+    }
+    
+    /* 初始時隱藏主要內容 */
+    #auth-container {
+        display: none; /* ✨ 我們會用 JS 來顯示它 */
+        opacity: 0;
+        transition: opacity 1s ease-in; /* 設定淡入動畫效果 */
+    }
+
+    /* 讓主要內容顯示並淡入 */
+    #auth-container.visible {
+        display: block; /* 或者 flex, grid, 根據你的排版 */
+        opacity: 1;
+    }
     body {
     touch-action: manipulation;
 }
@@ -1800,6 +1840,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body class="font-sans bg-gray-50">
+    <div id="loading-screen">
+    <video id="loading-video" autoplay muted playsinline>
+        <!-- ✨ 將 src 的值換成您影片的實際檔名 -->
+        <source src="loading_animation.mp4" type="video/mp4">
+        您的瀏覽器不支援影片標籤。
+    </video>
+</div>
     <div id="wallpaper-container"></div>
     <div id="auth-container">
         <div class="min-h-screen flex flex-col">
@@ -8868,6 +8915,40 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
                     ALL_ELEMENTS.loginLangMenu.classList.remove('visible');
                 }
             });
+    </script>
+    <script>
+        // 等待整個網頁的 HTML 結構都載入完成後再執行
+        document.addEventListener('DOMContentLoaded', function() {
+
+            // 1. 取得我們需要的 HTML 元素
+            const loadingScreen = document.getElementById('loading-screen');
+            const loadingVideo = document.getElementById('loading-video');
+            const authContainer = document.getElementById('auth-container');
+
+            // 2. 監聽影片的 'ended' 事件 (也就是影片播放完畢時)
+            loadingVideo.addEventListener('ended', function() {
+                // 影片播放完畢後，執行以下動作：
+
+                // a. 為載入畫面加上 'hidden' class，觸發 CSS 淡出效果
+                loadingScreen.classList.add('hidden');
+
+                // b. 讓主要內容顯示出來，並加上 'visible' class 觸發淡入效果
+                authContainer.style.display = 'block'; // 或 'flex'
+                // 使用一個微小的延遲確保 display 先生效，動畫才會順暢
+                setTimeout(() => {
+                    authContainer.classList.add('visible');
+                }, 20);
+            });
+
+            // ✨ (可選) 備用方案：如果影片因故無法播放，設定一個計時器強制移除載入畫面
+            // 例如 10 秒後無論如何都進入主畫面
+            setTimeout(function() {
+                if (!loadingScreen.classList.contains('hidden')) {
+                    console.log("影片載入超時，強制進入主畫面。");
+                    loadingVideo.dispatchEvent(new Event('ended')); // 手動觸發 ended 事件
+                }
+            }, 10000); // 10000 毫秒 = 10 秒
+        });
     </script>
     <script>
     document.addEventListener('touchstart', function(event) {
