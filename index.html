@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.8</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.5.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -1858,9 +1858,19 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                         <input type="password" id="password-input" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50" placeholder="用於登入驗證" required data-lang-key-placeholder="passwordPlaceholder">
                                     </div>
                                     <div class="space-y-3">
-                                        <button type="submit" id="register-btn" class="w-full p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors" data-lang-key="loginRegisterButton">
+                                        <button type="submit" id="register-btn" class="w-full p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors btn-primary" data-lang-key="loginRegisterButton">
                                             登入 / 註冊
                                         </button>
+
+                                        <!-- ✨ 新增的生物辨識按鈕 ✨ -->
+                                        <button type="button" id="biometric-login-btn" class="hidden w-full p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 font-semibold text-white bg-gray-700 hover:bg-gray-800 transition-colors">
+                                            使用生物辨識登入
+                                        </button>
+                                        <button type="button" id="biometric-register-btn" class="hidden w-full p-2 rounded-lg text-sm font-semibold text-gray-600 bg-gray-200 hover:bg-gray-300 transition-colors">
+                                            為此帳號註冊生物辨識
+                                        </button>
+                                        <!-- ✨ 新增結束 ✨ -->
+
                                         <button type="button" id="import-btn-auth" class="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed" disabled data-lang-key="importRecords">
                                             匯入紀錄
                                         </button>
@@ -6234,6 +6244,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     ALL_ELEMENTS.authContainer.addEventListener('transitionend', () => {
                         ALL_ELEMENTS.authContainer.style.display = 'none';
                     }, { once: true });
+                    ALL_ELEMENTS.logoutBtn.addEventListener('click', handleLogout);
 
                     initChatApp();
                     showNotification(i18n[config.uiLanguage].importSuccess || '匯入成功！', 'success');
@@ -8812,10 +8823,11 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
             ALL_ELEMENTS.confirmImportBtnAuth.addEventListener('click', processAuthImport);
             ALL_ELEMENTS.cancelImportBtnAuth.addEventListener('click', () => toggleModal(ALL_ELEMENTS.importDataModalAuth, false));
             (async function prefillLastUser() {
-                const last = await getItem('chat_lastUser');
-                if (last) ALL_ELEMENTS.usernameInput.value = last;
-                applyLanguage('zh-TW');
-            })();
+            const last = await getItem('chat_lastUser');
+            if (last) ALL_ELEMENTS.usernameInput.value = last;
+            applyLanguage('zh-TW');
+            setupBiometricListeners(); // ✨ 在這裡呼叫我們的設定函數
+        })();
             const FOLDER_ICONS = ['📁', '📂', '🗂️', '📚', '📝', '🗃️', '📘', '📙', '📗', '📕'];
             const adjustTextareaHeight = () => {
     const textarea = ALL_ELEMENTS.messageInput;
@@ -8883,6 +8895,246 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
         }
         lastTouchEnd = now;
     }, false);
+        function bufferDecode(value) {
+    const s = atob(value.replace(/_/g, '/').replace(/-/g, '+'));
+    const a = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) {
+        a[i] = s.charCodeAt(i);
+    }
+    return a;
+}
+
+// 輔助函數：將 ArrayBuffer 轉換為 Base64URL 字串
+function bufferEncode(value) {
+    return btoa(String.fromCharCode.apply(null, new Uint8Array(value)))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '');
+}
+
+// 檢查瀏覽器是否支援 WebAuthn
+const isWebAuthnSupported = () => {
+    return navigator.credentials &&
+           navigator.credentials.create &&
+           navigator.credentials.get &&
+           window.PublicKeyCredential;
+};
+
+
+// 處理生物辨識註冊
+async function registerBiometric() {
+    if (!isWebAuthnSupported()) {
+        showNotification('您的瀏覽器不支援生物辨識功能。', 'error');
+        return;
+    }
+
+    const username = document.getElementById('username-input').value.trim();
+    if (!username) {
+        showNotification('請先輸入使用者名稱再註冊。', 'error');
+        return;
+    }
+
+    try {
+        // 1. 產生挑戰碼和使用者資訊
+        const challenge = new Uint8Array(32);
+        crypto.getRandomValues(challenge);
+
+        const userId = new TextEncoder().encode(username);
+
+        // 2. 設定註冊選項
+        const publicKeyCredentialCreationOptions = {
+            challenge,
+            rp: { // Relying Party - 依賴方，也就是您的網站
+                name: "Astra AI Chat",
+                // id: window.location.hostname // 正式上線時使用
+            },
+            user: {
+                id: userId,
+                name: username,
+                displayName: username,
+            },
+            pubKeyCredParams: [{ alg: -7, type: 'public-key' }, { alg: -257, type: 'public-key' }],
+            authenticatorSelection: {
+                authenticatorAttachment: 'platform', // 使用平台內建的驗證器 (Face ID, 指紋)
+                userVerification: 'required', // 強制要求生物辨識
+                residentKey: 'required',
+            },
+            timeout: 60000,
+            attestation: 'none',
+        };
+
+        // 3. 呼叫 WebAuthn API 創建憑證
+        const credential = await navigator.credentials.create({
+            publicKey: publicKeyCredentialCreationOptions
+        });
+
+        // 4. 將憑證資訊轉換為可儲存的格式並儲存
+        const credentialForStorage = {
+            id: bufferEncode(credential.rawId),
+            publicKey: bufferEncode(credential.response.getPublicKey()),
+            algorithm: credential.response.getPublicKeyAlgorithm(),
+        };
+
+        localStorage.setItem(`webauthn_credential_${username}`, JSON.stringify(credentialForStorage));
+
+        showNotification('生物辨識註冊成功！', 'success');
+        updateBiometricButtons(username); // 更新按鈕狀態
+
+    } catch (err) {
+        console.error("註冊失敗:", err);
+        showNotification(`註冊失敗: ${err.message}`, 'error');
+    }
+}
+
+// 處理生物辨識登入
+async function loginWithBiometric() {
+    if (!isWebAuthnSupported()) {
+        showNotification('您的瀏覽器不支援生物辨識功能。', 'error');
+        return;
+    }
+
+    // 找到所有已註冊的使用者
+    const registeredUsernames = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith('webauthn_credential_')) {
+            registeredUsernames.push(key.replace('webauthn_credential_', ''));
+        }
+    }
+
+    if (registeredUsernames.length === 0) {
+        showNotification('此瀏覽器尚未註冊任何生物辨識帳號。', 'warning');
+        return;
+    }
+
+    try {
+        // 1. 產生挑戰碼
+        const challenge = new Uint8Array(32);
+        crypto.getRandomValues(challenge);
+
+        // 2. 取得所有已儲存的憑證 ID
+        const allowCredentials = registeredUsernames.map(username => {
+            const cred = JSON.parse(localStorage.getItem(`webauthn_credential_${username}`));
+            return {
+                type: 'public-key',
+                id: bufferDecode(cred.id)
+            };
+        });
+
+        // 3. 設定登入選項
+        const publicKeyCredentialRequestOptions = {
+            challenge,
+            allowCredentials,
+            userVerification: 'required', // 強制要求生物辨識
+            timeout: 60000,
+        };
+
+        // 4. 呼叫 WebAuthn API 取得憑證
+        const assertion = await navigator.credentials.get({
+            publicKey: publicKeyCredentialRequestOptions
+        });
+        
+        // 5. 在純前端應用中，成功取得憑證即代表驗證成功
+        // 我們需要找出是哪個使用者登入的
+        const assertedCredentialId = bufferEncode(assertion.rawId);
+        let loggedInUsername = null;
+
+        for (const username of registeredUsernames) {
+            const storedCred = JSON.parse(localStorage.getItem(`webauthn_credential_${username}`));
+            if (storedCred.id === assertedCredentialId) {
+                loggedInUsername = username;
+                break;
+            }
+        }
+        
+        if (loggedInUsername) {
+            // 模擬密碼登入成功後的流程
+            const userKey = `chatUser_${loggedInUsername}`;
+            const savedUser = await getItem(userKey);
+            if(savedUser){
+                currentUser = JSON.parse(savedUser);
+
+                await setItem('chat_lastUser', loggedInUsername);
+                ALL_ELEMENTS.authContainer.classList.add('fade-out');
+                ALL_ELEMENTS.appContainer.classList.remove('hidden');
+                requestAnimationFrame(() => {
+                    ALL_ELEMENTS.appContainer.classList.add('visible');
+                });
+                ALL_ELEMENTS.authContainer.addEventListener('transitionend', () => {
+                    ALL_ELEMENTS.authContainer.style.display = 'none';
+                }, { once: true });
+                initChatApp();
+            } else {
+                 throw new Error(`找不到 ${loggedInUsername} 的使用者資料。`);
+            }
+        } else {
+            throw new Error("無法識別您的生物辨識憑證。");
+        }
+
+    } catch (err) {
+        console.error("登入失敗:", err);
+        showNotification(`登入失敗: ${err.message}`, 'error');
+    }
+}
+
+// 根據使用者名稱更新生物辨識按鈕的顯示狀態
+function updateBiometricButtons(username) {
+    const registerBtn = document.getElementById('biometric-register-btn');
+    const loginBtn = document.getElementById('biometric-login-btn');
+    
+    if (!isWebAuthnSupported() || !registerBtn || !loginBtn) {
+        return;
+    }
+
+    // 檢查是否有任何已註冊的帳號
+    let anyRegistered = false;
+    for (let i = 0; i < localStorage.length; i++) {
+        if (localStorage.key(i).startsWith('webauthn_credential_')) {
+            anyRegistered = true;
+            break;
+        }
+    }
+    
+    // 控制登入按鈕
+    if (anyRegistered) {
+        loginBtn.classList.remove('hidden');
+    } else {
+        loginBtn.classList.add('hidden');
+    }
+    
+    // 控制註冊按鈕
+    if (username) {
+        const hasCredential = localStorage.getItem(`webauthn_credential_${username}`);
+        if (hasCredential) {
+            registerBtn.classList.add('hidden'); // 已註冊，隱藏
+        } else {
+            registerBtn.classList.remove('hidden'); // 未註冊，顯示
+        }
+    } else {
+        registerBtn.classList.add('hidden'); // 沒有輸入使用者名稱，隱藏
+    }
+}
+
+
+// ✨ 將新的事件監聽器綁定到您的應用程式中
+function setupBiometricListeners() {
+    const registerBtn = document.getElementById('biometric-register-btn');
+    const loginBtn = document.getElementById('biometric-login-btn');
+    const usernameInput = document.getElementById('username-input');
+
+    if (registerBtn) registerBtn.addEventListener('click', registerBiometric);
+    if (loginBtn) loginBtn.addEventListener('click', loginWithBiometric);
+
+    // 監聽使用者名稱輸入，動態更新按鈕
+    if (usernameInput) {
+        usernameInput.addEventListener('input', () => {
+            updateBiometricButtons(usernameInput.value.trim());
+        });
+    }
+    
+    // 頁面載入時也檢查一次
+    updateBiometricButtons(usernameInput ? usernameInput.value.trim() : '');
+}
 </script>
 </body>
 </html>
