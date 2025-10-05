@@ -8917,39 +8917,59 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
             });
     </script>
     <script>
-        // 等待整個網頁的 HTML 結構都載入完成後再執行
-        document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function() {
+        // 1. 取得我們需要的 HTML 元素
+        const loadingScreen = document.getElementById('loading-screen');
+        const loadingVideo = document.getElementById('loading-video');
+        const authContainer = document.getElementById('auth-container');
 
-            // 1. 取得我們需要的 HTML 元素
-            const loadingScreen = document.getElementById('loading-screen');
-            const loadingVideo = document.getElementById('loading-video');
-            const authContainer = document.getElementById('auth-container');
+        // 2. 建立一個統一的函式來隱藏載入畫面、顯示主內容
+        //    這樣可以避免重複寫一樣的程式碼
+        function showMainContent() {
+            // 如果已經隱藏了，就不用再執行一次
+            if (loadingScreen.classList.contains('hidden')) {
+                return;
+            }
 
-            // 2. 監聽影片的 'ended' 事件 (也就是影片播放完畢時)
-            loadingVideo.addEventListener('ended', function() {
-                // 影片播放完畢後，執行以下動作：
+            // 為載入畫面加上 'hidden' class，觸發 CSS 淡出效果
+            loadingScreen.classList.add('hidden');
 
-                // a. 為載入畫面加上 'hidden' class，觸發 CSS 淡出效果
-                loadingScreen.classList.add('hidden');
+            // 讓主要內容顯示出來，並加上 'visible' class 觸發淡入效果
+            authContainer.style.display = 'block'; // 或 'flex'
+            setTimeout(() => {
+                authContainer.classList.add('visible');
+            }, 20);
+        }
 
-                // b. 讓主要內容顯示出來，並加上 'visible' class 觸發淡入效果
-                authContainer.style.display = 'block'; // 或 'flex'
-                // 使用一個微小的延遲確保 display 先生效，動畫才會順暢
-                setTimeout(() => {
-                    authContainer.classList.add('visible');
-                }, 20);
-            });
-
-            // ✨ (可選) 備用方案：如果影片因故無法播放，設定一個計時器強制移除載入畫面
-            // 例如 10 秒後無論如何都進入主畫面
-            setTimeout(function() {
-                if (!loadingScreen.classList.contains('hidden')) {
-                    console.log("影片載入超時，強制進入主畫面。");
-                    loadingVideo.dispatchEvent(new Event('ended')); // 手動觸發 ended 事件
-                }
-            }, 10000); // 10000 毫秒 = 10 秒
+        // 3. 嘗試播放影片
+        // 'canplay' 事件表示影片已經載入足夠的資料，可以開始播放了
+        loadingVideo.addEventListener('canplay', function() {
+            const playPromise = loadingVideo.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    // 如果瀏覽器阻止了自動播放，我們會在這裡收到錯誤
+                    console.error("影片自動播放被阻止:", error);
+                    // 既然無法播放，就直接顯示主內容
+                    showMainContent();
+                });
+            }
         });
-    </script>
+
+        // 4. 監聽影片是否播放完畢
+        loadingVideo.addEventListener('ended', showMainContent);
+
+        // 5. 監聽影片載入是否發生錯誤 (例如路徑錯誤)
+        loadingVideo.addEventListener('error', function() {
+            console.error("載入影片時發生錯誤，請檢查影片路徑是否正確。");
+            // 影片載入失敗，直接顯示主內容
+            showMainContent();
+        });
+
+        // 6. 設定一個「最後防線」計時器
+        // 如果 8 秒後 (影片的長度) 載入畫面還在，就強制顯示主內容
+        setTimeout(showMainContent, 8000); // 8000 毫秒 = 8 秒
+    });
+</script>
     <script>
     document.addEventListener('touchstart', function(event) {
         if (event.touches.length > 1) {
