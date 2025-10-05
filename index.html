@@ -8923,6 +8923,12 @@ const isWebAuthnSupported = () => {
 
 // 處理生物辨識註冊
 async function registerBiometric() {
+    // ✨ 新增：檢查安全上下文，這對 iOS 很重要
+    if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+        showNotification('錯誤：生物辨識功能只能在 HTTPS 或 localhost 環境下使用。', 'error');
+        return;
+    }
+
     if (!isWebAuthnSupported()) {
         showNotification('您的瀏覽器不支援生物辨識功能。', 'error');
         return;
@@ -8946,7 +8952,7 @@ async function registerBiometric() {
             challenge,
             rp: { // Relying Party - 依賴方，也就是您的網站
                 name: "Astra AI Chat",
-                // id: window.location.hostname // 正式上線時使用
+                id: window.location.hostname // ✨【核心修改】明確指定 ID，解決 iOS 錯誤
             },
             user: {
                 id: userId,
@@ -8985,7 +8991,6 @@ async function registerBiometric() {
         showNotification(`註冊失敗: ${err.message}`, 'error');
     }
 }
-
 // 處理生物辨識登入
 async function loginWithBiometric() {
     if (!isWebAuthnSupported()) {
