@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.8</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.4.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -11,46 +11,37 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <style>
-    #loading-screen {
-        position: fixed; /* 固定在畫面上 */
-        top: 0;
-        left: 0;
-        width: 100vw; /* 100% 畫面寬度 */
-        height: 100vh; /* 100% 畫面高度 */
-        background-color: #111; /* 影片載入前的背景色 */
-        z-index: 9999; /* 確保在最上層 */
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        transition: opacity 0.8s ease-out; /* 設定淡出動畫效果 */
-    }
+    #loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #111; /* 影片載入前的背景色，可自行更換 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* 確保在所有元素的最上層 */
+    transition: opacity 0.8s ease-out; /* 設定 0.8 秒的淡出動畫效果 */
+}
 
-    /* 載入影片樣式 */
-    #loading-video {
-        max-width: 100%;
-        max-height: 100%;
-        width: auto;
-        height: auto;
-    }
+#loading-overlay video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* 讓影片填滿整個畫面，多餘部分會被裁切，但不會變形 */
+}
 
-    /* 用於隱藏載入畫面的 class */
-    #loading-screen.hidden {
-        opacity: 0;
-        pointer-events: none; /* 讓滑鼠可以點擊下方的內容 */
-    }
-    
-    /* 初始時隱藏主要內容 */
-    #auth-container {
-        display: none; /* ✨ 我們會用 JS 來顯示它 */
-        opacity: 0;
-        transition: opacity 1s ease-in; /* 設定淡入動畫效果 */
-    }
+/* 這個 class 將會由 JavaScript 加入，用來觸發淡出效果 */
+#loading-overlay.hidden {
+    opacity: 0;
+    pointer-events: none; /* 隱藏後使其無法被點擊或互動 */
+}
 
-    /* 讓主要內容顯示並淡入 */
-    #auth-container.visible {
-        display: block; /* 或者 flex, grid, 根據你的排版 */
-        opacity: 1;
-    }
+/* 網頁載入時，先將主要內容隱藏起來，避免在載入影片播放時看到畫面閃爍 */
+#auth-container {
+    opacity: 0;
+    transition: opacity 0.5s ease-in; /* 讓主內容也以淡入方式出現 */
+}
     body {
     touch-action: manipulation;
 }
@@ -1840,9 +1831,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body class="font-sans bg-gray-50">
-    <div id="loading-screen">
-    <video id="loading-video" autoplay muted playsinline>
-        <!-- ✨ 將 src 的值換成您影片的實際檔名 -->
+    <div id="loading-overlay">
+    <video autoplay muted playsinline loop>
         <source src="loading_animation.mp4" type="video/mp4">
         您的瀏覽器不支援影片標籤。
     </video>
@@ -8917,60 +8907,6 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
             });
     </script>
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // 1. 取得我們需要的 HTML 元素
-        const loadingScreen = document.getElementById('loading-screen');
-        const loadingVideo = document.getElementById('loading-video');
-        const authContainer = document.getElementById('auth-container');
-
-        // 2. 建立一個統一的函式來隱藏載入畫面、顯示主內容
-        //    這樣可以避免重複寫一樣的程式碼
-        function showMainContent() {
-            // 如果已經隱藏了，就不用再執行一次
-            if (loadingScreen.classList.contains('hidden')) {
-                return;
-            }
-
-            // 為載入畫面加上 'hidden' class，觸發 CSS 淡出效果
-            loadingScreen.classList.add('hidden');
-
-            // 讓主要內容顯示出來，並加上 'visible' class 觸發淡入效果
-            authContainer.style.display = 'block'; // 或 'flex'
-            setTimeout(() => {
-                authContainer.classList.add('visible');
-            }, 20);
-        }
-
-        // 3. 嘗試播放影片
-        // 'canplay' 事件表示影片已經載入足夠的資料，可以開始播放了
-        loadingVideo.addEventListener('canplay', function() {
-            const playPromise = loadingVideo.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(error => {
-                    // 如果瀏覽器阻止了自動播放，我們會在這裡收到錯誤
-                    console.error("影片自動播放被阻止:", error);
-                    // 既然無法播放，就直接顯示主內容
-                    showMainContent();
-                });
-            }
-        });
-
-        // 4. 監聽影片是否播放完畢
-        loadingVideo.addEventListener('ended', showMainContent);
-
-        // 5. 監聽影片載入是否發生錯誤 (例如路徑錯誤)
-        loadingVideo.addEventListener('error', function() {
-            console.error("載入影片時發生錯誤，請檢查影片路徑是否正確。");
-            // 影片載入失敗，直接顯示主內容
-            showMainContent();
-        });
-
-        // 6. 設定一個「最後防線」計時器
-        // 如果 8 秒後 (影片的長度) 載入畫面還在，就強制顯示主內容
-        setTimeout(showMainContent, 8000); // 8000 毫秒 = 8 秒
-    });
-</script>
-    <script>
     document.addEventListener('touchstart', function(event) {
         if (event.touches.length > 1) {
             event.preventDefault();
@@ -8984,6 +8920,24 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
         }
         lastTouchEnd = now;
     }, false);
+</script>
+    <script>
+    window.addEventListener('load', () => {
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const authContainer = document.getElementById('auth-container');
+
+        // 確保 auth-container 在淡出前是可見的（但因為 CSS 設為透明，所以還看不到）
+        authContainer.style.opacity = '1';
+        
+        // 為載入畫面加上 .hidden class，觸發 CSS 中的淡出動畫
+        loadingOverlay.classList.add('hidden');
+        
+        // 監聽淡出動畫結束事件
+        loadingOverlay.addEventListener('transitionend', () => {
+            // 動畫結束後，將整個載入畫面從 DOM 中移除，以節省效能
+            loadingOverlay.remove();
+        });
+    });
 </script>
 </body>
 </html>
