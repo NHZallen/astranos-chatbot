@@ -5566,38 +5566,44 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             }
         };
         const handleLogin = async (e) => {
-            e.preventDefault();
-            const username = ALL_ELEMENTS.usernameInput.value.trim();
-            const password = ALL_ELEMENTS.passwordInput.value;
-            if (!username || !password) {
-                showNotification(i18n[config.uiLanguage].usernamePasswordRequired || '使用者名稱和密碼皆為必填項目。', 'error');
-                return;
-            }
-            const userKey = getUserKey(username);
-            const savedUser = await getItem(userKey);
-            const passwordHash = await hashString(password);
-            if (savedUser) {
-                const parsedUser = JSON.parse(savedUser);
-                if (parsedUser.passwordHash !== passwordHash) {
-                    showNotification(i18n[config.uiLanguage].passwordIncorrect || '密碼錯誤。', 'error');
-                    return;
-                }
-                currentUser = parsedUser;
-            } else {
-                currentUser = { username, passwordHash };
-                await setItem(userKey, JSON.stringify(currentUser));
-            }
-            await setItem('chat_lastUser', username);
-            ALL_ELEMENTS.authContainer.classList.add('fade-out');
-            ALL_ELEMENTS.appContainer.classList.remove('hidden');
-            requestAnimationFrame(() => {
-                ALL_ELEMENTS.appContainer.classList.add('visible');
-            });
-            ALL_ELEMENTS.authContainer.addEventListener('transitionend', () => {
-                ALL_ELEMENTS.authContainer.style.display = 'none';
-            }, { once: true });
-            initChatApp();
-        };
+    e.preventDefault();
+    const username = ALL_ELEMENTS.usernameInput.value.trim();
+    const password = ALL_ELEMENTS.passwordInput.value;
+    if (!username || !password) {
+        showNotification(i18n[config.uiLanguage].usernamePasswordRequired || '使用者名稱和密碼皆為必填項目。', 'error');
+        return;
+    }
+    const userKey = getUserKey(username);
+    const savedUser = await getItem(userKey);
+    const passwordHash = await hashString(password);
+    if (savedUser) {
+        const parsedUser = JSON.parse(savedUser);
+        if (parsedUser.passwordHash !== passwordHash) {
+            showNotification(i18n[config.uiLanguage].passwordIncorrect || '密碼錯誤。', 'error');
+            return;
+        }
+        currentUser = parsedUser;
+    } else {
+        currentUser = { username, passwordHash };
+        await setItem(userKey, JSON.stringify(currentUser));
+    }
+    await setItem('chat_lastUser', username);
+
+    // --- ✨ 這是唯一的修改處 START ---
+    // 在執行淡出前，先移除我們為了顯示登入畫面而加入的 'visible' class
+    ALL_ELEMENTS.authContainer.classList.remove('visible'); 
+    // --- ✨ 這是唯一的修改處 END ---
+
+    ALL_ELEMENTS.authContainer.classList.add('fade-out');
+    ALL_ELEMENTS.appContainer.classList.remove('hidden');
+    requestAnimationFrame(() => {
+        ALL_ELEMENTS.appContainer.classList.add('visible');
+    });
+    ALL_ELEMENTS.authContainer.addEventListener('transitionend', () => {
+        ALL_ELEMENTS.authContainer.style.display = 'none';
+    }, { once: true });
+    initChatApp();
+};
         const handleLogout = async () => {
             if (await showCustomConfirm(i18n[config.uiLanguage].confirmLogout || '您確定要登出嗎？', i18n[config.uiLanguage].logoutConfirmation || '登出確認')) {
                 await removeItem('chat_lastUser');
