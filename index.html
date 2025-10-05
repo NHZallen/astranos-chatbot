@@ -1832,8 +1832,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 </head>
 <body class="font-sans bg-gray-50">
     <div id="loading-overlay">
-    <video autoplay muted playsinline loop>
-        <source src="loading_animation.mp4" type="video/mp4">
+    <video id="loading-video" autoplay muted playsinline loop> 
         您的瀏覽器不支援影片標籤。
     </video>
 </div>
@@ -8921,23 +8920,35 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
         lastTouchEnd = now;
     }, false);
 </script>
-    <script>
-    window.addEventListener('load', () => {
-        const loadingOverlay = document.getElementById('loading-overlay');
-        const authContainer = document.getElementById('auth-container');
+    <script src="./video-data.js"></script>
 
-        // 確保 auth-container 在淡出前是可見的（但因為 CSS 設為透明，所以還看不到）
-        authContainer.style.opacity = '1';
-        
-        // 為載入畫面加上 .hidden class，觸發 CSS 中的淡出動畫
-        loadingOverlay.classList.add('hidden');
-        
-        // 監聽淡出動畫結束事件
-        loadingOverlay.addEventListener('transitionend', () => {
-            // 動畫結束後，將整個載入畫面從 DOM 中移除，以節省效能
-            loadingOverlay.remove();
+    <!-- 主控制腳本 -->
+    <script>
+        // 等待 HTML 結構載入完成
+        document.addEventListener('DOMContentLoaded', () => {
+            const loadingVideo = document.getElementById('loading-video');
+            // 如果成功找到影片播放器和 Base64 變數
+            if (loadingVideo && typeof videoBase64 !== 'undefined') {
+                // 就把 Base64 字串設定為影片的來源
+                loadingVideo.src = videoBase64;
+            }
         });
-    });
-</script>
+
+        // 等待所有資源 (圖片、影片等) 都載入完成
+        window.addEventListener('load', () => {
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const authContainer = document.getElementById('auth-container');
+            
+            // 顯示主內容
+            authContainer.style.opacity = '1';
+            // 觸發載入畫面的淡出動畫
+            loadingOverlay.classList.add('hidden');
+            
+            // 動畫結束後移除載入畫面
+            loadingOverlay.addEventListener('transitionend', () => {
+                loadingOverlay.remove();
+            });
+        });
+    </script>
 </body>
 </html>
