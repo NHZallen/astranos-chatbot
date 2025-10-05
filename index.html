@@ -3,18 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.5.0</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.4.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-    
-    <!-- ✨ [新增] 引入 jsPDF 和 AutoTable 插件 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-
     <style>
     body {
     touch-action: manipulation;
@@ -1798,33 +1793,6 @@ body.custom-wallpaper-active .input-indicator-item {
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
-
-/* ✨ [新增] PDF 匯出選擇 Modal 的樣式 */
-.pdf-selection-item {
-    display: flex;
-    gap: 1rem;
-    padding: 0.75rem;
-    border-radius: 0.5rem;
-    border: 1px solid var(--border-color);
-    margin-bottom: 0.5rem;
-}
-.pdf-selection-item .checkbox-container {
-    flex-shrink: 0;
-    padding-top: 0.25rem;
-}
-.pdf-selection-item .content-container {
-    flex-grow: 1;
-    min-width: 0;
-}
-.pdf-selection-item .content-container .role-label {
-    font-weight: 600;
-    font-size: 0.875rem;
-    margin-bottom: 0.25rem;
-}
-.pdf-selection-item .content-container .prose {
-    font-size: 0.875rem;
-    max-width: none;
-}
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -2016,10 +1984,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         </div>
                     </div>
                     <div class="flex items-center gap-1 md:gap-2">
-                        <!-- ✨ [新增] PDF 匯出按鈕 -->
-                        <button id="export-pdf-btn" title="匯出成 PDF" class="p-2 rounded-md hover:bg-[var(--hover-bg)] hidden" data-lang-key-title="exportToPdf">
-                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                        </button>
                         <div id="model-switcher-container" class="relative"></div>
                     </div>
                 </header>
@@ -2758,26 +2722,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         </div>
     </div>
 
-    <!-- ✨ [新增] PDF 匯出選擇 Modal -->
-    <div id="pdf-export-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-3xl flex flex-col" style="max-height: 90vh;">
-            <div class="p-4 border-b border-[var(--border-color)] flex justify-between items-center flex-shrink-0">
-                <h2 class="text-xl font-bold" data-lang-key="selectMessagesToExport">選擇要匯出的訊息</h2>
-                <div class="flex gap-2">
-                    <button id="pdf-select-all-btn" class="text-sm px-3 py-1.5 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] hover:bg-[var(--hover-bg)]" data-lang-key="selectAll">全選</button>
-                    <button id="pdf-deselect-all-btn" class="text-sm px-3 py-1.5 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] hover:bg-[var(--hover-bg)]" data-lang-key="deselectAll">取消全選</button>
-                </div>
-            </div>
-            <div id="pdf-selection-content" class="p-4 overflow-y-auto scroll-area flex-1">
-                <!-- 訊息選擇列表將會動態插入此處 -->
-            </div>
-            <div class="p-4 bg-[var(--sidebar-bg)] border-t border-[var(--border-color)] flex justify-end gap-3 flex-shrink-0">
-                <button id="cancel-pdf-export-btn" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]" data-lang-key="cancel">取消</button>
-                <button id="confirm-pdf-export-btn" class="px-4 py-2 rounded-md btn-primary" data-lang-key="confirmAndExport">確認並匯出</button>
-            </div>
-        </div>
-    </div>
-
     <script src="./i18n.js"></script>
     <script src="./demo-conversations.js"></script>
     <script src="./astras-data.js"></script>
@@ -3039,16 +2983,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             proposalInstructionsInput: document.getElementById('proposal-instructions-input'),
             cancelProposalBtn: document.getElementById('cancel-proposal-btn'),
             submitProposalBtn: document.getElementById('submit-proposal-btn'),
-
-            // ✨ [新增] PDF 匯出相關元素
-            exportPdfBtn: document.getElementById('export-pdf-btn'),
-            pdfExportModal: document.getElementById('pdf-export-modal'),
-            pdfSelectionContent: document.getElementById('pdf-selection-content'),
-            pdfSelectAllBtn: document.getElementById('pdf-select-all-btn'),
-            pdfDeselectAllBtn: document.getElementById('pdf-deselect-all-btn'),
-            confirmPdfExportBtn: document.getElementById('confirm-pdf-export-btn'),
-            cancelPdfExportBtn: document.getElementById('cancel-pdf-export-btn'),
-
             // ✨ 新增互動式計畫編輯器元素
             interactivePlanModal: document.getElementById('interactive-plan-modal'),
             planEditorStepsContainer: document.getElementById('plan-editor-steps-container'),
@@ -3900,15 +3834,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const conv = getActiveConversation();
             const messageList = ALL_ELEMENTS.messageList;
             messageList.classList.remove('chat-view-transition');
-
-            // ✨ [修改] 控制 PDF 匯出按鈕的顯示
-            const exportPdfBtn = ALL_ELEMENTS.exportPdfBtn;
-            if (conv && conv.messages.length > 0) {
-                exportPdfBtn.classList.remove('hidden');
-            } else {
-                exportPdfBtn.classList.add('hidden');
-            }
-
             if (!conv) {
                 messageList.innerHTML = '';
                 ALL_ELEMENTS.headerTitle.textContent = i18n[config.uiLanguage].newChat;
@@ -4713,7 +4638,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     lastRole = sanitizedMsg.role;
                 }
             });
-            if (cleaned.length > 0 && cleaned.role !== 'user') cleaned.shift();
+            if (cleaned.length > 0 && cleaned[0].role !== 'user') cleaned.shift();
             return cleaned;
         }
         function calculateRelevanceScore(summary, keywords) {
@@ -4806,8 +4731,8 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 }
             }
             if (memoryPrompt) {
-                if (systemInstruction && systemInstruction.parts.text) {
-                    systemInstruction.parts.text += `\n\n${memoryPrompt}`;
+                if (systemInstruction && systemInstruction.parts[0].text) {
+                    systemInstruction.parts[0].text += `\n\n${memoryPrompt}`;
                 } else if (systemInstruction) {
                     systemInstruction.parts.push({ text: `\n\n${memoryPrompt}` });
                 }
@@ -4890,7 +4815,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 
                             try {
                                 const parsed = JSON.parse(jsonStr);
-                                const textChunk = parsed && parsed.candidates && parsed.candidates[0] && parsed.candidates[0].content && parsed.candidates[0].content.parts && parsed.candidates[0].content.parts[0] && parsed.candidates[0].content.parts[0].text;
+                                const textChunk = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
 
                                 if (textChunk) {
                                     fullText += textChunk;
@@ -4912,7 +4837,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                             if (data.trim() === '[DONE]') break;
                             try {
                                 const parsed = JSON.parse(data);
-                                const textChunk = parsed.choices?.delta?.content || '';
+                                const textChunk = parsed.choices[0]?.delta?.content || '';
                                 if (textChunk) {
                                     fullText += textChunk;
                                     onChunk(textChunk);
@@ -4950,7 +4875,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     throw new Error(errorData.error?.message || 'API request failed');
                 }
                 const result = await response.json();
-                const jsonString = result && result.candidates && result.candidates[0] && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts[0] && result.candidates[0].content.parts[0].text;
+                const jsonString = result?.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (jsonString) {
                     let cleanedJsonString = jsonString.trim();
                     if (cleanedJsonString.startsWith("```json")) {
@@ -4996,7 +4921,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 return false;
             }
             const result = await response.json();
-            const text = result && result.candidates && result.candidates[0] && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts[0] && result.candidates[0].content.parts[0].text ? result.candidates[0].content.parts[0].text.trim().toLowerCase() : null;
+            const text = result?.candidates?.[0]?.content?.parts?.[0]?.text?.trim().toLowerCase();
             return text === 'yes';
         }
         const generateTitleAndSummary = async (conv) => {
@@ -5301,13 +5226,10 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 config.deepResearchQueryCount = parseInt(queryCountSlider.value);
             }
             const selectedThemeMode = document.querySelector('input[name="color-theme"]:checked').value;
-            const selectedCustomColorSwatch = ALL_ELEMENTS.customColorSwatches.querySelector('.selected');
-const selectedCustomColor = (selectedCustomColorSwatch && selectedCustomColorSwatch.dataset.color) || config.uiTheme.customColor;
-
-const selectedStyleRadio = document.querySelector('input[name="color-style"]:checked');
-const selectedStyle = (selectedStyleRadio && selectedStyleRadio.value) || 'single';
-
-const selectedGradient = selectedGradientSwatch ? selectedGradientSwatch.dataset.gradient : ((config.uiTheme.adaptivePalette && config.uiTheme.adaptivePalette.length > 1) ? `linear-gradient(to right, ${config.uiTheme.adaptivePalette[0]}, ${config.uiTheme.adaptivePalette[1]})` : '');
+            const selectedCustomColor = ALL_ELEMENTS.customColorSwatches.querySelector('.selected')?.dataset.color || config.uiTheme.customColor;
+            const selectedStyle = document.querySelector('input[name="color-style"]:checked')?.value || 'single';
+            const selectedGradientSwatch = ALL_ELEMENTS.gradientSwatches.querySelector('.selected-gradient');
+            const selectedGradient = selectedGradientSwatch ? selectedGradientSwatch.dataset.gradient : (config.uiTheme.adaptivePalette?.length > 1 ? `linear-gradient(to right, ${config.uiTheme.adaptivePalette[0]}, ${config.uiTheme.adaptivePalette[1]})` : '');
             config.uiTheme.mode = selectedThemeMode;
             config.uiTheme.customColor = selectedCustomColor;
             config.uiTheme.style = selectedStyle;
@@ -5698,10 +5620,8 @@ const selectedGradient = selectedGradientSwatch ? selectedGradientSwatch.dataset
         const handleSaveFolderSettings = async () => {
             const folder = folders.find(f => f.id === folderToCustomize);
             if (!folder) return;
-            const selectedColorSwatch = ALL_ELEMENTS.colorSwatchesContainer.querySelector('.selected');
-const selectedColor = selectedColorSwatch ? selectedColorSwatch.dataset.color : undefined;
-            const selectedIconOption = ALL_ELEMENTS.iconOptionsContainer.querySelector('.selected');
-const selectedIcon = selectedIconOption ? selectedIconOption.dataset.icon : undefined;
+            const selectedColor = ALL_ELEMENTS.colorSwatchesContainer.querySelector('.selected')?.dataset.color;
+            const selectedIcon = ALL_ELEMENTS.iconOptionsContainer.querySelector('.selected')?.dataset.icon;
             if (selectedColor) folder.color = selectedColor;
             if (selectedIcon) folder.icon = selectedIcon;
             await saveAppData();
@@ -6218,7 +6138,7 @@ const selectedIcon = selectedIconOption ? selectedIconOption.dataset.icon : unde
             await saveConfig();
         };
         const handleImport = async () => {
-            const file = ALL_ELEMENTS.importFileInput.files;
+            const file = ALL_ELEMENTS.importFileInput.files[0];
             if (!file) {
                 showNotification(i18n[config.uiLanguage].selectFileError || '請選擇檔案。', 'error');
                 return;
@@ -6246,7 +6166,7 @@ const selectedIcon = selectedIconOption ? selectedIconOption.dataset.icon : unde
                              if (config.uiTheme.mode === 'adaptive') {
                                 const palette = await getDominantColorPalette(config.customWallpaper);
                                 config.uiTheme.adaptivePalette = palette;
-                                config.uiTheme.adaptiveColor = palette || '#3b82f6';
+                                config.uiTheme.adaptiveColor = palette[0] || '#3b82f6';
                             }
                             await saveConfig();
                         } catch (err) { /* keep default */ }
@@ -6276,7 +6196,7 @@ const selectedIcon = selectedIconOption ? selectedIconOption.dataset.icon : unde
         const processAuthImport = async () => {
             const username = ALL_ELEMENTS.usernameInput.value.trim();
             const password = ALL_ELEMENTS.passwordInput.value;
-            const file = ALL_ELEMENTS.importFileInputAuth.files;
+            const file = ALL_ELEMENTS.importFileInputAuth.files[0];
 
             if (!file) {
                 showNotification(i18n[config.uiLanguage].selectFileError || '請選擇檔案。', 'error');
@@ -6469,7 +6389,7 @@ const selectedIcon = selectedIconOption ? selectedIconOption.dataset.icon : unde
             currentSpeechRecognition.onresult = (event) => {
                 let transcript = '';
                 for (let i = event.resultIndex; i < event.results.length; i++) {
-                    transcript += event.results[i].transcript;
+                    transcript += event.results[i][0].transcript;
                 }
                 const inputEl = target === 'message' ? ALL_ELEMENTS.messageInput : ALL_ELEMENTS.modalSearchInput;
                 inputEl.value = transcript;
@@ -6952,9 +6872,9 @@ ${JSON.stringify(potentialMemories, null, 2)}
         const hexToRgb = (hex) => {
             const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
             return result ? {
-                r: parseInt(result, 16),
-                g: parseInt(result, 16),
-                b: parseInt(result, 16)
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
             } : null;
         };
         const getTextColorForBackground = (hexColor) => {
@@ -6971,7 +6891,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 case 'adaptive':
                     if (config.uiTheme.style === 'gradient') {
                         primaryBgOverride = config.uiTheme.adaptiveGradient || `linear-gradient(to right, ${config.uiTheme.adaptiveColor}, #3b82f6)`;
-                        primaryBg = config.uiTheme.adaptivePalette || config.uiTheme.adaptiveColor;
+                        primaryBg = config.uiTheme.adaptivePalette[0] || config.uiTheme.adaptiveColor;
                     } else {
                         primaryBg = config.uiTheme.adaptiveColor;
                     }
@@ -7100,7 +7020,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
             setUserBubbleColor();
         };
         const handleWallpaperUpload = (event) => {
-            const file = event.target.files;
+            const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -7134,7 +7054,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 config.customWallpaper = imageDataUrl;
                 config.wallpaperBrightness = brightness;
                 config.uiTheme.adaptivePalette = palette;
-                config.uiTheme.adaptiveColor = palette || '#3b82f6';
+                config.uiTheme.adaptiveColor = palette[0] || '#3b82f6';
                 await saveConfig();
                 applyCustomWallpaper();
                 applyUiTheme();
@@ -7277,7 +7197,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
             ALL_ELEMENTS.astrasAvatarInput.click();
         };
         const handleAvatarUpload = (event) => {
-            const file = event.target.files;
+            const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -7383,10 +7303,10 @@ ${JSON.stringify(potentialMemories, null, 2)}
             let touchStartY = 0;
             let touchMoveY = 0;
             menu.addEventListener('touchstart', (e) => {
-                touchStartY = e.touches.clientY;
+                touchStartY = e.touches[0].clientY;
             }, { passive: true });
             menu.addEventListener('touchmove', (e) => {
-                touchMoveY = e.touches.clientY;
+                touchMoveY = e.touches[0].clientY;
                 const deltaY = touchMoveY - touchStartY;
                 if (deltaY > 0) {
                     menu.style.transform = `translateY(${deltaY}px)`;
@@ -7467,10 +7387,10 @@ ${JSON.stringify(potentialMemories, null, 2)}
             let touchStartY = 0;
             let touchMoveY = 0;
             menu.addEventListener('touchstart', (e) => {
-                touchStartY = e.touches.clientY;
+                touchStartY = e.touches[0].clientY;
             }, { passive: true });
             menu.addEventListener('touchmove', (e) => {
-                touchMoveY = e.touches.clientY;
+                touchMoveY = e.touches[0].clientY;
                 const deltaY = touchMoveY - touchStartY;
                 if (deltaY > 0) {
                     menu.style.transform = `translateY(${deltaY}px)`;
@@ -7549,9 +7469,9 @@ ${JSON.stringify(potentialMemories, null, 2)}
             overlay.addEventListener('click', closeMenu);
             let touchStartY = 0;
             let touchMoveY = 0;
-            menu.addEventListener('touchstart', (e) => { touchStartY = e.touches.clientY; }, { passive: true });
+            menu.addEventListener('touchstart', (e) => { touchStartY = e.touches[0].clientY; }, { passive: true });
             menu.addEventListener('touchmove', (e) => {
-                touchMoveY = e.touches.clientY;
+                touchMoveY = e.touches[0].clientY;
                 const deltaY = touchMoveY - touchStartY;
                 if (deltaY > 0) { menu.style.transform = `translateY(${deltaY}px)`; }
             }, { passive: true });
@@ -7677,7 +7597,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
         contentContainer.style.maxHeight = '60vh';
         contentContainer.style.overflowY = 'auto';
         toggleModal(ALL_ELEMENTS.latestUpdateModal, true);
-        const latestVersionInLog = newUpdates.version; // 因為我們已經排序了，所以 newUpdates 現在是最新版
+        const latestVersionInLog = newUpdates[0].version; // 因為我們已經排序了，所以 newUpdates[0] 現在是最新版
         config.lastSeenVersion = latestVersionInLog;
         await saveConfig();
     }
@@ -8265,7 +8185,7 @@ ${stepCountInstruction}
                     if (!plannerResponse.ok) throw new Error(`研究計畫生成失敗: ${(await plannerResponse.json()).error?.message || 'API request failed'}`);
                     
                     const result = await plannerResponse.json();
-                    const jsonString = result && result.candidates && result.candidates[0] && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts[0] && result.candidates[0].content.parts[0].text;
+                    const jsonString = result?.candidates?.[0]?.content?.parts?.[0]?.text;
                     if (jsonString) {
                         initialResearchPlan = JSON.parse(jsonString.trim().replace(/^```json|```$/g, '').trim());
                     } else {
@@ -8757,8 +8677,8 @@ const handleInputFocus = () => {
             spotlightElements.forEach(el => {
                 const handleMove = (e) => {
                     const rect = el.getBoundingClientRect();
-                    const x = (e.touches ? e.touches.clientX : e.clientX) - rect.left;
-                    const y = (e.touches ? e.touches.clientY : e.clientY) - rect.top;
+                    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+                    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
                     el.style.setProperty('--spotlight-x', `${x}px`);
                     el.style.setProperty('--spotlight-y', `${y}px`);
                 };
@@ -8947,166 +8867,6 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
                     applyLanguage(lang);
                     ALL_ELEMENTS.loginLangMenu.classList.remove('visible');
                 }
-            });
-
-            // ✨ [新增] PDF 匯出功能的所有相關邏輯
-            
-            // 點擊主匯出按鈕，打開選擇視窗
-            ALL_ELEMENTS.exportPdfBtn.addEventListener('click', () => {
-                const conv = getActiveConversation();
-                if (!conv || conv.messages.length === 0) return;
-
-                const contentContainer = ALL_ELEMENTS.pdfSelectionContent;
-                contentContainer.innerHTML = '';
-
-                conv.messages.forEach((msg, index) => {
-                    const item = document.createElement('div');
-                    item.className = 'pdf-selection-item';
-                    const role = msg.role === 'user' ? 'You' : 'Astra';
-                    const textContent = msg.parts.map(p => p.text || `[${p.inlineData?.mimeType || '檔案'}]`).join('\n');
-                    
-                    item.innerHTML = `
-                        <div class="checkbox-container">
-                            <input type="checkbox" id="pdf-msg-${index}" data-index="${index}" class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" checked>
-                        </div>
-                        <div class="content-container">
-                            <label for="pdf-msg-${index}" class="role-label text-[var(--text-primary)]">${role}</label>
-                            <div class="prose text-[var(--text-secondary)]">${renderMarkdown(textContent.substring(0, 200) + (textContent.length > 200 ? '...' : ''))}</div>
-                        </div>
-                    `;
-                    contentContainer.appendChild(item);
-                });
-
-                toggleModal(ALL_ELEMENTS.pdfExportModal, true);
-            });
-
-            // 全選/取消全選
-            ALL_ELEMENTS.pdfSelectAllBtn.addEventListener('click', () => {
-                document.querySelectorAll('#pdf-selection-content input[type="checkbox"]').forEach(cb => cb.checked = true);
-            });
-            ALL_ELEMENTS.pdfDeselectAllBtn.addEventListener('click', () => {
-                document.querySelectorAll('#pdf-selection-content input[type="checkbox"]').forEach(cb => cb.checked = false);
-            });
-
-            // 取消匯出
-            ALL_ELEMENTS.cancelPdfExportBtn.addEventListener('click', () => {
-                toggleModal(ALL_ELEMENTS.pdfExportModal, false);
-            });
-
-            // 確認並開始匯出
-            ALL_ELEMENTS.confirmPdfExportBtn.addEventListener('click', async () => {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
-
-                // 註冊中文字體 (如果需要)
-                // 在此我們假設瀏覽器支援的字體，如果需要特定字體，需要加載字體文件
-                doc.setFont('helvetica', 'normal'); // 使用一個基礎字體
-
-                const conv = getActiveConversation();
-                if (!conv) return;
-
-                const selectedIndices = Array.from(document.querySelectorAll('#pdf-selection-content input[type="checkbox"]:checked'))
-                                              .map(cb => parseInt(cb.dataset.index));
-
-                if (selectedIndices.length === 0) {
-                    showNotification('請至少選擇一則訊息來匯出。', 'warning');
-                    return;
-                }
-
-                toggleModal(ALL_ELEMENTS.pdfExportModal, false);
-                showNotification('正在生成 PDF...', 'success');
-
-                let y = 15; // 初始 Y 座標
-                const pageHeight = doc.internal.pageSize.height;
-                const margin = 15;
-
-                const addWatermarkAndCheckPageBreak = (neededHeight = 20) => {
-                    // 每一頁都加上水印
-                    const pageCount = doc.internal.getNumberOfPages();
-                    for(let i = 1; i <= pageCount; i++) {
-                        doc.setPage(i);
-                        doc.setFontSize(40);
-                        doc.setTextColor(220, 220, 220);
-                        doc.text('Astra', margin, 20, { baseline: 'top' });
-                        doc.setTextColor(0, 0, 0); // 重設顏色
-                    }
-
-                    if (y + neededHeight > pageHeight - margin) {
-                        doc.addPage();
-                        y = margin;
-                        return true;
-                    }
-                    return false;
-                };
-
-                // 添加標題
-                doc.setFontSize(18);
-                doc.text(conv.title, margin, y);
-                y += 10;
-
-                for (const index of selectedIndices) {
-                    const msg = conv.messages[index];
-                    if (!msg) continue;
-
-                    addWatermarkAndCheckPageBreak(20);
-
-                    const role = msg.role === 'user' ? (currentUser.username || 'User') : 'Astra';
-                    doc.setFontSize(12);
-                    doc.setFont('helvetica', 'bold');
-                    doc.text(`${role}:`, margin, y);
-                    y += 7;
-
-                    doc.setFont('helvetica', 'normal');
-                    doc.setFontSize(11);
-
-                    const textContent = msg.parts.map(p => p.text || '').join('\n');
-                    const lines = doc.splitTextToSize(textContent, doc.internal.pageSize.width - margin * 2);
-                    
-                    lines.forEach(line => {
-                        addWatermarkAndCheckPageBreak(10);
-                        // 檢查是否為表格的開始
-                        if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
-                            const tableStartIndex = lines.indexOf(line);
-                            let tableEndIndex = tableStartIndex;
-                            while(tableEndIndex + 1 < lines.length && lines[tableEndIndex+1].trim().startsWith('|')) {
-                                tableEndIndex++;
-                            }
-                            
-                            const tableLines = lines.splice(tableStartIndex, tableEndIndex - tableStartIndex + 1);
-                            
-                            try {
-                                const head = [tableLines[0].split('|').map(h => h.trim()).filter(Boolean)];
-                                const body = tableLines.slice(2).map(row => row.split('|').map(c => c.trim()).filter(Boolean));
-                                
-                                doc.autoTable({
-                                    head: head,
-                                    body: body,
-                                    startY: y,
-                                    theme: 'grid',
-                                    didDrawPage: () => {
-                                        addWatermarkAndCheckPageBreak(0); // 在 autotable 換頁後加上水印
-                                    }
-                                });
-                                y = doc.autoTable.previous.finalY + 10;
-
-                            } catch (e) {
-                                // 如果表格解析失敗，就當作純文字處理
-                                console.error("PDF table parsing failed:", e);
-                                doc.text(tableLines.join('\n'), margin, y);
-                                y += (tableLines.length * 5);
-                            }
-                        } else {
-                           doc.text(line, margin, y);
-                           y += 5;
-                        }
-                    });
-                    y += 5; // 增加訊息間的間距
-                }
-
-                // 最後一頁加上水印
-                addWatermarkAndCheckPageBreak(0);
-
-                doc.save(`${conv.title}.pdf`);
             });
     </script>
     <script>
