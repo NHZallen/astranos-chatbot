@@ -1799,39 +1799,60 @@ body.custom-wallpaper-active .input-indicator-item {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background-color: #000; /* 影片加載時的純黑背景色 */
-    z-index: 9999; /* 確保這個區塊在所有東西的最上層 */
+    background-color: #000;
+    z-index: 9999;
     display: flex;
     justify-content: center;
     align-items: center;
-    transition: opacity 0.5s ease-out; /* 為了之後的淡出效果 */
+    transition: opacity 0.5s ease-out;
 }
 
-/* 這個 class 會由 JavaScript 加入，用來隱藏影片畫面 */
 #video-splash-screen.hidden {
     opacity: 0;
-    pointer-events: none; /* 淡出後就不能再被點擊或互動 */
+    pointer-events: none;
 }
 
-#splash-video {
+.splash-video {
     width: 100%;
     height: 100%;
-    /* 這一行很重要，它會讓影片填滿整個螢幕，多餘的部分會被裁切掉 */
-    object-fit: cover; 
+    object-fit: cover;
 }
 
-/* 在影片播放時，先將原本的主頁面隱藏起來 */
+/* --- ✨ 這是切換的關鍵！ --- */
+
+/* 預設狀態 (手機優先)：顯示手機影片，隱藏電腦影片 */
+#splash-video-desktop {
+    display: none;
+}
+#splash-video-mobile {
+    display: block;
+}
+
+/* 當螢幕寬度大於等於 768px 時 (通常是平板或電腦) */
+@media (min-width: 768px) {
+    /* 顯示電腦版影片 */
+    #splash-video-desktop {
+        display: block;
+    }
+    /* 隱藏手機版影片 */
+    #splash-video-mobile {
+        display: none;
+    }
+}
+
+/* --- ✨ 這是切換的關鍵！ END --- */
+
 #auth-container {
     visibility: hidden;
     opacity: 0;
-    transition: opacity 0.5s ease-in; /* 讓主頁面能優雅地淡入 */
+    transition: opacity 0.5s ease-in;
 }
 
-/* 這個 class 會由 JavaScript 加入，用來顯示主頁面 */
 #auth-container.visible {
     visibility: visible;
     opacity: 1;
 }
+
 
 </style>
 <script>
@@ -1841,9 +1862,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 </head>
 <body class="font-sans bg-gray-50">
     <div id="video-splash-screen">
-        <video id="splash-video" autoplay muted playsinline>
-            <source src="intro.mp4" type="video/mp4">
-            您的瀏覽器不支援影片標籤。
+        <!-- 電腦版影片 -->
+        <video id="splash-video-desktop" class="splash-video" autoplay muted playsinline>
+            <source src="splash_desktop.mp4" type="video/mp4">
+        </video>
+        <!-- 手機版影片 -->
+        <video id="splash-video-mobile" class="splash-video" autoplay muted playsinline>
+            <source src="splash_mobile.mp4" type="video/mp4">
         </video>
     </div>
     <div id="wallpaper-container"></div>
@@ -2776,30 +2801,35 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
      <script>
         document.addEventListener('DOMContentLoaded', () => {
             const videoSplashScreen = document.getElementById('video-splash-screen');
-    const splashVideo = document.getElementById('splash-video');
-    const authContainerForSplash = document.getElementById('auth-container'); 
+    // 現在我們要同時選取兩個影片
+    const splashVideoDesktop = document.getElementById('splash-video-desktop');
+    const splashVideoMobile = document.getElementById('splash-video-mobile');
+    const authContainerForSplash = document.getElementById('auth-container');
 
-    // 監聽影片是否播放結束
-    splashVideo.addEventListener('ended', () => {
-        // 1. 幫影片容器加上 hidden class 來觸發 CSS 的淡出效果
+    // 建立一個共用的函式來處理影片結束後的邏輯
+    const handleVideoEnd = () => {
         videoSplashScreen.classList.add('hidden');
-
-        // 2. 幫主頁面容器加上 visible class 來觸發淡入效果
         authContainerForSplash.classList.add('visible');
 
-        // 3. (優化) 當淡出動畫結束後，可以把整個影片區塊從網頁中移除，以釋放記憶體資源
         videoSplashScreen.addEventListener('transitionend', () => {
             videoSplashScreen.remove();
-        }, { once: true }); // once: true 讓這個監聽只執行一次後就自動移除
-    });
+        }, { once: true });
+    };
 
-    // 備用方案：如果影片因故無法播放 (例如檔案損毀或網路問題)
-    splashVideo.addEventListener('error', () => {
-        console.error("影片播放錯誤，直接顯示主頁。");
-        // 如果影片出錯，就立刻移除影片並顯示主頁，避免使用者卡住
+    // 建立一個共用的函式來處理影片播放錯誤
+    const handleVideoError = (e) => {
+        console.error("影片播放錯誤:", e.target.id, "直接顯示主頁。");
         videoSplashScreen.remove();
         authContainerForSplash.classList.add('visible');
-    });
+    };
+
+    // 分別為兩個影片都加上 'ended' 和 'error' 的事件監聽
+    // 瀏覽器只會播放其中一個，所以也只會有一個觸發 'ended' 事件
+    splashVideoDesktop.addEventListener('ended', handleVideoEnd);
+    splashVideoMobile.addEventListener('ended', handleVideoEnd);
+
+    splashVideoDesktop.addEventListener('error', handleVideoError);
+    splashVideoMobile.addEventListener('error', handleVideoError);
             const demoModels = [
   { id: 'proMax', name: 'Astra-Pro Max', title: 'Astra-Pro Max 對話範例', desc: '深度決策，商業研究最佳拍檔' },
   { id: 'proPV', name: 'Astra-Pro PV', title: 'Astra-Pro PV 對話範例', desc: '預覽新技術，多模態高速體驗' },
