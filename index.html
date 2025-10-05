@@ -2769,9 +2769,8 @@ function bufferEncode(value) {
     const publicKeyCredentialCreationOptions = {
         challenge: challenge,
         rp: { // rp = Relying Party，也就是您的網站
-            name: "Astra AI Chat",
-            // id: window.location.hostname // 在正式環境中，您應該使用您網站的域名
-        },
+    name: "Astra AI Chat"
+},
         user: {
             id: userID,
             name: username,
@@ -8940,6 +8939,31 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
             ALL_ELEMENTS.authForm.addEventListener('submit', handleLogin);
             const registerBiometricBtn = document.getElementById('register-biometric-btn');
 const loginBiometricBtn = document.getElementById('login-biometric-btn');
+
+/**
+ * 檢查瀏覽器是否支援平台驗證器 (如 Face ID, 指紋)
+ * 如果不支援，就隱藏相關按鈕
+ */
+async function checkBiometricSupport() {
+    if (window.PublicKeyCredential && 
+        PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
+        
+        const isSupported = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+        
+        if (!isSupported) {
+            console.log("此瀏覽器不支援平台生物辨識功能。");
+            if (registerBiometricBtn) registerBiometricBtn.style.display = 'none';
+            if (loginBiometricBtn) loginBiometricBtn.style.display = 'none';
+        }
+    } else {
+        console.log("此瀏覽器不支援 WebAuthn API。");
+        if (registerBiometricBtn) registerBiometricBtn.style.display = 'none';
+        if (loginBiometricBtn) loginBiometricBtn.style.display = 'none';
+    }
+}
+
+// 在頁面載入後立即執行檢查
+checkBiometricSupport();
 
 // 綁定點擊事件
 if (registerBiometricBtn) {
