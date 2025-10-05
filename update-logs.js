@@ -1,5 +1,14 @@
 const updateLogs = [
         {
+        version: "15.4.8",
+        date: "2025-10-5",
+        content: [
+            "<strong>修正：</strong>深度研究模式研究計畫無法插入的問題",
+            "<strong>修正：</strong>深度研究模式研究計畫無法調整順序的問題",
+            "<strong>修正：</strong>深度研究模式研究計畫數量與設定頁面不同步的問題",
+        ]
+    },
+        {
         version: "15.4.7",
         date: "2025-10-5",
         content: [
