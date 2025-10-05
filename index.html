@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.7</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.4.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -1792,6 +1792,18 @@ body.custom-wallpaper-active .input-indicator-item {
 }
 @keyframes spin {
     to { transform: rotate(360deg); }
+}
+.plan-editor-step .move-step-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+.step-inserter-container button {
+    transition: all 0.2s ease;
+}
+.step-inserter-container button:hover {
+    transform: scale(1.1);
+    background-color: var(--hover-bg);
+    color: var(--button-primary-bg);
 }
 </style>
 <script>
@@ -7918,26 +7930,54 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 let dashboardCard = null; // 用來追蹤儀表板卡片
 
                 function renderPlanSteps() {
-                    planEditorStepsContainer.innerHTML = '';
-                    const steps = planEditorStepsContainer.querySelectorAll('.plan-editor-step').length;
-                    
-                    initialPlan.forEach((plan, index) => {
-                        const stepElement = document.createElement('div');
-                        stepElement.className = 'plan-editor-step';
-                        stepElement.innerHTML = `
-                            <div class="step-header">
-                                <label>步驟 ${index + 1}</label>
-                                <button class="remove-step-btn" title="移除此步驟">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                </button>
-                            </div>
-                            <input type="text" class="step-title-input" placeholder="步驟標題" value="${plan.step}">
-                            <textarea class="step-action-input" placeholder="步驟具體行動">${plan.action}</textarea>
-                        `;
-                        planEditorStepsContainer.appendChild(stepElement);
-                    });
-                    updateRemoveButtonsState();
-                }
+    planEditorStepsContainer.innerHTML = '';
+    const totalSteps = initialPlan.length;
+
+    initialPlan.forEach((plan, index) => {
+        const stepElement = document.createElement('div');
+        stepElement.className = 'plan-editor-step flex items-start gap-3'; // 改為 flex 佈局
+        stepElement.dataset.index = index;
+        
+        // 這是每個步驟的新 HTML 結構，包含了箭頭按鈕
+        stepElement.innerHTML = `
+            <div class="flex flex-col justify-center items-center gap-2 mt-10">
+                <button class="move-step-btn move-up-btn p-1.5 rounded-full hover:bg-[var(--hover-bg)]" title="向上移動" ${index === 0 ? 'disabled' : ''}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+                </button>
+                <span class="font-bold text-lg text-[var(--text-secondary)]">${index + 1}</span>
+                <button class="move-step-btn move-down-btn p-1.5 rounded-full hover:bg-[var(--hover-bg)]" title="向下移動" ${index === totalSteps - 1 ? 'disabled' : ''}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+                </button>
+            </div>
+            <div class="flex-1">
+                <div class="step-header">
+                    <input type="text" class="step-title-input w-full bg-transparent font-semibold text-lg focus:outline-none" placeholder="步驟標題" value="${plan.step}">
+                    <button class="remove-step-btn" title="移除此步驟">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+                <textarea class="step-action-input w-full mt-2 bg-[var(--modal-bg)] border border-transparent focus:border-[var(--border-color)] rounded-md p-2 focus:outline-none" placeholder="步驟具體行動">${plan.action}</textarea>
+            </div>
+        `;
+        planEditorStepsContainer.appendChild(stepElement);
+
+        // 在每個步驟後添加 "插入新步驟" 按鈕
+        if (totalSteps < 10) {
+             const inserterElement = document.createElement('div');
+             inserterElement.className = 'step-inserter-container flex justify-center items-center my-1';
+             inserterElement.innerHTML = `
+                <div class="h-px flex-1 bg-[var(--border-color)] opacity-50"></div>
+                <button class="add-step-here-btn mx-4 p-1 rounded-full text-[var(--text-secondary)]" title="在此處插入新步驟" data-insert-after="${index}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </button>
+                <div class="h-px flex-1 bg-[var(--border-color)] opacity-50"></div>
+             `;
+             planEditorStepsContainer.appendChild(inserterElement);
+        }
+    });
+    updateRemoveButtonsState();
+}
+
 
                 function updateRemoveButtonsState() {
                     const removeButtons = planEditorStepsContainer.querySelectorAll('.remove-step-btn');
@@ -7947,23 +7987,28 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 }
 
                 function handleAddStep() {
-                    const stepCount = planEditorStepsContainer.querySelectorAll('.plan-editor-step').length;
-                    if (stepCount >= 10) {
-                        showNotification('最多只能新增 10 個步驟。', 'warning');
-                        return;
-                    }
-                    initialPlan.push({ step: `新步驟 ${stepCount + 1}`, action: '' });
-                    renderPlanSteps();
-                }
+    if (initialPlan.length >= 10) {
+        showNotification('最多只能新增 10 個步驟。', 'warning');
+        return;
+    }
+    // 保存現有值
+    const stepElements = planEditorStepsContainer.querySelectorAll('.plan-editor-step');
+    stepElements.forEach((el, i) => {
+        initialPlan[i].step = el.querySelector('.step-title-input').value.trim();
+        initialPlan[i].action = el.querySelector('.step-action-input').value.trim();
+    });
+    initialPlan.push({ step: '', action: '' });
+    renderPlanSteps();
+}
                 
                 function handleRemoveStep(buttonElement) {
-                    const stepElement = buttonElement.closest('.plan-editor-step');
-                    const index = Array.from(planEditorStepsContainer.children).indexOf(stepElement);
-                    if (index > -1) {
-                        initialPlan.splice(index, 1);
-                        renderPlanSteps();
-                    }
-                }
+    const stepElement = buttonElement.closest('.plan-editor-step');
+    const index = Array.from(planEditorStepsContainer.querySelectorAll('.plan-editor-step')).indexOf(stepElement);
+    if (index > -1 && initialPlan.length > 1) {
+        initialPlan.splice(index, 1);
+        renderPlanSteps();
+    }
+}
 
                 function cleanupAndClose() {
                     toggleModal(interactivePlanModal, false);
@@ -7975,26 +8020,26 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 }
                 
                 function onConfirm() {
-                    const finalPlan = [];
-                    const stepElements = planEditorStepsContainer.querySelectorAll('.plan-editor-step');
-                    let isValid = true;
-                    stepElements.forEach(el => {
-                        const title = el.querySelector('.step-title-input').value.trim();
-                        const action = el.querySelector('.step-action-input').value.trim();
-                        if (!title || !action) {
-                            isValid = false;
-                        }
-                        finalPlan.push({ step: title, action: action });
-                    });
-                    
-                    if (!isValid) {
-                        showNotification('所有步驟的標題和內容都不能為空！', 'error');
-                        return;
-                    }
-                    
-                    cleanupAndClose();
-                    resolve(finalPlan); // 返回最終確認的計畫
-                }
+    const finalPlan = [];
+    const stepElements = planEditorStepsContainer.querySelectorAll('.plan-editor-step');
+    let isValid = true;
+    stepElements.forEach(el => {
+        const title = el.querySelector('.step-title-input').value.trim();
+        const action = el.querySelector('.step-action-input').value.trim();
+        if (!title) { // 只需要標題不為空
+            isValid = false;
+        }
+        finalPlan.push({ step: title, action: action });
+    });
+    
+    if (!isValid) {
+        showNotification('所有步驟的標題都不能為空！', 'error');
+        return;
+    }
+    
+    cleanupAndClose();
+    resolve(finalPlan); 
+}
                 
                 function onCancel() {
                     cleanupAndClose();
@@ -8003,6 +8048,68 @@ ${JSON.stringify(potentialMemories, null, 2)}
                     }
                     resolve(null); // 返回 null 表示使用者取消
                 }
+                function handleMoveStep(buttonElement, direction) {
+    const stepElement = buttonElement.closest('.plan-editor-step');
+    const index = parseInt(stepElement.dataset.index);
+
+    // 先保存所有輸入框的當前值，避免重新渲染後丟失
+    const allStepElements = planEditorStepsContainer.querySelectorAll('.plan-editor-step');
+    allStepElements.forEach((el, i) => {
+        const currentPlan = initialPlan[i];
+        if (currentPlan) {
+            currentPlan.step = el.querySelector('.step-title-input').value;
+            currentPlan.action = el.querySelector('.step-action-input').value;
+        }
+    });
+
+    // 交換陣列中的元素位置
+    if (direction === 'up' && index > 0) {
+        [initialPlan[index - 1], initialPlan[index]] = [initialPlan[index], initialPlan[index - 1]];
+    } else if (direction === 'down' && index < initialPlan.length - 1) {
+        [initialPlan[index], initialPlan[index + 1]] = [initialPlan[index + 1], initialPlan[index]];
+    }
+    
+    renderPlanSteps(); // 重新渲染整個列表
+}
+
+function handleAddStepHere(buttonElement) {
+    if (initialPlan.length >= 10) {
+        showNotification('最多只能有 10 個步驟。', 'warning');
+        return;
+    }
+    const index = parseInt(buttonElement.dataset.insertAfter);
+
+    // 同樣，先保存所有值
+    const allStepElements = planEditorStepsContainer.querySelectorAll('.plan-editor-step');
+    allStepElements.forEach((el, i) => {
+        const currentPlan = initialPlan[i];
+        if (currentPlan) {
+            currentPlan.step = el.querySelector('.step-title-input').value;
+            currentPlan.action = el.querySelector('.step-action-input').value;
+        }
+    });
+    
+    // 在指定位置插入一個新的空步驟
+    initialPlan.splice(index + 1, 0, { step: '', action: '' });
+    renderPlanSteps(); // 重新渲染
+}
+
+function onStepContainerClick(e) {
+    const removeBtn = e.target.closest('.remove-step-btn');
+    const moveUpBtn = e.target.closest('.move-up-btn');
+    const moveDownBtn = e.target.closest('.move-down-btn');
+    const addHereBtn = e.target.closest('.add-step-here-btn');
+
+    if (removeBtn) {
+        handleRemoveStep(removeBtn);
+    } else if (moveUpBtn) {
+        handleMoveStep(moveUpBtn, 'up');
+    } else if (moveDownBtn) {
+        handleMoveStep(moveDownBtn, 'down');
+    } else if (addHereBtn) {
+        handleAddStepHere(addHereBtn);
+    }
+}
                 
                 function onStepContainerClick(e) {
                     if (e.target.closest('.remove-step-btn')) {
@@ -8074,7 +8181,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
             try {
                 // --- 階段一：生成初步研究計畫 ---
                 const plannerPrompt = `# 核心身份：首席任務拆解分析師
-你的任務是將使用者的「請求」（包含文字和可能的圖片）拆解成一個清晰、可執行的研究計畫。你的目標是制定步驟來**直接回答使用者的核心問題**。
+你的任務是將使用者的「請求」（包含文字和可能的圖片）拆解成一個研究計畫。${stepCountInstruction} 你的目標是制定步驟來**直接回答使用者的核心問題**。
 
 # 最高指導原則：聚焦於使用者的「直接問題」
 這是你不可違背的首要原則。你必須準確識別使用者請求中的**具體、客觀問題**（例如「這是什麼？」、「如何做？」、「在哪裡？」），並將其作為整個研究計畫的核心目標。
