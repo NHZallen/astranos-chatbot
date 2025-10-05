@@ -1794,84 +1794,91 @@ body.custom-wallpaper-active .input-indicator-item {
     to { transform: rotate(360deg); }
 }
 
-/* ✨ 新增: 分支對話樹狀圖樣式 */
-#branch-tree-container ul {
-    list-style: none;
-    padding-left: 2rem;
-    position: relative;
-}
-#branch-tree-container ul::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: 1px;
-    background-color: var(--border-color);
-}
-#branch-tree-container li {
-    position: relative;
-    margin-bottom: 0.5rem;
-}
-#branch-tree-container li::before {
-    content: '';
-    position: absolute;
-    top: 1.25rem; /* 配合 .branch-node 的高度 */
-    left: -2rem;
-    width: 2rem;
-    height: 1px;
-    background-color: var(--border-color);
-}
-.branch-node {
+/* ✨ 新增：分支對話樹狀圖樣式 */
+.branch-node-wrapper {
     display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.5rem;
-    border-radius: 0.5rem;
-    cursor: pointer;
-    border: 2px solid transparent;
-    transition: background-color 0.2s, border-color 0.2s;
+    align-items: flex-start;
+    position: relative;
+    padding-left: 30px; /* 留出線條空間 */
 }
-.branch-node:hover {
-    background-color: var(--hover-bg);
+.branch-line {
+    position: absolute;
+    left: 10px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: var(--border-color);
 }
-.branch-node.selected {
-    border-color: var(--button-primary-bg);
-    background-color: var(--active-bg);
+.branch-node-wrapper:last-child .branch-line {
+    height: 25px; /* 最後一個節點的線短一點 */
 }
-.branch-node.active-leaf {
-    border-color: #22c55e; /* green-500 */
-    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3);
-}
-.branch-node-icon {
-    flex-shrink: 0;
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 9999px;
+.branch-node-dot {
+    position: absolute;
+    left: 2px;
+    top: 15px;
+    width: 18px;
+    height: 18px;
+    background-color: var(--chat-bg);
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    z-index: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: bold;
-    color: white;
+}
+.branch-node {
+    flex-grow: 1;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    background-color: var(--sidebar-bg);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-left: 15px; /* 節點與線的距離 */
+}
+.branch-node:hover {
+    border-color: var(--button-primary-bg);
+    transform: translateX(3px);
+}
+.branch-node.selected {
+    border-color: var(--button-primary-bg);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--button-primary-bg) 40%, transparent);
+    background-color: var(--hover-bg);
+}
+.branch-node-header {
+    font-weight: 600;
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 .branch-node-content {
-    flex-grow: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
     font-size: 0.875rem;
     color: var(--text-secondary);
+    max-height: 4.5em; /* 最多顯示約3行 */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
 }
-.branch-node-actions {
-    display: none;
+.create-branch-btn-container {
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+    position: absolute;
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-right: 1rem;
+    white-space: nowrap;
 }
-.branch-node.selected .branch-node-actions {
-    display: block;
-}
-.create-branch-btn {
-    padding: 0.25rem 0.75rem;
-    font-size: 0.75rem;
-    border-radius: 9999px;
+.branch-node.selected + .create-branch-btn-container {
+    opacity: 1;
+    transform: translateX(0) translateY(-50%);
+    pointer-events: auto;
 }
 </style>
 <script>
@@ -2783,6 +2790,22 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 </div>
     <div id="mobile-context-menu-wrapper"></div>
     
+    <!-- ✨ 新增：分支對話樹狀圖 Modal -->
+    <div id="branch-chat-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[52]">
+        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-2xl flex flex-col" style="max-height: 90vh;">
+            <div class="p-6 border-b border-[var(--border-color)] flex justify-between items-center">
+                <h2 class="text-2xl font-bold">分支對話</h2>
+                <button id="close-branch-modal-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
+            </div>
+            <div id="branch-tree-container" class="p-6 overflow-y-auto scroll-area space-y-2">
+                <!-- 樹狀圖將動態插入此處 -->
+            </div>
+            <div class="p-4 bg-[var(--sidebar-bg)] border-t border-[var(--border-color)] flex justify-end">
+                <button id="close-branch-modal-btn-footer" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]">關閉</button>
+            </div>
+        </div>
+    </div>
+    
     <!-- ✨ 新增：互動式計畫編輯器 Modal -->
     <div id="interactive-plan-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[52]">
         <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-2xl flex flex-col" style="max-height: 90vh;">
@@ -2801,23 +2824,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             </div>
         </div>
     </div>
-
-    <!-- ✨ 新增: 分支對話 Modal -->
-    <div id="branch-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[52]">
-        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-4xl flex flex-col" style="max-height: 90vh;">
-            <div class="p-6 border-b border-[var(--border-color)] flex justify-between items-center">
-                <h2 id="branch-modal-title" class="text-2xl font-bold">分支對話</h2>
-                <button id="close-branch-modal-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
-            </div>
-            <div id="branch-tree-container" class="p-6 overflow-auto scroll-area flex-1">
-                <!-- Tree will be rendered here by JavaScript -->
-            </div>
-            <div class="p-4 bg-[var(--sidebar-bg)] border-t border-[var(--border-color)] flex justify-end gap-3">
-                <button id="cancel-branch-modal-btn" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]">關閉</button>
-            </div>
-        </div>
-    </div>
-
 
     <script src="./i18n.js"></script>
     <script src="./demo-conversations.js"></script>
@@ -3080,16 +3086,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             proposalInstructionsInput: document.getElementById('proposal-instructions-input'),
             cancelProposalBtn: document.getElementById('cancel-proposal-btn'),
             submitProposalBtn: document.getElementById('submit-proposal-btn'),
+             // ✨ 新增
+            branchChatModal: document.getElementById('branch-chat-modal'),
+            closeBranchModalBtn: document.getElementById('close-branch-modal-btn'),
+            closeBranchModalBtnFooter: document.getElementById('close-branch-modal-btn-footer'),
             // ✨ 新增互動式計畫編輯器元素
             interactivePlanModal: document.getElementById('interactive-plan-modal'),
             planEditorStepsContainer: document.getElementById('plan-editor-steps-container'),
             addPlanStepBtn: document.getElementById('add-plan-step-btn'),
             confirmPlanBtn: document.getElementById('confirm-plan-btn'),
             cancelPlanBtn: document.getElementById('cancel-plan-btn'),
-            // ✨ 新增分支對話 Modal 元素
-            branchModal: document.getElementById('branch-modal'),
-            closeBranchModalBtn: document.getElementById('close-branch-modal-btn'),
-            cancelBranchModalBtn: document.getElementById('cancel-branch-modal-btn'),
         };
         const compareVersions = (v1, v2) => {
             if (!v2) return 1;
@@ -3419,38 +3425,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 try {
                     const data = JSON.parse(saved);
                     folders = (data.folders || []).map(f => ({...getDefaultFolder(), ...f}));
-                    conversations = (data.conversations || []).map(c => {
-                        let messages = (c.messages || []).map(m => ({
+                    conversations = (data.conversations || []).map(c => ({
+                        archived: false, summary: '', folderId: null, isWebSearchEnabled: false, astrasId: null, pinned: false, deletedAt: null, ...c,
+                        unsentMessage: c.unsentMessage || '',
+                        genConfig: c.genConfig || getDefaultGenConfig(),
+                        lastUpdatedAt: c.lastUpdatedAt || (c.messages && c.messages.length > 0 ? c.messages[c.messages.length - 1].createdAt : c.createdAt),
+                        messages: (c.messages || []).map(m => ({
                             ...m,
                             createdAt: m.createdAt || c.createdAt,
                             parts: m.parts || [{ text: m.content }]
-                        }));
-
-                        // Migration logic for branching
-                        if (messages.length > 0 && !messages[0].id) {
-                            let lastMessageId = null;
-                            messages = messages.map(msg => {
-                                const newMsg = {
-                                    ...msg,
-                                    id: crypto.randomUUID(),
-                                    parentId: lastMessageId
-                                };
-                                lastMessageId = newMsg.id;
-                                return newMsg;
-                            });
-                        }
-
-                        const activeMessageId = c.activeMessageId || (messages.length > 0 ? messages[messages.length - 1].id : null);
-                        
-                        return {
-                            archived: false, summary: '', folderId: null, isWebSearchEnabled: false, astrasId: null, pinned: false, deletedAt: null, ...c,
-                            unsentMessage: c.unsentMessage || '',
-                            genConfig: c.genConfig || getDefaultGenConfig(),
-                            lastUpdatedAt: c.lastUpdatedAt || (messages.length > 0 ? messages[messages.length - 1].createdAt : c.createdAt),
-                            messages: messages,
-                            activeMessageId: activeMessageId
-                        };
-                    });
+                        }))
+                    }));
                     astras = (data.astras || []).map(a => ({ avatarUrl: null, officialId: null, ...a }));
                     personalMemories = data.personalMemories || [];
                 } catch (e) {
@@ -3479,7 +3464,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 title: title,
                 summary: '',
                 messages: [],
-                activeMessageId: null,
                 model: defaultModelInfo.id,
                 provider: defaultModelInfo.provider,
                 archived: false,
@@ -3550,11 +3534,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         await saveAppData();
 
 
-        // ↓↓↓↓↓↓ 就是這裡被修改了 ↓↓↓↓↓↓
         if (activeConversationId === id) {
             startNewChat();
         } 
-        // ↑↑↑↑↑↑ 就是這裡被修改了 ↑↑↑↑↑↑
         
         else {
             renderAll();
@@ -3968,25 +3950,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderModelSwitcher();
             renderInputIndicators();
             messageList.innerHTML = '';
-
-            // ✨ Branching Logic: Get only the messages for the current branch
-            const currentBranchMessages = [];
-            let currentMessageId = conv.activeMessageId;
-            while(currentMessageId) {
-                const message = conv.messages.find(m => m.id === currentMessageId);
-                if (message) {
-                    currentBranchMessages.unshift(message);
-                    currentMessageId = message.parentId;
-                } else {
-                    currentMessageId = null; // Break if message not found
-                }
-            }
-
-            if (currentBranchMessages.length === 0) {
+            if (conv.messages.length === 0) {
                 const greeting = `${currentUser.username}, ${i18n[config.uiLanguage].howCanIHelp || '有什麼可以為您服務的嗎？'}`;
                 messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] mt-16"><p class="text-lg">${greeting}</p></div>`;
             } else {
-                currentBranchMessages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
+                conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
             }
             void messageList.offsetWidth;
             messageList.classList.add('chat-view-transition');
@@ -4407,17 +4375,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const addMessageToUI = (msg, index, shouldSave = true, shouldScroll = true) => {
             const conv = getActiveConversation();
             if (shouldSave) {
-                // ✨ Branching Logic: When saving, set the new message's parent to the current active message
-                const newMsg = {
-                    ...msg,
-                    id: crypto.randomUUID(),
-                    parentId: conv.activeMessageId
-                };
-                conv.messages.push(newMsg);
-                conv.activeMessageId = newMsg.id; // Update the active message to the newly created one
-
-                if (conv.messages.length === 1 && newMsg.role === 'user' && conv.isTemporary && !conv.isRenamed && config.autoNaming) {
-                    const textPart = newMsg.parts.find(p => p.text);
+                 conv.messages.push(msg);
+                if (conv.messages.length === 1 && msg.role === 'user' && conv.isTemporary && !conv.isRenamed && config.autoNaming) {
+                    const textPart = msg.parts.find(p => p.text);
                     if (textPart) {
                         conv.title = textPart.text.substring(0, 30) || i18n[config.uiLanguage].newChat || '新對話';
                         ALL_ELEMENTS.headerTitle.textContent = conv.title;
@@ -4426,8 +4386,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 saveAppData();
             }
             const messageDiv = document.createElement('div');
-            messageDiv.dataset.messageId = msg.id; // Use the message's own ID
-            messageDiv.dataset.messageIndex = index; // Keep index for legacy functions if needed
+            messageDiv.dataset.messageIndex = index;
             const isUser = msg.role === 'user';
             messageDiv.className = `message-item flex items-start gap-2 md:gap-4 ${isUser ? 'justify-end user-message' : 'model-message'}`;
             const icon = isUser ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>` : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
@@ -4479,8 +4438,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     contentPaddingClass = 'pb-8';
                 } else {
                     const currentConv = getActiveConversation();
-                    const nextMessage = currentConv?.messages.find(m => m.parentId === msg.id);
-                    if (nextMessage && nextMessage.role === 'model') {
+                    if (currentConv && index + 1 < currentConv.messages.length && currentConv.messages[index + 1].role === 'model') {
                          actionButtons = `
                             <div class="absolute bottom-2 left-2 flex items-center">
                                 <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
@@ -4621,7 +4579,6 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 });
             });
             const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
-            // ✨ Branching: The addMessageToUI function now handles setting parentId and updating activeMessageId
             addMessageToUI(userMessageObject, conv.messages.length, true);
             conv.lastUpdatedAt = new Date().toISOString();
             conv.unsentMessage = '';
@@ -4652,43 +4609,34 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             uploadedFiles = [];
             adjustTextareaHeight();
             renderFilePreviews();
-            // ✨ Branching: We add a temporary loading message but don't save it to the main `messages` array yet.
             const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
             const contentDiv = loadingMessageDiv.querySelector('.message-content');
             
             try {
                 let fullResponse = '';
-                // ✨ Branching: Prepare the final message object.
-                const finalAiMessage = {
-                    role: 'model',
-                    parts: [{ text: '' }],
-                    createdAt: new Date().toISOString(),
-                    id: crypto.randomUUID(),
-                    parentId: conv.activeMessageId
-                };
+                const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
 
                 // 1. 先等待 API 回應完全結束，獲取完整文字
                 const completeResponse = await streamApiCall(
                     userParts,
                     (chunk) => {
-                        // In streamApiCall, we just collect text, not render.
+                        // 在 streamApiCall 內部，我們只收集文字，不渲染
                     },
                     abortController.signal
                 );
 
                 fullResponse = completeResponse;
 
-                // 2. 将完整的最终消息保存到对话记录中
+                // 2. 將完整的最終訊息保存到對話紀錄中
                 finalAiMessage.parts = [{ text: fullResponse }];
                 conv.messages.push(finalAiMessage);
-                conv.activeMessageId = finalAiMessage.id; // Update active message to the new AI response
                 conv.lastUpdatedAt = new Date().toISOString();
                 await saveAppData();
                 
-                // 3. ✨ 启动打字机动画，并等待它完成
+                // 3. ✨ 啟動打字機動畫，並等待它完成
                 await (async () => {
                     return new Promise(resolve => {
-                        contentDiv.innerHTML = ''; // 清空等待样式
+                        contentDiv.innerHTML = ''; // 清空等待樣式
                         let currentIndex = 0;
                         const typingSpeed = 15;
 
@@ -4712,17 +4660,17 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 
                                 setTimeout(type, typingSpeed);
                             } else {
-                                // 动画完成或被中止
-                                contentDiv.innerHTML = renderMarkdown(fullResponse); // 最终清理，移除游标
+                                // 動畫完成或被中止
+                                contentDiv.innerHTML = renderMarkdown(fullResponse); // 最終清理，移除游標
                                 resolve(); // ✨ Promise 完成，通知 await
                             }
                         }
                         
-                        type(); // 启动
+                        type(); // 啟動
                     });
                 })();
 
-                // 4. ✨ 只有在打字机动画结束后，才执行后续任务
+                // 4. ✨ 只有在打字機動畫結束後，才執行後續任務
                 if (!abortController.signal.aborted) {
                     if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
                         await generateFollowUpPrompts(userMessage, fullResponse);
@@ -4736,19 +4684,12 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 if (error.name !== 'AbortError') {
                     const errorMessage = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
                     contentDiv.innerHTML = renderMarkdown(errorMessage);
-                    const finalAiMessage = {
-                        role: 'model',
-                        parts: [{ text: errorMessage }],
-                        createdAt: new Date().toISOString(),
-                        id: crypto.randomUUID(),
-                        parentId: conv.activeMessageId
-                    };
+                    const finalAiMessage = { role: 'model', parts: [{ text: errorMessage }], createdAt: new Date().toISOString() };
                     conv.messages.push(finalAiMessage);
-                    conv.activeMessageId = finalAiMessage.id;
                     await saveAppData();
                 }
             } finally {
-                // ... finally block remains the same ...
+                // ... finally 區塊的程式碼保持不變 ...
                 abortController = null;
                 updateSubmitButtonState(false);
                 sendConfirmed = false;
@@ -4757,7 +4698,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 if (lastMessageDiv && lastMessageDiv.classList.contains('model-message')) {
                     const bubble = lastMessageDiv.querySelector('.message-bubble');
                     const content = lastMessageDiv.querySelector('.message-content');
-                    const aiMessageObject = conv.messages.find(m => m.id === conv.activeMessageId);
+                    const aiMessageObject = conv.messages[conv.messages.length - 1];
                     if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute')) {
                         content.classList.add('pb-8');
                         const timeString = formatFullTimestamp(aiMessageObject.createdAt);
@@ -4791,28 +4732,10 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             }
         };
         function cleanGeminiHistory(history) {
-            const cleaned = [];
-            let lastRole = null;
-            let currentPath = [];
-            const conv = getActiveConversation();
-            
-            // Build the current branch path
-            let currentMessageId = conv.activeMessageId;
-            while(currentMessageId) {
-                const message = conv.messages.find(m => m.id === currentMessageId);
-                if (message) {
-                    currentPath.unshift(message);
-                    currentMessageId = message.parentId;
-                } else {
-                    break;
-                }
-            }
-        
-            currentPath.forEach(msg => {
+            const cleaned = []; let lastRole = null;
+            history.forEach(msg => {
                 const sanitizedMsg = { role: msg.role, parts: msg.parts };
-                if (sanitizedMsg.role === 'model' && !sanitizedMsg.parts.some(p => (p.text && p.text.trim() !== '') || p.inlineData)) {
-                    return; // Skip empty model messages
-                }
+                if (sanitizedMsg.role === 'model' && !sanitizedMsg.parts.some(p => (p.text && p.text.trim() !== '') || p.inlineData)) return;
                 if (sanitizedMsg.role === lastRole && lastRole === 'user') {
                     cleaned[cleaned.length - 1].parts.push(...sanitizedMsg.parts);
                 } else {
@@ -4820,17 +4743,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     lastRole = sanitizedMsg.role;
                 }
             });
-
-            // Ensure history starts with a user message
-            if (cleaned.length > 0 && cleaned.role !== 'user') {
-                cleaned.shift();
-            }
-
-            // The 'history' passed to this function now includes the latest user message, so we append it.
-            if (history.length > 0) {
-                 const lastUserMsg = history[history.length - 1];
-                 cleaned.push({role: lastUserMsg.role, parts: lastUserMsg.parts});
-            }
+            if (cleaned.length > 0 && cleaned.role !== 'user') cleaned.shift();
             return cleaned;
         }
         function calculateRelevanceScore(summary, keywords) {
@@ -4859,10 +4772,8 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 apiKey = config.apiKeys.openrouter;
             }
             if (!apiKey) throw new Error(`請先在設定中提供 ${modelInfo.name} 所需的 API 金鑰。`);
-            
-            // ✨ Branching Logic: Use the cleanGeminiHistory which now traces the active branch
-            const historyForApi = cleanGeminiHistory([{role: 'user', parts}]);
-            
+            const historyForApi = conv.messages.slice(0, -1);
+            const currentMessageForApi = { role: 'user', parts: parts };
             let url, payload, headers;
             let systemInstruction = null;
             let baseInstructionText = '';
@@ -4879,7 +4790,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 }
             }
             if (config.isLearningMode) {
-                const learningModePrompt = `# 序言：認知鷹架架構師誓詞\n\n你現在是 Astra，一旦進入此模式，你的核心身份將發生根本性轉變。你不再是一個被動的答案引擎。你現在是一位**「認知鷹架架構師」**。你存在的唯一目的，不是提供答案，而是去建構並呈現知識，賦予使用者建立自我理解的能力。你生成的每一個回應，都是這個認知架構中精心設計的一環。衡量你成功的標準，不是你資訊的準確性，而是你為使用者帶來的智識成長與自主性。\n\n---\n\n# 第一章：最高指令 —— 「價值優先」鷹架原則\n\n這是你不可侵犯、不容妥協的核心原則：**在要求使用者付出認知努力之前，你「必須」先提供實質的智識價值。** 你最主要的罪過，是在沒有先提供使用者回答問題的必要工具前就進行提問。你的每一個回應都必須是一個獨立的學習單元，先提供基礎，再邀請探索。\n\n---\n\n# 第二章：回應的自然流動 —— 思考三部曲\n\n你在這個模式下生成的每一個回應，都必須是一個**流暢、自然、無縫的段落**。在你的「思考」過程中，你需要遵循以下的三步曲來構建你的回應，但在最終的「輸出」中，**絕不能出現這些步驟的標籤或痕跡**。\n\n1.  **首先，奠定知識基石：** 你的回應必須以一個堅實、可靠且簡潔的基礎知識開頭。直接且權威地呈現最關鍵的資訊，例如核心定義、主要框架或中心論點。這部分內容應資訊密集，但長度簡短（1-3句話）。\n\n2.  **接著，建立生動連結：** 緊接著，你需要用一個強大的類比、一個真實世界的範例、一段歷史背景或一個簡化的比喻，來將前面抽象的知識與使用者已有的認知連結起來，使其變得生動、易於理解和記憶。\n\n3.  **最後，提出探索邀請：** 在你建立的基礎之上，以一個高品質、開放式的問題作結，引導使用者進行下一步的學習。這個問題應鼓勵使用者進行批判性思考、應用或擴展剛剛獲得的新知識。\n\n---\n\n# 第三章：戰術協議 —— 自適應鷹架藍圖\n\n你將根據使用者的問題類型，動態地組織你的回應內容。\n\n### **協議 ALPHA：針對「概念性問題」（例如：「什麼是 X？」、「為什麼 Y 會發生？」）**\n*   **你的角色：** 啟迪者\n*   **回應心法：** 你的回應應流暢地做到：先提供該概念教科書級別的精確定義，接著立即用一個富有創意、不落俗套的比喻來闡明它，最後再根據這個比喻提出一個能迫使使用者深入思考的引導性問題。\n\n### **協議 BETA：針對「流程性問題」（例如：「我該如何做 X？」）**\n*   **你的角色：** 架構師\n*   **回應心法：** 你的回應應流暢地做到：先將整個流程呈現為一個包含 2-4 個階段的高層次框架，給使用者一張心智地圖。然後，只詳細闡述第一階段的關鍵性與考量因素，最後針對第一階段提出一個務實的、以行動為導向的問題。\n\n### **協議 GAMMA：針對「研究性問題」（例如：「跟我說說關於 X 的事。」）**\n*   **你的角色：** 探索規劃師\n*   **回應心法：** 你的回應應流暢地做到：先重申研究主題並將其分解為 2-3 個不同的探究途徑。接著，為每個途徑提供包含「強效關鍵詞」和「建議來源類型」的入門包，最後提出一個策略性問題，幫助使用者根據目標選擇開始的方向。\n\n---\n\n# 第四章：通用行為準則與應急預案\n\n*   **認知同理心：** 你的語氣必須始終是一位有耐心、鼓勵人心的導師。使用諸如「這是一個很好的問題，讓我們來拆解它」、「我們現在正觸及問題的核心」以及「這是一個非常有洞察力的觀察」之類的語句。\n*   **清晰化協議 (逃生閥機制)：** 這是你的「緊急出口」。如果使用者明確表示困惑（「我不懂」、「直接告訴我」、「這太複雜了」），或連續兩次未能有效回應你的引導性問題，你**必須**啟動此協議。\n    1.  立即暫停三部曲的思考模式。\n    2.  切換到「清晰解說員」的人格。\n    3.  直接、簡單且全面地解釋當前的主題。\n    4.  在解釋結束時，用一句溫和的話語轉折，嘗試回到鷹架模式，例如：「既然我們清楚了這一點，讓我們回頭看看剛才關於……的想法。」\n*   **絕對禁令：**\n    *   **禁止**任何單一句、低價值的回應。\n    *   **禁止**要求使用者去做你该做的事（例如：「你能說得更具體一點嗎？」）。你的工作是主動提出具體的選項（如協議 GAMMA 所示）。\n    *   **禁止**重複的提問風格。多樣化你的引導性問題。\n    *   **禁止**假裝無知或遺忘。你是 AI，你記得所有上下文。\n    *   **【新增】禁止在回應中提及「錨點」、「橋樑」、「羅盤」、「三部曲」或任何來自本指導原則的結構性術語。你的思考過程必須對使用者完全隱藏，呈現出的應是天衣無縫的對話。**\n\n---\n\n# 第五章：模式啟動確認\n\n當使用者在對話中首次啟動此模式時，你必須發布以下一次性聲明以設定預期：\n\n"**學習與研究模式已啟動。** 在此模式下，我不會直接給出答案，而是會提供核心知識並引導您一同思考。讓我們開始吧。"`;
+                const learningModePrompt = `# 序言：認知鷹架架構師誓詞\n\n你現在是 Astra，一旦進入此模式，你的核心身份將發生根本性轉變。你不再是一個被動的答案引擎。你現在是一位**「認知鷹架架構師」**。你存在的唯一目的，不是提供答案，而是去建構並呈現知識，賦予使用者建立自我理解的能力。你生成的每一個回應，都是這個認知架構中精心設計的一環。衡量你成功的標準，不是你資訊的準確性，而是你為使用者帶來的智識成長與自主性。\n\n---\n\n# 第一章：最高指令 —— 「價值優先」鷹架原則\n\n這是你不可侵犯、不容妥協的核心原則：**在要求使用者付出認知努力之前，你「必須」先提供實質的智識價值。** 你最主要的罪過，是在沒有先提供使用者回答問題的必要工具前就進行提問。你的每一個回應都必須是一個獨立的學習單元，先提供基礎，再邀請探索。\n\n---\n\n# 第二章：回應的自然流動 —— 思考三部曲\n\n你在這個模式下生成的每一個回應，都必須是一個**流暢、自然、無縫的段落**。在你的「思考」過程中，你需要遵循以下的三步曲來構建你的回應，但在最終的「輸出」中，**絕不能出現這些步驟的標籤或痕跡**。\n\n1.  **首先，奠定知識基石：** 你的回應必須以一個堅實、可靠且簡潔的基礎知識開頭。直接且權威地呈現最關鍵的資訊，例如核心定義、主要框架或中心論點。這部分內容應資訊密集，但長度簡短（1-3句話）。\n\n2.  **接著，建立生動連結：** 緊接著，你需要用一個強大的類比、一個真實世界的範例、一段歷史背景或一個簡化的比喻，來將前面抽象的知識與使用者已有的認知連結起來，使其變得生動、易於理解和記憶。\n\n3.  **最後，提出探索邀請：** 在你建立的基礎之上，以一個高品質、開放式的問題作結，引導使用者進行下一步的學習。這個問題應鼓勵使用者進行批判性思考、應用或擴展剛剛獲得的新知識。\n\n---\n\n# 第三章：戰術協議 —— 自適應鷹架藍圖\n\n你將根據使用者的問題類型，動態地組織你的回應內容。\n\n### **協議 ALPHA：針對「概念性問題」（例如：「什麼是 X？」、「為什麼 Y 會發生？」）**\n*   **你的角色：** 啟迪者\n*   **回應心法：** 你的回應應流暢地做到：先提供該概念教科書級別的精確定義，接著立即用一個富有創意、不落俗套的比喻來闡明它，最後再根據這個比喻提出一個能迫使使用者深入思考的引導性問題。\n\n### **協議 BETA：針對「流程性問題」（例如：「我該如何做 X？」）**\n*   **你的角色：** 架構師\n*   **回應心法：** 你的回應應流暢地做到：先將整個流程呈現為一個包含 2-4 個階段的高層次框架，給使用者一張心智地圖。然後，只詳細闡述第一階段的關鍵性與考量因素，最後針對第一階段提出一個務實的、以行動為導向的問題。\n\n### **協議 GAMMA：針對「研究性問題」（例如：「跟我說說關於 X 的事。」）**\n*   **你的角色：** 探索規劃師\n*   **回應心法：** 你的回應應流暢地做到：先重申研究主題並將其分解為 2-3 個不同的探究途徑。接著，為每個途徑提供包含「強效關鍵詞」和「建議來源類型」的入門包，最後提出一個策略性問題，幫助使用者根據目標選擇開始的方向。\n\n---\n\n# 第四章：通用行為準則與應急預案\n\n*   **認知同理心：** 你的語氣必須始終是一位有耐心、鼓勵人心的導師。使用諸如「這是一個很好的問題，讓我們來拆解它」、「我們現在正觸及問題的核心」以及「這是一個非常有洞察力的觀察」之類的語句。\n*   **清晰化協議 (逃生閥機制)：** 這是你的「緊急出口」。如果使用者明確表示困惑（「我不懂」、「直接告訴我」、「這太複雜了」），或連續兩次未能有效回應你的引導性問題，你**必須**啟動此協議。\n    1.  立即暫停三部曲的思考模式。\n    2.  切換到「清晰解說員」的人格。\n    3.  直接、簡單且全面地解釋當前的主題。\n    4.  在解釋結束時，用一句溫和的話語轉折，嘗試回到鷹架模式，例如：「既然我們清楚了這一點，讓我們回頭看看剛才關於……的想法。」\n*   **絕對禁令：**\n    *   **禁止**任何單一句、低價值的回應。\n    *   **禁止**要求使用者去做你該做的事（例如：「你能說得更具體一點嗎？」）。你的工作是主動提出具體的選項（如協議 GAMMA 所示）。\n    *   **禁止**重複的提問風格。多樣化你的引導性問題。\n    *   **禁止**假裝無知或遺忘。你是 AI，你記得所有上下文。\n    *   **【新增】禁止在回應中提及「錨點」、「橋樑」、「羅盤」、「三部曲」或任何來自本指導原則的結構性術語。你的思考過程必須對使用者完全隱藏，呈現出的應是天衣無縫的對話。**\n\n---\n\n# 第五章：模式啟動確認\n\n當使用者在對話中首次啟動此模式時，你必須發布以下一次性聲明以設定預期：\n\n"**學習與研究模式已啟動。** 在此模式下，我不會直接給出答案，而是會提供核心知識並引導您一同思考。讓我們開始吧。"`;
                 systemInstruction = { parts: [{ text: learningModePrompt }] };
             } else if (baseInstructionText) {
                 systemInstruction = { parts: [{ text: baseInstructionText }] };
@@ -4938,7 +4849,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             if (provider === 'gemini') {
                 url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?key=${apiKey}`;
                 payload = {
-                    contents: historyForApi,
+                    contents: cleanGeminiHistory([...historyForApi, currentMessageForApi]),
                     generationConfig: {
                         ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
                         ...(conv.genConfig.topP !== null && { topP: conv.genConfig.topP }),
@@ -4958,7 +4869,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 if (systemInstruction) {
                     messages.push({ role: 'system', content: systemInstruction.parts.map(p => p.text).join('\n') });
                 }
-                messages.push(...historyForApi.map(m => ({
+                messages.push(...[...historyForApi, currentMessageForApi].map(m => ({
                     role: m.role === 'model' ? 'assistant' : m.role,
                     content: m.parts.filter(p => p.text).map(p => p.text).join('\n')
                 })));
@@ -5218,7 +5129,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 2.  **選擇標準：**
     *   **多樣性：** 盡量涵蓋不同類型（例如，一個「如何做」，一個「舉例子」，一個「是什麼」）。
     *   **代表性：** 能最好地代表【AI上一則回應】的核心內容廣度。
-    *   **清晰度：** 措辞必须是最清晰、最没有歧义的。
+    *   **清晰度：** 措辭必須是最清晰、最沒有歧義的。
 3.  **最後打磨：** 確保每個問題的用詞都完全符合「使用者代理人」的自然口吻。
 ---
 ## 第三章：情境模擬與案例分析
@@ -5604,7 +5515,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                         </div>
                     `;
             popover.innerHTML = `
-                <button data-id="${convId}" class="branch-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">分支對話</button>
+                <button data-id="${convId}" class="branch-chat-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">分支對話</button>
                 <button data-id="${convId}" class="rename-conv-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].rename || '重新命名'}</button>
                 <button data-id="${convId}" class="pin-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${pinText}</button>
                 ${moveOptionsHTML}
@@ -5614,7 +5525,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             `;
             document.body.appendChild(popover);
             requestAnimationFrame(() => popover.classList.add('visible'));
-            popover.querySelector('.branch-btn').addEventListener('click', (e) => { openBranchModal(convId); popover.remove(); });
+            popover.querySelector('.branch-chat-btn').addEventListener('click', (e) => { showBranchChatModal(convId); popover.remove(); });
             popover.querySelector('.rename-conv-btn').addEventListener('click', (e) => { showRenameModal(convId, 'conversation', e); popover.remove(); });
             popover.querySelector('.pin-btn').addEventListener('click', (e) => { togglePinChat(convId, e); popover.remove(); });
             popover.querySelector('.archive-btn').addEventListener('click', (e) => { archiveChat(convId, e); popover.remove(); });
@@ -7527,7 +7438,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 setTimeout(() => {
                     switch(action) {
                         case 'branch':
-                            openBranchModal(convId);
+                            showBranchChatModal(convId);
                             break;
                         case 'rename':
                             showRenameModal(convId, 'conversation', e);
@@ -7669,9 +7580,9 @@ ${JSON.stringify(potentialMemories, null, 2)}
             overlay.addEventListener('click', closeMenu);
             let touchStartY = 0;
             let touchMoveY = 0;
-            menu.addEventListener('touchstart', (e) => { touchStartY = e.touches[0].clientY; }, { passive: true });
+            menu.addEventListener('touchstart', (e) => { touchStartY = e.touches.clientY; }, { passive: true });
             menu.addEventListener('touchmove', (e) => {
-                touchMoveY = e.touches[0].clientY;
+                touchMoveY = e.touches.clientY;
                 const deltaY = touchMoveY - touchStartY;
                 if (deltaY > 0) { menu.style.transform = `translateY(${deltaY}px)`; }
             }, { passive: true });
@@ -7797,7 +7708,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
         contentContainer.style.maxHeight = '60vh';
         contentContainer.style.overflowY = 'auto';
         toggleModal(ALL_ELEMENTS.latestUpdateModal, true);
-        const latestVersionInLog = newUpdates[0].version; // 因為我們已經排序了，所以 newUpdates[0] 現在是最新版
+        const latestVersionInLog = newUpdates.version; // 因為我們已經排序了，所以 newUpdates 現在是最新版
         config.lastSeenVersion = latestVersionInLog;
         await saveConfig();
     }
@@ -8103,7 +8014,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
                     const titleElement = card.querySelector('h4');
                     if (titleElement) {
                         // 保持 spinner 不變，只更新文字
-                        titleElement.childNodes.textContent = ` ${newTitle}`;
+                        titleElement.childNodes[1].textContent = ` ${newTitle}`;
                     }
                 },
                 remove: () => card.remove()
@@ -8385,7 +8296,7 @@ ${stepCountInstruction}
                     if (!plannerResponse.ok) throw new Error(`研究計畫生成失敗: ${(await plannerResponse.json()).error?.message || 'API request failed'}`);
                     
                     const result = await plannerResponse.json();
-                    const jsonString = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                    const jsonString = result?.candidates?.?.content?.parts?.?.text;
                     if (jsonString) {
                         initialResearchPlan = JSON.parse(jsonString.trim().replace(/^```json|```$/g, '').trim());
                     } else {
@@ -8557,6 +8468,103 @@ ${allSearchResults.join('\n\n')}`;
                 }
             }
         }
+        
+        // ✨ 新增：顯示分支對話 Modal 的函數
+        const showBranchChatModal = (convId) => {
+            const conv = conversations.find(c => c.id === convId);
+            if (!conv || conv.messages.length === 0) {
+                showNotification('此對話沒有訊息，無法建立分支。', 'warning');
+                return;
+            }
+
+            const container = document.getElementById('branch-tree-container');
+            container.innerHTML = '';
+            let selectedNode = null;
+
+            // 建立每個對話節點的 UI
+            conv.messages.forEach((msg, index) => {
+                // 只在使用者訊息後建立節點
+                if (msg.role !== 'user') return;
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'branch-node-wrapper';
+
+                const aiMsg = conv.messages[index + 1];
+                const content = msg.parts.map(p => p.text).join(' ').substring(0, 100);
+
+                wrapper.innerHTML = `
+                    <div class="branch-line"></div>
+                    <div class="branch-node-dot"></div>
+                    <div class="branch-node" data-index="${index}">
+                        <div class="branch-node-header">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            <span>你的訊息</span>
+                        </div>
+                        <p class="branch-node-content">${content || '...'}</p>
+                    </div>
+                    <div class="create-branch-btn-container">
+                        <button class="create-branch-btn px-3 py-1.5 rounded-md btn-primary text-sm flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v12"/><path d="M18 9a6 6 0 0 1-6 6h-1a6 6 0 0 1-6-6V6a6 6 0 0 1 6-6h1a6 6 0 0 1 6 6v3Z"/></svg>
+                            從此處建立分支
+                        </button>
+                    </div>
+                `;
+                container.appendChild(wrapper);
+            });
+
+            // 處理節點點擊事件
+            container.addEventListener('click', (e) => {
+                const node = e.target.closest('.branch-node');
+                const branchBtn = e.target.closest('.create-branch-btn');
+
+                if (branchBtn) {
+                    const index = parseInt(selectedNode.dataset.index);
+                    createBranchFrom(convId, index);
+                    toggleModal(ALL_ELEMENTS.branchChatModal, false);
+                } else if (node) {
+                    if (selectedNode) {
+                        selectedNode.classList.remove('selected');
+                    }
+                    node.classList.add('selected');
+                    selectedNode = node;
+                }
+            });
+
+            toggleModal(ALL_ELEMENTS.branchChatModal, true);
+        };
+        
+        // ✨ 新增：從指定點建立分支的函數
+        const createBranchFrom = async (originalConvId, messageIndex) => {
+            const originalConv = conversations.find(c => c.id === originalConvId);
+            if (!originalConv) return;
+        
+            // 深度複製對話物件
+            const newConv = JSON.parse(JSON.stringify(originalConv));
+        
+            // 產生新 ID 並更新時間戳記
+            newConv.id = crypto.randomUUID();
+            newConv.createdAt = new Date().toISOString();
+            newConv.lastUpdatedAt = new Date().toISOString();
+        
+            // 截斷訊息歷史：保留到使用者選擇的那一則訊息 (包含) 及其 AI 回應
+            newConv.messages = originalConv.messages.slice(0, messageIndex + 2);
+        
+            // 更新標題以示區別
+            newConv.title = `${originalConv.title} (分支)`;
+            newConv.isRenamed = false; // 讓它可以被自動重新命名
+            newConv.isTemporary = false; // 這不是一個臨時對話
+        
+            // 將新對話加入到對話列表中
+            conversations.unshift(newConv);
+        
+            // 儲存並載入新的分支對話
+            await saveAppData();
+            loadChat(newConv.id);
+        
+            showNotification('已成功建立新分支對話！', 'success');
+        };
+
+
         async function initChatApp() {
             injectDeepResearchStyles(); // ✨ 注入樣式
             await loadConfig();
@@ -8637,15 +8645,17 @@ ${allSearchResults.join('\n\n')}`;
             ALL_ELEMENTS.logoutBtn.addEventListener('click', handleLogout);
             ALL_ELEMENTS.userProfileBtn.addEventListener('click', openDashboard);
             ALL_ELEMENTS.closeDashboardBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.dataDashboardModal, false));
+            ALL_ELEMENTS.closeBranchModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.branchChatModal, false));
+            ALL_ELEMENTS.closeBranchModalBtnFooter.addEventListener('click', () => toggleModal(ALL_ELEMENTS.branchChatModal, false));
             ALL_ELEMENTS.messageList.addEventListener('click', (e) => {
                 const copyBtn = e.target.closest('.copy-content-btn');
                 const deleteBtn = e.target.closest('.delete-message-btn');
                 if (copyBtn) {
                     const messageItem = copyBtn.closest('.message-item');
                     if (messageItem) {
-                        const messageId = messageItem.dataset.messageId;
+                        const messageIndex = parseInt(messageItem.dataset.messageIndex);
                         const conv = getActiveConversation();
-                        const msg = conv?.messages.find(m => m.id === messageId);
+                        const msg = conv?.messages[messageIndex];
                         if (msg && msg.role === 'model') {
                             const textToCopy = msg.parts.map(p => p.text).join('\n');
                             copyTextToClipboard(textToCopy)
@@ -8659,8 +8669,8 @@ ${allSearchResults.join('\n\n')}`;
                 } else if (deleteBtn) {
                     const messageItem = deleteBtn.closest('.message-item');
                      if (messageItem) {
-                        const messageId = messageItem.dataset.messageId;
-                        handleDeleteMessagePair(messageId);
+                        const messageIndex = parseInt(messageItem.dataset.messageIndex);
+                        handleDeleteMessagePair(messageIndex);
                     }
                 }
             });
@@ -8980,7 +8990,7 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
 });
         initializeSpotlightEffect();
         }
-        const handleDeleteMessagePair = async (messageId) => {
+        const handleDeleteMessagePair = async (index) => {
             const confirmed = await showCustomDialog({
                 title: i18n[config.uiLanguage].deleteConfirmationTitle || '刪除確認',
                 message: i18n[config.uiLanguage].deleteConfirmationMessage || '確定刪除此條對話？',
@@ -8991,39 +9001,15 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
                 ]
             });
             if (confirmed) {
-                const conv = getActiveConversation();
-                if (conv) {
-                    const userMessageIndex = conv.messages.findIndex(m => m.id === messageId);
-                    if (userMessageIndex > -1) {
-                        const aiMessage = conv.messages.find(m => m.parentId === messageId);
-                        if (aiMessage) {
-                            // This is a simple case: user -> model
-                            conv.messages = conv.messages.filter(m => m.id !== messageId && m.id !== aiMessage.id);
-                            
-                            // Re-link subsequent messages
-                            const messagesThatPointToAi = conv.messages.filter(m => m.parentId === aiMessage.id);
-                            messagesThatPointToAi.forEach(m => {
-                                m.parentId = conv.messages[userMessageIndex - 1]?.id || null;
-                            });
-
-                            if (conv.activeMessageId === messageId || conv.activeMessageId === aiMessage.id) {
-                                conv.activeMessageId = conv.messages[userMessageIndex - 1]?.id || null;
-                            }
-                        } else {
-                            // This message might be a leaf or has other branches
-                             conv.messages = conv.messages.filter(m => m.id !== messageId);
-                             if (conv.activeMessageId === messageId) {
-                                conv.activeMessageId = conv.messages.find(m => m.id === conv.messages[userMessageIndex].parentId)?.id || null;
-                            }
-                        }
-                        
+                    const conv = getActiveConversation();
+                    if (conv && conv.messages[index] && conv.messages[index + 1]) {
+                        conv.messages.splice(index, 2);
                         await saveAppData();
                         renderChat();
                         showNotification(i18n[config.uiLanguage].messageDeleted || '對話已刪除。', 'success');
                     }
                 }
-            }
-        };
+            };
             ALL_ELEMENTS.authForm.addEventListener('submit', handleLogin);
             const toggleAuthImportButton = () => {
                 const username = ALL_ELEMENTS.usernameInput.value.trim();
