@@ -4890,7 +4890,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 
                             try {
                                 const parsed = JSON.parse(jsonStr);
-                                const textChunk = parsed?.candidates?.?.content?.parts?.?.text;
+                                const textChunk = parsed && parsed.candidates && parsed.candidates[0] && parsed.candidates[0].content && parsed.candidates[0].content.parts && parsed.candidates[0].content.parts[0] && parsed.candidates[0].content.parts[0].text;
 
                                 if (textChunk) {
                                     fullText += textChunk;
@@ -4950,7 +4950,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     throw new Error(errorData.error?.message || 'API request failed');
                 }
                 const result = await response.json();
-                const jsonString = result?.candidates?.?.content?.parts?.?.text;
+                const jsonString = result && result.candidates && result.candidates[0] && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts[0] && result.candidates[0].content.parts[0].text;
                 if (jsonString) {
                     let cleanedJsonString = jsonString.trim();
                     if (cleanedJsonString.startsWith("```json")) {
@@ -4996,7 +4996,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 return false;
             }
             const result = await response.json();
-            const text = result?.candidates?.?.content?.parts?.?.text?.trim().toLowerCase();
+            const text = result && result.candidates && result.candidates[0] && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts[0] && result.candidates[0].content.parts[0].text ? result.candidates[0].content.parts[0].text.trim().toLowerCase() : null;
             return text === 'yes';
         }
         const generateTitleAndSummary = async (conv) => {
@@ -5301,10 +5301,13 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 config.deepResearchQueryCount = parseInt(queryCountSlider.value);
             }
             const selectedThemeMode = document.querySelector('input[name="color-theme"]:checked').value;
-            const selectedCustomColor = ALL_ELEMENTS.customColorSwatches.querySelector('.selected')?.dataset.color || config.uiTheme.customColor;
-            const selectedStyle = document.querySelector('input[name="color-style"]:checked')?.value || 'single';
-            const selectedGradientSwatch = ALL_ELEMENTS.gradientSwatches.querySelector('.selected-gradient');
-            const selectedGradient = selectedGradientSwatch ? selectedGradientSwatch.dataset.gradient : (config.uiTheme.adaptivePalette?.length > 1 ? `linear-gradient(to right, ${config.uiTheme.adaptivePalette[0]}, ${config.uiTheme.adaptivePalette[1]})` : '');
+            const selectedCustomColorSwatch = ALL_ELEMENTS.customColorSwatches.querySelector('.selected');
+const selectedCustomColor = (selectedCustomColorSwatch && selectedCustomColorSwatch.dataset.color) || config.uiTheme.customColor;
+
+const selectedStyleRadio = document.querySelector('input[name="color-style"]:checked');
+const selectedStyle = (selectedStyleRadio && selectedStyleRadio.value) || 'single';
+
+const selectedGradient = selectedGradientSwatch ? selectedGradientSwatch.dataset.gradient : ((config.uiTheme.adaptivePalette && config.uiTheme.adaptivePalette.length > 1) ? `linear-gradient(to right, ${config.uiTheme.adaptivePalette[0]}, ${config.uiTheme.adaptivePalette[1]})` : '');
             config.uiTheme.mode = selectedThemeMode;
             config.uiTheme.customColor = selectedCustomColor;
             config.uiTheme.style = selectedStyle;
@@ -5695,8 +5698,10 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
         const handleSaveFolderSettings = async () => {
             const folder = folders.find(f => f.id === folderToCustomize);
             if (!folder) return;
-            const selectedColor = ALL_ELEMENTS.colorSwatchesContainer.querySelector('.selected')?.dataset.color;
-            const selectedIcon = ALL_ELEMENTS.iconOptionsContainer.querySelector('.selected')?.dataset.icon;
+            const selectedColorSwatch = ALL_ELEMENTS.colorSwatchesContainer.querySelector('.selected');
+const selectedColor = selectedColorSwatch ? selectedColorSwatch.dataset.color : undefined;
+            const selectedIconOption = ALL_ELEMENTS.iconOptionsContainer.querySelector('.selected');
+const selectedIcon = selectedIconOption ? selectedIconOption.dataset.icon : undefined;
             if (selectedColor) folder.color = selectedColor;
             if (selectedIcon) folder.icon = selectedIcon;
             await saveAppData();
@@ -8260,7 +8265,7 @@ ${stepCountInstruction}
                     if (!plannerResponse.ok) throw new Error(`研究計畫生成失敗: ${(await plannerResponse.json()).error?.message || 'API request failed'}`);
                     
                     const result = await plannerResponse.json();
-                    const jsonString = result?.candidates?.?.content?.parts?.?.text;
+                    const jsonString = result && result.candidates && result.candidates[0] && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts[0] && result.candidates[0].content.parts[0].text;
                     if (jsonString) {
                         initialResearchPlan = JSON.parse(jsonString.trim().replace(/^```json|```$/g, '').trim());
                     } else {
