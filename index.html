@@ -1826,8 +1826,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 </head>
 <body class="font-sans bg-gray-50">
     <div id="loading-video-container">
-        <video autoplay muted loop playsinline src="YOUR_VIDEO_FILE.mp4"></video>
-    </div>
+    <video id="loading-video" autoplay muted loop playsinline>
+        <!-- 重要：將 source 標籤中的 src 改成你的影片路徑 -->
+        <source src="YOUR_VIDEO_FILE.mp4" type="video/mp4">
+        你的瀏覽器不支援影片標籤。
+    </video>
+</div>
     <div id="wallpaper-container"></div>
     <div id="auth-container">
         <div class="min-h-screen flex flex-col">
@@ -8913,18 +8917,49 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
     }, false);
 </script>
 <script>
-        window.addEventListener('load', function() {
-            const loadingContainer = document.getElementById('loading-video-container');
+    document.addEventListener('DOMContentLoaded', function() {
+        const loadingContainer = document.getElementById('loading-video-container');
+        const loadingVideo = document.getElementById('loading-video');
+        
+        // 設定一個最短的顯示時間 (例如：2000 毫秒 = 2 秒)
+        // 這樣可以確保即使網頁秒載入，使用者也能看到動畫
+        const MINIMUM_DISPLAY_TIME = 2000;
 
-            // 1. 為載入容器加上 'hidden' class 來觸發 CSS 的淡出動畫
+        // 建立一個函數來隱藏載入畫面
+        function hideLoadingScreen() {
+            // 觸發 CSS 淡出效果
             loadingContainer.classList.add('hidden');
-
-            // 2. 等待淡出動畫結束後 (800毫秒)，再徹底隱藏它
-            //    這樣可以避免它雖然透明但還擋在畫面上
+            
+            // 在動畫結束後徹底移除元素，釋放資源
             setTimeout(function() {
                 loadingContainer.style.display = 'none';
-            }, 800); // 這個時間要和 CSS 中的 transition 時間一致
+            }, 800); // 必須和你的 CSS transition 時間一致
+        }
+
+        // 安全機制：如果影片因任何原因無法播放
+        loadingVideo.onerror = function() {
+            console.error("載入影片失敗，請檢查影片路徑或格式是否正確。");
+            // 直接隱藏載入畫面，避免使用者卡在黑畫面上
+            hideLoadingScreen();
+        };
+
+        // 我們使用 Promise 來同時處理兩件事：
+        // 1. 等待網頁完全載入 (window.load)
+        // 2. 等待最短顯示時間結束
+        
+        const pageLoadPromise = new Promise(resolve => {
+            window.addEventListener('load', resolve);
         });
-    </script>
+
+        const minTimePromise = new Promise(resolve => {
+            setTimeout(resolve, MINIMUM_DISPLAY_TIME);
+        });
+
+        // 當以上兩件事都完成後，才執行隱藏畫面的動作
+        Promise.all([pageLoadPromise, minTimePromise]).then(() => {
+            hideLoadingScreen();
+        });
+    });
+</script>
 </body>
 </html>
