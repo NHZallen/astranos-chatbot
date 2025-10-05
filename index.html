@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.8</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.5.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -31,7 +31,7 @@
     }
 }
 
-  
+
 @keyframes indicator-exit {
     from {
         opacity: 1;
@@ -1793,6 +1793,86 @@ body.custom-wallpaper-active .input-indicator-item {
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+
+/* ✨ 新增: 分支對話樹狀圖樣式 */
+#branch-tree-container ul {
+    list-style: none;
+    padding-left: 2rem;
+    position: relative;
+}
+#branch-tree-container ul::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 1px;
+    background-color: var(--border-color);
+}
+#branch-tree-container li {
+    position: relative;
+    margin-bottom: 0.5rem;
+}
+#branch-tree-container li::before {
+    content: '';
+    position: absolute;
+    top: 1.25rem; /* 配合 .branch-node 的高度 */
+    left: -2rem;
+    width: 2rem;
+    height: 1px;
+    background-color: var(--border-color);
+}
+.branch-node {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+.branch-node:hover {
+    background-color: var(--hover-bg);
+}
+.branch-node.selected {
+    border-color: var(--button-primary-bg);
+    background-color: var(--active-bg);
+}
+.branch-node.active-leaf {
+    border-color: #22c55e; /* green-500 */
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3);
+}
+.branch-node-icon {
+    flex-shrink: 0;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+}
+.branch-node-content {
+    flex-grow: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+.branch-node-actions {
+    display: none;
+}
+.branch-node.selected .branch-node-actions {
+    display: block;
+}
+.create-branch-btn {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    border-radius: 9999px;
+}
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -2722,6 +2802,23 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         </div>
     </div>
 
+    <!-- ✨ 新增: 分支對話 Modal -->
+    <div id="branch-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[52]">
+        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-4xl flex flex-col" style="max-height: 90vh;">
+            <div class="p-6 border-b border-[var(--border-color)] flex justify-between items-center">
+                <h2 id="branch-modal-title" class="text-2xl font-bold">分支對話</h2>
+                <button id="close-branch-modal-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
+            </div>
+            <div id="branch-tree-container" class="p-6 overflow-auto scroll-area flex-1">
+                <!-- Tree will be rendered here by JavaScript -->
+            </div>
+            <div class="p-4 bg-[var(--sidebar-bg)] border-t border-[var(--border-color)] flex justify-end gap-3">
+                <button id="cancel-branch-modal-btn" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]">關閉</button>
+            </div>
+        </div>
+    </div>
+
+
     <script src="./i18n.js"></script>
     <script src="./demo-conversations.js"></script>
     <script src="./astras-data.js"></script>
@@ -2989,6 +3086,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             addPlanStepBtn: document.getElementById('add-plan-step-btn'),
             confirmPlanBtn: document.getElementById('confirm-plan-btn'),
             cancelPlanBtn: document.getElementById('cancel-plan-btn'),
+            // ✨ 新增分支對話 Modal 元素
+            branchModal: document.getElementById('branch-modal'),
+            closeBranchModalBtn: document.getElementById('close-branch-modal-btn'),
+            cancelBranchModalBtn: document.getElementById('cancel-branch-modal-btn'),
         };
         const compareVersions = (v1, v2) => {
             if (!v2) return 1;
@@ -3318,17 +3419,38 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 try {
                     const data = JSON.parse(saved);
                     folders = (data.folders || []).map(f => ({...getDefaultFolder(), ...f}));
-                    conversations = (data.conversations || []).map(c => ({
-                        archived: false, summary: '', folderId: null, isWebSearchEnabled: false, astrasId: null, pinned: false, deletedAt: null, ...c,
-                        unsentMessage: c.unsentMessage || '',
-                        genConfig: c.genConfig || getDefaultGenConfig(),
-                        lastUpdatedAt: c.lastUpdatedAt || (c.messages && c.messages.length > 0 ? c.messages[c.messages.length - 1].createdAt : c.createdAt),
-                        messages: (c.messages || []).map(m => ({
+                    conversations = (data.conversations || []).map(c => {
+                        let messages = (c.messages || []).map(m => ({
                             ...m,
                             createdAt: m.createdAt || c.createdAt,
                             parts: m.parts || [{ text: m.content }]
-                        }))
-                    }));
+                        }));
+
+                        // Migration logic for branching
+                        if (messages.length > 0 && !messages[0].id) {
+                            let lastMessageId = null;
+                            messages = messages.map(msg => {
+                                const newMsg = {
+                                    ...msg,
+                                    id: crypto.randomUUID(),
+                                    parentId: lastMessageId
+                                };
+                                lastMessageId = newMsg.id;
+                                return newMsg;
+                            });
+                        }
+
+                        const activeMessageId = c.activeMessageId || (messages.length > 0 ? messages[messages.length - 1].id : null);
+                        
+                        return {
+                            archived: false, summary: '', folderId: null, isWebSearchEnabled: false, astrasId: null, pinned: false, deletedAt: null, ...c,
+                            unsentMessage: c.unsentMessage || '',
+                            genConfig: c.genConfig || getDefaultGenConfig(),
+                            lastUpdatedAt: c.lastUpdatedAt || (messages.length > 0 ? messages[messages.length - 1].createdAt : c.createdAt),
+                            messages: messages,
+                            activeMessageId: activeMessageId
+                        };
+                    });
                     astras = (data.astras || []).map(a => ({ avatarUrl: null, officialId: null, ...a }));
                     personalMemories = data.personalMemories || [];
                 } catch (e) {
@@ -3357,6 +3479,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 title: title,
                 summary: '',
                 messages: [],
+                activeMessageId: null,
                 model: defaultModelInfo.id,
                 provider: defaultModelInfo.provider,
                 archived: false,
@@ -3845,11 +3968,25 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderModelSwitcher();
             renderInputIndicators();
             messageList.innerHTML = '';
-            if (conv.messages.length === 0) {
+
+            // ✨ Branching Logic: Get only the messages for the current branch
+            const currentBranchMessages = [];
+            let currentMessageId = conv.activeMessageId;
+            while(currentMessageId) {
+                const message = conv.messages.find(m => m.id === currentMessageId);
+                if (message) {
+                    currentBranchMessages.unshift(message);
+                    currentMessageId = message.parentId;
+                } else {
+                    currentMessageId = null; // Break if message not found
+                }
+            }
+
+            if (currentBranchMessages.length === 0) {
                 const greeting = `${currentUser.username}, ${i18n[config.uiLanguage].howCanIHelp || '有什麼可以為您服務的嗎？'}`;
                 messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] mt-16"><p class="text-lg">${greeting}</p></div>`;
             } else {
-                conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
+                currentBranchMessages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
             }
             void messageList.offsetWidth;
             messageList.classList.add('chat-view-transition');
@@ -4270,9 +4407,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const addMessageToUI = (msg, index, shouldSave = true, shouldScroll = true) => {
             const conv = getActiveConversation();
             if (shouldSave) {
-                 conv.messages.push(msg);
-                if (conv.messages.length === 1 && msg.role === 'user' && conv.isTemporary && !conv.isRenamed && config.autoNaming) {
-                    const textPart = msg.parts.find(p => p.text);
+                // ✨ Branching Logic: When saving, set the new message's parent to the current active message
+                const newMsg = {
+                    ...msg,
+                    id: crypto.randomUUID(),
+                    parentId: conv.activeMessageId
+                };
+                conv.messages.push(newMsg);
+                conv.activeMessageId = newMsg.id; // Update the active message to the newly created one
+
+                if (conv.messages.length === 1 && newMsg.role === 'user' && conv.isTemporary && !conv.isRenamed && config.autoNaming) {
+                    const textPart = newMsg.parts.find(p => p.text);
                     if (textPart) {
                         conv.title = textPart.text.substring(0, 30) || i18n[config.uiLanguage].newChat || '新對話';
                         ALL_ELEMENTS.headerTitle.textContent = conv.title;
@@ -4281,7 +4426,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 saveAppData();
             }
             const messageDiv = document.createElement('div');
-            messageDiv.dataset.messageIndex = index;
+            messageDiv.dataset.messageId = msg.id; // Use the message's own ID
+            messageDiv.dataset.messageIndex = index; // Keep index for legacy functions if needed
             const isUser = msg.role === 'user';
             messageDiv.className = `message-item flex items-start gap-2 md:gap-4 ${isUser ? 'justify-end user-message' : 'model-message'}`;
             const icon = isUser ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>` : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
@@ -4333,7 +4479,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     contentPaddingClass = 'pb-8';
                 } else {
                     const currentConv = getActiveConversation();
-                    if (currentConv && index + 1 < currentConv.messages.length && currentConv.messages[index + 1].role === 'model') {
+                    const nextMessage = currentConv?.messages.find(m => m.parentId === msg.id);
+                    if (nextMessage && nextMessage.role === 'model') {
                          actionButtons = `
                             <div class="absolute bottom-2 left-2 flex items-center">
                                 <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
@@ -4474,6 +4621,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 });
             });
             const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
+            // ✨ Branching: The addMessageToUI function now handles setting parentId and updating activeMessageId
             addMessageToUI(userMessageObject, conv.messages.length, true);
             conv.lastUpdatedAt = new Date().toISOString();
             conv.unsentMessage = '';
@@ -4504,34 +4652,43 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             uploadedFiles = [];
             adjustTextareaHeight();
             renderFilePreviews();
+            // ✨ Branching: We add a temporary loading message but don't save it to the main `messages` array yet.
             const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
             const contentDiv = loadingMessageDiv.querySelector('.message-content');
             
             try {
                 let fullResponse = '';
-                const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
+                // ✨ Branching: Prepare the final message object.
+                const finalAiMessage = {
+                    role: 'model',
+                    parts: [{ text: '' }],
+                    createdAt: new Date().toISOString(),
+                    id: crypto.randomUUID(),
+                    parentId: conv.activeMessageId
+                };
 
                 // 1. 先等待 API 回應完全結束，獲取完整文字
                 const completeResponse = await streamApiCall(
                     userParts,
                     (chunk) => {
-                        // 在 streamApiCall 內部，我們只收集文字，不渲染
+                        // In streamApiCall, we just collect text, not render.
                     },
                     abortController.signal
                 );
 
                 fullResponse = completeResponse;
 
-                // 2. 將完整的最終訊息保存到對話紀錄中
+                // 2. 将完整的最终消息保存到对话记录中
                 finalAiMessage.parts = [{ text: fullResponse }];
                 conv.messages.push(finalAiMessage);
+                conv.activeMessageId = finalAiMessage.id; // Update active message to the new AI response
                 conv.lastUpdatedAt = new Date().toISOString();
                 await saveAppData();
                 
-                // 3. ✨ 啟動打字機動畫，並等待它完成
+                // 3. ✨ 启动打字机动画，并等待它完成
                 await (async () => {
                     return new Promise(resolve => {
-                        contentDiv.innerHTML = ''; // 清空等待樣式
+                        contentDiv.innerHTML = ''; // 清空等待样式
                         let currentIndex = 0;
                         const typingSpeed = 15;
 
@@ -4555,17 +4712,17 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 
                                 setTimeout(type, typingSpeed);
                             } else {
-                                // 動畫完成或被中止
-                                contentDiv.innerHTML = renderMarkdown(fullResponse); // 最終清理，移除游標
+                                // 动画完成或被中止
+                                contentDiv.innerHTML = renderMarkdown(fullResponse); // 最终清理，移除游标
                                 resolve(); // ✨ Promise 完成，通知 await
                             }
                         }
                         
-                        type(); // 啟動
+                        type(); // 启动
                     });
                 })();
 
-                // 4. ✨ 只有在打字機動畫結束後，才執行後續任務
+                // 4. ✨ 只有在打字机动画结束后，才执行后续任务
                 if (!abortController.signal.aborted) {
                     if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
                         await generateFollowUpPrompts(userMessage, fullResponse);
@@ -4579,12 +4736,19 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 if (error.name !== 'AbortError') {
                     const errorMessage = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
                     contentDiv.innerHTML = renderMarkdown(errorMessage);
-                    const finalAiMessage = { role: 'model', parts: [{ text: errorMessage }], createdAt: new Date().toISOString() };
+                    const finalAiMessage = {
+                        role: 'model',
+                        parts: [{ text: errorMessage }],
+                        createdAt: new Date().toISOString(),
+                        id: crypto.randomUUID(),
+                        parentId: conv.activeMessageId
+                    };
                     conv.messages.push(finalAiMessage);
+                    conv.activeMessageId = finalAiMessage.id;
                     await saveAppData();
                 }
             } finally {
-                // ... finally 區塊的程式碼保持不變 ...
+                // ... finally block remains the same ...
                 abortController = null;
                 updateSubmitButtonState(false);
                 sendConfirmed = false;
@@ -4593,7 +4757,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 if (lastMessageDiv && lastMessageDiv.classList.contains('model-message')) {
                     const bubble = lastMessageDiv.querySelector('.message-bubble');
                     const content = lastMessageDiv.querySelector('.message-content');
-                    const aiMessageObject = conv.messages[conv.messages.length - 1];
+                    const aiMessageObject = conv.messages.find(m => m.id === conv.activeMessageId);
                     if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute')) {
                         content.classList.add('pb-8');
                         const timeString = formatFullTimestamp(aiMessageObject.createdAt);
@@ -4627,10 +4791,28 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             }
         };
         function cleanGeminiHistory(history) {
-            const cleaned = []; let lastRole = null;
-            history.forEach(msg => {
+            const cleaned = [];
+            let lastRole = null;
+            let currentPath = [];
+            const conv = getActiveConversation();
+            
+            // Build the current branch path
+            let currentMessageId = conv.activeMessageId;
+            while(currentMessageId) {
+                const message = conv.messages.find(m => m.id === currentMessageId);
+                if (message) {
+                    currentPath.unshift(message);
+                    currentMessageId = message.parentId;
+                } else {
+                    break;
+                }
+            }
+        
+            currentPath.forEach(msg => {
                 const sanitizedMsg = { role: msg.role, parts: msg.parts };
-                if (sanitizedMsg.role === 'model' && !sanitizedMsg.parts.some(p => (p.text && p.text.trim() !== '') || p.inlineData)) return;
+                if (sanitizedMsg.role === 'model' && !sanitizedMsg.parts.some(p => (p.text && p.text.trim() !== '') || p.inlineData)) {
+                    return; // Skip empty model messages
+                }
                 if (sanitizedMsg.role === lastRole && lastRole === 'user') {
                     cleaned[cleaned.length - 1].parts.push(...sanitizedMsg.parts);
                 } else {
@@ -4638,7 +4820,17 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     lastRole = sanitizedMsg.role;
                 }
             });
-            if (cleaned.length > 0 && cleaned[0].role !== 'user') cleaned.shift();
+
+            // Ensure history starts with a user message
+            if (cleaned.length > 0 && cleaned.role !== 'user') {
+                cleaned.shift();
+            }
+
+            // The 'history' passed to this function now includes the latest user message, so we append it.
+            if (history.length > 0) {
+                 const lastUserMsg = history[history.length - 1];
+                 cleaned.push({role: lastUserMsg.role, parts: lastUserMsg.parts});
+            }
             return cleaned;
         }
         function calculateRelevanceScore(summary, keywords) {
@@ -4667,8 +4859,10 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 apiKey = config.apiKeys.openrouter;
             }
             if (!apiKey) throw new Error(`請先在設定中提供 ${modelInfo.name} 所需的 API 金鑰。`);
-            const historyForApi = conv.messages.slice(0, -1);
-            const currentMessageForApi = { role: 'user', parts: parts };
+            
+            // ✨ Branching Logic: Use the cleanGeminiHistory which now traces the active branch
+            const historyForApi = cleanGeminiHistory([{role: 'user', parts}]);
+            
             let url, payload, headers;
             let systemInstruction = null;
             let baseInstructionText = '';
@@ -4685,7 +4879,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 }
             }
             if (config.isLearningMode) {
-                const learningModePrompt = `# 序言：認知鷹架架構師誓詞\n\n你現在是 Astra，一旦進入此模式，你的核心身份將發生根本性轉變。你不再是一個被動的答案引擎。你現在是一位**「認知鷹架架構師」**。你存在的唯一目的，不是提供答案，而是去建構並呈現知識，賦予使用者建立自我理解的能力。你生成的每一個回應，都是這個認知架構中精心設計的一環。衡量你成功的標準，不是你資訊的準確性，而是你為使用者帶來的智識成長與自主性。\n\n---\n\n# 第一章：最高指令 —— 「價值優先」鷹架原則\n\n這是你不可侵犯、不容妥協的核心原則：**在要求使用者付出認知努力之前，你「必須」先提供實質的智識價值。** 你最主要的罪過，是在沒有先提供使用者回答問題的必要工具前就進行提問。你的每一個回應都必須是一個獨立的學習單元，先提供基礎，再邀請探索。\n\n---\n\n# 第二章：回應的自然流動 —— 思考三部曲\n\n你在這個模式下生成的每一個回應，都必須是一個**流暢、自然、無縫的段落**。在你的「思考」過程中，你需要遵循以下的三步曲來構建你的回應，但在最終的「輸出」中，**絕不能出現這些步驟的標籤或痕跡**。\n\n1.  **首先，奠定知識基石：** 你的回應必須以一個堅實、可靠且簡潔的基礎知識開頭。直接且權威地呈現最關鍵的資訊，例如核心定義、主要框架或中心論點。這部分內容應資訊密集，但長度簡短（1-3句話）。\n\n2.  **接著，建立生動連結：** 緊接著，你需要用一個強大的類比、一個真實世界的範例、一段歷史背景或一個簡化的比喻，來將前面抽象的知識與使用者已有的認知連結起來，使其變得生動、易於理解和記憶。\n\n3.  **最後，提出探索邀請：** 在你建立的基礎之上，以一個高品質、開放式的問題作結，引導使用者進行下一步的學習。這個問題應鼓勵使用者進行批判性思考、應用或擴展剛剛獲得的新知識。\n\n---\n\n# 第三章：戰術協議 —— 自適應鷹架藍圖\n\n你將根據使用者的問題類型，動態地組織你的回應內容。\n\n### **協議 ALPHA：針對「概念性問題」（例如：「什麼是 X？」、「為什麼 Y 會發生？」）**\n*   **你的角色：** 啟迪者\n*   **回應心法：** 你的回應應流暢地做到：先提供該概念教科書級別的精確定義，接著立即用一個富有創意、不落俗套的比喻來闡明它，最後再根據這個比喻提出一個能迫使使用者深入思考的引導性問題。\n\n### **協議 BETA：針對「流程性問題」（例如：「我該如何做 X？」）**\n*   **你的角色：** 架構師\n*   **回應心法：** 你的回應應流暢地做到：先將整個流程呈現為一個包含 2-4 個階段的高層次框架，給使用者一張心智地圖。然後，只詳細闡述第一階段的關鍵性與考量因素，最後針對第一階段提出一個務實的、以行動為導向的問題。\n\n### **協議 GAMMA：針對「研究性問題」（例如：「跟我說說關於 X 的事。」）**\n*   **你的角色：** 探索規劃師\n*   **回應心法：** 你的回應應流暢地做到：先重申研究主題並將其分解為 2-3 個不同的探究途徑。接著，為每個途徑提供包含「強效關鍵詞」和「建議來源類型」的入門包，最後提出一個策略性問題，幫助使用者根據目標選擇開始的方向。\n\n---\n\n# 第四章：通用行為準則與應急預案\n\n*   **認知同理心：** 你的語氣必須始終是一位有耐心、鼓勵人心的導師。使用諸如「這是一個很好的問題，讓我們來拆解它」、「我們現在正觸及問題的核心」以及「這是一個非常有洞察力的觀察」之類的語句。\n*   **清晰化協議 (逃生閥機制)：** 這是你的「緊急出口」。如果使用者明確表示困惑（「我不懂」、「直接告訴我」、「這太複雜了」），或連續兩次未能有效回應你的引導性問題，你**必須**啟動此協議。\n    1.  立即暫停三部曲的思考模式。\n    2.  切換到「清晰解說員」的人格。\n    3.  直接、簡單且全面地解釋當前的主題。\n    4.  在解釋結束時，用一句溫和的話語轉折，嘗試回到鷹架模式，例如：「既然我們清楚了這一點，讓我們回頭看看剛才關於……的想法。」\n*   **絕對禁令：**\n    *   **禁止**任何單一句、低價值的回應。\n    *   **禁止**要求使用者去做你該做的事（例如：「你能說得更具體一點嗎？」）。你的工作是主動提出具體的選項（如協議 GAMMA 所示）。\n    *   **禁止**重複的提問風格。多樣化你的引導性問題。\n    *   **禁止**假裝無知或遺忘。你是 AI，你記得所有上下文。\n    *   **【新增】禁止在回應中提及「錨點」、「橋樑」、「羅盤」、「三部曲」或任何來自本指導原則的結構性術語。你的思考過程必須對使用者完全隱藏，呈現出的應是天衣無縫的對話。**\n\n---\n\n# 第五章：模式啟動確認\n\n當使用者在對話中首次啟動此模式時，你必須發布以下一次性聲明以設定預期：\n\n"**學習與研究模式已啟動。** 在此模式下，我不會直接給出答案，而是會提供核心知識並引導您一同思考。讓我們開始吧。"`;
+                const learningModePrompt = `# 序言：認知鷹架架構師誓詞\n\n你現在是 Astra，一旦進入此模式，你的核心身份將發生根本性轉變。你不再是一個被動的答案引擎。你現在是一位**「認知鷹架架構師」**。你存在的唯一目的，不是提供答案，而是去建構並呈現知識，賦予使用者建立自我理解的能力。你生成的每一個回應，都是這個認知架構中精心設計的一環。衡量你成功的標準，不是你資訊的準確性，而是你為使用者帶來的智識成長與自主性。\n\n---\n\n# 第一章：最高指令 —— 「價值優先」鷹架原則\n\n這是你不可侵犯、不容妥協的核心原則：**在要求使用者付出認知努力之前，你「必須」先提供實質的智識價值。** 你最主要的罪過，是在沒有先提供使用者回答問題的必要工具前就進行提問。你的每一個回應都必須是一個獨立的學習單元，先提供基礎，再邀請探索。\n\n---\n\n# 第二章：回應的自然流動 —— 思考三部曲\n\n你在這個模式下生成的每一個回應，都必須是一個**流暢、自然、無縫的段落**。在你的「思考」過程中，你需要遵循以下的三步曲來構建你的回應，但在最終的「輸出」中，**絕不能出現這些步驟的標籤或痕跡**。\n\n1.  **首先，奠定知識基石：** 你的回應必須以一個堅實、可靠且簡潔的基礎知識開頭。直接且權威地呈現最關鍵的資訊，例如核心定義、主要框架或中心論點。這部分內容應資訊密集，但長度簡短（1-3句話）。\n\n2.  **接著，建立生動連結：** 緊接著，你需要用一個強大的類比、一個真實世界的範例、一段歷史背景或一個簡化的比喻，來將前面抽象的知識與使用者已有的認知連結起來，使其變得生動、易於理解和記憶。\n\n3.  **最後，提出探索邀請：** 在你建立的基礎之上，以一個高品質、開放式的問題作結，引導使用者進行下一步的學習。這個問題應鼓勵使用者進行批判性思考、應用或擴展剛剛獲得的新知識。\n\n---\n\n# 第三章：戰術協議 —— 自適應鷹架藍圖\n\n你將根據使用者的問題類型，動態地組織你的回應內容。\n\n### **協議 ALPHA：針對「概念性問題」（例如：「什麼是 X？」、「為什麼 Y 會發生？」）**\n*   **你的角色：** 啟迪者\n*   **回應心法：** 你的回應應流暢地做到：先提供該概念教科書級別的精確定義，接著立即用一個富有創意、不落俗套的比喻來闡明它，最後再根據這個比喻提出一個能迫使使用者深入思考的引導性問題。\n\n### **協議 BETA：針對「流程性問題」（例如：「我該如何做 X？」）**\n*   **你的角色：** 架構師\n*   **回應心法：** 你的回應應流暢地做到：先將整個流程呈現為一個包含 2-4 個階段的高層次框架，給使用者一張心智地圖。然後，只詳細闡述第一階段的關鍵性與考量因素，最後針對第一階段提出一個務實的、以行動為導向的問題。\n\n### **協議 GAMMA：針對「研究性問題」（例如：「跟我說說關於 X 的事。」）**\n*   **你的角色：** 探索規劃師\n*   **回應心法：** 你的回應應流暢地做到：先重申研究主題並將其分解為 2-3 個不同的探究途徑。接著，為每個途徑提供包含「強效關鍵詞」和「建議來源類型」的入門包，最後提出一個策略性問題，幫助使用者根據目標選擇開始的方向。\n\n---\n\n# 第四章：通用行為準則與應急預案\n\n*   **認知同理心：** 你的語氣必須始終是一位有耐心、鼓勵人心的導師。使用諸如「這是一個很好的問題，讓我們來拆解它」、「我們現在正觸及問題的核心」以及「這是一個非常有洞察力的觀察」之類的語句。\n*   **清晰化協議 (逃生閥機制)：** 這是你的「緊急出口」。如果使用者明確表示困惑（「我不懂」、「直接告訴我」、「這太複雜了」），或連續兩次未能有效回應你的引導性問題，你**必須**啟動此協議。\n    1.  立即暫停三部曲的思考模式。\n    2.  切換到「清晰解說員」的人格。\n    3.  直接、簡單且全面地解釋當前的主題。\n    4.  在解釋結束時，用一句溫和的話語轉折，嘗試回到鷹架模式，例如：「既然我們清楚了這一點，讓我們回頭看看剛才關於……的想法。」\n*   **絕對禁令：**\n    *   **禁止**任何單一句、低價值的回應。\n    *   **禁止**要求使用者去做你该做的事（例如：「你能說得更具體一點嗎？」）。你的工作是主動提出具體的選項（如協議 GAMMA 所示）。\n    *   **禁止**重複的提問風格。多樣化你的引導性問題。\n    *   **禁止**假裝無知或遺忘。你是 AI，你記得所有上下文。\n    *   **【新增】禁止在回應中提及「錨點」、「橋樑」、「羅盤」、「三部曲」或任何來自本指導原則的結構性術語。你的思考過程必須對使用者完全隱藏，呈現出的應是天衣無縫的對話。**\n\n---\n\n# 第五章：模式啟動確認\n\n當使用者在對話中首次啟動此模式時，你必須發布以下一次性聲明以設定預期：\n\n"**學習與研究模式已啟動。** 在此模式下，我不會直接給出答案，而是會提供核心知識並引導您一同思考。讓我們開始吧。"`;
                 systemInstruction = { parts: [{ text: learningModePrompt }] };
             } else if (baseInstructionText) {
                 systemInstruction = { parts: [{ text: baseInstructionText }] };
@@ -4731,8 +4925,8 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 }
             }
             if (memoryPrompt) {
-                if (systemInstruction && systemInstruction.parts[0].text) {
-                    systemInstruction.parts[0].text += `\n\n${memoryPrompt}`;
+                if (systemInstruction && systemInstruction.parts.text) {
+                    systemInstruction.parts.text += `\n\n${memoryPrompt}`;
                 } else if (systemInstruction) {
                     systemInstruction.parts.push({ text: `\n\n${memoryPrompt}` });
                 }
@@ -4744,7 +4938,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             if (provider === 'gemini') {
                 url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?key=${apiKey}`;
                 payload = {
-                    contents: cleanGeminiHistory([...historyForApi, currentMessageForApi]),
+                    contents: historyForApi,
                     generationConfig: {
                         ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
                         ...(conv.genConfig.topP !== null && { topP: conv.genConfig.topP }),
@@ -4764,7 +4958,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 if (systemInstruction) {
                     messages.push({ role: 'system', content: systemInstruction.parts.map(p => p.text).join('\n') });
                 }
-                messages.push(...[...historyForApi, currentMessageForApi].map(m => ({
+                messages.push(...historyForApi.map(m => ({
                     role: m.role === 'model' ? 'assistant' : m.role,
                     content: m.parts.filter(p => p.text).map(p => p.text).join('\n')
                 })));
@@ -4815,7 +5009,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 
                             try {
                                 const parsed = JSON.parse(jsonStr);
-                                const textChunk = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
+                                const textChunk = parsed?.candidates?.?.content?.parts?.?.text;
 
                                 if (textChunk) {
                                     fullText += textChunk;
@@ -4837,7 +5031,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                             if (data.trim() === '[DONE]') break;
                             try {
                                 const parsed = JSON.parse(data);
-                                const textChunk = parsed.choices[0]?.delta?.content || '';
+                                const textChunk = parsed.choices?.delta?.content || '';
                                 if (textChunk) {
                                     fullText += textChunk;
                                     onChunk(textChunk);
@@ -4875,7 +5069,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     throw new Error(errorData.error?.message || 'API request failed');
                 }
                 const result = await response.json();
-                const jsonString = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                const jsonString = result?.candidates?.?.content?.parts?.?.text;
                 if (jsonString) {
                     let cleanedJsonString = jsonString.trim();
                     if (cleanedJsonString.startsWith("```json")) {
@@ -4921,7 +5115,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 return false;
             }
             const result = await response.json();
-            const text = result?.candidates?.[0]?.content?.parts?.[0]?.text?.trim().toLowerCase();
+            const text = result?.candidates?.?.content?.parts?.?.text?.trim().toLowerCase();
             return text === 'yes';
         }
         const generateTitleAndSummary = async (conv) => {
@@ -5024,7 +5218,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 2.  **選擇標準：**
     *   **多樣性：** 盡量涵蓋不同類型（例如，一個「如何做」，一個「舉例子」，一個「是什麼」）。
     *   **代表性：** 能最好地代表【AI上一則回應】的核心內容廣度。
-    *   **清晰度：** 措辭必須是最清晰、最沒有歧義的。
+    *   **清晰度：** 措辞必须是最清晰、最没有歧义的。
 3.  **最後打磨：** 確保每個問題的用詞都完全符合「使用者代理人」的自然口吻。
 ---
 ## 第三章：情境模擬與案例分析
@@ -5410,6 +5604,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                         </div>
                     `;
             popover.innerHTML = `
+                <button data-id="${convId}" class="branch-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">分支對話</button>
                 <button data-id="${convId}" class="rename-conv-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].rename || '重新命名'}</button>
                 <button data-id="${convId}" class="pin-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${pinText}</button>
                 ${moveOptionsHTML}
@@ -5419,6 +5614,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             `;
             document.body.appendChild(popover);
             requestAnimationFrame(() => popover.classList.add('visible'));
+            popover.querySelector('.branch-btn').addEventListener('click', (e) => { openBranchModal(convId); popover.remove(); });
             popover.querySelector('.rename-conv-btn').addEventListener('click', (e) => { showRenameModal(convId, 'conversation', e); popover.remove(); });
             popover.querySelector('.pin-btn').addEventListener('click', (e) => { togglePinChat(convId, e); popover.remove(); });
             popover.querySelector('.archive-btn').addEventListener('click', (e) => { archiveChat(convId, e); popover.remove(); });
@@ -6138,7 +6334,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             await saveConfig();
         };
         const handleImport = async () => {
-            const file = ALL_ELEMENTS.importFileInput.files[0];
+            const file = ALL_ELEMENTS.importFileInput.files;
             if (!file) {
                 showNotification(i18n[config.uiLanguage].selectFileError || '請選擇檔案。', 'error');
                 return;
@@ -6166,7 +6362,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                              if (config.uiTheme.mode === 'adaptive') {
                                 const palette = await getDominantColorPalette(config.customWallpaper);
                                 config.uiTheme.adaptivePalette = palette;
-                                config.uiTheme.adaptiveColor = palette[0] || '#3b82f6';
+                                config.uiTheme.adaptiveColor = palette || '#3b82f6';
                             }
                             await saveConfig();
                         } catch (err) { /* keep default */ }
@@ -6196,7 +6392,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
         const processAuthImport = async () => {
             const username = ALL_ELEMENTS.usernameInput.value.trim();
             const password = ALL_ELEMENTS.passwordInput.value;
-            const file = ALL_ELEMENTS.importFileInputAuth.files[0];
+            const file = ALL_ELEMENTS.importFileInputAuth.files;
 
             if (!file) {
                 showNotification(i18n[config.uiLanguage].selectFileError || '請選擇檔案。', 'error');
@@ -6389,7 +6585,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             currentSpeechRecognition.onresult = (event) => {
                 let transcript = '';
                 for (let i = event.resultIndex; i < event.results.length; i++) {
-                    transcript += event.results[i][0].transcript;
+                    transcript += event.results[i].transcript;
                 }
                 const inputEl = target === 'message' ? ALL_ELEMENTS.messageInput : ALL_ELEMENTS.modalSearchInput;
                 inputEl.value = transcript;
@@ -6872,9 +7068,9 @@ ${JSON.stringify(potentialMemories, null, 2)}
         const hexToRgb = (hex) => {
             const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
             return result ? {
-                r: parseInt(result[1], 16),
-                g: parseInt(result[2], 16),
-                b: parseInt(result[3], 16)
+                r: parseInt(result, 16),
+                g: parseInt(result, 16),
+                b: parseInt(result, 16)
             } : null;
         };
         const getTextColorForBackground = (hexColor) => {
@@ -6891,7 +7087,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 case 'adaptive':
                     if (config.uiTheme.style === 'gradient') {
                         primaryBgOverride = config.uiTheme.adaptiveGradient || `linear-gradient(to right, ${config.uiTheme.adaptiveColor}, #3b82f6)`;
-                        primaryBg = config.uiTheme.adaptivePalette[0] || config.uiTheme.adaptiveColor;
+                        primaryBg = config.uiTheme.adaptivePalette || config.uiTheme.adaptiveColor;
                     } else {
                         primaryBg = config.uiTheme.adaptiveColor;
                     }
@@ -7020,7 +7216,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
             setUserBubbleColor();
         };
         const handleWallpaperUpload = (event) => {
-            const file = event.target.files[0];
+            const file = event.target.files;
             if (!file) return;
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -7054,7 +7250,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 config.customWallpaper = imageDataUrl;
                 config.wallpaperBrightness = brightness;
                 config.uiTheme.adaptivePalette = palette;
-                config.uiTheme.adaptiveColor = palette[0] || '#3b82f6';
+                config.uiTheme.adaptiveColor = palette || '#3b82f6';
                 await saveConfig();
                 applyCustomWallpaper();
                 applyUiTheme();
@@ -7197,7 +7393,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
             ALL_ELEMENTS.astrasAvatarInput.click();
         };
         const handleAvatarUpload = (event) => {
-            const file = event.target.files[0];
+            const file = event.target.files;
             if (!file) return;
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -7280,6 +7476,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
             menu.innerHTML = `
                 ${menuHeader}
                 <div class="menu-options">
+                    <div class="menu-item" data-action="branch"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941-7.81 7.81a1.5 1.5 0 0 0 2.122 2.122l7.81-7.81" /></svg><span>分支對話</span></div>
                     <div class="menu-item" data-action="rename"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg><span>${i18n[config.uiLanguage].rename || '重新命名'}</span></div>
                     <div class="menu-item" data-action="pin"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 3.75V16.5L12 14.25 7.5 16.5V3.75m9 0H18A2.25 2.25 0 0 1 20.25 6v12A2.25 2.25 0 0 1 18 20.25H6A2.25 2.25 0 0 1 3.75 18V6A2.25 2.25 0 0 1 6 3.75h1.5m9 0h-9" /></svg><span>${pinText}</span></div>
                     ${moveOptionsHTML}
@@ -7303,10 +7500,10 @@ ${JSON.stringify(potentialMemories, null, 2)}
             let touchStartY = 0;
             let touchMoveY = 0;
             menu.addEventListener('touchstart', (e) => {
-                touchStartY = e.touches[0].clientY;
+                touchStartY = e.touches.clientY;
             }, { passive: true });
             menu.addEventListener('touchmove', (e) => {
-                touchMoveY = e.touches[0].clientY;
+                touchMoveY = e.touches.clientY;
                 const deltaY = touchMoveY - touchStartY;
                 if (deltaY > 0) {
                     menu.style.transform = `translateY(${deltaY}px)`;
@@ -7329,6 +7526,9 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 closeMenu();
                 setTimeout(() => {
                     switch(action) {
+                        case 'branch':
+                            openBranchModal(convId);
+                            break;
                         case 'rename':
                             showRenameModal(convId, 'conversation', e);
                             break;
@@ -7387,10 +7587,10 @@ ${JSON.stringify(potentialMemories, null, 2)}
             let touchStartY = 0;
             let touchMoveY = 0;
             menu.addEventListener('touchstart', (e) => {
-                touchStartY = e.touches[0].clientY;
+                touchStartY = e.touches.clientY;
             }, { passive: true });
             menu.addEventListener('touchmove', (e) => {
-                touchMoveY = e.touches[0].clientY;
+                touchMoveY = e.touches.clientY;
                 const deltaY = touchMoveY - touchStartY;
                 if (deltaY > 0) {
                     menu.style.transform = `translateY(${deltaY}px)`;
@@ -7903,7 +8103,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
                     const titleElement = card.querySelector('h4');
                     if (titleElement) {
                         // 保持 spinner 不變，只更新文字
-                        titleElement.childNodes[1].textContent = ` ${newTitle}`;
+                        titleElement.childNodes.textContent = ` ${newTitle}`;
                     }
                 },
                 remove: () => card.remove()
@@ -8443,9 +8643,9 @@ ${allSearchResults.join('\n\n')}`;
                 if (copyBtn) {
                     const messageItem = copyBtn.closest('.message-item');
                     if (messageItem) {
-                        const messageIndex = parseInt(messageItem.dataset.messageIndex);
+                        const messageId = messageItem.dataset.messageId;
                         const conv = getActiveConversation();
-                        const msg = conv?.messages[messageIndex];
+                        const msg = conv?.messages.find(m => m.id === messageId);
                         if (msg && msg.role === 'model') {
                             const textToCopy = msg.parts.map(p => p.text).join('\n');
                             copyTextToClipboard(textToCopy)
@@ -8459,8 +8659,8 @@ ${allSearchResults.join('\n\n')}`;
                 } else if (deleteBtn) {
                     const messageItem = deleteBtn.closest('.message-item');
                      if (messageItem) {
-                        const messageIndex = parseInt(messageItem.dataset.messageIndex);
-                        handleDeleteMessagePair(messageIndex);
+                        const messageId = messageItem.dataset.messageId;
+                        handleDeleteMessagePair(messageId);
                     }
                 }
             });
@@ -8677,8 +8877,8 @@ const handleInputFocus = () => {
             spotlightElements.forEach(el => {
                 const handleMove = (e) => {
                     const rect = el.getBoundingClientRect();
-                    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-                    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+                    const x = (e.touches ? e.touches.clientX : e.clientX) - rect.left;
+                    const y = (e.touches ? e.touches.clientY : e.clientY) - rect.top;
                     el.style.setProperty('--spotlight-x', `${x}px`);
                     el.style.setProperty('--spotlight-y', `${y}px`);
                 };
@@ -8780,7 +8980,7 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
 });
         initializeSpotlightEffect();
         }
-        const handleDeleteMessagePair = async (index) => {
+        const handleDeleteMessagePair = async (messageId) => {
             const confirmed = await showCustomDialog({
                 title: i18n[config.uiLanguage].deleteConfirmationTitle || '刪除確認',
                 message: i18n[config.uiLanguage].deleteConfirmationMessage || '確定刪除此條對話？',
@@ -8791,15 +8991,39 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
                 ]
             });
             if (confirmed) {
-                    const conv = getActiveConversation();
-                    if (conv && conv.messages[index] && conv.messages[index + 1]) {
-                        conv.messages.splice(index, 2);
+                const conv = getActiveConversation();
+                if (conv) {
+                    const userMessageIndex = conv.messages.findIndex(m => m.id === messageId);
+                    if (userMessageIndex > -1) {
+                        const aiMessage = conv.messages.find(m => m.parentId === messageId);
+                        if (aiMessage) {
+                            // This is a simple case: user -> model
+                            conv.messages = conv.messages.filter(m => m.id !== messageId && m.id !== aiMessage.id);
+                            
+                            // Re-link subsequent messages
+                            const messagesThatPointToAi = conv.messages.filter(m => m.parentId === aiMessage.id);
+                            messagesThatPointToAi.forEach(m => {
+                                m.parentId = conv.messages[userMessageIndex - 1]?.id || null;
+                            });
+
+                            if (conv.activeMessageId === messageId || conv.activeMessageId === aiMessage.id) {
+                                conv.activeMessageId = conv.messages[userMessageIndex - 1]?.id || null;
+                            }
+                        } else {
+                            // This message might be a leaf or has other branches
+                             conv.messages = conv.messages.filter(m => m.id !== messageId);
+                             if (conv.activeMessageId === messageId) {
+                                conv.activeMessageId = conv.messages.find(m => m.id === conv.messages[userMessageIndex].parentId)?.id || null;
+                            }
+                        }
+                        
                         await saveAppData();
                         renderChat();
                         showNotification(i18n[config.uiLanguage].messageDeleted || '對話已刪除。', 'success');
                     }
                 }
-            };
+            }
+        };
             ALL_ELEMENTS.authForm.addEventListener('submit', handleLogin);
             const toggleAuthImportButton = () => {
                 const username = ALL_ELEMENTS.usernameInput.value.trim();
