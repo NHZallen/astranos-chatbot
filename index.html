@@ -1997,113 +1997,7 @@ body.custom-wallpaper-active .input-indicator-item {
     visibility: visible;
     opacity: 1;
 }
-#current-model-btn {
-    background-color: var(--hover-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 9999px; /* 膠囊形狀 */
-    padding: 0.5rem 1rem;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    transition: all 0.2s ease-in-out;
-}
-#current-model-btn:hover {
-    border-color: var(--text-secondary);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-    transform: translateY(-1px);
-}
-#current-model-btn svg {
-    transition: transform 0.2s ease-in-out;
-}
 
-/* 當選單展開時，讓按鈕的箭頭旋轉 */
-#model-options-popover.visible + #current-model-btn svg {
-    transform: rotate(180deg);
-}
-
-/* 2. 彈出選單容器樣式 */
-#model-options-popover {
-    margin-top: 0.5rem; /* 增加與按鈕的間距 */
-    width: 320px; /* 稍微加寬 */
-    border-radius: 1rem; /* 更圓的圓角 */
-    padding: 0.5rem; /* 增加內邊距 */
-    
-    /* 玻璃擬態效果 (從現有樣式中借用) */
-    background-color: rgba(255, 255, 255, 0.35);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(200, 200, 200, 0.5);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
-}
-
-/* 深色模式下的玻璃效果 */
-.dark #model-options-popover {
-    background-color: rgba(30, 30, 30, 0.35);
-    border-color: rgba(255, 255, 255, 0.15);
-}
-
-/* 如果開啟了桌布模式，也要有玻璃效果 */
-body.custom-wallpaper-active #model-options-popover {
-    background-color: rgba(255, 255, 255, 0.35) !important;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
-    border: 1px solid rgba(200, 200, 200, 0.5) !important;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-}
-
-
-/* 3. 選項按鈕樣式 */
-.model-option-btn-container {
-    padding: 0.75rem;
-    border-radius: 0.75rem; /* 圓角 */
-    display: flex; /* 使用 Flexbox 佈局 */
-    justify-content: space-between; /* 讓內容靠兩邊 */
-    align-items: center; /* 垂直置中 */
-    transition: background-color 0.2s ease;
-}
-
-/* 移除原有的 block 和 text-align */
-.model-option-btn-container {
-    display: flex; /* <-- 已修改 */
-    width: 100%;
-    text-align: left; /* <-- 保留 */
-}
-
-/* 滑鼠懸停效果 */
-.model-option-btn-container:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-}
-.dark .model-option-btn-container:hover {
-    background-color: rgba(255, 255, 255, 0.08);
-}
-
-
-/* 4. 選項內的文字群組 */
-.model-option-text-group {
-    display: flex;
-    flex-direction: column;
-}
-
-/* 5. 當前選中項的樣式 */
-.model-option-btn-container.active-model {
-    background-color: var(--button-primary-bg);
-}
-
-.model-option-btn-container.active-model h4,
-.model-option-btn-container.active-model .model-description {
-    color: var(--button-primary-text) !important;
-}
-
-/* 6. 打勾圖示的樣式 */
-.model-selected-icon {
-    width: 20px;
-    height: 20px;
-    color: var(--button-primary-text);
-    flex-shrink: 0; /* 防止圖示被壓縮 */
-}
-
-/* 移除原有的描述文字樣式中的 margin-top */
-.model-description {
-    margin-top: 0rem !important; /* <-- 修改為 0 */
-}
 
 </style>
 <script>
@@ -4603,91 +4497,76 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         };
         const renderModelSwitcher = () => {
-    const conv = getActiveConversation();
-    ALL_ELEMENTS.modelSwitcherContainer.innerHTML = '';
-    if (!conv) return;
-
-    const visibleModels = config.modelSettings
-        .filter(s => !s.hidden)
-        .sort((a, b) => a.order - b.order)
-        .map(s => MODELS.find(m => m.id === s.id))
-        .filter(Boolean);
-
-    const currentModel = MODELS.find(m => m.id === conv.model) || MODELS[0];
-    const isArchived = conv.archived;
-
-    let optionsHTML = '';
-    const translations = i18n[config.uiLanguage] || i18n['zh-TW'];
-
-    visibleModels.forEach(m => {
-        const isCurrent = m.id === conv.model;
-        const description = translations[m.descriptionKey] || '';
-        const limits = translations[m.limitsKey] || '';
-        
-        // ✨ 新增：打勾圖示，只在當前選中的模型顯示
-        const checkmarkIcon = isCurrent ? `
-            <svg class="model-selected-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-            </svg>
-        ` : '';
-
-        // ✨ 修改：增加 'active-model' class 和新的內部結構
-        optionsHTML += `
-            <div data-model="${m.id}" class="model-option-btn-container ${isArchived ? 'cursor-not-allowed opacity-50' : ''} ${isCurrent ? 'active-model' : ''}">
-                <div class="model-option-text-group">
-                    <h4 class="font-semibold">${m.name}</h4>
-                    <p class="model-description">${description}<span class="whitespace-nowrap"> (${limits})</span></p>
-                </div>
-                ${checkmarkIcon}
-            </div>
-        `;
-    });
-
-    // ✨ 修改：更新主按鈕和彈出選單的 HTML 結構與 Class
-    ALL_ELEMENTS.modelSwitcherContainer.innerHTML = `
-        <div id="model-options-popover" class="popover absolute right-0 w-72 md:w-80 rounded-lg border border-[var(--border-color)] z-50">
-            ${optionsHTML}
-        </div>
-        <button id="current-model-btn" class="flex items-center gap-2 ${isArchived ? 'cursor-not-allowed' : ''}" ${isArchived ? 'disabled' : ''}>
-            <span class="font-semibold text-sm md:text-base text-[var(--text-primary)]">${currentModel.name}</span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-        </button>
-    `;
-
-    if (!isArchived) {
-        document.getElementById('current-model-btn').addEventListener('click', () => {
-            const popover = document.getElementById('model-options-popover');
-            popover.classList.toggle('visible');
-        });
-        document.querySelectorAll('.model-option-btn-container').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const newModelId = e.currentTarget.dataset.model;
-                const newModelInfo = MODELS.find(m => m.id === newModelId);
-                if (newModelInfo) {
-                    conv.model = newModelInfo.id;
-                    conv.provider = newModelInfo.provider;
-                    config.lastUsedModel = newModelId;
-
-                    if (config.isDeepResearchMode && newModelInfo.provider !== 'gemini') {
-                        toggleDeepResearchMode();
-                    }
-
-                    saveAppData();
-                    saveConfig();
-                    renderModelSwitcher();
-                    updateInputState();
-                    renderInputIndicators();
-                    updateFileInputUI();
-                    updateFunctionButtonsState();
-                }
-                document.getElementById('model-options-popover').classList.remove('visible');
+            const conv = getActiveConversation();
+            ALL_ELEMENTS.modelSwitcherContainer.innerHTML = '';
+            if (!conv) return;
+            const visibleModels = config.modelSettings
+                .filter(s => !s.hidden)
+                .sort((a, b) => a.order - b.order)
+                .map(s => MODELS.find(m => m.id === s.id))
+                .filter(Boolean);
+            const currentModel = MODELS.find(m => m.id === conv.model) || MODELS[0];
+            const isArchived = conv.archived;
+            let optionsHTML = '';
+            const translations = i18n[config.uiLanguage] || i18n['zh-TW'];
+            visibleModels.forEach(m => {
+                const description = translations[m.descriptionKey] || '';
+                const limits = translations[m.limitsKey] || '';
+                optionsHTML += `
+                    <div data-model="${m.id}" class="model-option-btn-container ${isArchived ? 'cursor-not-allowed opacity-50' : ''}">
+                        <h4 class="font-semibold">${m.name}</h4>
+                        <p class="model-description">${description}<span class="whitespace-nowrap"> (${limits})</span></p>
+                    </div>
+                `;
             });
-        });
-    }
+            ALL_ELEMENTS.modelSwitcherContainer.innerHTML = `
+                <button id="current-model-btn" class="flex items-center gap-2 text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] px-2 py-1 md:px-3 rounded-md ${isArchived ? 'cursor-not-allowed' : ''}" ${isArchived ? 'disabled' : ''}>
+                    <span class="font-semibold text-sm md:text-base text-[var(--text-primary)]">${currentModel.name}</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+                <div id="model-options-popover" class="popover absolute right-0 mt-6 w-72 md:w-80 rounded-lg border border-[var(--border-color)] z-50">
+                    ${optionsHTML}
+                </div>
+            `;
+            if (!isArchived) {
+                document.getElementById('current-model-btn').addEventListener('click', () => {
+                    const popover = document.getElementById('model-options-popover');
+                    if (popover.classList.contains('visible')) {
+                        popover.classList.remove('visible');
+                    } else {
+                        closeAllPopovers();
+                        popover.classList.add('visible');
+                    }
+                });
+                document.querySelectorAll('.model-option-btn-container').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const newModelId = e.currentTarget.dataset.model;
+                        const newModelInfo = MODELS.find(m => m.id === newModelId);
+                        if (newModelInfo) {
+                            conv.model = newModelInfo.id;
+                            conv.provider = newModelInfo.provider;
+                            config.lastUsedModel = newModelId;
 
-    updateFileInputUI();
-    updateApiKeyWarningBadge();
-};
+                            // ✨ 如果在新模型下深度研究模式不適用，則關閉它
+                            if (config.isDeepResearchMode && newModelInfo.provider !== 'gemini') {
+                                toggleDeepResearchMode(); // It will turn itself off
+                            }
+
+                            saveAppData();
+                            saveConfig();
+                            renderModelSwitcher();
+                            updateInputState();
+                            renderInputIndicators();
+                            updateFileInputUI();
+                            updateFunctionButtonsState();
+                        }
+                        document.getElementById('model-options-popover').classList.remove('visible');
+                    });
+                });
+            }
+            updateFileInputUI();
+            updateApiKeyWarningBadge();
+        };
         const addMessageToUI = (msg, index, shouldSave = true, shouldScroll = true) => {
             const conv = getActiveConversation();
             if (shouldSave) {
