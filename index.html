@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.9</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.5.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -13,6 +13,33 @@
     <style>
     body {
     touch-action: manipulation;
+}
+    .model-switcher-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: var(--hover-bg);
+    padding: 0.5rem 0.75rem;
+    border-radius: 9999px; /* 膠囊形狀 */
+    transition: background-color 0.2s ease;
+}
+.model-switcher-btn:hover:not(:disabled) {
+    background-color: var(--active-bg);
+}
+.model-switcher-btn .provider-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+}
+.model-switcher-btn .model-name {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+}
+.model-switcher-btn .chevron-icon {
+    width: 1rem;
+    height: 1rem;
+    color: var(--text-secondary);
 }
     #selection-mode-btn.active,
 #open-search-btn.active {
@@ -4520,15 +4547,21 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     </div>
                 `;
             });
-            ALL_ELEMENTS.modelSwitcherContainer.innerHTML = `
-                <button id="current-model-btn" class="flex items-center gap-2 text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] px-2 py-1 md:px-3 rounded-md ${isArchived ? 'cursor-not-allowed' : ''}" ${isArchived ? 'disabled' : ''}>
-                    <span class="font-semibold text-sm md:text-base text-[var(--text-primary)]">${currentModel.name}</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                </button>
-                <div id="model-options-popover" class="popover absolute right-0 mt-6 w-72 md:w-80 rounded-lg border border-[var(--border-color)] z-50">
-                    ${optionsHTML}
-                </div>
-            `;
+            const providerIcons = {
+    gemini: `<svg class="provider-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12.93,12l2.83,2.83-2.83,2.83L10.1,14.83,7.27,12,10.1,9.17l2.83-2.83L15.76,9.17,12.93,12ZM4.24,19.76l2.83-2.83,2.83,2.83,2.83-2.83,2.83,2.83,2.83-2.83,2.83,2.83L24,17,17,4.24,14.17,7.07,11.34,4.24,8.51,7.07,5.68,4.24,2.85,7.07,0,4.24,4.24,19.76Z" fill="currentColor"/></svg>`,
+    openrouter: `<svg class="provider-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 15.5c-1.09 0-2.16-.18-3.14-.5.33-.43.98-1.32 1.2-1.63.41-.57.88-1.12 1.3-1.66.5-.64.91-1.25 1.2-1.85.3-.6.44-1.21.44-1.85s-.15-1.25-.44-1.85c-.3-.6-.7-1.21-1.2-1.85-.42-.54-.89-1.09-1.3-1.66-.22-.31-.87-1.2-1.2-1.63.98-.32 2.05-.5 3.14-.5 4.14 0 7.5 3.36 7.5 7.5s-3.36 7.5-7.5 7.5z" fill="currentColor"/></svg>`
+};
+
+ALL_ELEMENTS.modelSwitcherContainer.innerHTML = `
+    <button id="current-model-btn" class="model-switcher-btn ${isArchived ? 'cursor-not-allowed opacity-60' : ''}" ${isArchived ? 'disabled' : ''}>
+        ${providerIcons[currentModel.provider] || ''}
+        <span class="model-name">${currentModel.name}</span>
+        <svg class="chevron-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    </button>
+    <div id="model-options-popover" class="popover absolute right-0 mt-2 w-72 md:w-80 rounded-lg border border-[var(--border-color)] z-50">
+        ${optionsHTML}
+    </div>
+`;
             if (!isArchived) {
                 document.getElementById('current-model-btn').addEventListener('click', () => {
                     const popover = document.getElementById('model-options-popover');
