@@ -1997,7 +1997,90 @@ body.custom-wallpaper-active .input-indicator-item {
     visibility: visible;
     opacity: 1;
 }
+#data-dashboard-modal > div {
+    background-color: rgba(255, 255, 255, 0.6); /* 半透明白色背景 */
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+}
+.dark #data-dashboard-modal > div {
+    background-color: rgba(40, 40, 40, 0.6); /* 深色模式的半透明背景 */
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
 
+/* 2. 將每個數據區塊設計成卡片 */
+.dashboard-card {
+    background-color: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 1rem; /* 圓角加大 */
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.dark .dashboard-card {
+    background-color: rgba(50, 50, 50, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.dashboard-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+}
+
+/* 3. 重新設計頂部的統計數據卡片 */
+.stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    text-align: center;
+}
+.stat-card-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(59, 130, 246, 0.1); /* 淺藍色背景 */
+    color: #3b82f6; /* 主題藍色 */
+    margin-bottom: 0.5rem;
+}
+.dark .stat-card-icon {
+    background-color: rgba(59, 130, 246, 0.2);
+}
+.stat-card h3 {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+.stat-card p {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text-primary);
+}
+
+/* 4. 儀表板內的標題樣式 */
+#data-dashboard-modal h3.text-lg {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+/* 5. 美化下拉式選單 */
+#data-dashboard-modal select {
+    background-color: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(200, 200, 200, 0.8);
+    border-radius: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    font-weight: 500;
+}
+.dark #data-dashboard-modal select {
+    background-color: rgba(50, 50, 50, 0.7);
+    border-color: rgba(255, 255, 255, 0.2);
+}
 
 </style>
 <script>
@@ -2827,84 +2910,74 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         </div>
     </div>
     <div id="data-dashboard-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-    <div class="bg-[var(--modal-bg)]/80 dark:bg-[var(--modal-bg)]/60 backdrop-blur-xl border border-[var(--border-color)] rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col" style="height: 90vh;">
-        <!-- 1. 標題列 -->
-        <div class="p-4 md:p-6 border-b border-[var(--border-color)]/50 flex justify-between items-center flex-shrink-0">
-            <h2 class="text-xl md:text-2xl font-bold flex items-center gap-3">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8a2.3 2.3 0 0 1 0 3.22L12 18l-6.7-6.78a2.3 2.3 0 0 1 0-3.22l6.7-6.78l6.7 6.78Z"/></svg>
-                <span data-lang-key="dashboard">個人數據面板</span>
-            </h2>
+    <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-4xl flex flex-col" style="height: 90vh;">
+        <div class="p-6 border-b border-[var(--border-color)] flex justify-between items-center">
+            <h2 class="text-2xl font-bold" data-lang-key="dashboard">個人數據面板</h2>
             <button id="close-dashboard-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
         </div>
 
-        <!-- 2. 主要內容區域 (可滾動) -->
-        <div class="flex-1 p-4 md:p-6 overflow-y-auto scroll-area space-y-6">
-
-            <!-- 篩選器區塊 -->
-            <div class="bg-[var(--sidebar-bg)]/60 p-4 rounded-xl border border-[var(--border-color)]/50">
-                <h3 class="text-sm font-semibold mb-3 text-[var(--text-secondary)]" data-lang-key="filters">篩選器</h3>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <!-- 模型篩選 (這是新增的！) -->
-                    <div>
-                        <label for="dashboard-model-filter" class="block text-xs font-medium mb-1.5" data-lang-key="model">模型</label>
-                        <select id="dashboard-model-filter" class="w-full p-2 border border-[var(--border-color)] rounded-lg bg-[var(--input-field-bg)] text-sm focus:ring-2 focus:ring-blue-500 transition"></select>
+        <!-- 👇👇👇 用下面的新程式碼，取代從這裡開始... 👇👇👇 -->
+        <div class="flex-1 p-6 overflow-y-auto scroll-area space-y-6">
+            <!-- 1. 總覽數據統計 (已更新) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- 總對話數 -->
+                <div class="dashboard-card stat-card">
+                    <div class="stat-card-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                     </div>
-                    <!-- 年份篩選 -->
                     <div>
-                        <label for="time-analysis-year-select" class="block text-xs font-medium mb-1.5" data-lang-key="year">年份</label>
-                        <select id="time-analysis-year-select" class="w-full p-2 border border-[var(--border-color)] rounded-lg bg-[var(--input-field-bg)] text-sm focus:ring-2 focus:ring-blue-500 transition"></select>
+                        <h3 data-lang-key="totalConversations">總對話數</h3>
+                        <p id="total-conv-stat"></p>
                     </div>
-                    <!-- 月份篩選 -->
-                    <div>
-                        <label for="time-analysis-month-select" class="block text-xs font-medium mb-1.5" data-lang-key="month">月份</label>
-                        <select id="time-analysis-month-select" class="w-full p-2 border border-[var(--border-color)] rounded-lg bg-[var(--input-field-bg)] text-sm focus:ring-2 focus:ring-blue-500 transition" disabled></select>
+                </div>
+                <!-- 資料夾數量 -->
+                <div class="dashboard-card stat-card">
+                    <div class="stat-card-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
                     </div>
-                    <!-- 日期篩選 -->
                     <div>
-                        <label for="time-analysis-day-select" class="block text-xs font-medium mb-1.5" data-lang-key="day">日期</label>
-                        <select id="time-analysis-day-select" class="w-full p-2 border border-[var(--border-color)] rounded-lg bg-[var(--input-field-bg)] text-sm focus:ring-2 focus:ring-blue-500 transition" disabled></select>
+                        <h3 data-lang-key="totalFolders">資料夾數量</h3>
+                        <p id="total-folder-stat"></p>
+                    </div>
+                </div>
+                <!-- 最常使用模型 -->
+                <div class="dashboard-card stat-card">
+                    <div class="stat-card-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+                    </div>
+                    <div>
+                        <h3 data-lang-key="mostUsedModel">最常使用的模型</h3>
+                        <p id="most-used-model-stat" class="text-xl truncate"></p>
                     </div>
                 </div>
             </div>
 
-            <!-- 關鍵指標區塊 -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-                <div class="p-4 bg-[var(--sidebar-bg)]/60 rounded-xl border border-[var(--border-color)]/50">
-                    <h3 class="text-sm font-medium text-[var(--text-secondary)]" data-lang-key="totalConversations">總對話數</h3>
-                    <p id="total-conv-stat" class="text-3xl font-bold mt-1"></p>
-                </div>
-                <div class="p-4 bg-[var(--sidebar-bg)]/60 rounded-xl border border-[var(--border-color)]/50">
-                    <h3 class="text-sm font-medium text-[var(--text-secondary)]" data-lang-key="totalMessages">總訊息數</h3>
-                    <p id="total-message-stat" class="text-3xl font-bold mt-1"></p>
-                </div>
-                <div class="p-4 bg-[var(--sidebar-bg)]/60 rounded-xl border border-[var(--border-color)]/50">
-                    <h3 class="text-sm font-medium text-[var(--text-secondary)]" data-lang-key="mostUsedModel">最常使用的模型</h3>
-                    <p id="most-used-model-stat" class="text-xl font-bold truncate mt-2"></p>
-                </div>
-            </div>
-
-            <!-- 圖表區塊 -->
             <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                <!-- 時間分佈圖 (折線圖) -->
-                <div class="lg:col-span-3">
-                    <div class="p-4 bg-[var(--sidebar-bg)]/60 rounded-xl border border-[var(--border-color)]/50 h-full">
-                        <h3 class="text-lg font-semibold mb-4" data-lang-key="messageTimeDistribution">訊息數量時間分佈</h3>
-                        <div id="time-chart-container" style="height: 300px;">
-                            <canvas id="time-distribution-chart"></canvas>
-                        </div>
+                <!-- 2. 模型使用比例 (已更新) -->
+                <div class="dashboard-card lg:col-span-2">
+                    <h3 class="text-lg font-semibold" data-lang-key="modelUsageRatio">模型使用比例</h3>
+                    <div style="height: 300px; position: relative;">
+                        <canvas id="model-usage-pie-chart"></canvas>
                     </div>
                 </div>
-                <!-- 模型使用比例 (圓餅圖) -->
-                <div class="lg:col-span-2">
-                    <div class="p-4 bg-[var(--sidebar-bg)]/60 rounded-xl border border-[var(--border-color)]/50 h-full">
-                        <h3 class="text-lg font-semibold mb-4" data-lang-key="modelUsageRatio">模型使用比例</h3>
-                        <div style="height: 300px; position: relative;">
-                            <canvas id="model-usage-pie-chart"></canvas>
-                        </div>
+
+                <!-- 3. 訊息數量時間分佈 (已更新) -->
+                <div class="dashboard-card lg:col-span-3">
+                    <div class="flex flex-wrap gap-x-4 gap-y-2 mb-4 items-center justify-between">
+                         <h3 class="text-lg font-semibold m-0" data-lang-key="messageTimeDistribution">訊息數量時間分佈</h3>
+                         <div class="flex items-center gap-2">
+                            <select id="time-analysis-year-select" class="text-sm"></select>
+                            <select id="time-analysis-month-select" class="text-sm" disabled></select>
+                            <select id="time-analysis-day-select" class="text-sm" disabled></select>
+                         </div>
+                    </div>
+                    <div id="time-chart-container" style="height: 280px; position: relative;">
+                         <canvas id="time-distribution-chart"></canvas>
                     </div>
                 </div>
             </div>
         </div>
+        <!-- 👆👆👆 ...到這裡為止 👆👆👆 -->
     </div>
 </div>
     <div id="wallpaper-crop-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[51]">
@@ -6991,57 +7064,26 @@ ${JSON.stringify(potentialMemories, null, 2)}
             ALL_ELEMENTS.apiKeyWarningBadge.classList.toggle('hidden', !needsKey);
         };
         const openDashboard = () => {
-    setupDashboardFilters(); 
-    updateDashboardData(); 
-    toggleModal(ALL_ELEMENTS.dataDashboardModal, true);
-};
-        const updateDashboardData = () => {
-    const { modelId, year, month, day } = getDashboardFilters();
-
-    // 根據模型篩選對話
-    const filteredConversations = modelId === 'all'
-        ? conversations.filter(c => !c.deletedAt)
-        : conversations.filter(c => c.model === modelId && !c.deletedAt);
-
-    renderDashboardStats(filteredConversations);
-    renderModelUsageChart(filteredConversations);
-    updateTimeDistributionChart(filteredConversations);
-};
-        const getDashboardFilters = () => {
-    const modelFilter = document.getElementById('dashboard-model-filter');
-    const yearSelect = ALL_ELEMENTS.timeAnalysisYearSelect;
-    const monthSelect = ALL_ELEMENTS.timeAnalysisMonthSelect;
-    const daySelect = ALL_ELEMENTS.timeAnalysisDaySelect;
-    
-    return {
-        modelId: modelFilter.value,
-        year: yearSelect.value ? parseInt(yearSelect.value) : null,
-        month: monthSelect.value ? parseInt(monthSelect.value) : null,
-        day: daySelect.value ? parseInt(daySelect.value) : null,
-    };
-};
-        const renderDashboardStats = (filteredConversations) => {
-    // 如果沒有傳入數據，則使用全部對話
-    const convsToAnalyze = filteredConversations || conversations.filter(c => !c.deletedAt);
-
-    ALL_ELEMENTS.totalConvStat.textContent = convsToAnalyze.length;
-
-    // 新增：計算總訊息數
-    const totalMessages = convsToAnalyze.reduce((sum, conv) => sum + conv.messages.length, 0);
-    document.getElementById('total-message-stat').textContent = totalMessages;
-
-    const modelCounts = convsToAnalyze.reduce((acc, conv) => {
-        const modelName = MODELS.find(m => m.id === conv.model)?.name || '未知模型';
-        acc[modelName] = (acc[modelName] || 0) + 1;
-        return acc;
-    }, {});
-    const mostUsedModel = Object.keys(modelCounts).reduce((a, b) => modelCounts[a] > modelCounts[b] ? a : b, 'N/A');
-    ALL_ELEMENTS.mostUsedModelStat.textContent = mostUsedModel;
-};
-        const renderModelUsageChart = (filteredConversations) => {
-    const convsToAnalyze = filteredConversations || conversations.filter(c => !c.deletedAt);
+            renderDashboardStats();
+            renderModelUsageChart();
+            setupTimeAnalysis();
+            toggleModal(ALL_ELEMENTS.dataDashboardModal, true);
+        };
+        const renderDashboardStats = () => {
+            ALL_ELEMENTS.totalConvStat.textContent = conversations.filter(c => !c.deletedAt).length;
+            ALL_ELEMENTS.totalFolderStat.textContent = folders.length;
+            const modelCounts = conversations.reduce((acc, conv) => {
+                const modelName = MODELS.find(m => m.id === conv.model)?.name || '未知模型';
+                acc[modelName] = (acc[modelName] || 0) + 1;
+                return acc;
+            }, {});
+            const mostUsedModel = Object.keys(modelCounts).reduce((a, b) => modelCounts[a] > modelCounts[b] ? a : b, 'N/A');
+            ALL_ELEMENTS.mostUsedModelStat.textContent = mostUsedModel;
+        };
+        const renderModelUsageChart = () => {
+    // ...用下面的新程式碼取代整個 function 的內容...
     const ctx = document.getElementById('model-usage-pie-chart').getContext('2d');
-    const modelCounts = convsToAnalyze.reduce((acc, conv) => {
+    const modelCounts = conversations.reduce((acc, conv) => {
         const modelName = MODELS.find(m => m.id === conv.model)?.name || '未知模型';
         acc[modelName] = (acc[modelName] || 0) + 1;
         return acc;
@@ -7049,18 +7091,26 @@ ${JSON.stringify(potentialMemories, null, 2)}
     
     const labels = Object.keys(modelCounts);
     const data = Object.values(modelCounts);
+    
+    // ✨ 新增的現代化顏色主題
+    const chartColors = [
+        '#3b82f6', '#10b981', '#f97316', '#8b5cf6', '#ec4899', 
+        '#06b6d4', '#f59e0b', '#6366f1'
+    ];
 
-    if (modelPieChart) {
+    if(modelPieChart) {
         modelPieChart.destroy();
     }
+    
     modelPieChart = new Chart(ctx, {
-        type: 'doughnut', // 改為甜甜圈圖更美觀
+        type: 'doughnut', // ✨ 改成甜甜圈圖
         data: {
             labels: labels,
             datasets: [{
+                label: i18n[config.uiLanguage].modelUsageCount || '模型使用次數',
                 data: data,
-                backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#6366F1', '#F97316'],
-                borderColor: 'var(--modal-bg)',
+                backgroundColor: chartColors,
+                borderColor: config.theme === 'dark' ? '#282828' : '#fff', // ✨ 邊框顏色
                 borderWidth: 4,
                 hoverOffset: 8
             }]
@@ -7068,85 +7118,71 @@ ${JSON.stringify(potentialMemories, null, 2)}
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            cutout: '60%', // 甜甜圈圖的中心孔洞大小
+            cutout: '70%', // ✨ 甜甜圈中間的洞大小
             plugins: {
                 legend: {
-                    position: 'bottom', // 圖例放底部
+                    position: 'bottom', // ✨ 圖例放底部
                     labels: {
-                        color: 'var(--text-secondary)',
-                        font: { size: 12 },
-                        boxWidth: 15,
-                        padding: 20
+                        color: getComputedStyle(document.body).getPropertyValue('--text-secondary'),
+                        padding: 15,
+                        font: { size: 12 }
                     }
+                },
+                tooltip: { // ✨ 美化提示框
+                    backgroundColor: 'rgba(0,0,0,0.7)',
+                    titleFont: { size: 14, weight: 'bold' },
+                    bodyFont: { size: 12 },
+                    padding: 10,
+                    cornerRadius: 8,
+                    boxPadding: 4
                 }
             }
         }
     });
 };
-        const setupDashboardFilters = () => {
-    const { timeAnalysisYearSelect, timeAnalysisMonthSelect, timeAnalysisDaySelect } = ALL_ELEMENTS;
-    const modelFilter = document.getElementById('dashboard-model-filter');
-
-    // 1. 設定模型篩選器
-    modelFilter.innerHTML = `<option value="all">${i18n[config.uiLanguage].allModels || '所有模型'}</option>`;
-    MODELS.forEach(model => {
-        const option = document.createElement('option');
-        option.value = model.id;
-        option.textContent = model.name;
-        modelFilter.appendChild(option);
-    });
-
-    // 2. 設定日期篩選器 (邏輯不變)
-    const allMessages = conversations.flatMap(c => c.messages.map(m => new Date(m.createdAt)));
-    const years = [...new Set(allMessages.map(d => d.getFullYear()))].sort((a, b) => b - a);
-    timeAnalysisYearSelect.innerHTML = `<option value="">${i18n[config.uiLanguage].all || '全部'}</option>`;
-    years.forEach(year => {
-        const option = document.createElement('option');
-        option.value = year;
-        option.textContent = year;
-        timeAnalysisYearSelect.appendChild(option);
-    });
-    
-    // 3. 綁定事件監聽器
-    const allFilters = [modelFilter, timeAnalysisYearSelect, timeAnalysisMonthSelect, timeAnalysisDaySelect];
-    allFilters.forEach(filter => {
-        // 移除舊的監聽器，避免重複綁定
-        filter.removeEventListener('change', updateDashboardData);
-        // 綁定新的統一更新函式
-        filter.addEventListener('change', updateDashboardData);
-    });
-
-    timeAnalysisYearSelect.addEventListener('change', () => {
-        const year = timeAnalysisYearSelect.value;
-        timeAnalysisMonthSelect.disabled = !year;
-        timeAnalysisDaySelect.disabled = true;
-        if (year) {
-            timeAnalysisMonthSelect.innerHTML = `<option value="">${i18n[config.uiLanguage].wholeYear || '全年'}</option>`;
-            for (let i = 1; i <= 12; i++) {
+        const setupTimeAnalysis = () => {
+            const { timeAnalysisYearSelect, timeAnalysisMonthSelect, timeAnalysisDaySelect } = ALL_ELEMENTS;
+            const allMessages = conversations.flatMap(c => c.messages.map(m => new Date(m.createdAt)));
+            const years = [...new Set(allMessages.map(d => d.getFullYear()))].sort((a,b) => b-a);
+            timeAnalysisYearSelect.innerHTML = `<option value="">${i18n[config.uiLanguage].all || '全部'}</option>`;
+            years.forEach(year => {
                 const option = document.createElement('option');
-                option.value = i;
-                option.textContent = `${i}${i18n[config.uiLanguage].monthSuffix || '月'}`;
-                timeAnalysisMonthSelect.appendChild(option);
-            }
-        }
-    });
-
-    timeAnalysisMonthSelect.addEventListener('change', () => {
-        const year = parseInt(timeAnalysisYearSelect.value);
-        const month = parseInt(timeAnalysisMonthSelect.value);
-        timeAnalysisDaySelect.disabled = !(year && month);
-        if (year && month) {
-            const daysInMonth = new Date(year, month, 0).getDate();
-            timeAnalysisDaySelect.innerHTML = `<option value="">${i18n[config.uiLanguage].wholeMonth || '全月'}</option>`;
-            for (let i = 1; i <= daysInMonth; i++) {
-                const option = document.createElement('option');
-                option.value = i;
-                option.textContent = `${i}${i18n[config.uiLanguage].daySuffix || '日'}`;
-                timeAnalysisDaySelect.appendChild(option);
-            }
-        }
-    });
-};
+                option.value = year;
+                option.textContent = year;
+                timeAnalysisYearSelect.appendChild(option);
+            });
+            timeAnalysisYearSelect.addEventListener('change', () => {
+                const year = timeAnalysisYearSelect.value;
+                if (year) {
+                    timeAnalysisMonthSelect.disabled = false;
+                    timeAnalysisMonthSelect.innerHTML = `<option value="">${i18n[config.uiLanguage].wholeYear || '全年'}</option>`;
+                     for(let i=1; i<=12; i++) {
+                        const option = document.createElement('option');
+                        option.value = i;
+                        option.textContent = `${i}${i18n[config.uiLanguage].monthSuffix || '月'}`;
+                        timeAnalysisMonthSelect.appendChild(option);
+                    }
+                } else {
+                    timeAnalysisMonthSelect.disabled = true;
+                    timeAnalysisMonthSelect.innerHTML = '';
+                }
+                timeAnalysisDaySelect.disabled = true;
+                timeAnalysisDaySelect.innerHTML = '';
+                updateTimeDistributionChart();
+            });
+            timeAnalysisMonthSelect.addEventListener('change', () => {
+                const year = parseInt(timeAnalysisYearSelect.value);
+                const month = parseInt(timeAnalysisMonthSelect.value);
+                 if (year && month) {
+                    timeAnalysisDaySelect.disabled = false;
+                    const daysInMonth = new Date(year, month, 0).getDate();
+                    timeAnalysisDaySelect.innerHTML = `<option value="">${i18n[config.uiLanguage].wholeMonth || '全月'}</option>`;
+                    for (let i = 1; i <= daysInMonth; i++) {
+                        const option = document.createElement('option');
+                        option.value = i;
+                        option.textContent = `${i}${i18n[config.uiLanguage].daySuffix || '日'}`;
+                        timeAnalysisDaySelect.appendChild(option);
+                    }
                 } else {
                     timeAnalysisDaySelect.disabled = true;
                     timeAnalysisDaySelect.innerHTML = '';
@@ -7156,18 +7192,21 @@ ${JSON.stringify(potentialMemories, null, 2)}
             timeAnalysisDaySelect.addEventListener('change', updateTimeDistributionChart);
             updateTimeDistributionChart();
         };
-        const updateTimeDistributionChart = (filteredConversations) => {
-    const { year, month, day } = getDashboardFilters();
+        const updateTimeDistributionChart = () => {
+    // ...用下面的新程式碼取代整個 function 的內容...
+    const year = ALL_ELEMENTS.timeAnalysisYearSelect.value ? parseInt(ALL_ELEMENTS.timeAnalysisYearSelect.value) : null;
+    const month = ALL_ELEMENTS.timeAnalysisMonthSelect.value ? parseInt(ALL_ELEMENTS.timeAnalysisMonthSelect.value) : null;
+    const day = ALL_ELEMENTS.timeAnalysisDaySelect.value ? parseInt(ALL_ELEMENTS.timeAnalysisDaySelect.value) : null;
+    
     let labels, data, chartType, label;
+    const allMessages = conversations.flatMap(c => c.messages);
     const lang = config.uiLanguage;
 
-    // 數據源來自傳入的已篩選對話
-    const allMessages = filteredConversations.flatMap(c => c.messages);
-
+    // ... (這部分的資料處理邏輯不變) ...
     if (year && month && day) {
         chartType = 'line';
-        label = `${year}-${month}-${day} ${i18n[lang].hourlyMessageCount || '每小時訊息數'}`;
-        labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+        label = `${year}${i18n[lang].yearSuffix || '年'}${month}${i18n[lang].monthSuffix || '月'}${day}${i18n[lang].daySuffix || '日'} ${i18n[lang].hourlyMessageCount || '每小時訊息數'}`;
+        labels = Array.from({length: 24}, (_, i) => `${i}:00`);
         data = Array(24).fill(0);
         allMessages.forEach(msg => {
             const msgDate = new Date(msg.createdAt);
@@ -7177,9 +7216,9 @@ ${JSON.stringify(potentialMemories, null, 2)}
         });
     } else if (year && month) {
         chartType = 'bar';
-        label = `${year}-${month} ${i18n[lang].dailyMessageCount || '每日訊息數'}`;
+        label = `${year}${i18n[lang].yearSuffix || '年'}${month}${i18n[lang].monthSuffix || '月'} ${i18n[lang].dailyMessageCount || '每日訊息數'}`;
         const daysInMonth = new Date(year, month, 0).getDate();
-        labels = Array.from({ length: daysInMonth }, (_, i) => `${i + 1}${i18n[lang].daySuffix || '日'}`);
+        labels = Array.from({length: daysInMonth}, (_, i) => `${i + 1}${i18n[lang].daySuffix || '日'}`);
         data = Array(daysInMonth).fill(0);
         allMessages.forEach(msg => {
             const msgDate = new Date(msg.createdAt);
@@ -7189,7 +7228,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
         });
     } else if (year) {
         chartType = 'line';
-        label = `${year} ${i18n[lang].monthlyMessageCount || '每月訊息數'}`;
+        label = `${year}${i18n[lang].yearSuffix || '年'} ${i18n[lang].monthlyMessageCount || '每月訊息數'}`;
         labels = i18n[lang].months || ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
         data = Array(12).fill(0);
         allMessages.forEach(msg => {
@@ -7210,11 +7249,14 @@ ${JSON.stringify(potentialMemories, null, 2)}
     if (timeDistChart) {
         timeDistChart.destroy();
     }
-
-    // ✨ 美化圖表的關鍵：建立漸層背景
+    
+    // ✨ 建立漸層背景
     const gradient = ctx.createLinearGradient(0, 0, 0, 300);
     gradient.addColorStop(0, 'rgba(59, 130, 246, 0.4)');
     gradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
+
+    const textColor = getComputedStyle(document.body).getPropertyValue('--text-secondary');
+    const gridColor = getComputedStyle(document.body).getPropertyValue('--border-color');
 
     timeDistChart = new Chart(ctx, {
         type: chartType,
@@ -7223,17 +7265,17 @@ ${JSON.stringify(potentialMemories, null, 2)}
             datasets: [{
                 label: label,
                 data: data,
-                backgroundColor: chartType === 'line' ? gradient : 'rgba(54, 162, 235, 0.5)',
-                borderColor: 'rgba(59, 130, 246, 1)',
+                backgroundColor: chartType === 'bar' ? 'rgba(59, 130, 246, 0.6)' : gradient, // ✨ 套用漸層或長條圖顏色
+                borderColor: '#3b82f6',
                 borderWidth: 2.5,
-                fill: chartType === 'line' ? true : false, // 啟用填充
-                tension: 0.4, // 讓線條變平滑
-                pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                tension: 0.4, // ✨ 讓線條變平滑
+                fill: true, // ✨ 啟用背景填充
+                pointBackgroundColor: '#3b82f6',
                 pointBorderColor: '#fff',
                 pointHoverBackgroundColor: '#fff',
-                pointHoverBorderColor: 'rgba(59, 130, 246, 1)',
-                pointRadius: 4,
-                pointHoverRadius: 6,
+                pointHoverBorderColor: '#3b82f6',
+                pointRadius: 0, // ✨ 平時隱藏點
+                pointHoverRadius: 6, // ✨ 滑鼠懸停時顯示點
             }]
         },
         options: {
@@ -7243,40 +7285,42 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 y: {
                     beginAtZero: true,
                     ticks: {
-                        color: 'var(--text-secondary)',
-                        precision: 0 // 只顯示整數
+                        stepSize: 1,
+                        color: textColor
                     },
                     grid: {
-                        color: 'var(--border-color)', // 網格線顏色
+                        color: gridColor, // ✨ 網格線顏色
                         drawBorder: false,
                     }
                 },
                 x: {
                     ticks: {
-                        color: 'var(--text-secondary)'
+                        color: textColor
                     },
                     grid: {
-                        display: false // 隱藏 X 軸的網格線
+                        display: false, // ✨ 隱藏垂直網格線
                     }
                 }
             },
             plugins: {
                 legend: {
-                    display: false // 隱藏頂部圖例，讓圖表更簡潔
+                   display: false // ✨ 隱藏圖例，因為標題已經很清楚
                 },
-                tooltip: {
+                tooltip: { // ✨ 美化提示框
                     backgroundColor: 'rgba(0,0,0,0.7)',
-                    titleColor: '#fff',
-                    bodyColor: '#fff',
+                    titleFont: { size: 14, weight: 'bold' },
+                    bodyFont: { size: 12 },
                     padding: 10,
                     cornerRadius: 8,
-                    displayColors: false, // 不顯示顏色方塊
+                    boxPadding: 4,
+                    intersect: false,
+                    mode: 'index',
                 }
             },
             interaction: {
                 intersect: false,
                 mode: 'index',
-            }
+            },
         }
     });
 };
