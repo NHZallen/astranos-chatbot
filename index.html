@@ -3,17 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.9</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.5.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js">
     <style>
     body {
     touch-action: manipulation;
 }
+    .sortable-ghost {
+        opacity: 0.4;
+        background-color: #60a5fa; /* blue-400 */
+        border: 2px dashed #2563eb; /* blue-600 */
+    }
+
+    /* 正在被拖曳的項目樣式 */
+    .sortable-drag {
+        opacity: 0.9;
+        transform: rotate(2deg);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    
+    /* 當一個項目被拖曳時，為 body 加上這個 class，防止奇怪的文字選取行為 */
+    body.is-dragging {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+
+    /* 為可拖曳的項目加上一個明顯的游標 */
+    .draggable-item {
+        cursor: grab;
+    }
+
+    .draggable-item:active {
+        cursor: grabbing;
+    }
     body.splash-screen-active {
     overflow: hidden;
     position: fixed; /* 針對 iOS 裝置的加強鎖定 */
@@ -3477,7 +3507,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         };
         const getDefaultGenConfig = () => ({ temperature: 0.7, topP: 0.95, maxTokens: null });
-        const getDefaultFolder = () => ({ color: 'gray', icon: '📁' , isOpen: false});
+        const getDefaultFolder = () => ({ color: 'gray', icon: '📁' , isOpen: false, pinned: false });
         const createBaseConversation = (title) => {
             const defaultModelInfo = MODELS.find(m => m.id === config.lastUsedModel) || MODELS.find(m => m.id === config.defaultModel) || MODELS[0];
             const now = new Date().toISOString();
@@ -3634,6 +3664,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 conv.pinned = !conv.pinned;
                 await saveAppData();
                 renderAll();
+                initDragAndDrop();
             }
         };
         const showRenameModal = (id, type, event) => {
@@ -3773,31 +3804,36 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         const renderFolders = () => {
             ALL_ELEMENTS.folderList.innerHTML = '';
-            folders.forEach(folder => {
+            // ✨ 新增點：將釘選的資料夾排序到最前面
+            const sortedFolders = [...folders].sort((a, b) => {
+                if (a.pinned && !b.pinned) return -1;
+                if (!a.pinned && b.pinned) return 1;
+                return 0; // 保持原有順序
+            });
+
+            sortedFolders.forEach(folder => { // ✨ 修改點：使用排序後的 sortedFolders
                 const folderConvs = folder.conversationIds
-                    .map(id => conversations.find(c => c.id === id))
-                    .filter(c => c && !c.archived && !c.deletedAt)
-                    .sort((a,b) => {
-                        if (a.pinned && !b.pinned) return -1;
-                        if (!a.pinned && b.pinned) return 1;
-                        const dateB = b.lastUpdatedAt || b.createdAt;
-                        const dateA = a.lastUpdatedAt || a.createdAt;
-                        return new Date(dateB) - new Date(dateA);
-                    });
+                    // ... (此處程式碼不變)
+
                 const folderElement = document.createElement('div');
-                folderElement.className = 'folder-item text-sm';
+                // ✨ 修改點：如果資料夾被釘選，則加上 'draggable-item' class
+                folderElement.className = `folder-item text-sm ${folder.pinned ? 'draggable-item' : ''}`;
                 folderElement.dataset.id = folder.id;
+                // ✨ 新增點：加上 data-pinned 屬性
+                folderElement.dataset.pinned = folder.pinned || false;
                 folderElement.dataset.open = folder.isOpen;
+
                 folderElement.innerHTML = `
                     <div class="folder-summary sidebar-item p-3 rounded-lg flex items-center justify-between">
                         <div class="flex items-center gap-2 truncate">
                             <svg class="folder-arrow flex-shrink-0" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                             <span class="folder-icon mr-1">${folder.icon}</span>
-                            <span class="font-medium truncate" style="color: ${FOLDER_COLORS[folder.color] || FOLDER_COLORS.gray};">${folder.name}</span>
+                            <span class="font-medium truncate" style="color: ${FOLDER_COLORS[folder.color] || FOLDER_COLORS.gray};">${folder.name}${folder.pinned ? ' <span class="pinned-icon">📌</span>' : ''}</span>
                         </div>
                         <button data-id="${folder.id}" class="folder-options-btn flex-shrink-0 w-6 h-6 rounded-md hover:bg-[var(--active-bg)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>
                     </div>
-                    <div class="folder-content-container pl-4 mt-1 space-y-1"></div>
+                    // ✨ 修改點：為容器加上 id 和 class
+                    <div id="folder-content-${folder.id}" class="folder-content-container pl-4 mt-1 space-y-1"></div>
                 `;
                 const contentContainer = folderElement.querySelector('.folder-content-container');
                 folderConvs.forEach(conv => {
@@ -3849,8 +3885,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         const createConversationElement = (conv) => {
             const item = document.createElement('div');
-            item.className = `sidebar-item w-full text-left p-3 rounded-lg flex items-center justify-between cursor-pointer ${conv.id === activeConversationId && !isSelectionMode ? 'active' : ''}`;
+            // ✨ 修改點：如果對話被釘選，則加上 'draggable-item' class
+            item.className = `sidebar-item w-full text-left p-3 rounded-lg flex items-center justify-between cursor-pointer ${conv.id === activeConversationId && !isSelectionMode ? 'active' : ''} ${conv.pinned ? 'draggable-item' : ''}`;
             item.dataset.id = conv.id;
+            // ✨ 新增點：加上 data-pinned 屬性，方便 SortableJS 判斷
+            item.dataset.pinned = conv.pinned;
+
             const modelInfo = MODELS.find(m => m.id === conv.model);
             const modelCodename = modelInfo ? modelInfo.name.split(' (')[0] : '';
             const modelNameSuffix = modelCodename ? `<span class="model-suffix">${modelCodename}</span>` : '';
@@ -5715,6 +5755,16 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             renderAll();
             showNotification(i18n[config.uiLanguage].folderDeleted, 'success');
         };
+        const togglePinFolder = async (id, event) => {
+            event?.stopPropagation();
+            const folder = folders.find(f => f.id === id);
+            if (folder) {
+                folder.pinned = !folder.pinned;
+                await saveAppData();
+                renderAll();
+                initDragAndDrop(); // 重新初始化拖曳功能
+            }
+        };
         const showFolderSettingsModal = (id, event) => {
             event?.stopPropagation();
             folderToCustomize = id;
@@ -5777,16 +5827,22 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             popover.dataset.targetId = targetButton.id;
             popover.style.top = `${rect.bottom}px`;
             popover.style.left = `${rect.left}px`;
+            const folder = folders.find(f => f.id === folderId); // ✨ 新增點
+            const pinText = folder.pinned ? (i18n[config.uiLanguage].unpin || '取消釘選') : (i18n[config.uiLanguage].pin || '釘選');
             popover.innerHTML = `
                 <button data-id="${folderId}" class="rename-folder-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].rename || '重新命名'}</button>
                 <button data-id="${folderId}" class="customize-folder-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].customize || '自訂'}</button>
+                <button data-id="${folderId}" class="pin-folder-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${pinText}</button> 
                 <div class="border-t my-1 border-[var(--border-color)]"></div>
                 <button data-id="${folderId}" class="delete-folder-btn w-full text-left px-4 py-2 text-red-600 hover:bg-red-500/10 text-sm">${i18n[config.uiLanguage].deleteFolder || '刪除資料夾'}</button>
             `;
             document.body.appendChild(popover);
             requestAnimationFrame(() => popover.classList.add('visible'));
+
             popover.querySelector('.rename-folder-btn').addEventListener('click', (e) => { showRenameModal(folderId, 'folder', e); popover.remove(); });
             popover.querySelector('.customize-folder-btn').addEventListener('click', (e) => { showFolderSettingsModal(folderId, e); popover.remove(); });
+            // ✨ 新增點：綁定釘選按鈕事件
+            popover.querySelector('.pin-folder-btn').addEventListener('click', (e) => { togglePinFolder(folderId, e); popover.remove(); });
             popover.querySelector('.delete-folder-btn').addEventListener('click', (e) => { deleteFolder(folderId, e); popover.remove(); });
         };
         const toggleSelectionMode = () => {
@@ -6318,6 +6374,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     } else {
                         startNewChat();
                     }
+                    initDragAndDrop();
                 } catch (error) {
                     showNotification(`${i18n[config.uiLanguage].importFailed}: ${error.message}`, 'error');
                     console.error(error);
@@ -8496,6 +8553,102 @@ ${allSearchResults.join('\n\n')}`;
                 }
             }
         }
+        let sortableInstances = [];
+
+        function initDragAndDrop() {
+            // 清除舊的實例，防止重複綁定
+            sortableInstances.forEach(instance => instance.destroy());
+            sortableInstances = [];
+
+            const onDragEnd = async (evt) => {
+                document.body.classList.remove('is-dragging');
+                const itemEl = evt.item;
+                const itemId = itemEl.dataset.id;
+                const fromList = evt.from;
+                const toList = evt.to;
+                const oldIndex = evt.oldIndex;
+                const newIndex = evt.newIndex;
+
+                // 獲取所有元素的 ID 順序
+                const getIdsFromList = (list) => Array.from(list.children).map(child => child.dataset.id);
+
+                // --- 1. 處理資料夾排序 ---
+                if (fromList.id === 'folder-list' && toList.id === 'folder-list') {
+                    const reorderedFolderIds = getIdsFromList(toList);
+                    // 根據新的 ID 順序重新排序 folders 陣列
+                    folders.sort((a, b) => reorderedFolderIds.indexOf(a.id) - reorderedFolderIds.indexOf(b.id));
+                }
+
+                // --- 2. 處理對話排序或移動 ---
+                else {
+                    const movedConv = conversations.find(c => c.id === itemId);
+                    if (!movedConv) return;
+
+                    const fromFolderId = fromList.id.startsWith('folder-content-') ? fromList.id.replace('folder-content-', '') : null;
+                    const toFolderId = toList.id.startsWith('folder-content-') ? toList.id.replace('folder-content-', '') : null;
+                    
+                    // 從舊位置移除
+                    if (fromFolderId) {
+                        const fromFolder = folders.find(f => f.id === fromFolderId);
+                        fromFolder.conversationIds = fromFolder.conversationIds.filter(id => id !== itemId);
+                    }
+                    movedConv.folderId = toFolderId;
+
+                    // 加入到新位置
+                    if (toFolderId) {
+                        const toFolder = folders.find(f => f.id === toFolderId);
+                        const newIds = getIdsFromList(toList);
+                        toFolder.conversationIds = newIds;
+                    }
+                }
+                
+                await saveAppData();
+                renderAll(); // 重新渲染整個介面以確保一致性
+                initDragAndDrop(); // 重新初始化拖曳功能
+            };
+
+            const commonSortableOptions = {
+                group: 'shared-history',
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                dragClass: 'sortable-drag',
+                onStart: () => document.body.classList.add('is-dragging'),
+                onEnd: onDragEnd,
+            };
+
+            // 初始化資料夾列表的拖曳
+            const folderListEl = document.getElementById('folder-list');
+            if (folderListEl) {
+                sortableInstances.push(new Sortable(folderListEl, {
+                    ...commonSortableOptions,
+                    filter: '.folder-item[data-pinned="false"]', // 只允許釘選的資料夾被拖動
+                    onMove: (evt) => {
+                        // 防止對話被拖到資料夾列表的頂層
+                        return !evt.dragged.classList.contains('sidebar-item');
+                    }
+                }));
+            }
+            
+            // 初始化未分類對話列表的拖曳
+            const historyListEl = document.getElementById('history-list');
+            if (historyListEl) {
+                sortableInstances.push(new Sortable(historyListEl, {
+                    ...commonSortableOptions,
+                    filter: '.sidebar-item[data-pinned="false"]', // 只允許釘選的對話被拖動
+                }));
+            }
+
+            // 初始化每個資料夾內部對話列表的拖曳
+            folders.forEach(folder => {
+                const folderContentEl = document.getElementById(`folder-content-${folder.id}`);
+                if (folderContentEl) {
+                    sortableInstances.push(new Sortable(folderContentEl, {
+                        ...commonSortableOptions,
+                        filter: '.sidebar-item[data-pinned="false"]', // 只允許釘選的對話被拖動
+                    }));
+                }
+            });
+        }
         async function initChatApp() {
             injectDeepResearchStyles(); // ✨ 注入樣式
             await loadConfig();
@@ -8918,6 +9071,7 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
     }
 });
         initializeSpotlightEffect();
+        initDragAndDrop();
         }
         const handleDeleteMessagePair = async (index) => {
             const confirmed = await showCustomDialog({
