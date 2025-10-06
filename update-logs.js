@@ -1,5 +1,12 @@
 const updateLogs = [
         {
+        version: "15.5.0",
+        date: "2025-10-6",
+        content: [
+            "<strong>更新：</strong>全新的側邊攔樣式",
+        ]
+    },
+        {
         version: "15.4.9",
         date: "2025-10-6",
         content: [
