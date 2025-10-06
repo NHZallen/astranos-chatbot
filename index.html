@@ -5793,15 +5793,21 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             popover.querySelector('.delete-folder-btn').addEventListener('click', (e) => { deleteFolder(folderId, e); popover.remove(); });
         };
         const toggleSelectionMode = () => {
-            isSelectionMode = !isSelectionMode;
-            selectedConversationIds.clear();
-            if (!isSelectionMode) {
-                ALL_ELEMENTS.selectionModeBtn.textContent = i18n[config.uiLanguage].batchSelect;
-            } else {
-                ALL_ELEMENTS.selectionModeBtn.textContent = i18n[config.uiLanguage].cancelBatchSelect;
-            }
-            renderAll();
-        };
+    isSelectionMode = !isSelectionMode;
+    selectedConversationIds.clear();
+
+    // ✨ 核心修改：不再改變文字，而是切換 'active' CSS 類別
+    ALL_ELEMENTS.selectionModeBtn.classList.toggle('active', isSelectionMode);
+
+    // ✨ 優化：同時更新滑鼠懸停時的提示文字
+    if (isSelectionMode) {
+        ALL_ELEMENTS.selectionModeBtn.title = i18n[config.uiLanguage].cancelBatchSelect || '取消批次選取';
+    } else {
+        ALL_ELEMENTS.selectionModeBtn.title = i18n[config.uiLanguage].batchSelect || '批次選取';
+    }
+
+    renderAll();
+};
         const renderBatchActionBar = () => {
             const { batchActionBar, userControls, selectionCount, batchDeleteBtn, batchArchiveBtn, batchMoveBtn } = ALL_ELEMENTS;
             if (isSelectionMode) {
