@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.9</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.5.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -1859,7 +1859,87 @@ body.custom-wallpaper-active .input-indicator-item {
     opacity: 1;
 }
 
+.message-bubble.group {
+    position: relative;
+}
 
+/* 預設隱藏的標準操作按鈕 (複製)，滑鼠懸停在泡泡上時顯示 */
+.message-actions {
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+.group:hover .message-actions {
+    opacity: 1;
+}
+
+/* 版本切換控制項的容器 */
+.regeneration-controls {
+    display: flex; /* 使用 flexbox 排列 */
+    position: absolute;
+    bottom: 0.5rem; /* 距離底部 8px */
+    left: 50%;
+    transform: translateX(-50%); /* 水平置中 */
+    align-items: center;
+    gap: 0.5rem; /* 項目間距 */
+    padding: 0.25rem 0.5rem; /* 內邊距 */
+    background-color: var(--hover-bg);
+    border-radius: 9999px; /* 圓角 */
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+    transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+}
+
+/* 預設隱藏版本切換控制器 */
+.regeneration-controls.hidden {
+    display: none;
+}
+
+/* 版本計數器樣式 */
+.regen-version-counter {
+    font-size: 0.75rem; /* 12px */
+    font-weight: 500;
+    font-variant-numeric: tabular-nums; /* 讓數字等寬，避免跳動 */
+    color: var(--text-secondary);
+}
+
+/* 左右箭頭按鈕 */
+.regen-arrow-btn {
+    padding: 0.25rem; /* 4px */
+    border-radius: 9999px;
+}
+.regen-arrow-btn:hover:not(:disabled) {
+    background-color: var(--active-bg);
+}
+.regen-arrow-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 確認按鈕 */
+.regen-confirm-btn {
+    font-size: 0.75rem; /* 12px */
+    font-weight: 600;
+    padding: 0.125rem 0.75rem; /* 2px 12px */
+    border-radius: 9999px;
+}
+
+/* 分隔線 */
+.regen-divider {
+    width: 1px;
+    height: 1rem; /* 16px */
+    background-color: var(--border-color);
+    margin: 0 0.25rem; /* 左右 4px 間距 */
+}
+
+/* 當內容正在重新生成時的閃爍動畫 */
+@keyframes content-pulse {
+    0%, 100% { background-color: var(--ai-bubble-bg); }
+    50% { background-color: var(--hover-bg); }
+}
+.message-content.regenerating {
+    animation: content-pulse 1.5s infinite ease-in-out;
+}
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -4457,15 +4537,34 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     contentHTML += mediaHTML;
                 }
                 if (!isUser) {
-                    const timeString = formatFullTimestamp(msg.createdAt);
                     actionButtons = `
-                        <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
-                            <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        <div class="message-actions absolute bottom-2 left-2 right-2 flex justify-between items-center">
+                            <div class="flex items-center gap-1">
+                                <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)]" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                </button>
+                                <button class="regenerate-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)]" title="${i18n[config.uiLanguage].regenerate || '重新生成'}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><path d="M3 2v6h6"/><path d="M21 22v-6h-6"/><path d="M21 16.5A9 9 0 0 0 4.5 9.5M3 7.5A9 9 0 0 0 19.5 14.5"/></svg>
+                                </button>
+                            </div>
+                            <span class="text-xs text-gray-400">${timeString}</span>
+                        </div>
+                        <div class="regeneration-controls hidden">
+                            <button class="regen-arrow-btn regen-prev-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
                             </button>
-                            <span class="text-xs text-gray-400">${timeString}</span></div>
+                            <span class="regen-version-counter">1/1</span>
+                            <button class="regen-arrow-btn regen-next-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                            </button>
+                            <div class="regen-divider"></div>
+                             <button class="regenerate-btn p-1 rounded-full hover:bg-[var(--active-bg)]" title="${i18n[config.uiLanguage].regenerate || '重新生成'}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><path d="M3 2v6h6"/><path d="M21 22v-6h-6"/><path d="M21 16.5A9 9 0 0 0 4.5 9.5M3 7.5A9 9 0 0 0 19.5 14.5"/></svg>
+                            </button>
+                            <button class="regen-confirm-btn btn-primary">${i18n[config.uiLanguage].confirm || '確認'}</button>
+                        </div>
                     `;
-                    contentPaddingClass = 'pb-8';
+                    contentPaddingClass = 'pb-8'; // 保持底部空間
                 } else {
                     const currentConv = getActiveConversation();
                     if (currentConv && index + 1 < currentConv.messages.length && currentConv.messages[index + 1].role === 'model') {
@@ -4481,7 +4580,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             }
             const messageBubble = `
-                <div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble relative ${isUser ? 'text-white' : ''}" >
+                <div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble group relative ${isUser ? 'text-white' : ''}" >
                     <div class="prose prose-sm max-w-none ${isUser ? 'text-white' : 'text-[var(--text-primary)]'} ${contentPaddingClass} message-content">${contentHTML}</div>
                     ${actionButtons}
                 </div>`;
@@ -4573,6 +4672,152 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
         });
     });
 }
+         const updateMessageUI = (messageIndex) => {
+            const conv = getActiveConversation();
+            if (!conv) return;
+            const msg = conv.messages[messageIndex];
+            const messageItem = ALL_ELEMENTS.messageList.querySelector(`[data-message-index="${messageIndex}"]`);
+            if (!msg || !messageItem) return;
+
+            const contentDiv = messageItem.querySelector('.message-content');
+            const actionsDiv = messageItem.querySelector('.message-actions');
+            const regenControlsDiv = messageItem.querySelector('.regeneration-controls');
+            
+            contentDiv.classList.remove('regenerating');
+
+            if (msg.isRegenerating) {
+                actionsDiv.classList.add('hidden');
+                regenControlsDiv.classList.remove('hidden');
+
+                const activeVersion = msg.versions[msg.activeVersionIndex];
+                contentDiv.innerHTML = renderMarkdown(activeVersion.parts.map(p => p.text).join('\n'));
+                
+                const counter = regenControlsDiv.querySelector('.regen-version-counter');
+                const prevBtn = regenControlsDiv.querySelector('.regen-prev-btn');
+                const nextBtn = regenControlsDiv.querySelector('.regen-next-btn');
+
+                counter.textContent = `${msg.activeVersionIndex + 1}/${msg.versions.length}`;
+                prevBtn.disabled = msg.activeVersionIndex === 0;
+                nextBtn.disabled = msg.activeVersionIndex === msg.versions.length - 1;
+            } else {
+                actionsDiv.classList.remove('hidden');
+                regenControlsDiv.classList.add('hidden');
+                const finalParts = msg.parts || (msg.versions && msg.versions[0].parts);
+                if (finalParts) {
+                    contentDiv.innerHTML = renderMarkdown(finalParts.map(p => p.text).join('\n'));
+                }
+            }
+        };
+
+        // 處理「重新生成」按鈕點擊
+        const handleRegenerate = async (messageIndex) => {
+            if (abortController) {
+                showNotification('請等待目前的回覆生成完畢。', 'warning');
+                return;
+            }
+            const conv = getActiveConversation();
+            if (!conv || conv.archived) return;
+            const msg = conv.messages[messageIndex];
+            if (!msg || msg.role !== 'model' || messageIndex === 0) return;
+
+            // 找到此 AI 回覆對應的前一則使用者訊息
+            const userMessageIndex = messageIndex - 1;
+            const userMessage = conv.messages[userMessageIndex];
+            if (!userMessage || userMessage.role !== 'user') return;
+
+            abortController = new AbortController();
+            updateInputState(); // 鎖定輸入框
+
+            // 首次重新生成時，初始化版本結構
+            if (!msg.versions) {
+                msg.versions = [{ parts: msg.parts, createdAt: msg.createdAt }];
+                delete msg.parts;
+            }
+            msg.isRegenerating = true;
+
+            const messageItem = ALL_ELEMENTS.messageList.querySelector(`[data-message-index="${messageIndex}"]`);
+            const contentDiv = messageItem.querySelector('.message-content');
+            contentDiv.classList.add('regenerating'); // 顯示讀取效果
+
+            try {
+                // 準備 API 需要的歷史紀錄 (不包含正在重新生成的這則 AI 回覆)
+                const historyForApi = conv.messages.slice(0, userMessageIndex);
+                let fullResponse = '';
+                
+                await streamApiCall(
+                    userMessage.parts, 
+                    (chunk) => {
+                        fullResponse += chunk;
+                        contentDiv.innerHTML = renderMarkdown(fullResponse + '▋'); // 即時顯示打字效果
+                        ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'auto' });
+                    }, 
+                    abortController.signal,
+                    conv.isWebSearchEnabled // 保持原有的連網搜尋狀態
+                );
+
+                const newVersion = { parts: [{ text: fullResponse }], createdAt: new Date().toISOString() };
+                msg.versions.push(newVersion);
+                msg.activeVersionIndex = msg.versions.length - 1;
+                
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    showNotification(`重新生成失敗: ${error.message}`, 'error');
+                }
+                // 如果失敗，恢復到上一個版本
+                msg.activeVersionIndex = msg.versions.length - 1;
+            } finally {
+                abortController = null;
+                await saveAppData();
+                updateMessageUI(messageIndex);
+                updateInputState(); // 解鎖輸入框
+            }
+        };
+
+        // 處理版本切換
+        const navigateVersion = (messageIndex, direction) => {
+            const conv = getActiveConversation();
+            const msg = conv.messages[messageIndex];
+            if (!msg || !msg.isRegenerating) return;
+
+            if (direction === 'prev' && msg.activeVersionIndex > 0) {
+                msg.activeVersionIndex--;
+            } else if (direction === 'next' && msg.activeVersionIndex < msg.versions.length - 1) {
+                msg.activeVersionIndex++;
+            }
+            
+            saveAppData();
+            updateMessageUI(messageIndex);
+        };
+
+        // 處理「確認」按鈕點擊
+        const confirmVersion = (messageIndex) => {
+            const conv = getActiveConversation();
+            const msg = conv.messages[messageIndex];
+            if (!msg || !msg.isRegenerating) return;
+
+            const selectedVersion = msg.versions[msg.activeVersionIndex];
+            
+            // 將訊息結構恢復到標準格式
+            msg.parts = selectedVersion.parts;
+            msg.createdAt = selectedVersion.createdAt;
+            delete msg.versions;
+            delete msg.activeVersionIndex;
+            msg.isRegenerating = false;
+            
+            // 更新對話的最後更新時間
+            conv.lastUpdatedAt = new Date().toISOString();
+
+            saveAppData();
+            updateMessageUI(messageIndex);
+            updateInputState(); // 解鎖輸入框
+            showNotification('已確認回覆版本。', 'success');
+        };
+
+        // 檢查是否有任何訊息正在進行版本切換
+        const checkIfAnyMessageIsRegenerating = () => {
+            const conv = getActiveConversation();
+            return conv && conv.messages.some(m => m.isRegenerating);
+        };
 
         const handleFormSubmit = async (e) => {
             e.preventDefault();
@@ -5260,6 +5505,16 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             }
         };
         const updateInputState = () => {
+            if (checkIfAnyMessageIsRegenerating()) {
+                ALL_ELEMENTS.messageInput.disabled = true;
+                ALL_ELEMENTS.submitButton.disabled = true;
+                ALL_ELEMENTS.addFileBtn.disabled = true;
+                ALL_ELEMENTS.messageInput.placeholder = i18n[config.uiLanguage].confirmVersionPlaceholder || '請先確認或繼續生成回覆版本...';
+                return; // 直接結束函式，執行鎖定邏輯
+            }
+            ALL_ELEMENTS.addFileBtn.disabled = false;
+
+            const hasContent = ALL_ELEMENTS.messageInput.value.trim() !== '' || uploadedFiles.length > 0;
             const hasContent = ALL_ELEMENTS.messageInput.value.trim() !== '' || uploadedFiles.length > 0;
             const { submitButton, submitButtonIcon } = ALL_ELEMENTS;
             if (abortController) {
@@ -8608,6 +8863,36 @@ ${allSearchResults.join('\n\n')}`;
                      if (messageItem) {
                         const messageIndex = parseInt(messageItem.dataset.messageIndex);
                         handleDeleteMessagePair(messageIndex);
+                    }
+                }
+                const regenerateBtn = e.target.closest('.regenerate-btn');
+                const regenPrevBtn = e.target.closest('.regen-prev-btn');
+                const regenNextBtn = e.target.closest('.regen-next-btn');
+                const regenConfirmBtn = e.target.closest('.regen-confirm-btn');
+
+                if (regenerateBtn) {
+                    const messageItem = regenerateBtn.closest('.message-item');
+                    if(messageItem) {
+                        const messageIndex = parseInt(messageItem.dataset.messageIndex);
+                        handleRegenerate(messageIndex);
+                    }
+                } else if (regenPrevBtn) {
+                    const messageItem = regenPrevBtn.closest('.message-item');
+                    if(messageItem) {
+                        const messageIndex = parseInt(messageItem.dataset.messageIndex);
+                        navigateVersion(messageIndex, 'prev');
+                    }
+                } else if (regenNextBtn) {
+                    const messageItem = regenNextBtn.closest('.message-item');
+                     if(messageItem) {
+                        const messageIndex = parseInt(messageItem.dataset.messageIndex);
+                        navigateVersion(messageIndex, 'next');
+                    }
+                } else if (regenConfirmBtn) {
+                    const messageItem = regenConfirmBtn.closest('.message-item');
+                    if(messageItem) {
+                        const messageIndex = parseInt(messageItem.dataset.messageIndex);
+                        confirmVersion(messageIndex);
                     }
                 }
             });
