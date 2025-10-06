@@ -2899,6 +2899,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 });
             }
         });
+        const showLeaveWarning = (e) => {
+    // 這是觸發瀏覽器內建警告的標準方法
+    e.preventDefault();
+    e.returnValue = '';
+    return ''; // 某些舊版瀏覽器需要這個
+};
         const ALL_ELEMENTS = {
             authContainer: document.getElementById('auth-container'),
             appContainer: document.getElementById('app-container'),
@@ -4570,6 +4576,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 
         const handleFormSubmit = async (e) => {
             e.preventDefault();
+            window.addEventListener('beforeunload', showLeaveWarning);
             if (abortController) return;
             const userMessage = ALL_ELEMENTS.messageInput.value.trim();
             if (!userMessage && uploadedFiles.length === 0) return;
@@ -8470,6 +8477,7 @@ ${allSearchResults.join('\n\n')}`;
                     showNotification("深度研究已取消", "warning");
                 }
             } finally {
+                window.removeEventListener('beforeunload', showLeaveWarning);
                 abortController = null;
                 updateSubmitButtonState(false);
                 sendConfirmed = false;
