@@ -1,5 +1,13 @@
 const updateLogs = [
         {
+        version: "15.4.9",
+        date: "2025-10-6",
+        content: [
+            "<strong>修正：</strong>修正載入畫面會讓底層首頁滑動的問題",
+            "<strong>增加：</strong>在編輯研究計畫的彈出視窗增加-取消研究的欄位",
+        ]
+    },
+        {
         version: "15.4.8",
         date: "2025-10-5",
         content: [
