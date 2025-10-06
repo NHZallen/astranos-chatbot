@@ -14,6 +14,10 @@
     body {
     touch-action: manipulation;
 }
+    #selection-mode-btn.active,
+#open-search-btn.active {
+    color: var(--button-primary-bg);
+}
     body.splash-screen-active {
     overflow: hidden;
     position: fixed; /* 針對 iOS 裝置的加強鎖定 */
@@ -6013,10 +6017,11 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 `;
                 const titleArea = item.querySelector('.flex-1');
                 titleArea.addEventListener('click', () => {
-                    loadChat(conv.id);
-                    toggleSidebar(false);
-                    toggleModal(ALL_ELEMENTS.searchModal, false);
-                });
+    loadChat(conv.id);
+    toggleSidebar(false);
+    toggleModal(ALL_ELEMENTS.searchModal, false);
+    ALL_ELEMENTS.openSearchBtn.classList.remove('active'); // <-- ✨ 加上這一行
+});
                 const viewBtn = item.querySelector('.search-view-btn');
                 viewBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -8525,11 +8530,12 @@ ${allSearchResults.join('\n\n')}`;
             ALL_ELEMENTS.sidebarOverlay.addEventListener('click', () => toggleSidebar(false));
             ALL_ELEMENTS.newChatBtn.addEventListener('click', () => startNewChat());
             ALL_ELEMENTS.openSearchBtn.addEventListener('click', () => {
-                toggleModal(ALL_ELEMENTS.searchModal, true);
-                ALL_ELEMENTS.modalSearchInput.value = '';
-                ALL_ELEMENTS.searchResultsContainer.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].searchPrompt}</p>`;
-                setTimeout(() => ALL_ELEMENTS.modalSearchInput.focus(), 50);
-            });
+    toggleModal(ALL_ELEMENTS.searchModal, true);
+    ALL_ELEMENTS.openSearchBtn.classList.add('active'); // <-- ✨ 加上這一行
+    ALL_ELEMENTS.modalSearchInput.value = '';
+    ALL_ELEMENTS.searchResultsContainer.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].searchPrompt}</p>`;
+    setTimeout(() => ALL_ELEMENTS.modalSearchInput.focus(), 50);
+});
             ALL_ELEMENTS.apiKeyWarningBadge.addEventListener('click', () => {
                 setupSettingsModal();
                 toggleModal(ALL_ELEMENTS.settingsModal, true);
@@ -8539,7 +8545,10 @@ ${allSearchResults.join('\n\n')}`;
                 document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
                 document.getElementById('model-management-section').classList.add('active');
             });
-            ALL_ELEMENTS.closeSearchModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.searchModal, false));
+            ALL_ELEMENTS.closeSearchModalBtn.addEventListener('click', () => {
+    toggleModal(ALL_ELEMENTS.searchModal, false);
+    ALL_ELEMENTS.openSearchBtn.classList.remove('active'); // <-- ✨ 加上這一行
+});
             ALL_ELEMENTS.performSearchBtn.addEventListener('click', performSearchAndRenderResults);
             ALL_ELEMENTS.modalSearchInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
