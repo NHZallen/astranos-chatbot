@@ -2823,12 +2823,26 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
         // 建立一個共用的函式來處理影片結束後的邏輯
         const handleVideoEnd = () => {
+            // 首先，只處理影片的淡出
             videoSplashScreen.classList.add('hidden');
-            authContainerForSplash.classList.add('visible');
 
+            // 然後，監聽影片的淡出動畫結束事件
             videoSplashScreen.addEventListener('transitionend', () => {
+                // 當影片完全消失後，再讓登入表單顯示出來
+                authContainerForSplash.classList.add('visible'); 
+                
+                // 並且從 DOM 中移除影片元素
                 videoSplashScreen.remove();
             }, { once: true });
+            
+            // 新增一個保險措施：如果 transitionend 事件因故沒有觸發，
+            // 則在稍長於動畫時間後強制執行
+            setTimeout(() => {
+                if (document.body.contains(videoSplashScreen)) {
+                     authContainerForSplash.classList.add('visible');
+                     videoSplashScreen.remove();
+                }
+            }, 600); // 600ms 略長於 0.5s 的動畫時間
         };
 
         // ✨ 步驟 2.2: 監聽按鈕的點擊事件，並執行跳過影片的動作
