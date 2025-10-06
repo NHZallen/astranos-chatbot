@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.4.9</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.5.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -1859,6 +1859,17 @@ body.custom-wallpaper-active .input-indicator-item {
     opacity: 1;
 }
 
+/* ✨ 新增：重新生成按鈕旁的版本切換器樣式 */
+.version-arrow-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+.version-indicator {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
 
 </style>
 <script>
@@ -3240,6 +3251,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const DB_NAME = 'ChatAppDB';
         const STORE_NAME = 'keyValue';
         let db;
+        // ✨ 新增：用於鎖定聊天輸入的全局變數
+        let isChatLockedForRegeneration = false;
         async function openDB() {
             if (db) return db;
             return new Promise((resolve, reject) => {
@@ -3447,16 +3460,28 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 try {
                     const data = JSON.parse(saved);
                     folders = (data.folders || []).map(f => ({...getDefaultFolder(), ...f}));
+                    // ✨ [修改] 處理舊的 message 結構並轉換為新的 versions 結構
                     conversations = (data.conversations || []).map(c => ({
                         archived: false, summary: '', folderId: null, isWebSearchEnabled: false, astrasId: null, pinned: false, deletedAt: null, ...c,
                         unsentMessage: c.unsentMessage || '',
                         genConfig: c.genConfig || getDefaultGenConfig(),
                         lastUpdatedAt: c.lastUpdatedAt || (c.messages && c.messages.length > 0 ? c.messages[c.messages.length - 1].createdAt : c.createdAt),
-                        messages: (c.messages || []).map(m => ({
-                            ...m,
-                            createdAt: m.createdAt || c.createdAt,
-                            parts: m.parts || [{ text: m.content }]
-                        }))
+                        messages: (c.messages || []).map(m => {
+                            // 如果是舊結構 (沒有 versions) 且是 model 的回覆，就轉換它
+                            if (m.role === 'model' && !m.versions) {
+                                return {
+                                    ...m,
+                                    versions: [{ parts: m.parts || [{ text: m.content }] }],
+                                    activeVersionIndex: 0
+                                };
+                            }
+                            // 如果是使用者訊息或已經是新結構，保持不變
+                            return {
+                                ...m,
+                                createdAt: m.createdAt || c.createdAt,
+                                parts: m.parts || [{ text: m.content }]
+                            };
+                        })
                     }));
                     astras = (data.astras || []).map(a => ({ avatarUrl: null, officialId: null, ...a }));
                     personalMemories = data.personalMemories || [];
@@ -3518,7 +3543,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             setTimeout(adjustTextareaHeight, 0);
             toggleSidebar(false);
             sendConfirmed = false;
-            updateInputState();
+            // ✨ 解鎖聊天
+            isChatLockedForRegeneration = false;
+            updateChatLockState();
             updateApiKeyWarningBadge();
             renderFollowUpPrompts([]);
         };
@@ -3536,7 +3563,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 setTimeout(adjustTextareaHeight, 0);
             }
             sendConfirmed = false;
-            updateInputState();
+            // ✨ 如果新載入的對話中，有任何訊息正在等待版本確認，則保持鎖定
+            const conv = getActiveConversation();
+            isChatLockedForRegeneration = conv ? conv.messages.some(m => m.role === 'model' && m.versions && m.versions.length > 1) : false;
+            updateChatLockState();
             updateApiKeyWarningBadge();
             renderFollowUpPrompts([]);
             updateFunctionButtonsState();
@@ -3606,8 +3636,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     const icon = isUser
                         ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>`
                         : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
+                    
+                    // ✨ [修改] 處理 versions 結構
+                    let contentParts = [];
+                    if(isUser) {
+                        contentParts = msg.parts;
+                    } else {
+                        contentParts = msg.versions[msg.activeVersionIndex].parts;
+                    }
+
                     let contentHTML = '';
-                    msg.parts.forEach(part => {
+                    contentParts.forEach(part => {
                         if (part.text) {
                              contentHTML += `<div>${isUser ? part.text.replace(/\n/g, '<br>') : renderMarkdown(part.text)}</div>`;
                         } else if (part.inlineData) {
@@ -3999,9 +4038,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 if (separator) separator.style.display = 'none';
                 learningModeBtn.style.display = 'flex';
             } else { // Gemini
-    allButtons.forEach(btn => btn.style.display = 'flex');
-    if (separator) separator.style.display = 'block';
-}
+                allButtons.forEach(btn => btn.style.display = 'flex');
+                if (separator) separator.style.display = 'block';
+            }
         };
 
         const toggleLearningMode = async () => {
@@ -4396,6 +4435,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             updateFileInputUI();
             updateApiKeyWarningBadge();
         };
+        // ✨ [修改] addMessageToUI 函數
         const addMessageToUI = (msg, index, shouldSave = true, shouldScroll = true) => {
             const conv = getActiveConversation();
             if (shouldSave) {
@@ -4414,16 +4454,20 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const isUser = msg.role === 'user';
             messageDiv.className = `message-item flex items-start gap-2 md:gap-4 ${isUser ? 'justify-end user-message' : 'model-message'}`;
             const icon = isUser ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>` : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
+            
+            // ✨ 取得要顯示的內容 parts
+            const currentParts = isUser ? msg.parts : msg.versions[msg.activeVersionIndex].parts;
+            
             let contentHTML = '';
             let actionButtons = '';
             let contentPaddingClass = '';
             const isLoadingMessage = !isUser && msg.parts.length === 1 && msg.parts[0].text === '...';
             if (isLoadingMessage) {
-            contentHTML = `<div class="typing-cursor">&nbsp;</div>`;
-        } else {
+                contentHTML = `<div class="typing-cursor">&nbsp;</div>`;
+            } else {
                 let textPartsContent = [];
                 let mediaPartsContent = [];
-                msg.parts.forEach(part => {
+                currentParts.forEach(part => {
                     if (part.text) {
                         textPartsContent.push(part.text);
                     } else if (part.inlineData) {
@@ -4452,20 +4496,42 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
                 if (!isUser) {
                     const timeString = formatFullTimestamp(msg.createdAt);
-                    actionButtons = `
-                        <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
-                            <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    const hasMultipleVersions = msg.versions && msg.versions.length > 1;
+
+                    const versionSwitcherHTML = hasMultipleVersions ? `
+                        <div class="flex items-center gap-2">
+                            <button class="version-arrow-btn prev-version-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)]" title="上一個版本">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
                             </button>
-                            <span class="text-xs text-gray-400">${timeString}</span></div>
+                            <span class="version-indicator text-xs font-mono text-[var(--text-secondary)]">${msg.activeVersionIndex + 1} / ${msg.versions.length}</span>
+                            <button class="version-arrow-btn next-version-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)]" title="下一個版本">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </button>
+                            <button class="confirm-version-btn ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded hover:bg-blue-200" data-lang-key="confirm">確認</button>
+                        </div>
+                    ` : '';
+                    
+                    actionButtons = `
+                        <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                             <div class="flex items-center gap-1">
+                                <button class="copy-content-btn p-1.5 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)]" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                </button>
+                                <button class="regenerate-btn p-1.5 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)]" title="重新生成">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="1 4 1 10 7 10"></polyline><polyline points="23 20 23 14 17 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path></svg>
+                                </button>
+                            </div>
+                            ${versionSwitcherHTML}
+                            <span class="text-xs text-gray-400">${timeString}</span>
+                        </div>
                     `;
-                    contentPaddingClass = 'pb-8';
+                    contentPaddingClass = 'pb-10';
                 } else {
                     const currentConv = getActiveConversation();
                     if (currentConv && index + 1 < currentConv.messages.length && currentConv.messages[index + 1].role === 'model') {
                          actionButtons = `
-                            <div class="absolute bottom-2 left-2 flex items-center">
-                                <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
+                            <div class="absolute bottom-2 left-2 flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                                 </button>
                             </div>
@@ -4475,7 +4541,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             }
             const messageBubble = `
-                <div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble relative ${isUser ? 'text-white' : ''}" >
+                <div class="group p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble relative ${isUser ? 'text-white' : ''}" >
                     <div class="prose prose-sm max-w-none ${isUser ? 'text-white' : 'text-[var(--text-primary)]'} ${contentPaddingClass} message-content">${contentHTML}</div>
                     ${actionButtons}
                 </div>`;
@@ -4489,92 +4555,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
             return messageDiv;
         };
-         /**
- * ✨ 全新重構：打字機效果渲染函數 (v2)
- *    - 使用 setInterval 達到勻速輸出
- *    - 隱藏 Markdown 特殊字元，避免渲染過程中的視覺干擾
- * @param {HTMLElement} targetElement 要顯示文字的目標 DOM 元素
- * @param {function(function(string): void): Promise<void>} streamApiCallFn 啟動 API 呼叫的函數
- * @param {AbortSignal} signal 用於中止操作的 AbortSignal
- * @returns {Promise<string>} 返回完整的 AI 回應字串
- */
-function typewriterStream(targetElement, streamApiCallFn, signal) {
-    return new Promise((resolve, reject) => {
-        let fullText = '';
-        let textQueue = '';
-        let isStreaming = true;
-        
-        // ✨ [新增] 定義在打字過程中需要隱藏的 Markdown 特殊字元
-        const MARKDOWN_CHARS_TO_HIDE = new Set(['*', '_', '#', '`', '[', ']', '(', ')', '|', '-', '=', '~']);
-        
-        // ✨ [新增] 控制打字速度 (毫秒)，數值越小越快
-        const typingSpeed = 25; 
-
-        targetElement.innerHTML = '';
-        targetElement.classList.add('typing-cursor');
-
-        const intervalId = setInterval(() => {
-            if (signal.aborted) {
-                clearInterval(intervalId);
-                targetElement.classList.remove('typing-cursor');
-                // 雖然被中止，但仍然解析當前已收到的內容
-                resolve(fullText); 
-                return;
-            }
-
-            if (textQueue.length > 0) {
-                const char = textQueue.charAt(0);
-                textQueue = textQueue.substring(1);
-                
-                fullText += char;
-
-                // ✨ [核心修改] 只有當字元不是特殊 Markdown 字元時，才創建 DOM 元素來顯示它
-                if (!MARKDOWN_CHARS_TO_HIDE.has(char)) {
-                    const span = document.createElement('span');
-                    span.className = 'fade-in-char';
-
-                    if (char === '\n') {
-                        targetElement.appendChild(document.createElement('br'));
-                    } else {
-                        span.textContent = char;
-                        targetElement.appendChild(span);
-                    }
-                }
-                
-                // 保持捲動到底部
-                const chatContainer = ALL_ELEMENTS.chatContainer;
-                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
-                if (isNearBottom) {
-                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
-                }
-            } else if (!isStreaming) {
-                // 資料流結束且佇列已空
-                clearInterval(intervalId);
-                targetElement.classList.remove('typing-cursor');
-                resolve(fullText); // 成功完成，返回完整字串
-            }
-        }, typingSpeed);
-
-        // 啟動 API 呼叫，並在結束時更新 isStreaming 狀態
-        streamApiCallFn((chunk) => {
-            textQueue += chunk;
-        }).catch(error => {
-            clearInterval(intervalId);
-            targetElement.classList.remove('typing-cursor');
-            reject(error); // 如果 API 呼叫出錯，則拒絕 Promise
-        }).finally(() => {
-            isStreaming = false;
-        });
-    });
-}
-
         const handleFormSubmit = async (e) => {
             e.preventDefault();
-            if (abortController) return;
+            // ✨ 檢查聊天是否被鎖定
+            if (abortController || isChatLockedForRegeneration) return;
             const userMessage = ALL_ELEMENTS.messageInput.value.trim();
             if (!userMessage && uploadedFiles.length === 0) return;
             
-            // ✨ 如果是深度研究模式，則呼叫專用函數
             if (config.isDeepResearchMode) {
                 handleDeepResearch(userMessage);
                 return;
@@ -4633,68 +4620,43 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             uploadedFiles = [];
             adjustTextareaHeight();
             renderFilePreviews();
-            const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
+            // ✨ [修改] 這裡不直接 addMessageToUI，而是先創建 loading 佔位符
+            const loadingMessageDiv = addMessageToUI({ role: 'model', versions: [{ parts: [{ text: '...' }] }], activeVersionIndex: 0, createdAt: new Date().toISOString() }, conv.messages.length, false);
             const contentDiv = loadingMessageDiv.querySelector('.message-content');
             
             try {
                 let fullResponse = '';
-                const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
+                // ✨ [修改] 這裡的 message object 是臨時的，稍後會被完整物件取代
+                const finalAiMessage = { 
+                    role: 'model', 
+                    versions: [{ parts: [{ text: '' }] }], 
+                    activeVersionIndex: 0,
+                    createdAt: new Date().toISOString() 
+                };
 
-                // 1. 先等待 API 回應完全結束，獲取完整文字
-                const completeResponse = await streamApiCall(
-                    userParts,
-                    (chunk) => {
-                        // 在 streamApiCall 內部，我們只收集文字，不渲染
-                    },
+                fullResponse = await typewriterStream(
+                    contentDiv,
+                    (onChunk) => streamApiCall(
+                        userParts,
+                        onChunk,
+                        abortController.signal
+                    ),
                     abortController.signal
                 );
-
-                fullResponse = completeResponse;
-
-                // 2. 將完整的最終訊息保存到對話紀錄中
-                finalAiMessage.parts = [{ text: fullResponse }];
-                conv.messages.push(finalAiMessage);
+                
+                finalAiMessage.versions[0].parts = [{ text: fullResponse }];
+                // ✨ [修改] 用完整的訊息物件替換掉佔位的 loading 訊息
+                conv.messages[conv.messages.length - 1] = finalAiMessage;
                 conv.lastUpdatedAt = new Date().toISOString();
                 await saveAppData();
                 
-                // 3. ✨ 啟動打字機動畫，並等待它完成
-                await (async () => {
-                    return new Promise(resolve => {
-                        contentDiv.innerHTML = ''; // 清空等待樣式
-                        let currentIndex = 0;
-                        const typingSpeed = 15;
+                // 重新渲染該訊息的 UI 以顯示按鈕
+                const messageItem = ALL_ELEMENTS.messageList.querySelector(`[data-message-index="${conv.messages.length - 1}"]`);
+                if (messageItem) {
+                    messageItem.remove();
+                    addMessageToUI(finalAiMessage, conv.messages.length - 1, false, false);
+                }
 
-                        function type() {
-                            if (currentIndex < fullResponse.length && !abortController.signal.aborted) {
-                                const currentText = fullResponse.substring(0, currentIndex + 1);
-                                contentDiv.innerHTML = renderMarkdown(currentText + '▋');
-
-                                let step = 1;
-                                if (currentText.includes('```')) {
-                                    step = 5;
-                                }
-                                
-                                currentIndex += step;
-
-                                const chatContainer = ALL_ELEMENTS.chatContainer;
-                                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
-                                if (isNearBottom) {
-                                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
-                                }
-
-                                setTimeout(type, typingSpeed);
-                            } else {
-                                // 動畫完成或被中止
-                                contentDiv.innerHTML = renderMarkdown(fullResponse); // 最終清理，移除游標
-                                resolve(); // ✨ Promise 完成，通知 await
-                            }
-                        }
-                        
-                        type(); // 啟動
-                    });
-                })();
-
-                // 4. ✨ 只有在打字機動畫結束後，才執行後續任務
                 if (!abortController.signal.aborted) {
                     if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
                         await generateFollowUpPrompts(userMessage, fullResponse);
@@ -4708,44 +4670,29 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 if (error.name !== 'AbortError') {
                     const errorMessage = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
                     contentDiv.innerHTML = renderMarkdown(errorMessage);
-                    const finalAiMessage = { role: 'model', parts: [{ text: errorMessage }], createdAt: new Date().toISOString() };
-                    conv.messages.push(finalAiMessage);
+                    const finalAiMessage = { role: 'model', versions: [{ parts: [{ text: errorMessage }] }], activeVersionIndex: 0, createdAt: new Date().toISOString() };
+                    conv.messages[conv.messages.length - 1] = finalAiMessage;
                     await saveAppData();
                 }
             } finally {
-                // ... finally 區塊的程式碼保持不變 ...
+                if (!abortController || abortController.signal.aborted) {
+                     // 如果被中止，確保 loading 訊息被移除
+                    if (loadingMessageDiv) loadingMessageDiv.remove();
+                }
                 abortController = null;
                 updateSubmitButtonState(false);
                 sendConfirmed = false;
                 updateInputState();
-                const lastMessageDiv = ALL_ELEMENTS.messageList.lastElementChild;
-                if (lastMessageDiv && lastMessageDiv.classList.contains('model-message')) {
-                    const bubble = lastMessageDiv.querySelector('.message-bubble');
-                    const content = lastMessageDiv.querySelector('.message-content');
-                    const aiMessageObject = conv.messages[conv.messages.length - 1];
-                    if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute')) {
-                        content.classList.add('pb-8');
-                        const timeString = formatFullTimestamp(aiMessageObject.createdAt);
-                        const actionButtonsHTML = `
-                            <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
-                                <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                                </button>
-                                <span class="text-xs text-gray-400">${timeString}</span>
-                            </div>
-                        `;
-                        bubble.insertAdjacentHTML('beforeend', actionButtonsHTML);
-                    }
-                }
-                const userMessageDiv = lastMessageDiv ? lastMessageDiv.previousElementSibling : null;
+                
+                const userMessageDiv = ALL_ELEMENTS.messageList.querySelector(`[data-message-index="${conv.messages.length - 2}"]`);
                 if (userMessageDiv && userMessageDiv.classList.contains('user-message')) {
                     const bubble = userMessageDiv.querySelector('.message-bubble');
                     const content = userMessageDiv.querySelector('.message-content');
                     if (bubble && content && !bubble.querySelector('.delete-message-btn')) {
                         content.classList.add('pb-8');
                         const deleteButtonHTML = `
-                            <div class="absolute bottom-2 left-2 flex items-center">
-                                <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
+                            <div class="absolute bottom-2 left-2 flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                                 </button>
                             </div>
@@ -4755,10 +4702,64 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 }
             }
         };
+        // ✨ [修改] 替換舊的 typewriterStream 函數
+        function typewriterStream(targetElement, streamApiCallFn, signal) {
+            return new Promise((resolve, reject) => {
+                let fullText = '';
+                let textQueue = '';
+                let isStreaming = true;
+                const typingSpeed = 15;
+
+                targetElement.innerHTML = '';
+                targetElement.classList.add('typing-cursor');
+
+                const intervalId = setInterval(() => {
+                    if (signal.aborted) {
+                        clearInterval(intervalId);
+                        targetElement.classList.remove('typing-cursor');
+                        resolve(fullText); 
+                        return;
+                    }
+
+                    if (textQueue.length > 0) {
+                        const chunk = textQueue.slice(0, 5); //一次處理多個字元以提高效能
+                        textQueue = textQueue.substring(5);
+                        fullText += chunk;
+
+                        targetElement.innerHTML = renderMarkdown(fullText + '▋');
+
+                        const chatContainer = ALL_ELEMENTS.chatContainer;
+                        const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
+                        if (isNearBottom) {
+                            chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+                        }
+                    } else if (!isStreaming) {
+                        clearInterval(intervalId);
+                        targetElement.classList.remove('typing-cursor');
+                        targetElement.innerHTML = renderMarkdown(fullText); // 最終渲染
+                        resolve(fullText);
+                    }
+                }, typingSpeed);
+
+                streamApiCallFn((chunk) => {
+                    textQueue += chunk;
+                }).catch(error => {
+                    clearInterval(intervalId);
+                    targetElement.classList.remove('typing-cursor');
+                    reject(error);
+                }).finally(() => {
+                    isStreaming = false;
+                });
+            });
+        }
         function cleanGeminiHistory(history) {
             const cleaned = []; let lastRole = null;
+            // ✨ [修改] 確保 history 中的 model message 有 versions 屬性
             history.forEach(msg => {
-                const sanitizedMsg = { role: msg.role, parts: msg.parts };
+                const sanitizedMsg = { 
+                    role: msg.role, 
+                    parts: msg.role === 'model' ? msg.versions[msg.activeVersionIndex].parts : msg.parts 
+                };
                 if (sanitizedMsg.role === 'model' && !sanitizedMsg.parts.some(p => (p.text && p.text.trim() !== '') || p.inlineData)) return;
                 if (sanitizedMsg.role === lastRole && lastRole === 'user') {
                     cleaned[cleaned.length - 1].parts.push(...sanitizedMsg.parts);
@@ -4796,7 +4797,8 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 apiKey = config.apiKeys.openrouter;
             }
             if (!apiKey) throw new Error(`請先在設定中提供 ${modelInfo.name} 所需的 API 金鑰。`);
-            const historyForApi = conv.messages.slice(0, -1);
+            // ✨ [修改] 這裡的 historyForApi 需要排除最後一個（可能是 loading 的）訊息
+            const historyForApi = conv.messages.slice(0, conv.messages.findIndex(m => m.role === 'model' && m.versions[0].parts[0].text === '...'));
             const currentMessageForApi = { role: 'user', parts: parts };
             let url, payload, headers;
             let systemInstruction = null;
@@ -5234,7 +5236,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             if (conv && conv.messages.length > 0 && conv.messages[conv.messages.length-1].role === 'model') {
                 if (config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
                     const lastUserMessage = conv.messages[conv.messages.length-2].parts.map(p => p.text).join(' ');
-                    const lastModelMessage = conv.messages[conv.messages.length-1].parts.map(p => p.text).join(' ');
+                    const lastModelMessage = conv.messages[conv.messages.length-1].versions[conv.messages[conv.messages.length-1].activeVersionIndex].parts.map(p => p.text).join(' ');
                     if (ALL_ELEMENTS.followUpPromptsList.children.length === 0) {
                         generateFollowUpPrompts(lastUserMessage, lastModelMessage);
                     }
@@ -5252,7 +5254,10 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 updateInputState();
             }
         };
+        // ✨ [修改] updateInputState 函數
         const updateInputState = () => {
+            // ✨ 檢查聊天是否被鎖定
+            if(isChatLockedForRegeneration) return;
             const hasContent = ALL_ELEMENTS.messageInput.value.trim() !== '' || uploadedFiles.length > 0;
             const { submitButton, submitButtonIcon } = ALL_ELEMENTS;
             if (abortController) {
@@ -5292,6 +5297,20 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 } else {
                     submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
                 }
+            }
+        };
+        // ✨ 新增：鎖定/解鎖聊天輸入的函數
+        const updateChatLockState = () => {
+            const { messageInput, submitButton, addFileBtn } = ALL_ELEMENTS;
+            if (isChatLockedForRegeneration) {
+                messageInput.disabled = true;
+                submitButton.disabled = true;
+                addFileBtn.disabled = true;
+                messageInput.placeholder = '請先選擇一個回覆版本...';
+            } else {
+                // 解鎖時，恢復到正常的狀態檢查
+                updateInputState();
+                addFileBtn.disabled = false;
             }
         };
         const setupSettingsModal = () => {
@@ -8423,12 +8442,11 @@ ${hasFiles ? "此研究基於使用者提供的檔案，並結合了外部搜尋
 ${allSearchResults.join('\n\n')}`;
 
                 dashboard.remove(); // 移除儀表板
-                const reportMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
+                const reportMessageDiv = addMessageToUI({ role: 'model', versions: [{ parts: [{ text: '...' }] }], activeVersionIndex: 0, createdAt: new Date().toISOString() }, conv.messages.length, false);
                 const reportContentDiv = reportMessageDiv.querySelector('.message-content');
                 
                 let fullReport = '';
                 try {
-                    // 使用 typewriterStream 函數來實現打字機效果
                     fullReport = await typewriterStream(
                         reportContentDiv,
                         (onChunk) => streamApiCall(
@@ -8440,7 +8458,6 @@ ${allSearchResults.join('\n\n')}`;
                         abortController.signal
                     );
                     
-                    // 打字機效果完成後，用最終的、渲染好的 HTML 更新內容
                     reportContentDiv.innerHTML = renderMarkdown(fullReport);
 
                 } catch (streamError) {
@@ -8450,8 +8467,8 @@ ${allSearchResults.join('\n\n')}`;
                     }
                 }
                 
-                const finalReportMessage = { role: 'model', parts: [{ text: fullReport }], createdAt: new Date().toISOString() };
-                conv.messages.push(finalReportMessage);
+                const finalReportMessage = { role: 'model', versions: [{ parts: [{ text: fullReport }] }], activeVersionIndex: 0, createdAt: new Date().toISOString() };
+                conv.messages[conv.messages.length - 1] = finalReportMessage;
                 if (fullReport && !config.isLearningMode) {
                     await generateFollowUpPrompts(userMessage, fullReport);
                 }
@@ -8463,7 +8480,7 @@ ${allSearchResults.join('\n\n')}`;
                         dashboard.setTitle('研究失敗!');
                         dashboard.updateStep('synthesis', 'error', `研究中止: ${error.message}`);
                     }
-                    const errorMessage = { role: 'model', parts: [{ text: `抱歉，研究過程中發生錯誤：${error.message}` }], createdAt: new Date().toISOString() };
+                    const errorMessage = { role: 'model', versions: [{ parts: [{ text: `抱歉，研究過程中發生錯誤：${error.message}` }] }], activeVersionIndex: 0, createdAt: new Date().toISOString() };
                     addMessageToUI(errorMessage, conv.messages.length, true);
                 } else {
                     if (dashboard) dashboard.remove();
@@ -8476,19 +8493,23 @@ ${allSearchResults.join('\n\n')}`;
                 updateInputState();
                 await saveAppData();
                 
-                // 為最後一則訊息添加複製按鈕等
                 const lastMessageDiv = ALL_ELEMENTS.messageList.lastElementChild;
                 if (lastMessageDiv && lastMessageDiv.classList.contains('model-message') && !lastMessageDiv.querySelector('.research-dashboard')) {
                     const bubble = lastMessageDiv.querySelector('.message-bubble');
                     const content = lastMessageDiv.querySelector('.message-content');
                     const aiMessageObject = conv.messages[conv.messages.length - 1];
                     if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute')) {
-                        content.classList.add('pb-8');
+                        content.classList.add('pb-10');
                         bubble.insertAdjacentHTML('beforeend', `
-                            <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
-                                <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="複製內容">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                                </button>
+                            <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <div class="flex items-center gap-1">
+                                    <button class="copy-content-btn p-1.5 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)]" title="複製內容">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                    </button>
+                                    <button class="regenerate-btn p-1.5 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)]" title="重新生成">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="1 4 1 10 7 10"></polyline><polyline points="23 20 23 14 17 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path></svg>
+                                    </button>
+                                </div>
                                 <span class="text-xs text-gray-400">${formatFullTimestamp(aiMessageObject.createdAt)}</span>
                             </div>
                         `);
@@ -8576,31 +8597,41 @@ ${allSearchResults.join('\n\n')}`;
             ALL_ELEMENTS.logoutBtn.addEventListener('click', handleLogout);
             ALL_ELEMENTS.userProfileBtn.addEventListener('click', openDashboard);
             ALL_ELEMENTS.closeDashboardBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.dataDashboardModal, false));
+            // ✨ [修改] messageList 的事件委派
             ALL_ELEMENTS.messageList.addEventListener('click', (e) => {
                 const copyBtn = e.target.closest('.copy-content-btn');
                 const deleteBtn = e.target.closest('.delete-message-btn');
+                const regenerateBtn = e.target.closest('.regenerate-btn');
+                const prevVersionBtn = e.target.closest('.prev-version-btn');
+                const nextVersionBtn = e.target.closest('.next-version-btn');
+                const confirmVersionBtn = e.target.closest('.confirm-version-btn');
+
+                const messageItem = e.target.closest('.message-item');
+                if (!messageItem) return;
+                const messageIndex = parseInt(messageItem.dataset.messageIndex);
+                
                 if (copyBtn) {
-                    const messageItem = copyBtn.closest('.message-item');
-                    if (messageItem) {
-                        const messageIndex = parseInt(messageItem.dataset.messageIndex);
-                        const conv = getActiveConversation();
-                        const msg = conv?.messages[messageIndex];
-                        if (msg && msg.role === 'model') {
-                            const textToCopy = msg.parts.map(p => p.text).join('\n');
-                            copyTextToClipboard(textToCopy)
-                                .then(() => showNotification(i18n[config.uiLanguage].copySuccess || '內容已複製！', 'success'))
-                                .catch(err => {
-                                    showNotification(i18n[config.uiLanguage].copyFailed || '複製失敗！瀏覽器可能限制了此功能。', 'error');
-                                    console.error('Could not copy text with any method: ', err);
-                                });
-                        }
+                    const conv = getActiveConversation();
+                    const msg = conv?.messages[messageIndex];
+                    if (msg && msg.role === 'model') {
+                        const textToCopy = msg.versions[msg.activeVersionIndex].parts.map(p => p.text).join('\n');
+                        copyTextToClipboard(textToCopy)
+                            .then(() => showNotification(i18n[config.uiLanguage].copySuccess || '內容已複製！', 'success'))
+                            .catch(err => {
+                                showNotification(i18n[config.uiLanguage].copyFailed || '複製失敗！瀏覽器可能限制了此功能。', 'error');
+                                console.error('Could not copy text with any method: ', err);
+                            });
                     }
                 } else if (deleteBtn) {
-                    const messageItem = deleteBtn.closest('.message-item');
-                     if (messageItem) {
-                        const messageIndex = parseInt(messageItem.dataset.messageIndex);
-                        handleDeleteMessagePair(messageIndex);
-                    }
+                    handleDeleteMessagePair(messageIndex);
+                } else if (regenerateBtn) {
+                    handleRegenerate(messageIndex);
+                } else if (prevVersionBtn) {
+                    switchVersion(messageIndex, 'prev');
+                } else if (nextVersionBtn) {
+                    switchVersion(messageIndex, 'next');
+                } else if (confirmVersionBtn) {
+                    confirmVersion(messageIndex);
                 }
             });
             ALL_ELEMENTS.addFileBtn.addEventListener('click', (e) => {
