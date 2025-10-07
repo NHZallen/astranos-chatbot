@@ -5727,7 +5727,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             popover.className = 'popover absolute w-48 rounded-lg border border-[var(--border-color)] z-50';
             popover.dataset.targetId = targetButton.id;
             const spaceBelow = window.innerHeight - rect.bottom;
-            if (spaceBelow < 250) {
+            if (spaceBelow < 300) { // 增加判斷高度
                 popover.style.bottom = `${window.innerHeight - rect.top}px`;
                 popover.style.transformOrigin = 'bottom';
             } else {
@@ -5771,14 +5771,13 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             document.body.appendChild(popover);
             requestAnimationFrame(() => popover.classList.add('visible'));
 
-            // --- ✨ 新增的搜尋邏輯 ✨ ---
             const searchInput = popover.querySelector('#popover-search-input');
             const searchBtn = popover.querySelector('#popover-search-btn');
 
             const performPopoverSearch = () => {
                 const query = searchInput.value;
-                highlightInCurrentChat(query); // 呼叫我們在步驟一新增的函式
-                popover.remove(); // 執行搜尋後關閉視窗
+                highlightInCurrentChat(query);
+                popover.remove();
             };
 
             searchBtn.addEventListener('click', performPopoverSearch);
@@ -5788,8 +5787,8 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     performPopoverSearch();
                 }
             });
-            // 防止點擊輸入框時意外關閉彈出視窗
             searchInput.addEventListener('click', (e) => e.stopPropagation());
+            
             popover.querySelector('.rename-conv-btn').addEventListener('click', (e) => { showRenameModal(convId, 'conversation', e); popover.remove(); });
             popover.querySelector('.pin-btn').addEventListener('click', (e) => { togglePinChat(convId, e); popover.remove(); });
             popover.querySelector('.archive-btn').addEventListener('click', (e) => { archiveChat(convId, e); popover.remove(); });
@@ -7665,13 +7664,28 @@ ${JSON.stringify(potentialMemories, null, 2)}
             const menu = document.createElement('div');
             menu.id = 'mobile-context-menu';
             const menuHeader = `<div class="menu-header">${conv.title}</div>`;
+            
+            // 新增的搜尋框 HTML 結構
+            const searchBoxHTML = `
+                <div class="p-2 border-b border-[var(--border-color)]">
+                    <div class="relative">
+                        <input type="search" id="mobile-menu-search-input" placeholder="搜尋此對話..." class="w-full p-2 text-sm border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] focus:ring-2 focus:ring-blue-500 focus:outline-none pr-10">
+                        <button id="mobile-menu-search-btn" class="absolute inset-y-0 right-0 flex items-center pr-3 text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                        </button>
+                    </div>
+                </div>
+            `;
+
             const moveOptionsHTML = conv.folderId
                 ? `<div class="menu-item" data-action="move-out"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 8.25H7.5a2.25 2.25 0 0 0-2.25 2.25v9a2.25 2.25 0 0 0 2.25 2.25h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25H15m0-3-3-3m0 0-3 3m3-3v11.25" /></svg><span>${i18n[config.uiLanguage].moveOutOfFolder || '移出資料夾'}</span></div>`
                 : `<div class="menu-item" data-action="move-to"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg><span>${i18n[config.uiLanguage].moveToFolder || '移至資料夾'}</span></div>`;
             const pinText = conv.pinned ? (i18n[config.uiLanguage].unpin || '取消釘選') : (i18n[config.uiLanguage].pin || '釘選');
+            
             menu.innerHTML = `
                 ${menuHeader}
                 <div class="menu-options">
+                    ${searchBoxHTML} 
                     <div class="menu-item" data-action="rename"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg><span>${i18n[config.uiLanguage].rename || '重新命名'}</span></div>
                     <div class="menu-item" data-action="pin"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 3.75V16.5L12 14.25 7.5 16.5V3.75m9 0H18A2.25 2.25 0 0 1 20.25 6v12A2.25 2.25 0 0 1 18 20.25H6A2.25 2.25 0 0 1 3.75 18V6A2.25 2.25 0 0 1 6 3.75h1.5m9 0h-9" /></svg><span>${pinText}</span></div>
                     ${moveOptionsHTML}
@@ -7682,22 +7696,47 @@ ${JSON.stringify(potentialMemories, null, 2)}
             menuWrapper.appendChild(overlay);
             menuWrapper.appendChild(menu);
             document.body.appendChild(menuWrapper);
+            
             requestAnimationFrame(() => {
                 overlay.classList.add('visible');
                 menu.classList.add('visible');
             });
+
             const closeMenu = () => {
                 overlay.classList.remove('visible');
                 menu.classList.remove('visible');
                 menu.addEventListener('transitionend', () => menuWrapper.remove(), { once: true });
             };
+
             overlay.addEventListener('click', closeMenu);
+
+            // 新增的搜尋邏輯
+            const searchInput = menu.querySelector('#mobile-menu-search-input');
+            const searchBtn = menu.querySelector('#mobile-menu-search-btn');
+
+            const performMobileMenuSearch = () => {
+                const query = searchInput.value;
+                highlightInCurrentChat(query);
+                closeMenu();
+            };
+            
+            searchBtn.addEventListener('click', performMobileMenuSearch);
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    performMobileMenuSearch();
+                }
+            });
+
+            // 手機版滑動關閉邏輯
             let touchStartY = 0;
             let touchMoveY = 0;
             menu.addEventListener('touchstart', (e) => {
+                if (e.target.closest('input, button')) return;
                 touchStartY = e.touches[0].clientY;
             }, { passive: true });
             menu.addEventListener('touchmove', (e) => {
+                if (e.target.closest('input, button')) return;
                 touchMoveY = e.touches[0].clientY;
                 const deltaY = touchMoveY - touchStartY;
                 if (deltaY > 0) {
@@ -7714,34 +7753,25 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 touchStartY = 0;
                 touchMoveY = 0;
             });
+
+            // 原本的選項點擊邏輯
             menu.addEventListener('click', (e) => {
                 const actionTarget = e.target.closest('.menu-item');
                 if (!actionTarget) return;
                 const action = actionTarget.dataset.action;
-                closeMenu();
+                
+                // 延遲執行，讓關閉動畫先跑
                 setTimeout(() => {
                     switch(action) {
-                        case 'rename':
-                            showRenameModal(convId, 'conversation', e);
-                            break;
-                        case 'pin':
-                            togglePinChat(convId, e);
-                            break;
-                        case 'archive':
-                            archiveChat(convId, e);
-                            break;
-                        case 'delete':
-                            deleteChat(convId, e);
-                            break;
-                        case 'move-out':
-                            moveConversationToFolder(convId, null);
-                            break;
-                        case 'move-to':
-                            renderBatchMoveModal(convId);
-                            toggleModal(ALL_ELEMENTS.batchMoveModal, true);
-                            break;
+                        case 'rename': showRenameModal(convId, 'conversation', e); break;
+                        case 'pin': togglePinChat(convId, e); break;
+                        case 'archive': archiveChat(convId, e); break;
+                        case 'delete': deleteChat(convId, e); break;
+                        case 'move-out': moveConversationToFolder(convId, null); break;
+                        case 'move-to': renderBatchMoveModal(convId); toggleModal(ALL_ELEMENTS.batchMoveModal, true); break;
                     }
                 }, 300);
+                closeMenu();
             });
         };
         const showMobileContextMenuForFolder = (folderId) => {
@@ -8157,71 +8187,90 @@ ${JSON.stringify(potentialMemories, null, 2)}
          * 在當前對話視圖中尋找並反白關鍵字
          * @param {string} query 要搜尋的關鍵字
          */
+        const clearHighlights = () => {
+            const messageList = document.getElementById('message-list');
+            if (!messageList) return;
+            // 找到所有 mark 標籤
+            const marks = messageList.querySelectorAll('mark.bg-yellow-300');
+            marks.forEach(mark => {
+                const parent = mark.parentNode;
+                // 將 mark 標籤內的文字節點移出來
+                while (mark.firstChild) {
+                    parent.insertBefore(mark.firstChild, mark);
+                }
+                // 移除空的 mark 標籤
+                parent.removeChild(mark);
+                // 合併相鄰的文字節點，保持 DOM 乾淨
+                parent.normalize();
+            });
+        };
+
+        /**
+         * (升級版) 在當前對話中尋找並反白關鍵字，更準確且不閃爍
+         * @param {string} query 要搜尋的關鍵字
+         */
         const highlightInCurrentChat = (query) => {
-            // 1. 透過重新渲染對話來清除之前的反白標記
-            renderChat();
+            // 1. 先用新方法清除舊的反白
+            clearHighlights();
 
             const trimmedQuery = query.trim();
-            // 2. 如果沒有有效的搜尋關鍵字，就直接結束
             if (!trimmedQuery) {
-                return;
+                return; // 如果沒有輸入，就只做清除
             }
+
+            const messageList = document.getElementById('message-list');
+            if (!messageList) return;
             
-            // 3. 使用一個短暫的延遲，確保畫面已經重新渲染完畢
-            setTimeout(() => {
-                const messageNodes = document.querySelectorAll('#message-list .message-content');
-                // 將特殊字元進行轉義，以安全地用於正規表示式
-                const safeQuery = trimmedQuery.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-                const regex = new RegExp(safeQuery, 'gi'); // 'g' 代表全域搜尋, 'i' 代表不分大小寫
-                let firstMatch = null;
+            // 2. 建立正規表示式，'g'代表全域，'i'代表不分大小寫
+            const safeQuery = trimmedQuery.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+            const regex = new RegExp(safeQuery, 'gi');
+            let firstMatch = null;
 
-                messageNodes.forEach(node => {
-                    // 建立一個 TreeWalker 來安全地遍歷所有文字節點，避免破壞 HTML 結構
-                    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, null, false);
-                    let textNode;
-                    const nodesToModify = [];
+            // 3. 使用 TreeWalker 只遍歷文字節點，這樣最安全，不會破壞 HTML 結構
+            const walker = document.createTreeWalker(messageList, NodeFilter.SHOW_TEXT, null, false);
+            const nodesToModify = [];
+            let currentNode;
+            while (currentNode = walker.nextNode()) {
+                // 排除 script 和 style 標籤內的文字
+                if (currentNode.parentNode.tagName === 'SCRIPT' || currentNode.parentNode.tagName === 'STYLE') {
+                    continue;
+                }
+                if (regex.test(currentNode.textContent)) {
+                    nodesToModify.push(currentNode);
+                }
+            }
 
-                    // 找出所有包含關鍵字的文字節點
-                    while (textNode = walker.nextNode()) {
-                        if (textNode.textContent.match(regex)) {
-                            nodesToModify.push(textNode);
+            // 4. 對找到的節點進行修改
+            nodesToModify.forEach(node => {
+                const parent = node.parentNode;
+                if (!parent) return;
+
+                const parts = node.textContent.split(regex);
+                // 重新組合節點
+                parts.forEach((part, index) => {
+                    if (index % 2 === 0) { // 普通文字
+                        if (part) parent.insertBefore(document.createTextNode(part), node);
+                    } else { // 匹配到的關鍵字
+                        const mark = document.createElement('mark');
+                        mark.className = 'bg-yellow-300 dark:bg-yellow-500 rounded px-1';
+                        mark.textContent = part; // part 就是匹配到的文字
+                        parent.insertBefore(mark, node);
+                        if (!firstMatch) {
+                            firstMatch = mark;
                         }
                     }
-
-                    // 實際進行替換操作，以避免在遍歷時修改 DOM
-                    nodesToModify.forEach(originalNode => {
-                        const parent = originalNode.parentNode;
-                        // 根據關鍵字將文字分割成陣列
-                        const parts = originalNode.textContent.split(regex);
-                        
-                        parts.forEach((part, index) => {
-                            if (!part) return; // 忽略空字串
-
-                            if (index % 2 === 1) { // 這是符合關鍵字的部分
-                                const mark = document.createElement('mark');
-                                mark.className = 'bg-yellow-300 dark:bg-yellow-500 rounded px-1';
-                                mark.textContent = part;
-                                parent.insertBefore(mark, originalNode);
-                                if (!firstMatch) {
-                                    firstMatch = mark; // 記下第一個找到的標記
-                                }
-                            } else { // 這是普通文字部分
-                                parent.insertBefore(document.createTextNode(part), originalNode);
-                            }
-                        });
-                        // 移除原始的文字節點
-                        parent.removeChild(originalNode);
-                    });
                 });
+                // 移除原始的文字節點
+                parent.removeChild(node);
+            });
 
-                // 4. 如果有找到符合的內容，就滾動到第一個標記的位置；否則，跳出提示
-                if (firstMatch) {
-                    firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                } else {
-                    showNotification('在此對話中找不到符合的內容。', 'warning');
-                }
-            }, 100); // 100毫秒的延遲，確保畫面穩定
-        }
+            // 5. 滾動到第一個匹配項或顯示提示
+            if (firstMatch) {
+                firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                showNotification('在此對話中找不到符合的內容。', 'warning');
+            }
+        };
         // ✨ 新增：動態注入深度研究功能所需樣式的函數
         function injectDeepResearchStyles() {
             // 檢查樣式是否已存在，避免重複注入
