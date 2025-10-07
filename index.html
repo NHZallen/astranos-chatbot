@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.5.0</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.6.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -4192,12 +4192,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const toggleDeepResearchMode = async () => {
             const conv = getActiveConversation();
             if (!conv) return;
-
-            const modelInfo = MODELS.find(m => m.id === conv.model);
-            if (modelInfo?.provider !== 'gemini') {
-                showNotification('深度研究模式僅支援 Gemini 模型。', 'error');
-                return;
-            }
              if (config.isLearningMode) {
                 showNotification('學習模式啟用時，無法切換深度研究模式。', 'warning');
                 return;
@@ -6120,7 +6114,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             } else {
                 const lowerCaseQuery = query.toLowerCase();
                 const searchIn = scope === 'keyword-title' ? ['title'] : ['title', 'content'];
-                conversations.forEach(conv => {
+                conversations.filter(c => !c.deletedAt).forEach(conv => {
                     let matchFound = false;
                     let titleHTML = conv.title;
                     let snippetHTML = '';
@@ -6254,7 +6248,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             let results = [];
             let processedConvIds = new Set();
             const totalWeightSum = weightedKeywords.reduce((sum, kw) => sum + kw.weight, 0);
-            conversations.forEach(conv => {
+            conversations.filter(c => !c.deletedAt).forEach(conv => {
                 if (processedConvIds.has(conv.id)) return;
                 let totalScore = 0;
                 let maxPossibleScore = 0;
@@ -8534,9 +8528,82 @@ ${stepCountInstruction}
                 for (let i = 0; i < finalResearchPlan.length; i++) {
                     if (abortController.signal.aborted) throw new Error("研究已中止。");
                     const planStep = finalResearchPlan[i];
-                    dashboard.updateStep(i, 'running');
+                    const queryGenSchema = { type: "ARRAY", items: { type: "STRING" }, maxItems: 3 };
+        const searchQueries = await callApiWithSchema(queryGenPrompt, queryGenSchema, abortController.signal);
 
-                    const queryGenPrompt = `基於以下總體研究目標和當前具體的研究步驟，生成 2-3 個最有效的 Google 搜尋關鍵字。請嚴格以 JSON 陣列格式回傳。
+        if (!searchQueries || searchQueries.length === 0) {
+            allSearchResults.push(`--- 步驟 "${planStep.step}" 的資料收集失敗：無法生成有效的搜尋關鍵字 ---\n`);
+            dashboard.updateStep(i, 'error');
+            continue;
+        }
+        
+        const searchPromises = searchQueries.map(query => 
+            streamApiCall(
+                [{ text: query }], 
+                () => {}, 
+                abortController.signal,
+                true // 強制使用 Web Search
+            ).then(result => `--- 關於 "${query}" 的搜尋結果 ---\n${result}\n`)
+                .catch(err => `--- 關於 "${query}" 的搜尋失敗 ---\n錯誤訊息: ${err.message}\n`)
+        );
+        
+        const stepResults = await Promise.all(searchPromises);
+        allSearchResults.push(`## 來自研究步驟「${planStep.step}」的資料：\n\n` + stepResults.join('\n'));
+        dashboard.updateStep(i, 'completed');
+        // 【替換到這裡結束】
+    }
+    // ... 省略迴圈後面的程式碼 ...
+    ```
+
+*   **將上面標示的區塊，完整替換為以下新的程式碼：**
+    ```javascript
+    // 【貼上這段新的程式碼】
+    dashboard.updateStep(i, 'running');
+    const modelInfo = MODELS.find(m => m.id === conv.model);
+
+    // 判斷模型提供者
+    if (modelInfo?.provider === 'gemini') {
+        // 如果是 Gemini，執行原有的聯網搜尋邏輯
+        const queryGenPrompt = `基於以下總體研究目標和當前具體的研究步驟，生成 2-3 個最有效的 Google 搜尋關鍵字。請嚴格以 JSON 陣列格式回傳。\n\n總體目標: "${userMessage}"\n當前步驟: "${planStep.step}: ${planStep.action}"`;
+        const queryGenSchema = { type: "ARRAY", items: { type: "STRING" }, maxItems: 3 };
+        const searchQueries = await callApiWithSchema(queryGenPrompt, queryGenSchema, abortController.signal);
+
+        if (!searchQueries || searchQueries.length === 0) {
+            allSearchResults.push(`--- 步驟 "${planStep.step}" 的資料收集失敗：無法生成有效的搜尋關鍵字 ---\n`);
+            dashboard.updateStep(i, 'error', '無法生成搜尋關鍵字');
+            continue;
+        }
+        
+        const searchPromises = searchQueries.map(query => 
+            streamApiCall([{ text: query }], () => {}, abortController.signal, true) // isWebSearchForced = true
+            .then(result => `--- 關於 "${query}" 的搜尋結果 ---\n${result}\n`)
+            .catch(err => `--- 關於 "${query}" 的搜尋失敗 ---\n錯誤訊息: ${err.message}\n`)
+        );
+        
+        const stepResults = await Promise.all(searchPromises);
+        allSearchResults.push(`## 來自研究步驟「${planStep.step}」的資料：\n\n` + stepResults.join('\n'));
+    
+    } else {
+        // 如果是 OpenRouter 或其他模型，執行非聯網的研究邏輯
+        try {
+            // 直接使用研究步驟的內容作為提示，讓模型根據自身知識回答
+            const stepPrompt = `這是大型研究的一部分。請根據總體目標，詳細回答以下這個具體步驟的內容。\n\n# 總體目標:\n${userMessage}\n\n# 當前步驟的標題:\n${planStep.step}\n\n# 請執行的具體行動:\n${planStep.action}`;
+            
+            const stepResult = await streamApiCall(
+                [{ text: stepPrompt }],
+                () => {},
+                abortController.signal,
+                false // 確保不觸發聯網
+            );
+            allSearchResults.push(`## 來自研究步驟「${planStep.step}」的資料：\n\n` + stepResult + '\n');
+        } catch (err) {
+            allSearchResults.push(`--- 步驟 "${planStep.step}" 的資料收集失敗 ---\n錯誤訊息: ${err.message}\n`);
+            dashboard.updateStep(i, 'error', '模型查詢失敗');
+            continue;
+        }
+    }
+    
+    dashboard.updateStep(i, 'completed');
 
 總體目標: "${userMessage}"
 當前步驟: "${planStep.step}: ${planStep.action}"`;
