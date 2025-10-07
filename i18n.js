@@ -19,6 +19,8 @@ window.i18n = {
         currentLanguageName: '繁體中文',
 
 
+
+
         
         // Main App UI
         newChat: '新對話',
@@ -54,6 +56,10 @@ window.i18n = {
         deepResearch: '深度研究模式',
         howCanIHelp: '有什麼可以為您服務的嗎？',
         viewingArchived: '正在檢視封存的對話，無法傳送訊息。',
+
+
+
+
 
 
 
@@ -136,6 +142,10 @@ window.i18n = {
 
 
 
+
+
+
+
         // Other Modals & Dialogs
         selectDataToExport: '選擇您想要匯出的資料。',
         exportHistory: '歷史對話紀錄 (含封存與資料夾)',
@@ -201,6 +211,10 @@ window.i18n = {
 
 
 
+
+
+
+
         // Popover Menus
         pin: '釘選',
         unpin: '取消釘選',
@@ -214,10 +228,18 @@ window.i18n = {
 
 
 
+
+
+
+
         // Astras Store
         subscribe: '訂閱',
         unsubscribe: '取消訂閱',
         manage: '管理',
+
+
+
+
 
 
 
@@ -239,6 +261,10 @@ window.i18n = {
         allModels: "全部模型",
         auto: '自動',
         queriesSuffix: '次',
+
+
+
+
 
 
 
@@ -358,6 +384,10 @@ window.i18n = {
 
 
 
+
+
+
+
         // Model Descriptions & Limits
         model_ProMax_desc: '深度推理專長，專業研究與複雜決策首選。',
         model_ProMax_limits: '5次/分鐘、100次/天',
@@ -373,6 +403,8 @@ window.i18n = {
         model_Mill_limits: '20次/分鐘、50次/天',
         model_Nano_desc: '中文與技術領域專長，適合專業知識與程式開發。',
         model_Nano_limits: '20次/分鐘、50次/天',
+
+
 
 
         // Official Astras
@@ -415,6 +447,10 @@ window.i18n = {
 
 
 
+
+
+
+
         // Main App UI
         newChat: 'New Chat',
         batchSelect: 'Batch Select',
@@ -449,6 +485,10 @@ window.i18n = {
         deepResearch: 'Deep Research Mode',
         howCanIHelp: 'How can I help you?',
         viewingArchived: 'Viewing an archived chat. Cannot send messages.',
+
+
+
+
 
 
 
@@ -531,6 +571,10 @@ window.i18n = {
 
 
 
+
+
+
+
         // Other Modals & Dialogs
         selectDataToExport: 'Select the data you want to export.',
         exportHistory: 'Chat History (incl. archives & folders)',
@@ -596,6 +640,10 @@ window.i18n = {
 
 
 
+
+
+
+
         // Popover Menus
         pin: 'Pin',
         unpin: 'Unpin',
@@ -609,10 +657,18 @@ window.i18n = {
 
 
 
+
+
+
+
         // Astras Store
         subscribe: 'Subscribe',
         unsubscribe: 'Unsubscribe',
         manage: 'Manage',
+
+
+
+
 
 
 
@@ -634,6 +690,10 @@ window.i18n = {
         allModels: "All Models",
         auto: 'Auto',
         queriesSuffix: ' queries',
+
+
+
+
 
 
 
@@ -753,6 +813,10 @@ window.i18n = {
 
 
 
+
+
+
+
         // Model Descriptions & Limits
         model_ProMax_desc: 'Expert in deep reasoning, best choice for professional research and complex decisions.',
         model_ProMax_limits: '5 req/min, 100 req/day',
@@ -768,6 +832,10 @@ window.i18n = {
         model_Mill_limits: '20 req/min, 50 req/day',
         model_Nano_desc: 'Specialized in Chinese and technical fields, ideal for expert knowledge and coding tasks.',
         model_Nano_limits: '20 req/min, 50 req/day',
+
+
+
+
 
 
 
@@ -812,6 +880,10 @@ window.i18n = {
 
 
 
+
+
+
+
         // Main App UI
         newChat: 'Nouveau Chat',
         batchSelect: 'Sélection Multiple',
@@ -846,6 +918,10 @@ window.i18n = {
         deepResearch: 'Mode Recherche Approfondie',
         howCanIHelp: 'Comment puis-je vous aider ?',
         viewingArchived: 'Consultation d\'un chat archivé. Impossible d\'envoyer des messages.',
+
+
+
+
 
 
 
@@ -928,6 +1004,10 @@ window.i18n = {
 
 
 
+
+
+
+
         // Other Modals & Dialogs
         selectDataToExport: 'Sélectionnez les données que vous souhaitez exporter.',
         exportHistory: 'Historique des Chats (incl. archives & dossiers)',
@@ -993,6 +1073,10 @@ window.i18n = {
 
 
 
+
+
+
+
         // Popover Menus
         pin: 'Épingler',
         unpin: 'Désépingler',
@@ -1006,10 +1090,18 @@ window.i18n = {
 
 
 
+
+
+
+
         // Astras Store
         subscribe: 'S\'abonner',
         unsubscribe: 'Se désabonner',
         manage: 'Gérer',
+
+
+
+
 
 
 
@@ -1031,6 +1123,8 @@ window.i18n = {
         allModels: "Tous les modèles",
         auto: 'Auto',
         queriesSuffix: ' requêtes',
+
+
 
 
         // Dialogs & Notifications
@@ -1148,6 +1242,10 @@ window.i18n = {
 
 
 
+
+
+
+
         // Model Descriptions & Limits
         model_ProMax_desc: 'Spécialiste du raisonnement profond, choix idéal pour recherche professionnelle et décisions complexes.',
         model_ProMax_limits: '5 req/min, 100 req/jour',
@@ -1163,6 +1261,10 @@ window.i18n = {
         model_Mill_limits: '20 req/min, 50 req/jour',
         model_Nano_desc: 'Spécialisé en chinois et domaines techniques, idéal pour savoirs experts et développement.',
         model_Nano_limits: '20 req/min, 50 req/jour',
+
+
+
+
 
 
 
