@@ -5753,6 +5753,14 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                         </div>
                     `;
             popover.innerHTML = `
+                <div class="p-2 border-b border-[var(--border-color)]">
+                    <div class="relative">
+                        <input type="search" id="popover-search-input" placeholder="搜尋此對話..." class="w-full p-2 text-sm border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] focus:ring-2 focus:ring-blue-500 focus:outline-none pr-10">
+                        <button id="popover-search-btn" class="absolute inset-y-0 right-0 flex items-center pr-3 text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                        </button>
+                    </div>
+                </div>
                 <button data-id="${convId}" class="rename-conv-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].rename || '重新命名'}</button>
                 <button data-id="${convId}" class="pin-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${pinText}</button>
                 ${moveOptionsHTML}
@@ -5762,6 +5770,26 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             `;
             document.body.appendChild(popover);
             requestAnimationFrame(() => popover.classList.add('visible'));
+
+            // --- ✨ 新增的搜尋邏輯 ✨ ---
+            const searchInput = popover.querySelector('#popover-search-input');
+            const searchBtn = popover.querySelector('#popover-search-btn');
+
+            const performPopoverSearch = () => {
+                const query = searchInput.value;
+                highlightInCurrentChat(query); // 呼叫我們在步驟一新增的函式
+                popover.remove(); // 執行搜尋後關閉視窗
+            };
+
+            searchBtn.addEventListener('click', performPopoverSearch);
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    performPopoverSearch();
+                }
+            });
+            // 防止點擊輸入框時意外關閉彈出視窗
+            searchInput.addEventListener('click', (e) => e.stopPropagation());
             popover.querySelector('.rename-conv-btn').addEventListener('click', (e) => { showRenameModal(convId, 'conversation', e); popover.remove(); });
             popover.querySelector('.pin-btn').addEventListener('click', (e) => { togglePinChat(convId, e); popover.remove(); });
             popover.querySelector('.archive-btn').addEventListener('click', (e) => { archiveChat(convId, e); popover.remove(); });
@@ -8125,6 +8153,75 @@ ${JSON.stringify(potentialMemories, null, 2)}
         versionDisplayElement.textContent = latestVersionInLog;
     }
 };
+         /**
+         * 在當前對話視圖中尋找並反白關鍵字
+         * @param {string} query 要搜尋的關鍵字
+         */
+        const highlightInCurrentChat = (query) => {
+            // 1. 透過重新渲染對話來清除之前的反白標記
+            renderChat();
+
+            const trimmedQuery = query.trim();
+            // 2. 如果沒有有效的搜尋關鍵字，就直接結束
+            if (!trimmedQuery) {
+                return;
+            }
+            
+            // 3. 使用一個短暫的延遲，確保畫面已經重新渲染完畢
+            setTimeout(() => {
+                const messageNodes = document.querySelectorAll('#message-list .message-content');
+                // 將特殊字元進行轉義，以安全地用於正規表示式
+                const safeQuery = trimmedQuery.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                const regex = new RegExp(safeQuery, 'gi'); // 'g' 代表全域搜尋, 'i' 代表不分大小寫
+                let firstMatch = null;
+
+                messageNodes.forEach(node => {
+                    // 建立一個 TreeWalker 來安全地遍歷所有文字節點，避免破壞 HTML 結構
+                    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, null, false);
+                    let textNode;
+                    const nodesToModify = [];
+
+                    // 找出所有包含關鍵字的文字節點
+                    while (textNode = walker.nextNode()) {
+                        if (textNode.textContent.match(regex)) {
+                            nodesToModify.push(textNode);
+                        }
+                    }
+
+                    // 實際進行替換操作，以避免在遍歷時修改 DOM
+                    nodesToModify.forEach(originalNode => {
+                        const parent = originalNode.parentNode;
+                        // 根據關鍵字將文字分割成陣列
+                        const parts = originalNode.textContent.split(regex);
+                        
+                        parts.forEach((part, index) => {
+                            if (!part) return; // 忽略空字串
+
+                            if (index % 2 === 1) { // 這是符合關鍵字的部分
+                                const mark = document.createElement('mark');
+                                mark.className = 'bg-yellow-300 dark:bg-yellow-500 rounded px-1';
+                                mark.textContent = part;
+                                parent.insertBefore(mark, originalNode);
+                                if (!firstMatch) {
+                                    firstMatch = mark; // 記下第一個找到的標記
+                                }
+                            } else { // 這是普通文字部分
+                                parent.insertBefore(document.createTextNode(part), originalNode);
+                            }
+                        });
+                        // 移除原始的文字節點
+                        parent.removeChild(originalNode);
+                    });
+                });
+
+                // 4. 如果有找到符合的內容，就滾動到第一個標記的位置；否則，跳出提示
+                if (firstMatch) {
+                    firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else {
+                    showNotification('在此對話中找不到符合的內容。', 'warning');
+                }
+            }, 100); // 100毫秒的延遲，確保畫面穩定
+        }
         // ✨ 新增：動態注入深度研究功能所需樣式的函數
         function injectDeepResearchStyles() {
             // 檢查樣式是否已存在，避免重複注入
