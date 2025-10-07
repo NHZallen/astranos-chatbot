@@ -1,5 +1,15 @@
 const updateLogs = [
         {
+        version: "15.6.0",
+        date: "2025-10-7",
+        content: [
+            "<strong>優化：</strong>全新的歷史對話選取高亮功能，更清楚目前調用的對話",
+            "<strong>新增：</strong>openrouter模型支援深度研究功能",
+            "<strong>新增：</strong>更多的Astras",
+            "<strong>修正：</strong>全域搜索搜索到垃圾桶內紀錄的問題",
+        ]
+    },
+        {
         version: "15.5.0",
         date: "2025-10-6",
         content: [
