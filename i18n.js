@@ -207,6 +207,8 @@ window.i18n = {
         editResearchPlan: '編輯研究計畫',
         addStep: '新增步驟',
         confirmAndRun: '確認並執行',
+        cancelResearch: '取消研究',
+        closeEditor: '關閉編輯',
 
 
 
@@ -424,6 +426,12 @@ window.i18n = {
         astras_official_editor_07_desc: '語感英語是一個專為中文母語者設計的智慧學習助手，能針對中文學習者的語言特徵與學習痛點，提供系統化的學習方法、例句示範、發音提示與文化補充，幫助使用者在語言基礎與實際應用之間逐步建立完整的學習結構。',
         astras_official_editor_08_name: '西文藍圖',
         astras_official_editor_08_desc: '西語藍圖是一個專為中文母語者設計的智慧學習助手，聚焦中文學習者在西班牙語上的典型難點（動詞變位、陰陽性與性數一致、時態體貌、代詞與語序、發音與重音、文化與語用差異），提供系統化的學習方法、例句示範、發音提示、情境對話與文化補充，幫助學習者從基礎到進階逐步建立完整結構，能在真實場景中自然、自信地使用西語（西班牙與拉美變體皆涵蓋）。',
+        astras_official_editor_09_name: '內在旅程',
+        astras_official_editor_09_desc: '內在旅程是一個懂心理又懂人心的夥伴。它不會說教或迎合，而是以真誠、穩定的語氣，陪你釐清情緒與思緒，讓複雜的心緒慢慢變得可理解。',
+        astras_official_editor_10_name: '心靈輔導',
+        astras_official_editor_10_desc: '心靈輔導是一位深入內在的思考導師。它不給安慰、不急著改變，而是幫你看清情緒與行為背後的結構，讓理解成為改變的開始。',
+        astras_official_editor_11_name: '暗影邏輯',
+        astras_official_editor_11_desc: '一款以高中生偵探為主角的互動推理 Astras。玩家不是破案機器，而是被命運捲入現場的年輕觀察者。故事從一次看似平凡的聚會開始——校外活動、郵輪旅程、畫展邀請——隨著異常細節浮現，事件與人性交錯成網。',
     },
     'en': {
         // Login Page
@@ -636,6 +644,8 @@ window.i18n = {
         editResearchPlan: 'Edit Research Plan',
         addStep: 'Add Step',
         confirmAndRun: 'Confirm & Execute',
+        cancelResearch: 'Cancel Research',
+        closeEditor: 'Close Editor',
 
 
 
@@ -857,6 +867,12 @@ window.i18n = {
         astras_official_editor_07_desc: 'English Sense is an intelligent learning assistant designed for native Chinese speakers. It addresses their specific linguistic traits and learning pain points by providing systematic learning methods, example sentences, pronunciation tips, and cultural insights. It helps users build a complete learning structure, bridging the gap between foundational language skills and practical application.',
         astras_official_editor_08_name: 'Spanish Blueprint',
         astras_official_editor_08_desc: 'Spanish Blueprint is an intelligent learning assistant designed for native Chinese speakers, focusing on typical difficulties in Spanish (verb conjugation, gender/number agreement, tense/aspect, pronouns/word order, pronunciation/stress, cultural/pragmatic differences). It provides systematic learning methods, example sentences, pronunciation tips, situational dialogues, and cultural supplements to help learners build a complete structure from basic to advanced levels, enabling them to use Spanish naturally and confidently in real scenarios (covering both Spanish and Latin American variants).',
+        astras_official_editor_09_name: 'Inner Journey',
+        astras_official_editor_09_desc: 'Inner Journey is a partner who understands both psychology and the human heart. It doesn\'t lecture or pander but, with a sincere and steady tone, accompanies you in clarifying emotions and thoughts, gradually making complex feelings understandable.',
+        astras_official_editor_10_name: 'Mindful Guide',
+        astras_official_editor_10_desc: 'Mindful Guide is a mentor for deep inner reflection. It doesn\'t offer comfort or rush for change; instead, it helps you see the underlying structures behind your emotions and behaviors, letting understanding be the start of transformation.',
+        astras_official_editor_11_name: 'Shadow Logic',
+        astras_official_editor_11_desc: 'An interactive mystery Astras featuring a high school detective. The player isn\'t a crime-solving machine but a young observer drawn into events by fate. The story begins with a seemingly ordinary gathering—a school trip, a cruise, a gallery invitation—and as unusual details emerge, events and human nature intertwine into a complex web.',
     },
     'fr': {
         // Login Page
@@ -1069,6 +1085,8 @@ window.i18n = {
         editResearchPlan: 'Modifier le Plan de Recherche',
         addStep: 'Ajouter une Étape',
         confirmAndRun: 'Confirmer & Exécuter',
+        cancelResearch: 'Annuler la recherche',
+        closeEditor: 'Fermer l\'éditeur',
 
 
 
@@ -1286,5 +1304,11 @@ window.i18n = {
         astras_official_editor_07_desc: 'Sens de l\'Anglais est un assistant d\'apprentissage intelligent conçu pour les locuteurs natifs du chinois. Il aborde leurs traits linguistiques spécifiques et leurs difficultés d\'apprentissage en fournissant des méthodes d\'apprentissage systématiques, des exemples de phrases, des conseils de prononciation et des aperçus culturels. Il aide les utilisateurs à construire une structure d\'apprentissage complète, comblant le fossé entre les compétences linguistiques fondamentales et l\'application pratique.',
         astras_official_editor_08_name: 'Plan Directeur Espagnol',
         astras_official_editor_08_desc: 'Plan Directeur Espagnol est un assistant d\'apprentissage intelligent conçu pour les locuteurs natifs du chinois, axé sur les difficultés typiques en espagnol (conjugaison des verbes, accord en genre/nombre, temps/aspect, pronoms/ordre des mots, prononciation/accentuation, différences culturelles/pragmatiques). Il fournit des méthodes d\'apprentissage systématiques, des exemples de phrases, des conseils de prononciation, des dialogues situationnels et des compléments culturels pour aider les apprenants à construire une structure complète du niveau de base au niveau avancé, leur permettant d\'utiliser l\'espagnol de manière naturelle et confiante dans des scénarios réels (couvrant les variantes espagnoles et latino-américaines).',
+        astras_official_editor_09_name: 'Voyage Intérieur',
+        astras_official_editor_09_desc: 'Voyage Intérieur est un partenaire qui comprend à la fois la psychologie et le cœur humain. Il ne moralise ni ne complaît, mais avec un ton sincère et stable, vous accompagne pour clarifier émotions et pensées, rendant peu à peu compréhensibles les sentiments complexes.',
+        astras_official_editor_10_name: 'Guide Conscient',
+        astras_official_editor_10_desc: 'Guide Conscient est un mentor pour une profonde réflexion intérieure. Il n\'offre pas de réconfort ni ne se précipite pour changer ; au lieu de cela, il vous aide à voir les structures sous-jacentes à vos émotions et comportements, laissant la compréhension être le début de la transformation.',
+        astras_official_editor_11_name: 'Logique de l\'Ombre',
+        astras_official_editor_11_desc: 'Un Astras de mystère interactif mettant en scène un détective lycéen. Le joueur n\'est pas une machine à résoudre des crimes mais un jeune observateur entraîné dans les événements par le destin. L\'histoire commence par un rassemblement apparemment ordinaire - un voyage scolaire, une croisière, une invitation à une galerie - et à mesure que des détails inhabituels apparaissent, les événements et la nature humaine s\'entremêlent en une toile complexe.',
     }
 };
