@@ -6115,13 +6115,15 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     return;
                 }
             } else {
-                const lowerCaseQuery = query.toLowerCase();
-                const searchIn = scope === 'keyword-title' ? ['title'] : ['title', 'content'];
-                conversations
-                    .filter(conv => !conv.deletedAt) // ✨ 新增：過濾掉在垃圾桶的紀錄
-                    .forEach(conv => {
-                        let matchFound = false;
-                        let titleHTML = conv.title;
+    const lowerCaseQuery = query.toLowerCase();
+    const searchIn = scope === 'keyword-title' ? ['title'] : ['title', 'content'];
+    
+    // ✨ 核心修正：在搜尋前過濾掉垃圾桶中的內容
+    conversations
+        .filter(c => !c.deletedAt)
+        .forEach(conv => {
+            let matchFound = false;
+            let titleHTML = conv.title;
                     let snippetHTML = '';
                     if (searchIn.includes('title') && conv.title.toLowerCase().includes(lowerCaseQuery)) {
                         matchFound = true;
@@ -6250,13 +6252,15 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             return await callApiWithSchema(prompt, responseSchema);
         };
         const calculateRelevanceScores = (weightedKeywords) => {
-            let results = [];
-            let processedConvIds = new Set();
-            const totalWeightSum = weightedKeywords.reduce((sum, kw) => sum + kw.weight, 0);
-            conversations
-                .filter(conv => !conv.deletedAt) // ✨ 新增：過濾掉在垃圾桶的紀錄
-                .forEach(conv => {
-                    if (processedConvIds.has(conv.id)) return;
+    let results = [];
+    let processedConvIds = new Set();
+    const totalWeightSum = weightedKeywords.reduce((sum, kw) => sum + kw.weight, 0);
+
+    // ✨ 核心修正：在計分前過濾掉垃圾桶中的內容
+    conversations
+        .filter(c => !c.deletedAt)
+        .forEach(conv => {
+            if (processedConvIds.has(conv.id)) return;
                 let totalScore = 0;
                 let maxPossibleScore = 0;
                 let foundKeywords = new Set();
