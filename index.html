@@ -4165,14 +4165,26 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const provider = modelInfo?.provider;
             const allButtons = [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn];
 
-            if (provider === 'openrouter') {
-                [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, deepResearchBtn].forEach(btn => btn.style.display = 'none');
-                if (separator) separator.style.display = 'none';
-                learningModeBtn.style.display = 'flex';
-            } else { // Gemini
-    allButtons.forEach(btn => btn.style.display = 'flex');
-    if (separator) separator.style.display = 'block';
-}
+            const allButtons = [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn];
+        const allSeparators = document.querySelectorAll('#file-options-popover .border-t');
+
+        if (provider === 'openrouter') {
+            // 對於 OpenRouter，隱藏與「檔案上傳」和「網路搜尋」相關的功能
+            [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn].forEach(btn => btn.style.display = 'none');
+            
+            // 明確顯示 OpenRouter 支援的功能：「學習模式」和「深度研究」
+            learningModeBtn.style.display = 'flex';
+            deepResearchBtn.style.display = 'flex';
+
+            // 隱藏不需要的分隔線
+            if (allSeparators.length > 0) allSeparators[0].style.display = 'none'; // 隱藏網路搜尋前的分隔線
+            if (allSeparators.length > 1) allSeparators[1].style.display = 'block';// 確保深度研究前的分隔線是顯示的
+
+        } else { // Gemini 模型
+            // 對於 Gemini，顯示所有功能按鈕和分隔線
+            allButtons.forEach(btn => btn.style.display = 'flex');
+            allSeparators.forEach(sep => sep.style.display = 'block');
+        }
         };
 
         const toggleLearningMode = async () => {
