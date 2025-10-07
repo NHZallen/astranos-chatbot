@@ -18,29 +18,22 @@
 #open-search-btn.active {
     color: var(--button-primary-bg);
 }
-    #conversation-search-view-content mark {
-    background-color: #ffdd00; /* 使用更柔和的黃色 */
-    color: #000000;
-    cursor: pointer;
-    padding: 1px 3px;
-    border-radius: 3px;
-    transition: background-color 0.2s ease;
+    .sidebar-item {
+    transition: background-color 0.2s ease-in-out, border-left-color 0.2s ease-in-out, color 0.2s ease-in-out;
+    border-left: 3px solid transparent; 
+    padding-left: calc(0.75rem - 3px); /* 假設原本 p-3 是 0.75rem */
 }
-#conversation-search-view-content mark:hover {
-    background-color: #ffc400; /* 滑鼠懸停時加深顏色 */
+.dark .sidebar-item.active, /* 深色模式下的啟用樣式 */
+.sidebar .sidebar-item.active { /* 淺色模式下的啟用樣式 */
+    background-color: var(--active-bg); 
+    color: var(--text-primary) !important; 
+    font-weight: 600; 
+    border-left-color: var(--button-primary-bg); 
+}
+.sidebar-item:not(.active):hover {
+    background-color: var(--hover-bg);
 }
 
-/* ✨ 新增：主聊天室訊息跳轉時的高亮動畫 */
-.message-highlight-jump {
-    animation: highlight-jump 1.8s cubic-bezier(0.165, 0.84, 0.44, 1);
-}
-@keyframes highlight-jump {
-    0%, 100% { background-color: transparent; }
-    30%, 70% { 
-        background-color: rgba(255, 221, 0, 0.6); 
-        box-shadow: 0 0 15px rgba(255, 221, 0, 0.8);
-    }
-}
     .sidebar-section {
     background-color: transparent; /* 1. 將背景改為透明 */
     border-radius: 0;          /* 2. 移除區塊的圓角 */
@@ -2978,26 +2971,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     </div>
 </div>
     <div id="mobile-context-menu-wrapper"></div>
-
-    <div id="conversation-search-view-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[51]">
-        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-3xl flex flex-col" style="max-height: 90vh;">
-            <!-- 彈窗標題 -->
-            <div class="p-4 border-b border-[var(--border-color)] flex justify-between items-center flex-shrink-0">
-                <h2 id="conversation-search-view-title" class="text-xl font-bold truncate">檢視與搜索</h2>
-                <button id="close-conversation-search-view-modal-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
-            </div>
-            <!-- 搜索工具列 -->
-            <div class="p-3 border-b border-[var(--border-color)] flex items-center gap-2 flex-shrink-0">
-                <input type="search" id="conversation-search-input" placeholder="輸入關鍵字..." class="flex-1 p-2 text-sm border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                <button id="perform-conversation-search-btn" class="p-2 rounded-md btn-primary text-sm">搜尋</button>
-                <span id="conversation-search-results-count" class="text-sm text-[var(--text-secondary)] w-20 text-center"></span>
-            </div>
-            <!-- 對話內容容器 -->
-            <div id="conversation-search-view-content" class="p-6 overflow-y-auto space-y-4 scroll-area flex-1">
-                <!-- 對話訊息將會被動態載入到這裡 -->
-            </div>
-        </div>
-    </div>
     
     <!-- ✨ 新增：互動式計畫編輯器 Modal -->
     <div id="interactive-plan-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[52]">
@@ -3326,13 +3299,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             proposalInstructionsInput: document.getElementById('proposal-instructions-input'),
             cancelProposalBtn: document.getElementById('cancel-proposal-btn'),
             submitProposalBtn: document.getElementById('submit-proposal-btn'),
-            conversationSearchViewModal: document.getElementById('conversation-search-view-modal'),
-            closeConversationSearchViewModalBtn: document.getElementById('close-conversation-search-view-modal-btn'),
-            conversationSearchViewTitle: document.getElementById('conversation-search-view-title'),
-            conversationSearchInput: document.getElementById('conversation-search-input'),
-            performConversationSearchBtn: document.getElementById('perform-conversation-search-btn'),
-            conversationSearchResultsCount: document.getElementById('conversation-search-results-count'),
-            conversationSearchViewContent: document.getElementById('conversation-search-view-content'),
             // ✨ 新增互動式計畫編輯器元素
             interactivePlanModal: document.getElementById('interactive-plan-modal'),
             planEditorStepsContainer: document.getElementById('plan-editor-steps-container'),
@@ -4639,7 +4605,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
             const messageDiv = document.createElement('div');
             messageDiv.dataset.messageIndex = index;
-            messageDiv.dataset.messageTimestamp = msg.createdAt;
             const isUser = msg.role === 'user';
             messageDiv.className = `message-item flex items-start gap-2 md:gap-4 ${isUser ? 'justify-end user-message' : 'model-message'}`;
             const icon = isUser ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>` : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
@@ -5768,7 +5733,6 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                         </div>
                     `;
             popover.innerHTML = `
-                <button data-id="${convId}" class="search-in-conv-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">單一對話搜索</button>
                 <button data-id="${convId}" class="rename-conv-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].rename || '重新命名'}</button>
                 <button data-id="${convId}" class="pin-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${pinText}</button>
                 ${moveOptionsHTML}
@@ -5783,12 +5747,6 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             popover.querySelector('.archive-btn').addEventListener('click', (e) => { archiveChat(convId, e); popover.remove(); });
             popover.querySelector('.delete-btn').addEventListener('click', (e) => { deleteChat(convId, e); popover.remove(); });
             popover.querySelectorAll('.move-to-folder-btn').forEach(btn => btn.addEventListener('click', () => { moveConversationToFolder(convId, btn.dataset.folderId); popover.remove(); }));
-            
-            // ✨ START: 新增單一對話搜索按鈕的事件監聽
-            popover.querySelector('.search-in-conv-btn').addEventListener('click', (e) => {
-                openConversationSearchView(convId);
-                popover.remove();
-            });
             const newFolderBtn = popover.querySelector('.new-folder-from-menu-btn');
             if (newFolderBtn) {
                 newFolderBtn.addEventListener('click', async () => {
@@ -5804,12 +5762,6 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             if (moveOutBtn) {
                 moveOutBtn.addEventListener('click', () => { moveConversationToFolder(convId, null); popover.remove(); });
             }
-            // ✨ START: 綁定新按鈕的點擊事件
-            popover.querySelector('.search-in-conv-btn').addEventListener('click', (e) => {
-                openConversationSearchView(convId);
-                popover.remove();
-            });
-            // ✨ END: 綁定事件
         };
         const setTheme = async (theme) => {
             if (document.body.classList.contains('custom-wallpaper-active')) {
@@ -6020,7 +5972,6 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             popover.style.top = `${rect.bottom}px`;
             popover.style.left = `${rect.left}px`;
             popover.innerHTML = `
-                <button data-id="${convId}" class="search-in-conv-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">單一對話搜索</button>
                 <button data-id="${folderId}" class="rename-folder-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].rename || '重新命名'}</button>
                 <button data-id="${folderId}" class="customize-folder-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].customize || '自訂'}</button>
                 <div class="border-t my-1 border-[var(--border-color)]"></div>
@@ -7673,7 +7624,6 @@ ${JSON.stringify(potentialMemories, null, 2)}
             menu.innerHTML = `
                 ${menuHeader}
                 <div class="menu-options">
-                    <div class="menu-item" data-action="search-in-conv"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></svg><span>單一對話搜索</span></div>
                     <div class="menu-item" data-action="rename"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg><span>${i18n[config.uiLanguage].rename || '重新命名'}</span></div>
                     <div class="menu-item" data-action="pin"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 3.75V16.5L12 14.25 7.5 16.5V3.75m9 0H18A2.25 2.25 0 0 1 20.25 6v12A2.25 2.25 0 0 1 18 20.25H6A2.25 2.25 0 0 1 3.75 18V6A2.25 2.25 0 0 1 6 3.75h1.5m9 0h-9" /></svg><span>${pinText}</span></div>
                     ${moveOptionsHTML}
@@ -7729,9 +7679,6 @@ ${JSON.stringify(potentialMemories, null, 2)}
                         case 'pin':
                             togglePinChat(convId, e);
                             break;
-                            case 'search-in-conv':
-                            openConversationSearchView(convId);
-                            break;
                         case 'archive':
                             archiveChat(convId, e);
                             break;
@@ -7763,7 +7710,6 @@ ${JSON.stringify(potentialMemories, null, 2)}
             menu.innerHTML = `
                 <div class="menu-header">${folder.name}</div>
                 <div class="menu-options">
-                    <div class="menu-item" data-action="search-in-conv"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></svg><span>單一對話搜索</span></div>
                     <div class="menu-item" data-action="rename-folder"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg><span>${i18n[config.uiLanguage].rename || '重新命名'}</span></div>
                     <div class="menu-item" data-action="customize-folder"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.475 2.118 3.375 3.375 0 0 0-1.179 4.471.75.75 0 0 0 .676.928A4.5 4.5 0 0 0 6 21c1.282 0 2.47-.602 3.22-1.606a3 3 0 0 0-1.7-4.271Zm-5.78 1.128L1.623 20.25m5.78-1.128L9.25 5.25m-3.72 1.128L5.53 16.122m3.72-1.128L9.25 5.25m5.336-3.64a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.475 2.118 3.375 3.375 0 0 0-1.179 4.471.75.75 0 0 0 .676.928A4.5 4.5 0 0 0 12 21c1.282 0 2.47-.602 3.22-1.606a3 3 0 0 0-1.7-4.271Zm-5.78 1.128L7.373 20.25m5.78-1.128L14.938 5.25m-3.72 1.128L11.22 16.122m3.72-1.128L14.938 5.25m2.478-3.64a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.475 2.118 3.375 3.375 0 0 0-1.179 4.471.75.75 0 0 0 .676.928A4.5 4.5 0 0 0 18 21c1.282 0 2.47-.602 3.22-1.606a3 3 0 0 0-1.7-4.271Zm-5.78 1.128L13.123 20.25" /></svg><span>${i18n[config.uiLanguage].customize || '自訂'}</span></div>
                     <div class="menu-item delete" data-action="delete-folder"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.067-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg><span>${i18n[config.uiLanguage].deleteFolder || '刪除資料夾'}</span></div>
@@ -8792,171 +8738,8 @@ ${allContextData.join('\n\n')}`;
                 }
             }
         }
-        const openConversationSearchView = (convId) => {
-            const conv = conversations.find(c => c.id === convId);
-            if (!conv) return;
-
-            const {
-                conversationSearchViewModal,
-                conversationSearchViewTitle,
-                conversationSearchViewContent,
-                conversationSearchInput,
-                conversationSearchResultsCount
-            } = ALL_ELEMENTS;
-
-            conversationSearchViewTitle.textContent = conv.title;
-            conversationSearchViewModal.dataset.convId = convId; // 將對話 ID 存在彈窗上
-            conversationSearchInput.value = '';
-            conversationSearchResultsCount.textContent = '';
-            conversationSearchViewContent.innerHTML = ''; // 清空舊內容
-
-            if (conv.messages.length === 0) {
-                conversationSearchViewContent.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].noMessages || '此對話沒有訊息。'}</p>`;
-            } else {
-                conv.messages.forEach(msg => {
-                    const isUser = msg.role === 'user';
-                    const messageDiv = document.createElement('div');
-                    // 關鍵：為每則訊息加上唯一的 data-message-timestamp 屬性
-                    messageDiv.dataset.messageTimestamp = msg.createdAt;
-                    messageDiv.className = `message-item flex items-start gap-2 md:gap-4 ${isUser ? 'justify-end user-message' : 'model-message'}`;
-                    
-                    const icon = isUser
-                        ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>`
-                        : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
-                    
-                    let contentHTML = msg.parts.map(p => p.text ? (isUser ? p.text.replace(/\n/g, '<br>') : renderMarkdown(p.text)) : '').join('');
-                    
-                    const messageBubble = `<div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble"><div class="prose prose-sm max-w-none message-content ${isUser ? 'text-white' : 'text-[var(--text-primary)]'}">${contentHTML}</div></div>`;
-                    
-                    messageDiv.innerHTML = isUser ? `${messageBubble}${icon}` : `${icon}${messageBubble}`;
-                    conversationSearchViewContent.appendChild(messageDiv);
-                });
-            }
-
-            toggleModal(conversationSearchViewModal, true);
-        };
-
-        const performInConversationSearch = () => {
-            const { conversationSearchInput, conversationSearchViewContent, conversationSearchResultsCount } = ALL_ELEMENTS;
-            const keyword = conversationSearchInput.value.trim();
-
-            // 步驟 1: 移除舊的高亮 (使用更現代且安全的方法)
-            conversationSearchViewContent.querySelectorAll('mark').forEach(mark => {
-                if (mark.parentNode) {
-                    // 用 mark 標籤內的內容替換掉 mark 標籤本身
-                    mark.replaceWith(...mark.childNodes);
-                }
-            });
-            // 將因移除 mark 標籤而可能產生的相鄰文字節點合併，對後續搜索很重要
-            conversationSearchViewContent.normalize();
-            conversationSearchResultsCount.textContent = '';
-            
-            if (!keyword) return;
-
-            const safeKeyword = keyword.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-            const regex = new RegExp(safeKeyword, 'gi');
-            let matchCount = 0;
-
-            // 步驟 2: 遍歷每一則訊息的內容區塊
-            conversationSearchViewContent.querySelectorAll('.message-content').forEach(contentEl => {
-                // TreeWalker 依然是最高效且安全的方式，只處理文字節點
-                const walker = document.createTreeWalker(contentEl, Node.TEXT_NODE, null, false);
-                const nodesToProcess = [];
-                // 先收集所有需要處理的節點，避免在遍歷時修改 DOM
-                while (walker.nextNode()) {
-                    if (walker.currentNode.nodeValue.match(regex)) {
-                        nodesToProcess.push(walker.currentNode);
-                    }
-                }
-
-                // 步驟 3: 對每個包含關鍵字的文字節點進行高亮處理
-                nodesToProcess.forEach(node => {
-                    // 創建一個文件片段來存放新節點
-                    const fragment = document.createDocumentFragment();
-                    let lastIndex = 0;
-                    let match;
-                    
-                    // 重設正則表達式的 lastIndex，這在使用全域旗標 'g' 時至關重要
-                    regex.lastIndex = 0;
-
-                    // 使用更標準的 while 迴圈來遍歷所有匹配項
-                    while ((match = regex.exec(node.nodeValue)) !== null) {
-                        // 加上匹配項之前的文字
-                        const textBefore = node.nodeValue.slice(lastIndex, match.index);
-                        if (textBefore) {
-                            fragment.appendChild(document.createTextNode(textBefore));
-                        }
-                        
-                        // 創建並加上 <mark> 高亮標籤
-                        const mark = document.createElement('mark');
-                        mark.textContent = match[0];
-                        fragment.appendChild(mark);
-                        
-                        matchCount++;
-                        lastIndex = regex.lastIndex;
-                    }
-
-                    // 加上最後一個匹配項之後的剩餘文字
-                    const textAfter = node.nodeValue.slice(lastIndex);
-                    if (textAfter) {
-                        fragment.appendChild(document.createTextNode(textAfter));
-                    }
-
-                    // 用我們建立的、包含高亮標籤的片段，替換掉原始的純文字節點
-                    if (node.parentNode) {
-                        node.parentNode.replaceChild(fragment, node);
-                    }
-                });
-            });
-
-            conversationSearchResultsCount.textContent = `找到 ${matchCount} 筆`;
-        };
-        const handleJumpToMessage = (e) => {
-            if (e.target.tagName !== 'MARK') return;
-
-            const messageItem = e.target.closest('.message-item');
-            if (!messageItem) return;
-
-            const timestamp = messageItem.dataset.messageTimestamp;
-            const convId = ALL_ELEMENTS.conversationSearchViewModal.dataset.convId;
-
-            if (!timestamp || !convId) return;
-
-            // 關閉搜索彈窗
-            toggleModal(ALL_ELEMENTS.conversationSearchViewModal, false);
-            
-            // 確保主介面顯示的是正確的對話
-            if (activeConversationId !== convId) {
-                loadChat(convId);
-            }
-
-            // 使用 setTimeout 確保 DOM 已更新
-            setTimeout(() => {
-                const targetMessageEl = document.querySelector(`#message-list .message-item[data-message-timestamp="${timestamp}"]`);
-                if (targetMessageEl) {
-                    targetMessageEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    
-                    const bubble = targetMessageEl.querySelector('.message-bubble');
-                    if (bubble) {
-                        bubble.classList.add('message-highlight-jump');
-                        bubble.addEventListener('animationend', () => {
-                            bubble.classList.remove('message-highlight-jump');
-                        }, { once: true });
-                    }
-                }
-            }, 300); // 300ms 延遲給 DOM 一點緩衝時間
-        };
         async function initChatApp() {
             injectDeepResearchStyles(); // ✨ 注入樣式
-            ALL_ELEMENTS.closeConversationSearchViewModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.conversationSearchViewModal, false));
-            ALL_ELEMENTS.performConversationSearchBtn.addEventListener('click', performInConversationSearch);
-            ALL_ELEMENTS.conversationSearchInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    performInConversationSearch();
-                }
-            });
-            ALL_ELEMENTS.conversationSearchViewContent.addEventListener('click', handleJumpToMessage);
             await loadConfig();
             await loadAppData();
             applyCustomWallpaper();
