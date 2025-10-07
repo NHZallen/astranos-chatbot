@@ -8840,10 +8840,15 @@ ${allContextData.join('\n\n')}`;
             const { conversationSearchInput, conversationSearchViewContent, conversationSearchResultsCount } = ALL_ELEMENTS;
             const keyword = conversationSearchInput.value.trim();
 
-            // 移除舊的高亮
+            // 步驟 1: 移除舊的高亮 (使用更現代且安全的方法)
             conversationSearchViewContent.querySelectorAll('mark').forEach(mark => {
-                mark.outerHTML = mark.innerHTML;
+                if (mark.parentNode) {
+                    // 用 mark 標籤內的內容替換掉 mark 標籤本身
+                    mark.replaceWith(...mark.childNodes);
+                }
             });
+            // 將因移除 mark 標籤而可能產生的相鄰文字節點合併，對後續搜索很重要
+            conversationSearchViewContent.normalize();
             conversationSearchResultsCount.textContent = '';
             
             if (!keyword) return;
@@ -8852,42 +8857,60 @@ ${allContextData.join('\n\n')}`;
             const regex = new RegExp(safeKeyword, 'gi');
             let matchCount = 0;
 
+            // 步驟 2: 遍歷每一則訊息的內容區塊
             conversationSearchViewContent.querySelectorAll('.message-content').forEach(contentEl => {
+                // TreeWalker 依然是最高效且安全的方式，只處理文字節點
                 const walker = document.createTreeWalker(contentEl, Node.TEXT_NODE, null, false);
-                let node;
-                const nodesToReplace = [];
-
-                while (node = walker.nextNode()) {
-                    if (node.nodeValue.match(regex)) {
-                        nodesToReplace.push(node);
+                const nodesToProcess = [];
+                // 先收集所有需要處理的節點，避免在遍歷時修改 DOM
+                while (walker.nextNode()) {
+                    if (walker.currentNode.nodeValue.match(regex)) {
+                        nodesToProcess.push(walker.currentNode);
                     }
                 }
-                
-                nodesToReplace.forEach(n => {
+
+                // 步驟 3: 對每個包含關鍵字的文字節點進行高亮處理
+                nodesToProcess.forEach(node => {
+                    // 創建一個文件片段來存放新節點
                     const fragment = document.createDocumentFragment();
                     let lastIndex = 0;
-                    n.nodeValue.replace(regex, (match, offset) => {
-                        const textBefore = n.nodeValue.slice(lastIndex, offset);
+                    let match;
+                    
+                    // 重設正則表達式的 lastIndex，這在使用全域旗標 'g' 時至關重要
+                    regex.lastIndex = 0;
+
+                    // 使用更標準的 while 迴圈來遍歷所有匹配項
+                    while ((match = regex.exec(node.nodeValue)) !== null) {
+                        // 加上匹配項之前的文字
+                        const textBefore = node.nodeValue.slice(lastIndex, match.index);
                         if (textBefore) {
                             fragment.appendChild(document.createTextNode(textBefore));
                         }
+                        
+                        // 創建並加上 <mark> 高亮標籤
                         const mark = document.createElement('mark');
-                        mark.textContent = match;
+                        mark.textContent = match[0];
                         fragment.appendChild(mark);
+                        
                         matchCount++;
-                        lastIndex = offset + match.length;
-                    });
-                    const textAfter = n.nodeValue.slice(lastIndex);
+                        lastIndex = regex.lastIndex;
+                    }
+
+                    // 加上最後一個匹配項之後的剩餘文字
+                    const textAfter = node.nodeValue.slice(lastIndex);
                     if (textAfter) {
                         fragment.appendChild(document.createTextNode(textAfter));
                     }
-                    n.parentNode.replaceChild(fragment, n);
+
+                    // 用我們建立的、包含高亮標籤的片段，替換掉原始的純文字節點
+                    if (node.parentNode) {
+                        node.parentNode.replaceChild(fragment, node);
+                    }
                 });
             });
 
             conversationSearchResultsCount.textContent = `找到 ${matchCount} 筆`;
         };
-
         const handleJumpToMessage = (e) => {
             if (e.target.tagName !== 'MARK') return;
 
