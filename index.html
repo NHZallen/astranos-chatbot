@@ -18,6 +18,29 @@
 #open-search-btn.active {
     color: var(--button-primary-bg);
 }
+    #conversation-search-view-content mark {
+    background-color: #ffdd00; /* 使用更柔和的黃色 */
+    color: #000000;
+    cursor: pointer;
+    padding: 1px 3px;
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
+}
+#conversation-search-view-content mark:hover {
+    background-color: #ffc400; /* 滑鼠懸停時加深顏色 */
+}
+
+/* ✨ 新增：主聊天室訊息跳轉時的高亮動畫 */
+.message-highlight-jump {
+    animation: highlight-jump 1.8s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+@keyframes highlight-jump {
+    0%, 100% { background-color: transparent; }
+    30%, 70% { 
+        background-color: rgba(255, 221, 0, 0.6); 
+        box-shadow: 0 0 15px rgba(255, 221, 0, 0.8);
+    }
+}
     .sidebar-section {
     background-color: transparent; /* 1. 將背景改為透明 */
     border-radius: 0;          /* 2. 移除區塊的圓角 */
@@ -2955,6 +2978,26 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     </div>
 </div>
     <div id="mobile-context-menu-wrapper"></div>
+
+    <div id="conversation-search-view-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[51]">
+        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-3xl flex flex-col" style="max-height: 90vh;">
+            <!-- 彈窗標題 -->
+            <div class="p-4 border-b border-[var(--border-color)] flex justify-between items-center flex-shrink-0">
+                <h2 id="conversation-search-view-title" class="text-xl font-bold truncate">檢視與搜索</h2>
+                <button id="close-conversation-search-view-modal-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
+            </div>
+            <!-- 搜索工具列 -->
+            <div class="p-3 border-b border-[var(--border-color)] flex items-center gap-2 flex-shrink-0">
+                <input type="search" id="conversation-search-input" placeholder="輸入關鍵字..." class="flex-1 p-2 text-sm border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                <button id="perform-conversation-search-btn" class="p-2 rounded-md btn-primary text-sm">搜尋</button>
+                <span id="conversation-search-results-count" class="text-sm text-[var(--text-secondary)] w-20 text-center"></span>
+            </div>
+            <!-- 對話內容容器 -->
+            <div id="conversation-search-view-content" class="p-6 overflow-y-auto space-y-4 scroll-area flex-1">
+                <!-- 對話訊息將會被動態載入到這裡 -->
+            </div>
+        </div>
+    </div>
     
     <!-- ✨ 新增：互動式計畫編輯器 Modal -->
     <div id="interactive-plan-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[52]">
@@ -3283,6 +3326,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             proposalInstructionsInput: document.getElementById('proposal-instructions-input'),
             cancelProposalBtn: document.getElementById('cancel-proposal-btn'),
             submitProposalBtn: document.getElementById('submit-proposal-btn'),
+            conversationSearchViewModal: document.getElementById('conversation-search-view-modal'),
+            closeConversationSearchViewModalBtn: document.getElementById('close-conversation-search-view-modal-btn'),
+            conversationSearchViewTitle: document.getElementById('conversation-search-view-title'),
+            conversationSearchInput: document.getElementById('conversation-search-input'),
+            performConversationSearchBtn: document.getElementById('perform-conversation-search-btn'),
+            conversationSearchResultsCount: document.getElementById('conversation-search-results-count'),
+            conversationSearchViewContent: document.getElementById('conversation-search-view-content'),
             // ✨ 新增互動式計畫編輯器元素
             interactivePlanModal: document.getElementById('interactive-plan-modal'),
             planEditorStepsContainer: document.getElementById('plan-editor-steps-container'),
@@ -4589,6 +4639,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
             const messageDiv = document.createElement('div');
             messageDiv.dataset.messageIndex = index;
+            messageDiv.dataset.messageTimestamp = msg.createdAt;
             const isUser = msg.role === 'user';
             messageDiv.className = `message-item flex items-start gap-2 md:gap-4 ${isUser ? 'justify-end user-message' : 'model-message'}`;
             const icon = isUser ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>` : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
@@ -5717,6 +5768,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                         </div>
                     `;
             popover.innerHTML = `
+                <button data-id="${convId}" class="search-in-conv-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${'單一對話搜索'}</button>
                 <button data-id="${convId}" class="rename-conv-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].rename || '重新命名'}</button>
                 <button data-id="${convId}" class="pin-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${pinText}</button>
                 ${moveOptionsHTML}
@@ -5746,6 +5798,12 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             if (moveOutBtn) {
                 moveOutBtn.addEventListener('click', () => { moveConversationToFolder(convId, null); popover.remove(); });
             }
+            // ✨ START: 綁定新按鈕的點擊事件
+            popover.querySelector('.search-in-conv-btn').addEventListener('click', (e) => {
+                openConversationSearchView(convId);
+                popover.remove();
+            });
+            // ✨ END: 綁定事件
         };
         const setTheme = async (theme) => {
             if (document.body.classList.contains('custom-wallpaper-active')) {
@@ -8722,8 +8780,148 @@ ${allContextData.join('\n\n')}`;
                 }
             }
         }
+        const openConversationSearchView = (convId) => {
+            const conv = conversations.find(c => c.id === convId);
+            if (!conv) return;
+
+            const {
+                conversationSearchViewModal,
+                conversationSearchViewTitle,
+                conversationSearchViewContent,
+                conversationSearchInput,
+                conversationSearchResultsCount
+            } = ALL_ELEMENTS;
+
+            conversationSearchViewTitle.textContent = conv.title;
+            conversationSearchViewModal.dataset.convId = convId; // 將對話 ID 存在彈窗上
+            conversationSearchInput.value = '';
+            conversationSearchResultsCount.textContent = '';
+            conversationSearchViewContent.innerHTML = ''; // 清空舊內容
+
+            if (conv.messages.length === 0) {
+                conversationSearchViewContent.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].noMessages || '此對話沒有訊息。'}</p>`;
+            } else {
+                conv.messages.forEach(msg => {
+                    const isUser = msg.role === 'user';
+                    const messageDiv = document.createElement('div');
+                    // 關鍵：為每則訊息加上唯一的 data-message-timestamp 屬性
+                    messageDiv.dataset.messageTimestamp = msg.createdAt;
+                    messageDiv.className = `message-item flex items-start gap-2 md:gap-4 ${isUser ? 'justify-end user-message' : 'model-message'}`;
+                    
+                    const icon = isUser
+                        ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>`
+                        : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
+                    
+                    let contentHTML = msg.parts.map(p => p.text ? (isUser ? p.text.replace(/\n/g, '<br>') : renderMarkdown(p.text)) : '').join('');
+                    
+                    const messageBubble = `<div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble"><div class="prose prose-sm max-w-none message-content ${isUser ? 'text-white' : 'text-[var(--text-primary)]'}">${contentHTML}</div></div>`;
+                    
+                    messageDiv.innerHTML = isUser ? `${messageBubble}${icon}` : `${icon}${messageBubble}`;
+                    conversationSearchViewContent.appendChild(messageDiv);
+                });
+            }
+
+            toggleModal(conversationSearchViewModal, true);
+        };
+
+        const performInConversationSearch = () => {
+            const { conversationSearchInput, conversationSearchViewContent, conversationSearchResultsCount } = ALL_ELEMENTS;
+            const keyword = conversationSearchInput.value.trim();
+
+            // 移除舊的高亮
+            conversationSearchViewContent.querySelectorAll('mark').forEach(mark => {
+                mark.outerHTML = mark.innerHTML;
+            });
+            conversationSearchResultsCount.textContent = '';
+            
+            if (!keyword) return;
+
+            const safeKeyword = keyword.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+            const regex = new RegExp(safeKeyword, 'gi');
+            let matchCount = 0;
+
+            conversationSearchViewContent.querySelectorAll('.message-content').forEach(contentEl => {
+                const walker = document.createTreeWalker(contentEl, Node.TEXT_NODE, null, false);
+                let node;
+                const nodesToReplace = [];
+
+                while (node = walker.nextNode()) {
+                    if (node.nodeValue.match(regex)) {
+                        nodesToReplace.push(node);
+                    }
+                }
+                
+                nodesToReplace.forEach(n => {
+                    const fragment = document.createDocumentFragment();
+                    let lastIndex = 0;
+                    n.nodeValue.replace(regex, (match, offset) => {
+                        const textBefore = n.nodeValue.slice(lastIndex, offset);
+                        if (textBefore) {
+                            fragment.appendChild(document.createTextNode(textBefore));
+                        }
+                        const mark = document.createElement('mark');
+                        mark.textContent = match;
+                        fragment.appendChild(mark);
+                        matchCount++;
+                        lastIndex = offset + match.length;
+                    });
+                    const textAfter = n.nodeValue.slice(lastIndex);
+                    if (textAfter) {
+                        fragment.appendChild(document.createTextNode(textAfter));
+                    }
+                    n.parentNode.replaceChild(fragment, n);
+                });
+            });
+
+            conversationSearchResultsCount.textContent = `找到 ${matchCount} 筆`;
+        };
+
+        const handleJumpToMessage = (e) => {
+            if (e.target.tagName !== 'MARK') return;
+
+            const messageItem = e.target.closest('.message-item');
+            if (!messageItem) return;
+
+            const timestamp = messageItem.dataset.messageTimestamp;
+            const convId = ALL_ELEMENTS.conversationSearchViewModal.dataset.convId;
+
+            if (!timestamp || !convId) return;
+
+            // 關閉搜索彈窗
+            toggleModal(ALL_ELEMENTS.conversationSearchViewModal, false);
+            
+            // 確保主介面顯示的是正確的對話
+            if (activeConversationId !== convId) {
+                loadChat(convId);
+            }
+
+            // 使用 setTimeout 確保 DOM 已更新
+            setTimeout(() => {
+                const targetMessageEl = document.querySelector(`#message-list .message-item[data-message-timestamp="${timestamp}"]`);
+                if (targetMessageEl) {
+                    targetMessageEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    const bubble = targetMessageEl.querySelector('.message-bubble');
+                    if (bubble) {
+                        bubble.classList.add('message-highlight-jump');
+                        bubble.addEventListener('animationend', () => {
+                            bubble.classList.remove('message-highlight-jump');
+                        }, { once: true });
+                    }
+                }
+            }, 300); // 300ms 延遲給 DOM 一點緩衝時間
+        };
         async function initChatApp() {
             injectDeepResearchStyles(); // ✨ 注入樣式
+            ALL_ELEMENTS.closeConversationSearchViewModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.conversationSearchViewModal, false));
+            ALL_ELEMENTS.performConversationSearchBtn.addEventListener('click', performInConversationSearch);
+            ALL_ELEMENTS.conversationSearchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    performInConversationSearch();
+                }
+            });
+            ALL_ELEMENTS.conversationSearchViewContent.addEventListener('click', handleJumpToMessage);
             await loadConfig();
             await loadAppData();
             applyCustomWallpaper();
