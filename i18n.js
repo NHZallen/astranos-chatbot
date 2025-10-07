@@ -272,6 +272,10 @@ window.i18n = {
 
 
         // Dialogs & Notifications
+        deepResearchIndicator: '深度研究模式',
+closeDeepResearchMode: '關閉深度研究模式',
+deepResearchModeEnabledFull: '深度研究模式已啟用。記憶功能已暫時關閉。',
+deepResearchModeDisabledFull: '深度研究模式已關閉。記憶功能已還原。',
         usernamePasswordRequired: '使用者名稱和密碼皆為必填項目。',
         passwordIncorrect: '密碼錯誤。',
         confirmLogout: '您確定要登出嗎？',
@@ -709,6 +713,10 @@ window.i18n = {
 
 
         // Dialogs & Notifications
+        deepResearchIndicator: 'Deep Research Mode',
+closeDeepResearchMode: 'Close Deep Research Mode',
+deepResearchModeEnabledFull: 'Deep Research Mode enabled. Memory functions temporarily disabled.',
+deepResearchModeDisabledFull: 'Deep Research Mode disabled. Memory functions restored.',
         usernamePasswordRequired: 'Username and password are required.',
         passwordIncorrect: 'Incorrect password.',
         confirmLogout: 'Are you sure you want to log out?',
@@ -1146,6 +1154,10 @@ window.i18n = {
 
 
         // Dialogs & Notifications
+        deepResearchIndicator: 'Mode Recherche Approfondie',
+closeDeepResearchMode: 'Fermer le Mode Recherche Approfondie',
+deepResearchModeEnabledFull: 'Mode Recherche Approfondie activé. Fonctions de mémoire temporairement désactivées.',
+deepResearchModeDisabledFull: 'Mode Recherche Approfondie désactivé. Fonctions de mémoire restaurées.',
         usernamePasswordRequired: 'Le nom d\'utilisateur et le mot de passe sont requis.',
         passwordIncorrect: 'Mot de passe incorrect.',
         confirmLogout: 'Êtes-vous sûr de vouloir vous déconnecter ?',
