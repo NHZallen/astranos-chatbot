@@ -18,6 +18,45 @@
 #open-search-btn.active {
     color: var(--button-primary-bg);
 }
+    /* 搜尋控制列的按鈕樣式 */
+        #next-match-btn svg { transform: rotate(-90deg); }
+        #prev-match-btn svg { transform: rotate(90deg); }
+
+        /* 當處於搜尋模式時，鎖定輸入框區域的樣式 */
+        .input-wrapper.search-active > .flex.items-end {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        /* 讓搜尋控制列出現時，為下方的輸入元件留出空間 */
+        .input-wrapper.search-active {
+            padding-top: 2.25rem; /* 36px */
+        }
+
+        /* 彈出選單中，新的搜尋框 UI 樣式 */
+        .popover-search-wrapper {
+            position: relative;
+            padding: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .popover-search-wrapper input {
+            width: 100%;
+            padding: 0.5rem 0.75rem 0.5rem 2.25rem; /* 增加左邊距給圖示 */
+            font-size: 0.875rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            background-color: var(--input-field-bg);
+        }
+        .popover-search-wrapper svg {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 1rem; /* 16px */
+            height: 1rem; /* 16px */
+            color: var(--text-secondary);
+            pointer-events: none; /* 讓圖示不會擋到點擊 */
+        }
     .sidebar-item {
     position: relative; /* 這是為了讓指示條可以相對於它定位，非常重要！ */
     border-radius: 0.5rem;
@@ -2305,6 +2344,20 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         <div class="input-wrapper w-full flex items-end gap-2 p-2 rounded-2xl bg-[var(--input-field-bg)] border border-[var(--border-color)] shadow-sm spotlight-effect">
                             <div id="input-indicator-container" class="flex gap-1 empty:hidden">
                             </div>
+                            <div id="search-controls-container" class="absolute top-0 left-0 right-0 h-9 px-3 bg-[var(--hover-bg)] hidden items-center justify-between z-10 rounded-t-2xl border-b border-[var(--border-color)]">
+                                <span id="search-match-count" class="text-sm font-medium text-[var(--text-secondary)]"></span>
+                                <div class="flex items-center gap-1">
+                                    <button id="prev-match-btn" class="p-1 rounded-full hover:bg-[var(--active-bg)] text-[var(--text-secondary)]" title="上一個符合項">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                                    </button>
+                                    <button id="next-match-btn" class="p-1 rounded-full hover:bg-[var(--active-bg)] text-[var(--text-secondary)]" title="下一個符合項">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                    </button>
+                                    <button id="close-search-btn" class="p-1 ml-2 rounded-full hover:bg-[var(--active-bg)] text-[var(--text-secondary)]" title="關閉搜尋">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                    </button>
+                                </div>
+                            </div>
                             <div class="w-full flex items-end gap-2">
                                 <div id="file-input-container" class="relative">
                                     <button id="add-file-btn" title="附加檔案" class="flex-shrink:0 h-10 w-10 rounded-full flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 transition-colors" data-lang-key-title="attachFile">
@@ -3333,6 +3386,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             cancelPlanBtn: document.getElementById('cancel-plan-btn'),
             clearHighlightContainer: document.getElementById('clear-highlight-container'),
             clearHighlightBtn: document.getElementById('clear-highlight-btn'),
+            searchControlsContainer: document.getElementById('search-controls-container'),
+            searchMatchCount: document.getElementById('search-match-count'),
+            prevMatchBtn: document.getElementById('prev-match-btn'),
+            nextMatchBtn: document.getElementById('next-match-btn'),
+            closeSearchBtn: document.getElementById('close-search-btn'),
         };
         const compareVersions = (v1, v2) => {
             if (!v2) return 1;
@@ -3446,6 +3504,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let modelPieChart = null;
         let timeDistChart = null;
         let cropperInstance = null;
+        let currentSearchState = {
+            active: false,
+            matches: [],
+            currentIndex: -1,
+        };
         let currentStoreCategory = '全部';
         let editingAstraForAvatarId = null;
         let isAutoScrolling = false;
@@ -5725,100 +5788,94 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             container.appendChild(menu);
         };
         const createHistoryMenu = (convId, targetButton) => {
-            const existingPopover = document.getElementById('history-popover');
-            if (existingPopover) {
-                existingPopover.remove();
-                if (existingPopover.dataset.targetId === targetButton.id) return;
-            }
-            const rect = targetButton.getBoundingClientRect();
-            const popover = document.createElement('div');
-            popover.id = 'history-popover';
-            popover.className = 'popover absolute w-48 rounded-lg border border-[var(--border-color)] z-50';
-            popover.dataset.targetId = targetButton.id;
-            const spaceBelow = window.innerHeight - rect.bottom;
-            if (spaceBelow < 300) { // 增加判斷高度
-                popover.style.bottom = `${window.innerHeight - rect.top}px`;
-                popover.style.transformOrigin = 'bottom';
-            } else {
-                popover.style.top = `${rect.bottom}px`;
-                popover.style.transformOrigin = 'top';
-            }
-            popover.style.left = `${rect.left}px`;
-            const conv = conversations.find(c => c.id === convId);
-            const pinText = conv.pinned ? (i18n[config.uiLanguage].unpin || '取消釘選') : (i18n[config.uiLanguage].pin || '釘選');
-            const moveOptionsHTML = conv.folderId
-                ? `<button data-id="${convId}" class="move-out-of-folder-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].moveOutOfFolder || '移出資料夾'}</button>`
-                : `
-                    <div class="relative group">
-                        <button class="w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm flex justify-between items-center">
-                            <span>${i18n[config.uiLanguage].moveToFolder || '移至資料夾'}</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                        </button>
-                        <div class="absolute left-full top-0 w-48 rounded-lg border border-[var(--border-color)] bg-[var(--modal-bg)] hidden group-hover:block">
-                            ${folders.map(f => `<button data-folder-id="${f.id}" class="move-to-folder-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${f.name}</button>`).join('')}
-                                <div class="border-t my-1 border-[var(--border-color)]"></div>
-                                <button class="new-folder-from-menu-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].createNewFolder || '建立新資料夾'}</button>
-                            </div>
-                        </div>
-                    `;
-            popover.innerHTML = `
-                <div class="p-2 border-b border-[var(--border-color)]">
-                    <div class="relative">
-                        <input type="search" id="popover-search-input" placeholder="搜尋此對話..." class="w-full p-2 text-sm border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] focus:ring-2 focus:ring-blue-500 focus:outline-none pr-10">
-                        <button id="popover-search-btn" class="absolute inset-y-0 right-0 flex items-center pr-3 text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                        </button>
-                    </div>
-                </div>
-                <button data-id="${convId}" class="rename-conv-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].rename || '重新命名'}</button>
-                <button data-id="${convId}" class="pin-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${pinText}</button>
-                ${moveOptionsHTML}
-                <button data-id="${convId}" class="archive-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].archive || '封存'}</button>
+    const existingPopover = document.getElementById('history-popover');
+    if (existingPopover) {
+        existingPopover.remove();
+        if (existingPopover.dataset.targetId === targetButton.id) return;
+    }
+    const rect = targetButton.getBoundingClientRect();
+    const popover = document.createElement('div');
+    popover.id = 'history-popover';
+    popover.className = 'popover absolute w-48 rounded-lg border border-[var(--border-color)] z-50';
+    popover.dataset.targetId = targetButton.id;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    if (spaceBelow < 300) {
+        popover.style.bottom = `${window.innerHeight - rect.top}px`;
+        popover.style.transformOrigin = 'bottom';
+    } else {
+        popover.style.top = `${rect.bottom}px`;
+        popover.style.transformOrigin = 'top';
+    }
+    popover.style.left = `${rect.left}px`;
+    const conv = conversations.find(c => c.id === convId);
+    const pinText = conv.pinned ? (i18n[config.uiLanguage].unpin || '取消釘選') : (i18n[config.uiLanguage].pin || '釘選');
+    const moveOptionsHTML = conv.folderId
+        ? `<button data-id="${convId}" class="move-out-of-folder-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].moveOutOfFolder || '移出資料夾'}</button>`
+        : `<div class="relative group">
+            <button class="w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm flex justify-between items-center">
+                <span>${i18n[config.uiLanguage].moveToFolder || '移至資料夾'}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+            <div class="absolute left-full top-0 w-48 rounded-lg border border-[var(--border-color)] bg-[var(--modal-bg)] hidden group-hover:block">
+                ${folders.map(f => `<button data-folder-id="${f.id}" class="move-to-folder-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${f.name}</button>`).join('')}
                 <div class="border-t my-1 border-[var(--border-color)]"></div>
-                <button data-id="${convId}" class="delete-btn w-full text-left px-4 py-2 text-red-600 hover:bg-red-500/10 text-sm">${i18n[config.uiLanguage].delete || '刪除'}</button>
-            `;
-            document.body.appendChild(popover);
-            requestAnimationFrame(() => popover.classList.add('visible'));
+                <button class="new-folder-from-menu-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].createNewFolder || '建立新資料夾'}</button>
+            </div>
+        </div>`;
+    
+    popover.innerHTML = `
+        <div class="popover-search-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="search" id="popover-search-input" placeholder="搜尋此對話..." autocomplete="off">
+        </div>
+        <button data-id="${convId}" class="rename-conv-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].rename || '重新命名'}</button>
+        <button data-id="${convId}" class="pin-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${pinText}</button>
+        ${moveOptionsHTML}
+        <button data-id="${convId}" class="archive-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].archive || '封存'}</button>
+        <div class="border-t my-1 border-[var(--border-color)]"></div>
+        <button data-id="${convId}" class="delete-btn w-full text-left px-4 py-2 text-red-600 hover:bg-red-500/10 text-sm">${i18n[config.uiLanguage].delete || '刪除'}</button>
+    `;
+    document.body.appendChild(popover);
+    requestAnimationFrame(() => popover.classList.add('visible'));
 
-            const searchInput = popover.querySelector('#popover-search-input');
-            const searchBtn = popover.querySelector('#popover-search-btn');
+    const searchInput = popover.querySelector('#popover-search-input');
+    searchInput.focus();
 
-            const performPopoverSearch = () => {
-                const query = searchInput.value;
-                highlightInCurrentChat(query);
-                popover.remove();
-            };
+    const performPopoverSearch = () => {
+        highlightInCurrentChat(searchInput.value);
+        popover.remove();
+    };
 
-            searchBtn.addEventListener('click', performPopoverSearch);
-            searchInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    performPopoverSearch();
-                }
-            });
-            searchInput.addEventListener('click', (e) => e.stopPropagation());
-            
-            popover.querySelector('.rename-conv-btn').addEventListener('click', (e) => { showRenameModal(convId, 'conversation', e); popover.remove(); });
-            popover.querySelector('.pin-btn').addEventListener('click', (e) => { togglePinChat(convId, e); popover.remove(); });
-            popover.querySelector('.archive-btn').addEventListener('click', (e) => { archiveChat(convId, e); popover.remove(); });
-            popover.querySelector('.delete-btn').addEventListener('click', (e) => { deleteChat(convId, e); popover.remove(); });
-            popover.querySelectorAll('.move-to-folder-btn').forEach(btn => btn.addEventListener('click', () => { moveConversationToFolder(convId, btn.dataset.folderId); popover.remove(); }));
-            const newFolderBtn = popover.querySelector('.new-folder-from-menu-btn');
-            if (newFolderBtn) {
-                newFolderBtn.addEventListener('click', async () => {
-                    popover.remove();
-                    const folderName = await showCustomPrompt(i18n[config.uiLanguage].enterFolderName || '請輸入新資料夾的名稱：', i18n[config.uiLanguage].createNewFolder || '建立新資料夾');
-                    if (folderName) {
-                        const newFolderId = createNewFolder(folderName);
-                        moveConversationToFolder(convId, newFolderId);
-                    }
-                });
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            performPopoverSearch();
+        }
+    });
+    searchInput.addEventListener('click', (e) => e.stopPropagation());
+
+    // ... (rest of the event listeners for other buttons)
+    popover.querySelector('.rename-conv-btn').addEventListener('click', (e) => { showRenameModal(convId, 'conversation', e); popover.remove(); });
+    popover.querySelector('.pin-btn').addEventListener('click', (e) => { togglePinChat(convId, e); popover.remove(); });
+    popover.querySelector('.archive-btn').addEventListener('click', (e) => { archiveChat(convId, e); popover.remove(); });
+    popover.querySelector('.delete-btn').addEventListener('click', (e) => { deleteChat(convId, e); popover.remove(); });
+    popover.querySelectorAll('.move-to-folder-btn').forEach(btn => btn.addEventListener('click', () => { moveConversationToFolder(convId, btn.dataset.folderId); popover.remove(); }));
+    const newFolderBtn = popover.querySelector('.new-folder-from-menu-btn');
+    if (newFolderBtn) {
+        newFolderBtn.addEventListener('click', async () => {
+            popover.remove();
+            const folderName = await showCustomPrompt(i18n[config.uiLanguage].enterFolderName || '請輸入新資料夾的名稱：', i18n[config.uiLanguage].createNewFolder || '建立新資料夾');
+            if (folderName) {
+                const newFolderId = createNewFolder(folderName);
+                moveConversationToFolder(convId, newFolderId);
             }
-            const moveOutBtn = popover.querySelector('.move-out-of-folder-btn');
-            if (moveOutBtn) {
-                moveOutBtn.addEventListener('click', () => { moveConversationToFolder(convId, null); popover.remove(); });
-            }
-        };
+        });
+    }
+    const moveOutBtn = popover.querySelector('.move-out-of-folder-btn');
+    if (moveOutBtn) {
+        moveOutBtn.addEventListener('click', () => { moveConversationToFolder(convId, null); popover.remove(); });
+    }
+};
         const setTheme = async (theme) => {
             if (document.body.classList.contains('custom-wallpaper-active')) {
                 return;
@@ -7662,127 +7719,93 @@ ${JSON.stringify(potentialMemories, null, 2)}
             document.documentElement.lang = lang;
         };
         const showMobileContextMenu = (convId) => {
-            const oldMenu = document.getElementById('mobile-context-menu-wrapper');
-            if (oldMenu) oldMenu.remove();
-            const conv = conversations.find(c => c.id === convId);
-            if (!conv) return;
-            const menuWrapper = document.createElement('div');
-            menuWrapper.id = 'mobile-context-menu-wrapper';
-            const overlay = document.createElement('div');
-            overlay.id = 'mobile-context-menu-overlay';
-            const menu = document.createElement('div');
-            menu.id = 'mobile-context-menu';
-            const menuHeader = `<div class="menu-header">${conv.title}</div>`;
-            
-            // 新增的搜尋框 HTML 結構
-            const searchBoxHTML = `
-                <div class="p-2 border-b border-[var(--border-color)]">
-                    <div class="relative">
-                        <input type="search" id="mobile-menu-search-input" placeholder="搜尋此對話..." class="w-full p-2 text-sm border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] focus:ring-2 focus:ring-blue-500 focus:outline-none pr-10">
-                        <button id="mobile-menu-search-btn" class="absolute inset-y-0 right-0 flex items-center pr-3 text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                        </button>
-                    </div>
-                </div>
-            `;
+    const oldMenu = document.getElementById('mobile-context-menu-wrapper');
+    if (oldMenu) oldMenu.remove();
+    const conv = conversations.find(c => c.id === convId);
+    if (!conv) return;
+    const menuWrapper = document.createElement('div');
+    menuWrapper.id = 'mobile-context-menu-wrapper';
+    const overlay = document.createElement('div');
+    overlay.id = 'mobile-context-menu-overlay';
+    const menu = document.createElement('div');
+    menu.id = 'mobile-context-menu';
+    const menuHeader = `<div class="menu-header">${conv.title}</div>`;
+    
+    const searchBoxHTML = `
+        <div class="popover-search-wrapper" style="border-bottom: 1px solid var(--border-color); padding: 0.75rem;">
+             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="search" id="mobile-menu-search-input" placeholder="搜尋此對話..." autocomplete="off" class="w-full text-base" style="padding: 0.5rem 0.75rem 0.5rem 2.5rem; border-radius: 0.5rem;">
+        </div>
+    `;
 
-            const moveOptionsHTML = conv.folderId
-                ? `<div class="menu-item" data-action="move-out"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 8.25H7.5a2.25 2.25 0 0 0-2.25 2.25v9a2.25 2.25 0 0 0 2.25 2.25h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25H15m0-3-3-3m0 0-3 3m3-3v11.25" /></svg><span>${i18n[config.uiLanguage].moveOutOfFolder || '移出資料夾'}</span></div>`
-                : `<div class="menu-item" data-action="move-to"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg><span>${i18n[config.uiLanguage].moveToFolder || '移至資料夾'}</span></div>`;
-            const pinText = conv.pinned ? (i18n[config.uiLanguage].unpin || '取消釘選') : (i18n[config.uiLanguage].pin || '釘選');
-            
-            menu.innerHTML = `
-                ${menuHeader}
-                <div class="menu-options">
-                    ${searchBoxHTML} 
-                    <div class="menu-item" data-action="rename"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg><span>${i18n[config.uiLanguage].rename || '重新命名'}</span></div>
-                    <div class="menu-item" data-action="pin"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 3.75V16.5L12 14.25 7.5 16.5V3.75m9 0H18A2.25 2.25 0 0 1 20.25 6v12A2.25 2.25 0 0 1 18 20.25H6A2.25 2.25 0 0 1 3.75 18V6A2.25 2.25 0 0 1 6 3.75h1.5m9 0h-9" /></svg><span>${pinText}</span></div>
-                    ${moveOptionsHTML}
-                    <div class="menu-item" data-action="archive"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4" /></svg><span>${i18n[config.uiLanguage].archive || '封存'}</span></div>
-                    <div class="menu-item delete" data-action="delete"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.067-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg><span>${i18n[config.uiLanguage].delete || '刪除'}</span></div>
-                </div>
-            `;
-            menuWrapper.appendChild(overlay);
-            menuWrapper.appendChild(menu);
-            document.body.appendChild(menuWrapper);
-            
-            requestAnimationFrame(() => {
-                overlay.classList.add('visible');
-                menu.classList.add('visible');
-            });
+    const moveOptionsHTML = conv.folderId
+        ? `<div class="menu-item" data-action="move-out"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 8.25H7.5a2.25 2.25 0 0 0-2.25 2.25v9a2.25 2.25 0 0 0 2.25 2.25h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25H15m0-3-3-3m0 0-3 3m3-3v11.25" /></svg><span>${i18n[config.uiLanguage].moveOutOfFolder || '移出資料夾'}</span></div>`
+        : `<div class="menu-item" data-action="move-to"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg><span>${i18n[config.uiLanguage].moveToFolder || '移至資料夾'}</span></div>`;
+    const pinText = conv.pinned ? (i18n[config.uiLanguage].unpin || '取消釘選') : (i18n[config.uiLanguage].pin || '釘選');
+    
+    menu.innerHTML = `
+        ${menuHeader}
+        <div class="menu-options">
+            ${searchBoxHTML} 
+            <div class="menu-item" data-action="rename"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg><span>${i18n[config.uiLanguage].rename || '重新命名'}</span></div>
+            <div class="menu-item" data-action="pin"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 3.75V16.5L12 14.25 7.5 16.5V3.75m9 0H18A2.25 2.25 0 0 1 20.25 6v12A2.25 2.25 0 0 1 18 20.25H6A2.25 2.25 0 0 1 3.75 18V6A2.25 2.25 0 0 1 6 3.75h1.5m9 0h-9" /></svg><span>${pinText}</span></div>
+            ${moveOptionsHTML}
+            <div class="menu-item" data-action="archive"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4" /></svg><span>${i18n[config.uiLanguage].archive || '封存'}</span></div>
+            <div class="menu-item delete" data-action="delete"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.067-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg><span>${i18n[config.uiLanguage].delete || '刪除'}</span></div>
+        </div>
+    `;
+    menuWrapper.appendChild(overlay);
+    menuWrapper.appendChild(menu);
+    document.body.appendChild(menuWrapper);
+    
+    requestAnimationFrame(() => {
+        overlay.classList.add('visible');
+        menu.classList.add('visible');
+    });
 
-            const closeMenu = () => {
-                overlay.classList.remove('visible');
-                menu.classList.remove('visible');
-                menu.addEventListener('transitionend', () => menuWrapper.remove(), { once: true });
-            };
+    const closeMenu = () => {
+        overlay.classList.remove('visible');
+        menu.classList.remove('visible');
+        menu.addEventListener('transitionend', () => menuWrapper.remove(), { once: true });
+    };
 
-            overlay.addEventListener('click', closeMenu);
+    overlay.addEventListener('click', closeMenu);
 
-            // 新增的搜尋邏輯
-            const searchInput = menu.querySelector('#mobile-menu-search-input');
-            const searchBtn = menu.querySelector('#mobile-menu-search-btn');
+    const searchInput = menu.querySelector('#mobile-menu-search-input');
+    const performMobileMenuSearch = () => {
+        highlightInCurrentChat(searchInput.value);
+        closeMenu();
+    };
+    
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            performMobileMenuSearch();
+        }
+    });
 
-            const performMobileMenuSearch = () => {
-                const query = searchInput.value;
-                highlightInCurrentChat(query);
-                closeMenu();
-            };
-            
-            searchBtn.addEventListener('click', performMobileMenuSearch);
-            searchInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    performMobileMenuSearch();
-                }
-            });
-
-            // 手機版滑動關閉邏輯
-            let touchStartY = 0;
-            let touchMoveY = 0;
-            menu.addEventListener('touchstart', (e) => {
-                if (e.target.closest('input, button')) return;
-                touchStartY = e.touches[0].clientY;
-            }, { passive: true });
-            menu.addEventListener('touchmove', (e) => {
-                if (e.target.closest('input, button')) return;
-                touchMoveY = e.touches[0].clientY;
-                const deltaY = touchMoveY - touchStartY;
-                if (deltaY > 0) {
-                    menu.style.transform = `translateY(${deltaY}px)`;
-                }
-            }, { passive: true });
-            menu.addEventListener('touchend', () => {
-                const deltaY = touchMoveY - touchStartY;
-                if (deltaY > 100) {
-                    closeMenu();
-                } else {
-                    menu.style.transform = '';
-                }
-                touchStartY = 0;
-                touchMoveY = 0;
-            });
-
-            // 原本的選項點擊邏輯
-            menu.addEventListener('click', (e) => {
-                const actionTarget = e.target.closest('.menu-item');
-                if (!actionTarget) return;
-                const action = actionTarget.dataset.action;
-                
-                // 延遲執行，讓關閉動畫先跑
-                setTimeout(() => {
-                    switch(action) {
-                        case 'rename': showRenameModal(convId, 'conversation', e); break;
-                        case 'pin': togglePinChat(convId, e); break;
-                        case 'archive': archiveChat(convId, e); break;
-                        case 'delete': deleteChat(convId, e); break;
-                        case 'move-out': moveConversationToFolder(convId, null); break;
-                        case 'move-to': renderBatchMoveModal(convId); toggleModal(ALL_ELEMENTS.batchMoveModal, true); break;
-                    }
-                }, 300);
-                closeMenu();
-            });
-        };
+    // ... (rest of the mobile menu logic)
+    let touchStartY = 0; let touchMoveY = 0;
+    menu.addEventListener('touchstart', (e) => { if (e.target.closest('input, button')) return; touchStartY = e.touches[0].clientY; }, { passive: true });
+    menu.addEventListener('touchmove', (e) => { if (e.target.closest('input, button')) return; touchMoveY = e.touches[0].clientY; const deltaY = touchMoveY - touchStartY; if (deltaY > 0) { menu.style.transform = `translateY(${deltaY}px)`; } }, { passive: true });
+    menu.addEventListener('touchend', () => { const deltaY = touchMoveY - touchStartY; if (deltaY > 100) { closeMenu(); } else { menu.style.transform = ''; } touchStartY = 0; touchMoveY = 0; });
+    menu.addEventListener('click', (e) => {
+        const actionTarget = e.target.closest('.menu-item');
+        if (!actionTarget) return;
+        const action = actionTarget.dataset.action;
+        setTimeout(() => {
+            switch(action) {
+                case 'rename': showRenameModal(convId, 'conversation', e); break;
+                case 'pin': togglePinChat(convId, e); break;
+                case 'archive': archiveChat(convId, e); break;
+                case 'delete': deleteChat(convId, e); break;
+                case 'move-out': moveConversationToFolder(convId, null); break;
+                case 'move-to': renderBatchMoveModal(convId); toggleModal(ALL_ELEMENTS.batchMoveModal, true); break;
+            }
+        }, 300);
+        closeMenu();
+    });
+};
         const showMobileContextMenuForFolder = (folderId) => {
             const oldMenu = document.getElementById('mobile-context-menu-wrapper');
             if (oldMenu) oldMenu.remove();
@@ -8198,35 +8221,66 @@ ${JSON.stringify(potentialMemories, null, 2)}
          */
         const clearHighlights = () => {
             const messageList = document.getElementById('message-list');
-            if (!messageList) return;
-            const marks = messageList.querySelectorAll('mark.bg-yellow-300');
-            marks.forEach(mark => {
-                const parent = mark.parentNode;
-                while (mark.firstChild) {
-                    parent.insertBefore(mark.firstChild, mark);
-                }
-                parent.removeChild(mark);
-                parent.normalize(); // 合併相鄰的文字節點
-            });
-            // 隱藏清除按鈕
-            ALL_ELEMENTS.clearHighlightContainer.classList.add('hidden');
-            ALL_ELEMENTS.clearHighlightContainer.classList.remove('flex');
+            if (messageList) {
+                const marks = messageList.querySelectorAll('mark.bg-yellow-300');
+                marks.forEach(mark => {
+                    const parent = mark.parentNode;
+                    while (mark.firstChild) {
+                        parent.insertBefore(mark.firstChild, mark);
+                    }
+                    parent.removeChild(mark);
+                    parent.normalize();
+                });
+            }
+
+            // 重設全域狀態
+            currentSearchState = { active: false, matches: [], currentIndex: -1 };
+            
+            // 隱藏控制列並解鎖輸入框
+            ALL_ELEMENTS.searchControlsContainer.classList.add('hidden');
+            document.querySelector('.input-wrapper').classList.remove('search-active');
         };
 
         /**
-         * (最終版) 在當前對話中高亮關鍵字，邏輯與全域搜尋同步
+         * 導航到指定的符合項
+         * @param {number} index 要跳轉到的符合項索引
+         */
+        function navigateToMatch(index) {
+            if (!currentSearchState.active || currentSearchState.matches.length === 0) return;
+
+            currentSearchState.currentIndex = index;
+            const currentMatch = currentSearchState.matches[index];
+            
+            // 滾動到畫面中央
+            currentMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // 更新計數
+            ALL_ELEMENTS.searchMatchCount.textContent = `${index + 1} / ${currentSearchState.matches.length}`;
+            
+            // 可選：為目前項目加上短暫的動畫提示
+            currentSearchState.matches.forEach(m => m.style.backgroundColor = ''); // 清除其他提示
+            currentMatch.style.transition = 'background-color 0.1s ease-in-out';
+            currentMatch.style.backgroundColor = 'rgba(255, 165, 0, 0.5)'; // 橘色提示
+            setTimeout(() => {
+                currentMatch.style.backgroundColor = '';
+            }, 500);
+        }
+
+        /**
+         * (最終版) 在當前對話中高亮關鍵字
          * @param {string} query 要搜尋的關鍵字
          */
         const highlightInCurrentChat = (query) => {
-            clearHighlights(); // 總是在搜尋前清除舊標記
+            clearHighlights();
             const trimmedQuery = query.trim().toLowerCase();
-            if (!trimmedQuery) {
-                return;
-            }
+            if (!trimmedQuery) return;
 
-            const messageContents = document.querySelectorAll('#message-list .message-content');
-            let firstMatch = null;
+            const messageList = document.getElementById('message-list');
+            if (!messageList) return;
 
+            const matches = [];
+            
+            // 遞迴函式，安全地遍歷並反白節點
             const highlightNode = (node) => {
                 if (node.nodeType === Node.TEXT_NODE) {
                     const text = node.textContent;
@@ -8235,39 +8289,41 @@ ${JSON.stringify(potentialMemories, null, 2)}
                         const fragment = document.createDocumentFragment();
                         let lastIndex = 0;
                         lowerText.replace(new RegExp(trimmedQuery, 'gi'), (match, offset) => {
-                            // 加入匹配前的文字
                             if (offset > lastIndex) {
                                 fragment.appendChild(document.createTextNode(text.substring(lastIndex, offset)));
                             }
-                            // 加入高亮標記
                             const mark = document.createElement('mark');
                             mark.className = 'bg-yellow-300 dark:bg-yellow-500 rounded px-1';
                             mark.textContent = text.substring(offset, offset + match.length);
                             fragment.appendChild(mark);
-                            if (!firstMatch) {
-                                firstMatch = mark;
-                            }
+                            matches.push(mark); // 收集所有反白元素
                             lastIndex = offset + match.length;
                         });
-                        // 加入匹配後的剩餘文字
                         if (lastIndex < text.length) {
                             fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
                         }
                         node.parentNode.replaceChild(fragment, node);
                     }
                 } else if (node.nodeType === Node.ELEMENT_NODE && node.nodeName !== 'SCRIPT' && node.nodeName !== 'STYLE') {
-                    // 遞迴處理子節點
                     Array.from(node.childNodes).forEach(highlightNode);
                 }
             };
 
-            messageContents.forEach(contentDiv => highlightNode(contentDiv));
-
-            if (firstMatch) {
-                firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                // 顯示清除按鈕
-                ALL_ELEMENTS.clearHighlightContainer.classList.remove('hidden');
-                ALL_ELEMENTS.clearHighlightContainer.classList.add('flex');
+            messageList.querySelectorAll('.message-content').forEach(content => highlightNode(content));
+            
+            if (matches.length > 0) {
+                currentSearchState = { active: true, matches: matches, currentIndex: 0 };
+                
+                // 更新 UI
+                ALL_ELEMENTS.searchControlsContainer.classList.remove('hidden');
+                document.querySelector('.input-wrapper').classList.add('search-active');
+                
+                // 只有超過一個符合項時，才顯示上下按鈕
+                const showNavButtons = matches.length > 1;
+                ALL_ELEMENTS.prevMatchBtn.style.display = showNavButtons ? 'block' : 'none';
+                ALL_ELEMENTS.nextMatchBtn.style.display = showNavButtons ? 'block' : 'none';
+                
+                navigateToMatch(0); // 跳到第一個
             } else {
                 showNotification('在此對話中找不到符合的內容。', 'warning');
             }
@@ -9239,7 +9295,19 @@ const handleInputFocus = () => {
                 el.addEventListener('touchmove', handleMove, { passive: true });
             });
         };
-            ALL_ELEMENTS.clearHighlightBtn.addEventListener('click', clearHighlights);
+            ALL_ELEMENTS.closeSearchBtn.addEventListener('click', clearHighlights);
+            ALL_ELEMENTS.nextMatchBtn.addEventListener('click', () => {
+                if (currentSearchState.active) {
+                    const nextIndex = (currentSearchState.currentIndex + 1) % currentSearchState.matches.length;
+                    navigateToMatch(nextIndex);
+                }
+            });
+            ALL_ELEMENTS.prevMatchBtn.addEventListener('click', () => {
+                if (currentSearchState.active) {
+                    const prevIndex = (currentSearchState.currentIndex - 1 + currentSearchState.matches.length) % currentSearchState.matches.length;
+                    navigateToMatch(prevIndex);
+                }
+            });
             ALL_ELEMENTS.sendFeedbackBtn.addEventListener('click', async () => {
     const feedbackContent = ALL_ELEMENTS.feedbackTextarea.value.trim();
     const sendButton = ALL_ELEMENTS.sendFeedbackBtn;
