@@ -11,6 +11,30 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <style>
+    /* ✨ 新增 Live 功能相關樣式 ✨ */
+    @keyframes pulse-live {
+        0%, 100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+        50% {
+            transform: scale(1.1);
+            opacity: 0.7;
+        }
+    }
+    #live-visualizer.listening div {
+        animation: pulse-live 2s infinite ease-in-out;
+    }
+    #live-view-container {
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease-in-out;
+    }
+    #live-view-container.visible {
+        opacity: 1;
+        visibility: visible;
+    }
+    /* ✨ 樣式結束 ✨ */
     body {
     touch-action: manipulation;
 }
@@ -2349,6 +2373,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                     <span id="submit-btn-icon">
                                     </span>
                                 </button>
+                                <!-- ✨ 新增 Live 按鈕 ✨ -->
+                                <button id="live-btn" title="Live 對話" class="flex-shrink:0 h-10 w-10 rounded-full flex items-center justify-center hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -3017,6 +3045,35 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 </div>
         </div>
     </div>
+    
+    <!-- ✨ 新增：Live 對話頁面 ✨ -->
+    <div id="live-view-container" class="hidden fixed inset-0 bg-black/50 backdrop-blur-md z-[60] flex flex-col items-center justify-center p-4">
+        <div class="w-full max-w-4xl h-full flex flex-col items-center justify-center relative">
+            <!-- 關閉按鈕 -->
+            <button id="close-live-view-btn" class="absolute top-4 right-4 text-white bg-white/20 hover:bg-white/40 rounded-full p-2 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+
+            <!-- 主要內容 -->
+            <div class="flex-1 flex flex-col items-center justify-center text-center text-white">
+                <div id="live-visualizer" class="w-40 h-40 border-4 border-blue-400 rounded-full flex items-center justify-center mb-8 transition-all">
+                    <div class="w-32 h-32 bg-blue-500 rounded-full transition-all"></div>
+                </div>
+                <h2 id="live-status-text" class="text-2xl font-semibold mb-4">正在連線...</h2>
+                <div id="live-transcript-container" class="w-full h-24 text-lg opacity-80">
+                    <p id="live-transcript-text"></p>
+                </div>
+            </div>
+
+            <!-- 掛斷按鈕 -->
+            <div class="mb-16">
+                <button id="end-live-call-btn" class="w-16 h-16 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center transition-transform active:scale-90">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
 
     <script src="./i18n.js"></script>
     <script src="./demo-conversations.js"></script>
@@ -3325,6 +3382,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             addPlanStepBtn: document.getElementById('add-plan-step-btn'),
             confirmPlanBtn: document.getElementById('confirm-plan-btn'),
             cancelPlanBtn: document.getElementById('cancel-plan-btn'),
+            // ✨ 新增 Live 功能相關元素 ✨
+            liveBtn: document.getElementById('live-btn'),
+            liveViewContainer: document.getElementById('live-view-container'),
+            closeLiveViewBtn: document.getElementById('close-live-view-btn'),
+            endLiveCallBtn: document.getElementById('end-live-call-btn'),
+            liveVisualizer: document.getElementById('live-visualizer'),
+            liveStatusText: document.getElementById('live-status-text'),
+            liveTranscriptText: document.getElementById('live-transcript-text'),
         };
         const compareVersions = (v1, v2) => {
             if (!v2) return 1;
@@ -4981,7 +5046,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     lastRole = sanitizedMsg.role;
                 }
             });
-            if (cleaned.length > 0 && cleaned[0].role !== 'user') cleaned.shift();
+            if (cleaned.length > 0 && cleaned.role !== 'user') cleaned.shift();
             return cleaned;
         }
         function calculateRelevanceScore(summary, keywords) {
@@ -5074,8 +5139,8 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 }
             }
             if (memoryPrompt) {
-                if (systemInstruction && systemInstruction.parts[0].text) {
-                    systemInstruction.parts[0].text += `\n\n${memoryPrompt}`;
+                if (systemInstruction && systemInstruction.parts.text) {
+                    systemInstruction.parts.text += `\n\n${memoryPrompt}`;
                 } else if (systemInstruction) {
                     systemInstruction.parts.push({ text: `\n\n${memoryPrompt}` });
                 }
@@ -5158,7 +5223,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 
                             try {
                                 const parsed = JSON.parse(jsonStr);
-                                const textChunk = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
+                                const textChunk = parsed?.candidates?.?.content?.parts?.?.text;
 
                                 if (textChunk) {
                                     fullText += textChunk;
@@ -5180,7 +5245,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                             if (data.trim() === '[DONE]') break;
                             try {
                                 const parsed = JSON.parse(data);
-                                const textChunk = parsed.choices[0]?.delta?.content || '';
+                                const textChunk = parsed.choices?.delta?.content || '';
                                 if (textChunk) {
                                     fullText += textChunk;
                                     onChunk(textChunk);
@@ -5218,7 +5283,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     throw new Error(errorData.error?.message || 'API request failed');
                 }
                 const result = await response.json();
-                const jsonString = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                const jsonString = result?.candidates?.?.content?.parts?.?.text;
                 if (jsonString) {
                     let cleanedJsonString = jsonString.trim();
                     if (cleanedJsonString.startsWith("```json")) {
@@ -5264,7 +5329,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 return false;
             }
             const result = await response.json();
-            const text = result?.candidates?.[0]?.content?.parts?.[0]?.text?.trim().toLowerCase();
+            const text = result?.candidates?.?.content?.parts?.?.text?.trim().toLowerCase();
             return text === 'yes';
         }
         const generateTitleAndSummary = async (conv) => {
@@ -5366,7 +5431,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 1.  從通過安全審查的、位於「安全探索區」的草圖中，精心挑選出 3 到 4 個。
 2.  **選擇標準：**
     *   **多樣性：** 盡量涵蓋不同類型（例如，一個「如何做」，一個「舉例子」，一個「是什麼」）。
-    *   **代表性：** 能最好地代表【AI上一則回應】的核心內容廣度。
+    *   **代表性：** 能最好地代表【AI的上一則回應】的核心內容廣度。
     *   **清晰度：** 措辭必須是最清晰、最沒有歧義的。
 3.  **最後打磨：** 確保每個問題的用詞都完全符合「使用者代理人」的自然口吻。
 ---
@@ -6502,7 +6567,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             await saveConfig();
         };
         const handleImport = async () => {
-            const file = ALL_ELEMENTS.importFileInput.files[0];
+            const file = ALL_ELEMENTS.importFileInput.files;
             if (!file) {
                 showNotification(i18n[config.uiLanguage].selectFileError || '請選擇檔案。', 'error');
                 return;
@@ -6530,7 +6595,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                              if (config.uiTheme.mode === 'adaptive') {
                                 const palette = await getDominantColorPalette(config.customWallpaper);
                                 config.uiTheme.adaptivePalette = palette;
-                                config.uiTheme.adaptiveColor = palette[0] || '#3b82f6';
+                                config.uiTheme.adaptiveColor = palette || '#3b82f6';
                             }
                             await saveConfig();
                         } catch (err) { /* keep default */ }
@@ -6560,7 +6625,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
         const processAuthImport = async () => {
             const username = ALL_ELEMENTS.usernameInput.value.trim();
             const password = ALL_ELEMENTS.passwordInput.value;
-            const file = ALL_ELEMENTS.importFileInputAuth.files[0];
+            const file = ALL_ELEMENTS.importFileInputAuth.files;
 
             if (!file) {
                 showNotification(i18n[config.uiLanguage].selectFileError || '請選擇檔案。', 'error');
@@ -6753,7 +6818,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             currentSpeechRecognition.onresult = (event) => {
                 let transcript = '';
                 for (let i = event.resultIndex; i < event.results.length; i++) {
-                    transcript += event.results[i][0].transcript;
+                    transcript += event.results[i].transcript;
                 }
                 const inputEl = target === 'message' ? ALL_ELEMENTS.messageInput : ALL_ELEMENTS.modalSearchInput;
                 inputEl.value = transcript;
@@ -7236,9 +7301,9 @@ ${JSON.stringify(potentialMemories, null, 2)}
         const hexToRgb = (hex) => {
             const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
             return result ? {
-                r: parseInt(result[1], 16),
-                g: parseInt(result[2], 16),
-                b: parseInt(result[3], 16)
+                r: parseInt(result, 16),
+                g: parseInt(result, 16),
+                b: parseInt(result, 16)
             } : null;
         };
         const getTextColorForBackground = (hexColor) => {
@@ -7255,7 +7320,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 case 'adaptive':
                     if (config.uiTheme.style === 'gradient') {
                         primaryBgOverride = config.uiTheme.adaptiveGradient || `linear-gradient(to right, ${config.uiTheme.adaptiveColor}, #3b82f6)`;
-                        primaryBg = config.uiTheme.adaptivePalette[0] || config.uiTheme.adaptiveColor;
+                        primaryBg = config.uiTheme.adaptivePalette || config.uiTheme.adaptiveColor;
                     } else {
                         primaryBg = config.uiTheme.adaptiveColor;
                     }
@@ -7384,7 +7449,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
             setUserBubbleColor();
         };
         const handleWallpaperUpload = (event) => {
-            const file = event.target.files[0];
+            const file = event.target.files;
             if (!file) return;
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -7418,7 +7483,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 config.customWallpaper = imageDataUrl;
                 config.wallpaperBrightness = brightness;
                 config.uiTheme.adaptivePalette = palette;
-                config.uiTheme.adaptiveColor = palette[0] || '#3b82f6';
+                config.uiTheme.adaptiveColor = palette || '#3b82f6';
                 await saveConfig();
                 applyCustomWallpaper();
                 applyUiTheme();
@@ -7561,7 +7626,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
             ALL_ELEMENTS.astrasAvatarInput.click();
         };
         const handleAvatarUpload = (event) => {
-            const file = event.target.files[0];
+            const file = event.target.files;
             if (!file) return;
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -7667,10 +7732,10 @@ ${JSON.stringify(potentialMemories, null, 2)}
             let touchStartY = 0;
             let touchMoveY = 0;
             menu.addEventListener('touchstart', (e) => {
-                touchStartY = e.touches[0].clientY;
+                touchStartY = e.touches.clientY;
             }, { passive: true });
             menu.addEventListener('touchmove', (e) => {
-                touchMoveY = e.touches[0].clientY;
+                touchMoveY = e.touches.clientY;
                 const deltaY = touchMoveY - touchStartY;
                 if (deltaY > 0) {
                     menu.style.transform = `translateY(${deltaY}px)`;
@@ -7751,10 +7816,10 @@ ${JSON.stringify(potentialMemories, null, 2)}
             let touchStartY = 0;
             let touchMoveY = 0;
             menu.addEventListener('touchstart', (e) => {
-                touchStartY = e.touches[0].clientY;
+                touchStartY = e.touches.clientY;
             }, { passive: true });
             menu.addEventListener('touchmove', (e) => {
-                touchMoveY = e.touches[0].clientY;
+                touchMoveY = e.touches.clientY;
                 const deltaY = touchMoveY - touchStartY;
                 if (deltaY > 0) {
                     menu.style.transform = `translateY(${deltaY}px)`;
@@ -8553,7 +8618,7 @@ ${stepCountInstruction}
                     if (!plannerResponse.ok) throw new Error(`研究計畫生成失敗: ${(await plannerResponse.json()).error?.message || 'API request failed'}`);
                     
                     const result = await plannerResponse.json();
-                    const jsonString = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                    const jsonString = result?.candidates?.?.content?.parts?.?.text;
                     if (jsonString) {
                         initialResearchPlan = JSON.parse(jsonString.trim().replace(/^```json|```$/g, '').trim());
                     } else {
@@ -8758,6 +8823,125 @@ ${allContextData.join('\n\n')}`;
                 }
             }
         }
+        
+        // ✨ 新增 Live 功能相關變數和函數 ✨
+        let liveSession = null;
+        let audioContext = null;
+        let mediaStream = null;
+        let processorNode = null;
+
+        async function startLiveSession() {
+            const { liveViewContainer, liveStatusText, liveVisualizer, liveTranscriptText } = ALL_ELEMENTS;
+
+            if (liveSession) {
+                console.log("Live session already active.");
+                return;
+            }
+
+            liveStatusText.textContent = "正在請求麥克風權限...";
+            liveViewContainer.classList.remove('hidden');
+            requestAnimationFrame(() => liveViewContainer.classList.add('visible'));
+
+            try {
+                // 1. 取得麥克風權限和音訊串流
+                mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+
+                // 2. 建立 AudioContext 和處理節點
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const source = audioContext.createMediaStreamSource(mediaStream);
+                
+                // 註冊 AudioWorklet 處理器
+                // 注意：您需要在伺服器上提供 'audio-processor.js' 這個檔案
+                // await audioContext.audioWorklet.addModule('audio-processor.js');
+                // processorNode = new AudioWorkletNode(audioContext, 'audio-processor');
+                // source.connect(processorNode);
+                // processorNode.connect(audioContext.destination);
+
+                liveStatusText.textContent = "正在連線到 Gemini...";
+                
+                // 3. 這裡是與 Gemini Live API 互動的核心
+                // 警告：這段是偽代碼，您需要根據 Gemini 官方 SDK 進行替換！
+                // -----------------------------------------------------
+                // const geminiLive = new GeminiLiveClient({ apiKey: config.apiKeys.gemini });
+                // liveSession = geminiLive.startConversation({ model: 'gemini-live-2.5-flash-preview' });
+                
+                // liveSession.on('audio', (audioChunk) => {
+                //     // 播放從 Gemini 收到的音訊
+                //     playAudio(audioChunk); 
+                // });
+
+                // liveSession.on('transcript', (transcript) => {
+                //     // 顯示 AI 的即時回覆文字
+                //     liveTranscriptText.textContent = transcript;
+                // });
+
+                // liveSession.on('error', (error) => {
+                //     console.error("Live session error:", error);
+                //     showNotification(`Live 連線錯誤: ${error.message}`, 'error');
+                //     endLiveSession();
+                // });
+
+                // processorNode.port.onmessage = (event) => {
+                //     // 將從麥克風捕捉到的音訊數據發送到 Gemini
+                //     if (liveSession) {
+                //         liveSession.sendAudio(event.data);
+                //     }
+                // };
+                // -----------------------------------------------------
+                
+                // 以下是模擬成功連線的程式碼，請在整合真實 API 後移除
+                setTimeout(() => {
+                    liveStatusText.textContent = "已連線，請開始說話...";
+                    liveVisualizer.classList.add('listening');
+                    
+                    // 模擬 AI 回應
+                    setTimeout(() => {
+                        liveTranscriptText.textContent = "您好，有什麼可以為您服務的嗎？";
+                    }, 2000);
+
+                }, 1500);
+
+
+            } catch (error) {
+                console.error("無法啟動 Live 對話:", error);
+                showNotification(`無法啟動 Live 對話: ${error.message}`, 'error');
+                endLiveSession();
+            }
+        }
+
+        function endLiveSession() {
+            const { liveViewContainer, liveVisualizer, liveTranscriptText } = ALL_ELEMENTS;
+
+            if (liveSession) {
+                // liveSession.end(); // 根據真實 SDK 的方法來結束會話
+                liveSession = null;
+            }
+
+            if (processorNode) {
+                processorNode.disconnect();
+                processorNode = null;
+            }
+
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+            
+            liveVisualizer.classList.remove('listening');
+            liveTranscriptText.textContent = "";
+
+            liveViewContainer.classList.remove('visible');
+             liveViewContainer.addEventListener('transitionend', () => {
+                liveViewContainer.classList.add('hidden');
+            }, { once: true });
+        }
+
+
         async function initChatApp() {
             injectDeepResearchStyles(); // ✨ 注入樣式
             await loadConfig();
@@ -8995,6 +9179,12 @@ const handleInputFocus = () => {
                     }
                 }
             });
+            
+            // ✨ Live 按鈕事件綁定 ✨
+            ALL_ELEMENTS.liveBtn.addEventListener('click', startLiveSession);
+            ALL_ELEMENTS.closeLiveViewBtn.addEventListener('click', endLiveSession);
+            ALL_ELEMENTS.endLiveCallBtn.addEventListener('click', endLiveSession);
+            
             ALL_ELEMENTS.chatForm.addEventListener('submit', handleFormSubmit);
             document.addEventListener('click', (e) => {
                 const targets = [
@@ -9083,8 +9273,8 @@ const handleInputFocus = () => {
             spotlightElements.forEach(el => {
                 const handleMove = (e) => {
                     const rect = el.getBoundingClientRect();
-                    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-                    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+                    const x = (e.touches ? e.touches.clientX : e.clientX) - rect.left;
+                    const y = (e.touches ? e.touches.clientY : e.clientY) - rect.top;
                     el.style.setProperty('--spotlight-x', `${x}px`);
                     el.style.setProperty('--spotlight-y', `${y}px`);
                 };
