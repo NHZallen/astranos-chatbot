@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+修正現在只能重新生成一次的問題，我要不限制次數然後我希望切換時都是在此訊息的最下方不要每個對話切換的高度都不一樣，修正現在複製跟重新生成按鈕在還沒生成完就出現的問題。一步步教我更改我是新手。:<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -2038,6 +2038,11 @@ body.custom-wallpaper-active .input-indicator-item {
 .version-arrow-btn:disabled {
     opacity: 0.3;
     cursor: not-allowed;
+}
+.message-actions-container {
+    min-height: 36px; /* 給予一個足以容納版本切換器的最小高度 */
+    display: flex;
+    align-items: center; /* 讓內容垂直置中 */
 }
 </style>
 <script>
@@ -4656,6 +4661,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         // ✨ 新增/重構：用於渲染或重新渲染單個訊息泡泡的 UI
         const rerenderMessageUI = (messageDiv, msg) => {
             const isUser = msg.role === 'user';
+            const isLoadingMessage = !isUser && currentVersion.parts.length === 1 && currentVersion.parts[0].text === '...';
             const isVersionSwitchMode = activeVersionSwitchMessageIndex === parseInt(messageDiv.dataset.messageIndex);
 
             messageDiv.className = `message-item flex items-start gap-2 md:gap-4 ${isUser ? 'justify-end user-message' : 'model-message'}`;
@@ -4703,7 +4709,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 contentPaddingClass = 'pb-10'; // 為按鈕區域留出空間
                 if (isVersionSwitchMode) {
                     actionButtons = `
-                        <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
+                        <div class="message-actions-container absolute bottom-2 left-2 right-2 flex justify-between items-center">
                             <div class="flex items-center gap-2">
                                 <button class="version-arrow-btn prev-version-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] transition-opacity" title="${i18n[config.uiLanguage].prevVersion || '上一個版本'}" ${msg.currentVersionIndex === 0 ? 'disabled' : ''}>
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
@@ -4721,21 +4727,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             </div>
                         </div>`;
                 } else {
-    // 關鍵修改：加上 if (!isLoadingMessage) 判斷
-    if (!isLoadingMessage) {
-        actionButtons = `
-            <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
-                <div class="flex items-center gap-1">
-                    <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                    </button>
-                    <button class="regenerate-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].regenerate || '重新生成'}">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6"/><path d="M22 11.5A10 10 0 0 0 3.5 12.5"/><path d="M2 12.5a10 10 0 0 0 18.5-1"/></svg>
-                    </button>
-                </div>
-            </div>`;
-    }
-}
+                     actionButtons = `
+                        <div class="message-actions-container absolute bottom-2 left-2 right-2 flex justify-start items-center gap-1">
+                             <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                            </button>
+                             <button class="regenerate-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].regenerate || '重新生成'}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6"/><path d="M22 11.5A10 10 0 0 0 3.5 12.5"/><path d="M2 12.5a10 10 0 0 0 18.5-1"/></svg>
+                            </button>
+                        </div>`;
+                }
             } else {
                 // User message logic
                 const conv = getActiveConversation();
@@ -4943,65 +4944,65 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
         // ✨ 新增：處理重新生成的核心函數
         const handleRegenerate = async (messageIndex) => {
-    if (abortController || activeVersionSwitchMessageIndex !== null) return;
-
-    const conv = getActiveConversation();
-    const msgToRegenerate = conv.messages[messageIndex];
-    if (!msgToRegenerate || msgToRegenerate.role !== 'model') return;
-
-    abortController = new AbortController();
-    activeVersionSwitchMessageIndex = messageIndex;
-    updateInputState(); // 鎖定輸入框
-
-    const messageDiv = document.querySelector(`.message-item[data-message-index="${messageIndex}"]`);
-    const contentDiv = messageDiv.querySelector('.message-content');
-    
-    // 找到這則 AI 回覆之前的所有對話歷史
-    const historyUntilThisPoint = conv.messages.slice(0, messageIndex);
-    
-    // 關鍵修改：新增一個新的 "載入中" 版本，而不是覆蓋
-    const tempLoadingVersion = { parts: [{ text: '...' }] };
-    msgToRegenerate.versions.push(tempLoadingVersion);
-    msgToRegenerate.currentVersionIndex = msgToRegenerate.versions.length - 1; // 指向我們剛剛新增的最新版本
-    rerenderMessageUI(messageDiv, msgToRegenerate);
-
-    try {
-        const fullResponse = await typewriterStream(
-            contentDiv,
-            (onChunk) => streamApiCall(
-                historyUntilThisPoint[historyUntilThisPoint.length - 1].parts, // 使用前一則 user message
-                onChunk, 
-                abortController.signal,
-                false,
-                historyUntilThisPoint.slice(0, -1) // 傳入更早的歷史
-            ),
-            abortController.signal
-        );
-
-        // 更新剛剛新增的版本內容
-        msgToRegenerate.versions[msgToRegenerate.currentVersionIndex] = { parts: [{ text: fullResponse }] };
-        await saveAppData();
+              if (abortController || activeVersionSwitchMessageIndex !== null) return;
         
-        // 最終渲染，顯示新生成的內容與按鈕
-        rerenderMessageUI(messageDiv, msgToRegenerate);
+            const conv = getActiveConversation();
+            const msgToRegenerate = conv.messages[messageIndex];
+            if (!msgToRegenerate || msgToRegenerate.role !== 'model') return;
 
-    } catch (error) {
-        if (error.name !== 'AbortError') {
-            const errorMessage = `重新生成失敗: ${error.message}`;
-            msgToRegenerate.versions[msgToRegenerate.currentVersionIndex] = { parts: [{ text: errorMessage }] };
-            rerenderMessageUI(messageDiv, msgToRegenerate);
-        } else {
-            // 如果中止，移除最後一個版本並切換回前一個版本
-            msgToRegenerate.versions.pop();
+            abortController = new AbortController();
+            activeVersionSwitchMessageIndex = messageIndex;
+            updateInputState(); // 鎖定輸入
+
+            const messageDiv = document.querySelector(`.message-item[data-message-index="${messageIndex}"]`);
+            const contentDiv = messageDiv.querySelector('.message-content');
+            
+            // 找到這則 AI 回覆之前的所有對話歷史
+            const historyUntilThisPoint = conv.messages.slice(0, messageIndex);
+            
+            // 重新渲染 UI 進入 "生成中" 的狀態
+            const tempLoadingVersion = { parts: [{ text: '...' }] };
+            msgToRegenerate.versions.push(tempLoadingVersion);
             msgToRegenerate.currentVersionIndex = msgToRegenerate.versions.length - 1;
             rerenderMessageUI(messageDiv, msgToRegenerate);
-        }
-    } finally {
-        abortController = null;
-        // 注意：這裡不重置 activeVersionSwitchMessageIndex，因為使用者還在版本切換模式
-        updateInputState(); 
-    }
-};
+
+            try {
+                const fullResponse = await typewriterStream(
+                    contentDiv,
+                    (onChunk) => streamApiCall(
+                        historyUntilThisPoint[historyUntilThisPoint.length - 1].parts, // 使用前一則 user message
+                        onChunk, 
+                        abortController.signal,
+                        false,
+                        historyUntilThisPoint.slice(0, -1) // 傳入更早的歷史
+                    ),
+                    abortController.signal
+                );
+
+                // 更新剛剛新增的版本
+                msgToRegenerate.versions[msgToRegenerate.currentVersionIndex] = { parts: [{ text: fullResponse }] };
+                await saveAppData();
+                
+                // 最終渲染
+                rerenderMessageUI(messageDiv, msgToRegenerate);
+
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    const errorMessage = `重新生成失敗: ${error.message}`;
+                    msgToRegenerate.versions[msgToRegenerate.currentVersionIndex] = { parts: [{ text: errorMessage }] };
+                    rerenderMessageUI(messageDiv, msgToRegenerate);
+                } else {
+                    // 如果中止，移除最後一個版本並切換回前一個版本
+                    msgToRegenerate.versions.pop();
+                    msgToRegenerate.currentVersionIndex = msgToRegenerate.versions.length - 1;
+                    rerenderMessageUI(messageDiv, msgToRegenerate);
+                }
+            } finally {
+                abortController = null;
+                // 注意：這裡不重置 activeVersionSwitchMessageIndex，因為使用者還在版本切換模式
+                updateInputState(); 
+            }
+        };
 
         function cleanGeminiHistory(history, customHistory = null) {
             const historyToClean = customHistory || history;
@@ -8941,9 +8942,6 @@ ${allContextData.join('\n\n')}`;
                         await saveAppData();
                     }
                 } else if (confirmVersionBtn) {
-                    const finalVersion = msg.versions[msg.currentVersionIndex];
-                    msg.versions = [finalVersion];
-                    msg.currentVersionIndex = 0;
                     activeVersionSwitchMessageIndex = null;
                     rerenderMessageUI(messageItem, msg);
                     await saveAppData();
