@@ -3047,15 +3047,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     <script src="./update-logs.js"></script>
     <script src="./main.js"></script>
      <script>
-    // ✨ 新增：Google SDK 載入後的回呼函數
-    function onGoogleScriptLoad() {
-        // 這個函數會在 Google 的 <script> 載入並執行後被呼叫
-        // 我們可以在這裡安全地初始化 Google Auth Client
-        // 實際的初始化邏輯會在 main.js 的 initGoogleAuth 中
+    <script>    
+    document.addEventListener('DOMContentLoaded', () => {
+    });
+    window.onGoogleScriptLoad = function() {
         if (window.initGoogleAuth) {
             window.initGoogleAuth();
         }
-    }
+    };
 
     document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.add('splash-screen-active');
@@ -9281,12 +9280,19 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
             ALL_ELEMENTS.confirmImportBtnAuth.addEventListener('click', processAuthImport);
             ALL_ELEMENTS.cancelImportBtnAuth.addEventListener('click', () => toggleModal(ALL_ELEMENTS.importDataModalAuth, false));
             (async function prefillLastUser() {
-                const last = await getItem('chat_lastUser');
-                if (last) ALL_ELEMENTS.usernameInput.value = last;
-                // ✨ 新增：檢查是否有 Google 帳號綁定紀錄
-                const googleUser = await getItem(`chatUser_google_${last}`);
-                if (googleUser) {
-                    ALL_ELEMENTS.googleSignInBtnAuth.style.display = 'flex';
+                const lastUsername = await getItem('chat_lastUser');
+                if (lastUsername) {
+                    ALL_ELEMENTS.usernameInput.value = lastUsername;
+                    // ✨ 修正：正確的檢查邏輯
+                    const userKey = getUserKey(lastUsername);
+                    const savedUser = await getItem(userKey);
+                    if (savedUser) {
+                        const parsedUser = JSON.parse(savedUser);
+                        // 如果此使用者紀錄中有 googleId，才顯示按鈕
+                        if (parsedUser.googleId) {
+                            ALL_ELEMENTS.googleSignInBtnAuth.style.display = 'flex';
+                        }
+                    }
                 }
                 applyLanguage('zh-TW');
             })();
@@ -9349,38 +9355,52 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
             async function handleGoogleCredentialResponse(response) {
                 googleAuthToken = response;
                 const userInfo = await getGoogleUserInfo(response.access_token);
-                if (userInfo && userInfo.id) {
-                    // 檢查這個 Google ID 是否已經綁定到某個本地帳號
-                    const googleIdKey = `googleId_${userInfo.id}`;
-                    const linkedUsername = await getItem(googleIdKey);
 
-                    if (linkedUsername) { // 已綁定，直接登入
-                        const userKey = getUserKey(linkedUsername);
-                        const savedUser = await getItem(userKey);
-                        if(savedUser) {
-                            currentUser = JSON.parse(savedUser);
-                            // 更新currentUser中的Google資訊，以防萬一
-                            currentUser.googleId = userInfo.id;
-                            currentUser.googleEmail = userInfo.email;
-                            await setItem(userKey, JSON.stringify(currentUser)); // 保存更新
-                            
-                            ALL_ELEMENTS.authContainer.classList.add('fade-out');
-                            ALL_ELEMENTS.appContainer.classList.remove('hidden');
-                            requestAnimationFrame(() => ALL_ELEMENTS.appContainer.classList.add('visible'));
-                            initChatApp();
-                        } else {
-                            showNotification("找不到綁定的本地帳號資料，登入失敗。", "error");
-                        }
-                    } else { // 未綁定，執行綁定流程
-                        currentUser.googleId = userInfo.id;
-                        currentUser.googleEmail = userInfo.email;
-                        await setItem(getUserKey(currentUser.username), JSON.stringify(currentUser));
-                        await setItem(googleIdKey, currentUser.username); // 建立 Google ID -> username 的對應
-                        showNotification(`成功綁定 Google 帳號: ${userInfo.email}`, 'success');
-                        renderGoogleSyncUI();
+                if (!userInfo || !userInfo.id) {
+                    showNotification('無法獲取 Google 用戶資訊，請重試。', 'error');
+                    return;
+                }
+
+                const googleIdKey = `googleId_${userInfo.id}`;
+                const linkedUsername = await getItem(googleIdKey);
+
+                // 情境一：使用者已登入，正在從「設定」中綁定帳號
+                if (currentUser) {
+                    if (linkedUsername && linkedUsername !== currentUser.username) {
+                        showNotification(`此 Google 帳號已被其他使用者 (${linkedUsername}) 綁定。`, 'error');
+                        return;
+                    }
+                    currentUser.googleId = userInfo.id;
+                    currentUser.googleEmail = userInfo.email;
+                    await setItem(getUserKey(currentUser.username), JSON.stringify(currentUser));
+                    await setItem(googleIdKey, currentUser.username); // 建立 Google ID -> username 的對應
+                    showNotification(`成功綁定 Google 帳號: ${userInfo.email}`, 'success');
+                    renderGoogleSyncUI();
+                    return;
+                }
+
+                // 情境二：使用者未登入，正在從「登入頁面」登入
+                if (linkedUsername) {
+                    const userKey = getUserKey(linkedUsername);
+                    const savedUser = await getItem(userKey);
+                    if (savedUser) {
+                        currentUser = JSON.parse(savedUser);
+                        await setItem('chat_lastUser', linkedUsername);
+
+                        ALL_ELEMENTS.authContainer.classList.remove('visible');
+                        ALL_ELEMENTS.authContainer.classList.add('fade-out');
+                        ALL_ELEMENTS.appContainer.classList.remove('hidden');
+                        requestAnimationFrame(() => ALL_ELEMENTS.appContainer.classList.add('visible'));
+                        ALL_ELEMENTS.authContainer.addEventListener('transitionend', () => {
+                            ALL_ELEMENTS.authContainer.style.display = 'none';
+                        }, { once: true });
+                        initChatApp();
+                    } else {
+                        showNotification(`找不到與 ${linkedUsername} 綁定的本地帳號資料，登入失敗。`, "error");
                     }
                 } else {
-                    showNotification('無法獲取 Google 用戶資訊，請重試。', 'error');
+                    // 如果 Google 帳號從未被綁定過
+                    showNotification('此 Google 帳號尚未綁定任何本地帳號。請先使用帳號密碼登入後，於設定中進行綁定。', 'warning');
                 }
             }
 
