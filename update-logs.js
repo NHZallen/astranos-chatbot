@@ -1,5 +1,15 @@
 const updateLogs = [
         {
+        version: "15.6.1",
+        date: "2025-10-8",
+        content: [
+            "<strong>優化：</strong>側邊攔內部收起與展開的動畫流暢度",
+            "<strong>優化：</strong>上傳檔案與圖片整合為上傳",
+            "<strong>優化：</strong>輸入框+延伸功能的展開UI樣式",
+            "<strong>修正：</strong>模型選單透明度過高的問題",
+        ]
+    },
+        {
         version: "15.6.0",
         date: "2025-10-7",
         content: [
