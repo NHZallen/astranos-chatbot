@@ -10,8 +10,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-    <!-- ✨ 1. 引入 Google Identity Services 函式庫 -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
     body {
     touch-action: manipulation;
@@ -2123,14 +2121,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                         <button type="button" id="import-btn-auth" class="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed" disabled data-lang-key="importRecords">
                                             匯入紀錄
                                         </button>
-                                        <!-- ✨ 2. 新增 Google 登入按鈕區塊 -->
-                                        <div class="relative flex py-3 items-center">
-                                            <div class="flex-grow border-t border-gray-300"></div>
-                                            <span class="flex-shrink mx-4 text-gray-400 text-sm" data-lang-key="or">或</span>
-                                            <div class="flex-grow border-t border-gray-300"></div>
-                                        </div>
-                                        <!-- 這個容器預設隱藏，由 JS 判斷是否顯示 -->
-                                        <div id="google-signin-btn-container" class="hidden flex justify-center"></div>
                                     </div>
                                 </form>
                             </div>
@@ -2541,24 +2531,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     </div>
                     <div id="data-management-section" class="settings-section">
                         <h3 class="text-lg font-semibold mb-3" data-lang-key="dataSync">資料同步</h3>
-                        <!-- ✨ 3. 新增 Google 同步區塊 -->
-                        <div id="google-sync-container" class="mb-4 p-3 rounded-lg bg-[var(--input-field-bg)] border border-[var(--border-color)]">
-                            <!-- 未登入時顯示 -->
-                            <div id="google-bind-section">
-                                <p class="text-sm text-[var(--text-secondary)] mb-3" data-lang-key="googleSyncDescription">將您的 Google 帳戶綁定至 ASTRA，即可在不同裝置間同步您的對話紀錄與設定。</p>
-                                <button id="bind-google-btn" class="w-full bg-white text-gray-700 p-2 rounded-lg border border-gray-300 hover:bg-gray-50 font-semibold flex items-center justify-center gap-3">
-                                    <svg class="w-5 h-5" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.31 0-11.62-4.22-13.49-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path><path fill="none" d="M0 0h48v48H0z"></path></svg>
-                                    <span data-lang-key="bindGoogleAccount">綁定 Google 帳戶</span>
-                                </button>
-                            </div>
-                            <!-- 登入後顯示 -->
-                            <div id="google-logout-section" class="hidden">
-                                <p class="text-sm text-[var(--text-secondary)] mb-2">已綁定 Google 帳戶：</p>
-                                <p id="google-user-email" class="text-sm font-semibold mb-3"></p>
-                                <button id="logout-google-btn" class="w-full bg-red-100 text-red-800 p-2 rounded-lg hover:bg-red-200 font-semibold" data-lang-key="logoutGoogleAccount">登出 Google 帳戶</button>
-                            </div>
-                        </div>
-
                         <div class="flex flex-col sm:flex-row gap-2">
                             <button id="export-data-btn" class="flex-1 text-center p-2 rounded-md bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-800 font-medium" data-lang-key="exportData">匯出資料</button>
                             <button id="import-data-btn" class="flex-1 text-center p-2 rounded-md bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800 font-medium" data-lang-key="importData">匯入資料</button>
@@ -3134,165 +3106,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 });
             }
         });
-        // ✨ 4. 將所有 Google 相關的邏輯和變數放在這裡
-        let googleUser = null; 
-
-        /**
-         * 解碼從 Google 登入回傳的 JWT (JSON Web Token)。
-         * @param {string} token - JWT 字串。
-         * @returns {object} - 解碼後的 Payload 物件。
-         */
-        function decodeJwtResponse(token) {
-            try {
-                const base64Url = token.split('.')[1];
-                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-                }).join(''));
-                return JSON.parse(jsonPayload);
-            } catch (e) {
-                console.error("Error decoding JWT", e);
-                return null;
-            }
-        }
-        
-        /**
-         * 處理 Google 登入成功後的回應。
-         * 這個函數會判斷是「登入流程」還是「綁定流程」。
-         * @param {google.accounts.id.CredentialResponse} response - Google 回傳的憑證物件。
-         */
-        async function handleCredentialResponse(response) {
-            const responsePayload = decodeJwtResponse(response.credential);
-            if (!responsePayload) {
-                showNotification('Google 登入失敗，無法解析憑證。', 'error');
-                return;
-            }
-
-            const googleId = responsePayload.sub;
-            const googleEmail = responsePayload.email;
-
-            if (currentUser) { // **綁定流程** (已登入本地帳戶)
-                if (config.googleAccountId && config.googleAccountId !== googleId) {
-                    showNotification('此本地帳戶已綁定另一個 Google 帳戶。', 'error');
-                    return;
-                }
-                const existingMapping = await getItem(`google_id_to_username_${googleId}`);
-                if (existingMapping && existingMapping !== currentUser.username) {
-                    showNotification('此 Google 帳戶已被另一個本地帳戶綁定。', 'error');
-                    return;
-                }
-
-                config.googleAccountId = googleId;
-                await saveConfig();
-                await setItem(`google_id_to_username_${googleId}`, currentUser.username);
-                
-                googleUser = { email: googleEmail };
-                await setItem(`google_user_details_${currentUser.username}`, JSON.stringify(googleUser));
-
-                showNotification(i18n[config.uiLanguage].googleAccountBound || 'Google 帳戶綁定成功！', 'success');
-                updateGoogleSyncUI();
-
-            } else { // **登入流程** (在登入頁面)
-                const localUsername = await getItem(`google_id_to_username_${googleId}`);
-                if (localUsername) {
-                    const userKey = getUserKey(localUsername);
-                    const savedUser = await getItem(userKey);
-                    if (savedUser) {
-                        currentUser = JSON.parse(savedUser);
-                        await setItem('chat_lastUser', localUsername);
-                        
-                        ALL_ELEMENTS.authContainer.classList.remove('visible'); 
-                        ALL_ELEMENTS.authContainer.classList.add('fade-out');
-                        ALL_ELEMENTS.appContainer.classList.remove('hidden');
-                        requestAnimationFrame(() => {
-                            ALL_ELEMENTS.appContainer.classList.add('visible');
-                        });
-                        ALL_ELEMENTS.authContainer.addEventListener('transitionend', () => {
-                            ALL_ELEMENTS.authContainer.style.display = 'none';
-                        }, { once: true });
-                        initChatApp();
-
-                    } else {
-                        showNotification('找不到對應的本地用戶資料，請先用帳號密碼登入一次並綁定。', 'error');
-                    }
-                } else {
-                    showNotification('此 Google 帳戶尚未綁定任何本地帳戶。請先使用帳號密碼登入後，在設定中進行綁定。', 'error');
-                }
-            }
-        }
-        
-        /**
-         * 初始化 Google Identity Services Client。
-         */
-        function initGoogleAuth() {
-            try {
-                google.accounts.id.initialize({
-                    client_id: '864934573575-b5e6t7ga5s35f0cik6c8d8rk0vhh1e82.apps.googleusercontent.com',
-                    callback: handleCredentialResponse
-                });
-                
-                // 渲染登入頁的 Google 按鈕
-                const googleBtnContainer = document.getElementById('google-signin-btn-container');
-                if (googleBtnContainer) {
-                    google.accounts.id.renderButton(
-                        googleBtnContainer,
-                        { theme: "outline", size: "large", type: "standard", text: "signin_with", shape: "pill", width: "300" } 
-                    );
-                }
-            } catch (error) {
-                console.error("Google Auth initialization failed:", error);
-            }
-        }
-        
-        /**
-         * 更新設定頁面中 Google 同步區塊的 UI。
-         */
-        async function updateGoogleSyncUI() {
-            const bindSection = document.getElementById('google-bind-section');
-            const logoutSection = document.getElementById('google-logout-section');
-            const googleUserEmailEl = document.getElementById('google-user-email');
-            
-            if (config.googleAccountId) {
-                const storedGoogleUser = await getItem(`google_user_details_${currentUser.username}`);
-                if (storedGoogleUser) {
-                    googleUser = JSON.parse(storedGoogleUser);
-                    bindSection.classList.add('hidden');
-                    logoutSection.classList.remove('hidden');
-                    googleUserEmailEl.textContent = googleUser.email;
-                }
-            } else {
-                bindSection.classList.remove('hidden');
-                logoutSection.classList.add('hidden');
-            }
-        }
-
-        /**
-         * 處理從 Google 帳戶登出（解除綁定）的邏輯。
-         */
-        async function handleGoogleLogout() {
-            if (!config.googleAccountId) return;
-
-            const confirmed = await showCustomConfirm(i18n[config.uiLanguage].confirmUnbindGoogle || '您確定要解除綁定此 Google 帳戶嗎？');
-            if (confirmed) {
-                await removeItem(`google_id_to_username_${config.googleAccountId}`);
-                await removeItem(`google_user_details_${currentUser.username}`);
-
-                config.googleAccountId = null;
-                googleUser = null;
-                await saveConfig();
-                
-                google.accounts.id.disableAutoSelect();
-                
-                showNotification(i18n[config.uiLanguage].googleAccountUnbound || 'Google 帳戶已解除綁定。', 'success');
-                updateGoogleSyncUI();
-            }
-        }
-
-        // 當頁面載入完成後，初始化 Google 服務
-        window.onload = function () {
-          initGoogleAuth();
-        };
-
         const ALL_ELEMENTS = {
             authContainer: document.getElementById('auth-container'),
             appContainer: document.getElementById('app-container'),
@@ -3608,7 +3421,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             isLearningMode: false,
             isDeepResearchMode: false, // ✨ 新增狀態
             deepResearchQueryCount: 0, // ✨ 新增這一行，0 代表自動
-            googleAccountId: null, // ✨ 新增 Google 帳號 ID 欄位
         };
         let itemToRename = { id: null, type: null };
         let folderToCustomize = null;
@@ -5169,7 +4981,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     lastRole = sanitizedMsg.role;
                 }
             });
-            if (cleaned.length > 0 && cleaned.role !== 'user') cleaned.shift();
+            if (cleaned.length > 0 && cleaned[0].role !== 'user') cleaned.shift();
             return cleaned;
         }
         function calculateRelevanceScore(summary, keywords) {
@@ -5262,8 +5074,8 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 }
             }
             if (memoryPrompt) {
-                if (systemInstruction && systemInstruction.parts.text) {
-                    systemInstruction.parts.text += `\n\n${memoryPrompt}`;
+                if (systemInstruction && systemInstruction.parts[0].text) {
+                    systemInstruction.parts[0].text += `\n\n${memoryPrompt}`;
                 } else if (systemInstruction) {
                     systemInstruction.parts.push({ text: `\n\n${memoryPrompt}` });
                 }
@@ -5346,7 +5158,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 
                             try {
                                 const parsed = JSON.parse(jsonStr);
-                                const textChunk = parsed?.candidates?.?.content?.parts?.?.text;
+                                const textChunk = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
 
                                 if (textChunk) {
                                     fullText += textChunk;
@@ -5368,7 +5180,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                             if (data.trim() === '[DONE]') break;
                             try {
                                 const parsed = JSON.parse(data);
-                                const textChunk = parsed.choices?.delta?.content || '';
+                                const textChunk = parsed.choices[0]?.delta?.content || '';
                                 if (textChunk) {
                                     fullText += textChunk;
                                     onChunk(textChunk);
@@ -5406,7 +5218,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     throw new Error(errorData.error?.message || 'API request failed');
                 }
                 const result = await response.json();
-                const jsonString = result?.candidates?.?.content?.parts?.?.text;
+                const jsonString = result?.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (jsonString) {
                     let cleanedJsonString = jsonString.trim();
                     if (cleanedJsonString.startsWith("```json")) {
@@ -5452,7 +5264,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 return false;
             }
             const result = await response.json();
-            const text = result?.candidates?.?.content?.parts?.?.text?.trim().toLowerCase();
+            const text = result?.candidates?.[0]?.content?.parts?.[0]?.text?.trim().toLowerCase();
             return text === 'yes';
         }
         const generateTitleAndSummary = async (conv) => {
@@ -5554,7 +5366,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 1.  從通過安全審查的、位於「安全探索區」的草圖中，精心挑選出 3 到 4 個。
 2.  **選擇標準：**
     *   **多樣性：** 盡量涵蓋不同類型（例如，一個「如何做」，一個「舉例子」，一個「是什麼」）。
-    *   **代表性：** 能最好地代表【AI的上一則回應】的核心內容廣度。
+    *   **代表性：** 能最好地代表【AI上一則回應】的核心內容廣度。
     *   **清晰度：** 措辭必須是最清晰、最沒有歧義的。
 3.  **最後打磨：** 確保每個問題的用詞都完全符合「使用者代理人」的自然口吻。
 ---
@@ -5715,7 +5527,6 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             renderUserBubbleColorDropdown();
             renderUiColorOptions();
             renderTrash();
-            updateGoogleSyncUI(); // ✨ 更新 Google UI
             const slider = document.getElementById('deep-research-query-count-slider');
             const label = document.getElementById('deep-research-query-count-label');
 
@@ -6691,7 +6502,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             await saveConfig();
         };
         const handleImport = async () => {
-            const file = ALL_ELEMENTS.importFileInput.files;
+            const file = ALL_ELEMENTS.importFileInput.files[0];
             if (!file) {
                 showNotification(i18n[config.uiLanguage].selectFileError || '請選擇檔案。', 'error');
                 return;
@@ -6719,7 +6530,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                              if (config.uiTheme.mode === 'adaptive') {
                                 const palette = await getDominantColorPalette(config.customWallpaper);
                                 config.uiTheme.adaptivePalette = palette;
-                                config.uiTheme.adaptiveColor = palette || '#3b82f6';
+                                config.uiTheme.adaptiveColor = palette[0] || '#3b82f6';
                             }
                             await saveConfig();
                         } catch (err) { /* keep default */ }
@@ -6749,7 +6560,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
         const processAuthImport = async () => {
             const username = ALL_ELEMENTS.usernameInput.value.trim();
             const password = ALL_ELEMENTS.passwordInput.value;
-            const file = ALL_ELEMENTS.importFileInputAuth.files;
+            const file = ALL_ELEMENTS.importFileInputAuth.files[0];
 
             if (!file) {
                 showNotification(i18n[config.uiLanguage].selectFileError || '請選擇檔案。', 'error');
@@ -6942,7 +6753,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             currentSpeechRecognition.onresult = (event) => {
                 let transcript = '';
                 for (let i = event.resultIndex; i < event.results.length; i++) {
-                    transcript += event.results[i].transcript;
+                    transcript += event.results[i][0].transcript;
                 }
                 const inputEl = target === 'message' ? ALL_ELEMENTS.messageInput : ALL_ELEMENTS.modalSearchInput;
                 inputEl.value = transcript;
@@ -7425,9 +7236,9 @@ ${JSON.stringify(potentialMemories, null, 2)}
         const hexToRgb = (hex) => {
             const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
             return result ? {
-                r: parseInt(result, 16),
-                g: parseInt(result, 16),
-                b: parseInt(result, 16)
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
             } : null;
         };
         const getTextColorForBackground = (hexColor) => {
@@ -7444,7 +7255,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 case 'adaptive':
                     if (config.uiTheme.style === 'gradient') {
                         primaryBgOverride = config.uiTheme.adaptiveGradient || `linear-gradient(to right, ${config.uiTheme.adaptiveColor}, #3b82f6)`;
-                        primaryBg = config.uiTheme.adaptivePalette || config.uiTheme.adaptiveColor;
+                        primaryBg = config.uiTheme.adaptivePalette[0] || config.uiTheme.adaptiveColor;
                     } else {
                         primaryBg = config.uiTheme.adaptiveColor;
                     }
@@ -7573,7 +7384,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
             setUserBubbleColor();
         };
         const handleWallpaperUpload = (event) => {
-            const file = event.target.files;
+            const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -7607,7 +7418,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 config.customWallpaper = imageDataUrl;
                 config.wallpaperBrightness = brightness;
                 config.uiTheme.adaptivePalette = palette;
-                config.uiTheme.adaptiveColor = palette || '#3b82f6';
+                config.uiTheme.adaptiveColor = palette[0] || '#3b82f6';
                 await saveConfig();
                 applyCustomWallpaper();
                 applyUiTheme();
@@ -7750,7 +7561,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
             ALL_ELEMENTS.astrasAvatarInput.click();
         };
         const handleAvatarUpload = (event) => {
-            const file = event.target.files;
+            const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -7856,10 +7667,10 @@ ${JSON.stringify(potentialMemories, null, 2)}
             let touchStartY = 0;
             let touchMoveY = 0;
             menu.addEventListener('touchstart', (e) => {
-                touchStartY = e.touches.clientY;
+                touchStartY = e.touches[0].clientY;
             }, { passive: true });
             menu.addEventListener('touchmove', (e) => {
-                touchMoveY = e.touches.clientY;
+                touchMoveY = e.touches[0].clientY;
                 const deltaY = touchMoveY - touchStartY;
                 if (deltaY > 0) {
                     menu.style.transform = `translateY(${deltaY}px)`;
@@ -9265,9 +9076,6 @@ const handleInputFocus = () => {
             ALL_ELEMENTS.trashBatchRestoreBtn.addEventListener('click', handleBatchRestoreFromTrash);
             ALL_ELEMENTS.trashBatchDeleteBtn.addEventListener('click', handleBatchDeleteFromTrash);
             ALL_ELEMENTS.emptyTrashBtn.addEventListener('click', handleEmptyTrash);
-            // ✨ 5. 綁定 Google 同步按鈕的事件
-            document.getElementById('bind-google-btn').addEventListener('click', () => google.accounts.id.prompt());
-            document.getElementById('logout-google-btn').addEventListener('click', handleGoogleLogout);
             updateFileInputUI();
             startNewChat();
         const initializeSpotlightEffect = () => {
@@ -9275,8 +9083,8 @@ const handleInputFocus = () => {
             spotlightElements.forEach(el => {
                 const handleMove = (e) => {
                     const rect = el.getBoundingClientRect();
-                    const x = (e.touches ? e.touches.clientX : e.clientX) - rect.left;
-                    const y = (e.touches ? e.touches.clientY : e.clientY) - rect.top;
+                    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+                    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
                     el.style.setProperty('--spotlight-x', `${x}px`);
                     el.style.setProperty('--spotlight-y', `${y}px`);
                 };
@@ -9423,19 +9231,8 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
             ALL_ELEMENTS.confirmImportBtnAuth.addEventListener('click', processAuthImport);
             ALL_ELEMENTS.cancelImportBtnAuth.addEventListener('click', () => toggleModal(ALL_ELEMENTS.importDataModalAuth, false));
             (async function prefillLastUser() {
-                const lastUser = await getItem('chat_lastUser');
-                if (lastUser) {
-                    ALL_ELEMENTS.usernameInput.value = lastUser;
-                    // ✨ 檢查此使用者是否已綁定 Google 帳戶
-                    const configKey = `chatConfig_v_v8.6_${lastUser}`;
-                    const savedConfig = await getItem(configKey);
-                    if (savedConfig) {
-                        const parsedConfig = JSON.parse(savedConfig);
-                        if (parsedConfig.googleAccountId) {
-                            document.getElementById('google-signin-btn-container').classList.remove('hidden');
-                        }
-                    }
-                }
+                const last = await getItem('chat_lastUser');
+                if (last) ALL_ELEMENTS.usernameInput.value = last;
                 applyLanguage('zh-TW');
             })();
             const FOLDER_ICONS = ['📁', '📂', '🗂️', '📚', '📝', '🗃️', '📘', '📙', '📗', '📕'];
