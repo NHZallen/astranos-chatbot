@@ -1570,19 +1570,24 @@ body.custom-wallpaper-active .store-category-btn.active {
         color: #ef4444 !important;
     }
     @media (max-width: 768px) {
-      input[type="text"],
-      input[type="search"],
-      input[type="password"],
-      textarea,
-      select {
-        font-size: 16px !important;
-      }
-      .sidebar-item .chat-options-btn,
-      .sidebar-item .astras-options-btn,
-      .folder-summary .folder-options-btn {
-          display: none;
-      }
-    }
+  /* ✨ 新增：在行動裝置上隱藏桌面版的附加檔案彈窗 */
+  #file-options-popover {
+      display: none !important;
+  }
+
+  input[type="text"],
+  input[type="search"],
+  input[type="password"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+  .sidebar-item .chat-options-btn,
+  .sidebar-item .astras-options-btn,
+  .folder-summary .folder-options-btn {
+      display: none;
+  }
+}
     @media (max-width: 768px) {
       #settings-modal .flex.flex-1.overflow-hidden {
         flex-direction: column;
@@ -7863,6 +7868,77 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 }, 300);
             });
         };
+        const showMobileFileOptions = () => {
+    // 防止重複創建
+    const oldMenu = document.getElementById('mobile-context-menu-wrapper');
+    if (oldMenu) oldMenu.remove();
+
+    const menuWrapper = document.createElement('div');
+    menuWrapper.id = 'mobile-context-menu-wrapper';
+
+    const overlay = document.createElement('div');
+    overlay.id = 'mobile-context-menu-overlay';
+
+    const menu = document.createElement('div');
+    menu.id = 'mobile-context-menu';
+
+    // 建立選單內容
+    menu.innerHTML = `
+        <div class="menu-header">${i18n[config.uiLanguage].attachFile || '附加檔案'}</div>
+        <div class="menu-options">
+            <div class="menu-item" data-action="camera">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>
+                <span data-lang-key="camera">${i18n[config.uiLanguage].camera || '相機'}</span>
+            </div>
+            <div class="menu-item" data-action="upload">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+                <span data-lang-key="upload">${i18n[config.uiLanguage].upload || '上傳'}</span>
+            </div>
+        </div>
+    `;
+
+    menuWrapper.appendChild(overlay);
+    menuWrapper.appendChild(menu);
+    document.body.appendChild(menuWrapper);
+
+    // 觸發顯示動畫
+    requestAnimationFrame(() => {
+        overlay.classList.add('visible');
+        menu.classList.add('visible');
+    });
+
+    // 關閉選單的函式
+    const closeMenu = () => {
+        overlay.classList.remove('visible');
+        menu.classList.remove('visible');
+        menu.addEventListener('transitionend', () => menuWrapper.remove(), { once: true });
+    };
+
+    // 點擊背景遮罩來關閉
+    overlay.addEventListener('click', closeMenu);
+
+    // 監聽選項點擊
+    menu.addEventListener('click', (e) => {
+        const actionTarget = e.target.closest('.menu-item');
+        if (!actionTarget) return;
+
+        const action = actionTarget.dataset.action;
+        closeMenu(); // 點擊後立即關閉選單
+
+        // 稍微延遲以確保關閉動畫流暢
+        setTimeout(() => {
+            switch(action) {
+                case 'camera':
+                    ALL_ELEMENTS.imageVideoInput.setAttribute('capture','environment');
+                    ALL_ELEMENTS.imageVideoInput.click();
+                    break;
+                case 'upload':
+                    ALL_ELEMENTS.fileUploadInput.click();
+                    break;
+            }
+        }, 300);
+    });
+};
         const setupScrollToBottomButton = () => {
             const { scrollToBottomBtn, chatContainer } = ALL_ELEMENTS;
             scrollToBottomBtn.addEventListener('click', () => {
@@ -8864,14 +8940,21 @@ ${allContextData.join('\n\n')}`;
                 }
             });
             ALL_ELEMENTS.addFileBtn.addEventListener('click', (e) => {
-                const popover = ALL_ELEMENTS.fileOptionsPopover;
-                if (popover.classList.contains('visible')) {
-                    popover.classList.remove('visible');
-                } else {
-                    closeAllPopovers();
-                    popover.classList.add('visible');
-                }
-            });
+    // 判斷螢幕寬度
+    if (window.innerWidth < 768) {
+        // 如果是行動裝置，顯示底部滑出選單
+        showMobileFileOptions();
+    } else {
+        // 如果是桌面版，維持原有的彈出選單
+        const popover = ALL_ELEMENTS.fileOptionsPopover;
+        if (popover.classList.contains('visible')) {
+            popover.classList.remove('visible');
+        } else {
+            closeAllPopovers();
+            popover.classList.add('visible');
+        }
+    }
+});
             ALL_ELEMENTS.cameraBtn.addEventListener('click', () => {
                 ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
                 ALL_ELEMENTS.imageVideoInput.setAttribute('capture','environment');
