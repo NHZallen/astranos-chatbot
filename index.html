@@ -7882,9 +7882,9 @@ ${JSON.stringify(potentialMemories, null, 2)}
     const menu = document.createElement('div');
     menu.id = 'mobile-context-menu';
 
-    // 建立選單內容
+    // 建立選單內容 - 包含所有功能
     menu.innerHTML = `
-        <div class="menu-header">${i18n[config.uiLanguage].attachFile || '附加檔案'}</div>
+        <div class="menu-header">${i18n[config.uiLanguage].extendedFeatures || '延伸功能'}</div>
         <div class="menu-options">
             <div class="menu-item" data-action="camera">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>
@@ -7893,6 +7893,24 @@ ${JSON.stringify(potentialMemories, null, 2)}
             <div class="menu-item" data-action="upload">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
                 <span data-lang-key="upload">${i18n[config.uiLanguage].upload || '上傳'}</span>
+            </div>
+            
+            <div class="border-t border-[var(--border-color)] my-1"></div>
+
+            <div class="menu-item" data-action="web-search">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                <span data-lang-key="webSearch">${i18n[config.uiLanguage].webSearch || '聯網搜尋'}</span>
+            </div>
+            <div class="menu-item" data-action="learning-mode">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 18a6 6 0 0 0 6-6c0-1.657-2.686-3-6-3s-6 1.343-6 3a6 6 0 0 0 6 6z"/><path d="M12 2v10"/></svg>
+                <span data-lang-key="learningMode">${i18n[config.uiLanguage].learningMode || '學習與研究模式'}</span>
+            </div>
+
+            <div class="border-t border-[var(--border-color)] my-1"></div>
+
+            <div class="menu-item" data-action="deep-research">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                <span data-lang-key="deepResearch">${i18n[config.uiLanguage].deepResearch || '深度研究模式'}</span>
             </div>
         </div>
     `;
@@ -7934,6 +7952,22 @@ ${JSON.stringify(potentialMemories, null, 2)}
                     break;
                 case 'upload':
                     ALL_ELEMENTS.fileUploadInput.click();
+                    break;
+                case 'web-search':
+                    const conv = getActiveConversation();
+                    if (!conv || conv.provider !== 'gemini' || conv.archived) {
+                        showNotification(i18n[config.uiLanguage].webSearchNotAvailable || '當前模型不支援或無法使用聯網搜尋。', 'warning');
+                        return;
+                    }
+                    conv.isWebSearchEnabled = !conv.isWebSearchEnabled;
+                    renderInputIndicators();
+                    saveAppData(); // 儲存變更
+                    break;
+                case 'learning-mode':
+                    toggleLearningMode();
+                    break;
+                case 'deep-research':
+                    toggleDeepResearchMode();
                     break;
             }
         }, 300);
