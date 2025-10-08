@@ -3445,7 +3445,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let currentStoreCategory = '全部';
         let editingAstraForAvatarId = null;
         let isAutoScrolling = false;
-        let isTrashSelectionMode = false;
+        let activeVersionSwitchMessageIndex = null; 
         let selectedTrashIds = new Set();
         let originalMemorySettings = {}; // ✨ 新增：用於儲存原始記憶設定
         // ✨ 新增：用於追蹤正在進行版本切換的訊息索引
@@ -3570,7 +3570,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
                 ALL_ELEMENTS.customDialogButtons.innerHTML = '';
                 buttons.forEach(btnInfo => {
-                    const button = document.createElement('button');
+                const button = document.createElement('button');
                     button.textContent = btnInfo.text;
                     button.className = btnInfo.class;
                     button.onclick = () => {
@@ -4655,107 +4655,110 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
         // ✨ 新增/重構：用於渲染或重新渲染單個訊息泡泡的 UI
         const rerenderMessageUI = (messageDiv, msg) => {
-            const isUser = msg.role === 'user';
-            const isVersionSwitchMode = activeVersionSwitchMessageIndex === parseInt(messageDiv.dataset.messageIndex);
+    const isUser = msg.role === 'user';
+    // ✨ 檢查是否處於此訊息的版本切換模式
+    const isVersionSwitchMode = activeVersionSwitchMessageIndex === parseInt(messageDiv.dataset.messageIndex);
 
-            messageDiv.className = `message-item flex items-start gap-2 md:gap-4 ${isUser ? 'justify-end user-message' : 'model-message'}`;
-            
-            const icon = isUser 
-                ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>` 
-                : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
+    messageDiv.className = `message-item flex items-start gap-2 md:gap-4 ${isUser ? 'justify-end user-message' : 'model-message'}`;
+    
+    const icon = isUser 
+        ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>` 
+        : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
 
-            const currentVersion = msg.versions[msg.currentVersionIndex];
-            let contentHTML = '';
-            let actionButtons = '';
-            let contentPaddingClass = '';
-            
-            const isLoadingMessage = !isUser && currentVersion.parts.length === 1 && currentVersion.parts[0].text === '...';
-            
-            if (isLoadingMessage) {
-                contentHTML = `<div class="typing-cursor">&nbsp;</div>`;
-            } else {
-                let textPartsContent = [];
-                let mediaPartsContent = [];
-                currentVersion.parts.forEach(part => {
-                    if (part.text) {
-                        textPartsContent.push(part.text);
-                    } else if (part.inlineData) {
-                        mediaPartsContent.push(part.inlineData);
-                    }
-                });
-
-                if (textPartsContent.length > 0) {
-                    const combinedText = textPartsContent.join('\n');
-                    contentHTML += `<div>${isUser ? combinedText.replace(/\n/g, '<br>') : renderMarkdown(combinedText)}</div>`;
-                }
-                 if (mediaPartsContent.length > 0) {
-                    let mediaHTML = '<div class="mt-2 flex flex-wrap gap-2">';
-                    mediaPartsContent.forEach(media => {
-                        const src = `data:${media.mimeType};base64,${media.data}`;
-                        mediaHTML += `<img src="${src}" class="max-w-xs max-h-48 rounded-lg object-cover border border-[var(--border-color)]">`;
-                    });
-                    mediaHTML += '</div>';
-                    contentHTML += mediaHTML;
-                }
+    const currentVersion = msg.versions[msg.currentVersionIndex];
+    let contentHTML = '';
+    let actionButtons = '';
+    let contentPaddingClass = '';
+    
+    // ✨ 檢查訊息是否正在載入（打字機效果）
+    const isLoadingMessage = !isUser && currentVersion.parts.length === 1 && currentVersion.parts[0].text === '...';
+    
+    if (isLoadingMessage) {
+        contentHTML = `<div class="typing-cursor">&nbsp;</div>`;
+    } else {
+        let textPartsContent = [];
+        let mediaPartsContent = [];
+        currentVersion.parts.forEach(part => {
+            if (part.text) {
+                textPartsContent.push(part.text);
+            } else if (part.inlineData) {
+                mediaPartsContent.push(part.inlineData);
             }
+        });
 
-            if (!isUser) {
-                contentPaddingClass = 'pb-10'; // 為按鈕區域留出空間
-                if (isVersionSwitchMode) {
-                    actionButtons = `
-                        <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
-                            <div class="flex items-center gap-2">
-                                <button class="version-arrow-btn prev-version-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] transition-opacity" title="${i18n[config.uiLanguage].prevVersion || '上一個版本'}" ${msg.currentVersionIndex === 0 ? 'disabled' : ''}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                                </button>
-                                <span class="text-xs text-[var(--text-secondary)] font-medium">${msg.currentVersionIndex + 1} / ${msg.versions.length}</span>
-                                <button class="version-arrow-btn next-version-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] transition-opacity" title="${i18n[config.uiLanguage].nextVersion || '下一個版本'}" ${msg.currentVersionIndex === msg.versions.length - 1 ? 'disabled' : ''}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                                </button>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <button class="regenerate-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-80 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].regenerate || '重新生成'}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-1.2 0-2.4.6-3 1.7A3.5 3.5 0 0 0 3.5 8c0 .3 0 .6.1.9a3.5 3.5 0 0 0 5.2 2.7c.3-.2.5-.5.7-.8m1.1 9.2c1.2 0 2.4-.6 3-1.7a3.5 3.5 0 0 0 5.5-3.5c0-.3 0-.6-.1-.9a3.5 3.5 0 0 0-5.2-2.7c-.3.2-.5.5-.7.8"/><path d="m12 3-1.8 3.6L6 8l4.2 1.4L12 14l1.8-4.6L18 8l-4.2-1.4Z"/></svg>
-                </button>
-                <button class="confirm-version-btn px-3 py-1 text-xs rounded-md btn-primary">${i18n[config.uiLanguage].confirm || '確認'}</button>
-            </div>
-        </div>`;
-} else {
-    actionButtons += `
-        <div class="flex justify-start items-center gap-1 h-8">
-             <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-0 group-hover:opacity-50 hover:!opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-            </button>
-             <button class="regenerate-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-0 group-hover:opacity-50 hover:!opacity-100 transition-opacity" title="${i18n[config.uiLanguage].regenerate || '重新生成'}">
-                <!-- ✨ 這是新的美化版 SVG 圖示 ✨ -->
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-1.2 0-2.4.6-3 1.7A3.5 3.5 0 0 0 3.5 8c0 .3 0 .6.1.9a3.5 3.5 0 0 0 5.2 2.7c.3-.2.5-.5.7-.8m1.1 9.2c1.2 0 2.4-.6 3-1.7a3.5 3.5 0 0 0 5.5-3.5c0-.3 0-.6-.1-.9a3.5 3.5 0 0 0-5.2-2.7c-.3.2-.5.5-.7.8"/><path d="m12 3-1.8 3.6L6 8l4.2 1.4L12 14l1.8-4.6L18 8l-4.2-1.4Z"/></svg>
-            </button>
-        </div>`;
-}
-actionButtons += `</div>`;
-            } else {
-                // User message logic
-                const conv = getActiveConversation();
-                const messageIndex = parseInt(messageDiv.dataset.messageIndex);
-                if (conv && messageIndex + 1 < conv.messages.length && conv.messages[messageIndex + 1].role === 'model') {
-                     actionButtons = `
-                        <div class="absolute bottom-2 left-2 flex items-center">
-                            <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                            </button>
-                        </div>
-                    `;
-                    contentPaddingClass = 'pb-8';
-                }
-            }
-            const messageBubble = `
-                <div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble relative ${isUser ? 'text-white' : ''}" >
-                    <div class="prose prose-sm max-w-none ${isUser ? 'text-white' : 'text-[var(--text-primary)]'} ${contentPaddingClass} message-content">${contentHTML}</div>
-                    ${actionButtons}
+        if (textPartsContent.length > 0) {
+            const combinedText = textPartsContent.join('\n');
+            contentHTML += `<div>${isUser ? combinedText.replace(/\n/g, '<br>') : renderMarkdown(combinedText)}</div>`;
+        }
+         if (mediaPartsContent.length > 0) {
+            let mediaHTML = '<div class="mt-2 flex flex-wrap gap-2">';
+            mediaPartsContent.forEach(media => {
+                const src = `data:${media.mimeType};base64,${media.data}`;
+                mediaHTML += `<img src="${src}" class="max-w-xs max-h-48 rounded-lg object-cover border border-[var(--border-color)]">`;
+            });
+            mediaHTML += '</div>';
+            contentHTML += mediaHTML;
+        }
+    }
+
+    // ✨ 核心邏輯：根據不同狀態顯示不同按鈕
+    if (!isUser) { // 是 AI 的訊息
+        // ✨ 步驟 4 的修正：為按鈕區域留出固定的底部空間
+        contentPaddingClass = 'pb-10'; 
+        if (isVersionSwitchMode) {
+            // ✨ 狀態一：版本切換模式 UI
+            actionButtons = `
+                <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <button class="version-arrow-btn prev-version-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] transition-opacity" title="${i18n[config.uiLanguage].prevVersion || '上一個版本'}" ${msg.currentVersionIndex === 0 ? 'disabled' : ''}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                        </button>
+                        <span class="text-xs text-[var(--text-secondary)] font-medium">${msg.currentVersionIndex + 1} / ${msg.versions.length}</span>
+                        <button class="version-arrow-btn next-version-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] transition-opacity" title="${i18n[config.uiLanguage].nextVersion || '下一個版本'}" ${msg.currentVersionIndex === msg.versions.length - 1 ? 'disabled' : ''}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        </button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button class="regenerate-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-80 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].regenerate || '重新生成'}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6"/><path d="M22 11.5A10 10 0 0 0 3.5 12.5"/><path d="M2 12.5a10 10 0 0 0 18.5-1"/></svg>
+                        </button>
+                        <button class="confirm-version-btn px-3 py-1 text-xs rounded-md btn-primary">${i18n[config.uiLanguage].confirm || '確認'}</button>
+                    </div>
                 </div>`;
-            
-            messageDiv.innerHTML = isUser ? `${messageBubble}${icon}` : `${icon}${messageBubble}`;
-        };
+        } else if (!isLoadingMessage) { // ✨ 狀態二：非載入中且非切換模式的標準 UI
+             actionButtons = `
+                <div class="absolute bottom-2 left-2 right-2 flex justify-start items-center gap-1">
+                     <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    </button>
+                     <button class="regenerate-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].regenerate || '重新生成'}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6"/><path d="M22 11.5A10 10 0 0 0 3.5 12.5"/><path d="M2 12.5a10 10 0 0 0 18.5-1"/></svg>
+                    </button>
+                </div>`;
+        } // ✨ 狀態三：如果是載入中 (isLoadingMessage)，actionButtons 會是空字串，完美解決問題3！
+
+    } else { // 是使用者的訊息
+        const conv = getActiveConversation();
+        const messageIndex = parseInt(messageDiv.dataset.messageIndex);
+        if (conv && messageIndex + 1 < conv.messages.length && conv.messages[messageIndex + 1].role === 'model') {
+             actionButtons = `
+                <div class="absolute bottom-2 left-2 flex items-center">
+                    <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                    </button>
+                </div>
+            `;
+            contentPaddingClass = 'pb-8';
+        }
+    }
+    const messageBubble = `
+        <div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble relative ${isUser ? 'text-white' : ''}" >
+            <div class="prose prose-sm max-w-none ${isUser ? 'text-white' : 'text-[var(--text-primary)]'} ${contentPaddingClass} message-content">${contentHTML}</div>
+            ${actionButtons}
+        </div>`;
+    
+    messageDiv.innerHTML = isUser ? `${messageBubble}${icon}` : `${icon}${messageBubble}`;
+};
 
         const typewriterStream = (targetElement, streamApiCallFn, signal) => {
             return new Promise((resolve, reject) => {
@@ -4940,65 +4943,65 @@ actionButtons += `</div>`;
 
         // ✨ 新增：處理重新生成的核心函數
         const handleRegenerate = async (messageIndex) => {
-            if (abortController || (activeVersionSwitchMessageIndex !== null && activeVersionSwitchMessageIndex !== messageIndex)) return;
+      if (abortController || activeVersionSwitchMessageIndex !== null) return;
+
+    const conv = getActiveConversation();
+    const msgToRegenerate = conv.messages[messageIndex];
+    if (!msgToRegenerate || msgToRegenerate.role !== 'model') return;
+
+    abortController = new AbortController();
+    activeVersionSwitchMessageIndex = messageIndex;
+    updateInputState(); // 鎖定輸入
+
+    const messageDiv = document.querySelector(`.message-item[data-message-index="${messageIndex}"]`);
+    const contentDiv = messageDiv.querySelector('.message-content');
+    
+    // 找到這則 AI 回覆之前的所有對話歷史
+    const historyUntilThisPoint = conv.messages.slice(0, messageIndex);
+    
+    // 重新渲染 UI 進入 "生成中" 的狀態
+    const tempLoadingVersion = { parts: [{ text: '...' }] };
+    msgToRegenerate.versions.push(tempLoadingVersion);
+    msgToRegenerate.currentVersionIndex = msgToRegenerate.versions.length - 1;
+    rerenderMessageUI(messageDiv, msgToRegenerate);
+
+    try {
+        const fullResponse = await typewriterStream(
+            contentDiv,
+            (onChunk) => streamApiCall(
+                historyUntilThisPoint[historyUntilThisPoint.length - 1].parts, // 使用前一則 user message
+                onChunk, 
+                abortController.signal,
+                false,
+                historyUntilThisPoint.slice(0, -1) // 傳入更早的歷史
+            ),
+            abortController.signal
+        );
+
+        // 更新剛剛新增的版本
+        msgToRegenerate.versions[msgToRegenerate.currentVersionIndex] = { parts: [{ text: fullResponse }] };
+        await saveAppData();
         
-            const conv = getActiveConversation();
-            const msgToRegenerate = conv.messages[messageIndex];
-            if (!msgToRegenerate || msgToRegenerate.role !== 'model') return;
+        // 最終渲染
+        rerenderMessageUI(messageDiv, msgToRegenerate);
 
-            abortController = new AbortController();
-            activeVersionSwitchMessageIndex = messageIndex;
-            updateInputState(); // 鎖定輸入
-
-            const messageDiv = document.querySelector(`.message-item[data-message-index="${messageIndex}"]`);
-            const contentDiv = messageDiv.querySelector('.message-content');
-            
-            // 找到這則 AI 回覆之前的所有對話歷史
-            const historyUntilThisPoint = conv.messages.slice(0, messageIndex);
-            
-            // 重新渲染 UI 進入 "生成中" 的狀態
-            const tempLoadingVersion = { parts: [{ text: '...' }] };
-            msgToRegenerate.versions.push(tempLoadingVersion);
+    } catch (error) {
+        if (error.name !== 'AbortError') {
+            const errorMessage = `重新生成失敗: ${error.message}`;
+            msgToRegenerate.versions[msgToRegenerate.currentVersionIndex] = { parts: [{ text: errorMessage }] };
+            rerenderMessageUI(messageDiv, msgToRegenerate);
+        } else {
+            // 如果中止，移除最後一個版本並切換回前一個版本
+            msgToRegenerate.versions.pop();
             msgToRegenerate.currentVersionIndex = msgToRegenerate.versions.length - 1;
             rerenderMessageUI(messageDiv, msgToRegenerate);
-
-            try {
-                const fullResponse = await typewriterStream(
-                    contentDiv,
-                    (onChunk) => streamApiCall(
-                        historyUntilThisPoint[historyUntilThisPoint.length - 1].parts, // 使用前一則 user message
-                        onChunk, 
-                        abortController.signal,
-                        false,
-                        historyUntilThisPoint.slice(0, -1) // 傳入更早的歷史
-                    ),
-                    abortController.signal
-                );
-
-                // 更新剛剛新增的版本
-                msgToRegenerate.versions[msgToRegenerate.currentVersionIndex] = { parts: [{ text: fullResponse }] };
-                await saveAppData();
-                
-                // 最終渲染
-                rerenderMessageUI(messageDiv, msgToRegenerate);
-
-            } catch (error) {
-                if (error.name !== 'AbortError') {
-                    const errorMessage = `重新生成失敗: ${error.message}`;
-                    msgToRegenerate.versions[msgToRegenerate.currentVersionIndex] = { parts: [{ text: errorMessage }] };
-                    rerenderMessageUI(messageDiv, msgToRegenerate);
-                } else {
-                    // 如果中止，移除最後一個版本並切換回前一個版本
-                    msgToRegenerate.versions.pop();
-                    msgToRegenerate.currentVersionIndex = msgToRegenerate.versions.length - 1;
-                    rerenderMessageUI(messageDiv, msgToRegenerate);
-                }
-            } finally {
-                abortController = null;
-                // 注意：這裡不重置 activeVersionSwitchMessageIndex，因為使用者還在版本切換模式
-                updateInputState(); 
-            }
-        };
+        }
+    } finally {
+        abortController = null;
+        // 注意：這裡不重置 activeVersionSwitchMessageIndex，因為使用者還在版本切換模式
+        updateInputState(); 
+    }
+};
 
         function cleanGeminiHistory(history, customHistory = null) {
             const historyToClean = customHistory || history;
@@ -5507,57 +5510,57 @@ actionButtons += `</div>`;
             }
         };
         const updateInputState = () => {
-            const hasContent = ALL_ELEMENTS.messageInput.value.trim() !== '' || uploadedFiles.length > 0;
-            const { submitButton, submitButtonIcon, messageInput } = ALL_ELEMENTS;
-            
-            // ✨ 新增：如果正在切換版本，則鎖定輸入
-            if (activeVersionSwitchMessageIndex !== null) {
-                messageInput.disabled = true;
-                messageInput.placeholder = i18n[config.uiLanguage].versionSwitchInProgress || '版本切換中，請先確認...';
-                submitButton.disabled = true;
-                submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
-                return;
-            }
+    const hasContent = ALL_ELEMENTS.messageInput.value.trim() !== '' || uploadedFiles.length > 0;
+    const { submitButton, submitButtonIcon, messageInput } = ALL_ELEMENTS;
+    
+    // ✨ 新增：如果正在切換版本，則鎖定輸入
+    if (activeVersionSwitchMessageIndex !== null) {
+        messageInput.disabled = true;
+        messageInput.placeholder = i18n[config.uiLanguage].versionSwitchInProgress || '版本切換中，請先確認...';
+        submitButton.disabled = true;
+        submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
+        return;
+    }
 
-            if (abortController) {
-                submitButton.disabled = false;
-                submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>`;
-                return;
-            }
-            const conv = getActiveConversation();
-            if (!conv) {
-                submitButton.disabled = true;
-                submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
-                return;
-            }
-            if (conv.archived) {
-                messageInput.disabled = true;
-                submitButton.disabled = true;
-                messageInput.placeholder = i18n[config.uiLanguage].viewingArchived || '正在檢視封存的對話，無法傳送訊息。';
-                return;
-            }
-            const modelInfo = MODELS.find(m => m.id === conv.model);
-            const provider = modelInfo?.provider;
-            let hasApiKey = false;
-            if (provider === 'gemini') {
-                hasApiKey = !!config.apiKeys.gemini;
-            } else if (provider === 'openrouter') {
-                hasApiKey = !!config.apiKeys.openrouter;
-            }
-            messageInput.disabled = !hasApiKey;
-            messageInput.placeholder = hasApiKey ? i18n[config.uiLanguage].enterMessagePlaceholder : i18n[config.uiLanguage].enterApiKeyPlaceholder;
-            if (!hasApiKey || !hasContent) {
-                submitButton.disabled = true;
-                submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
-            } else {
-                submitButton.disabled = false;
-                if (!sendConfirmed) {
-                    submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-                } else {
-                    submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
-                }
-            }
-        };
+    if (abortController) {
+        submitButton.disabled = false;
+        submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>`;
+        return;
+    }
+    const conv = getActiveConversation();
+    if (!conv) {
+        submitButton.disabled = true;
+        submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
+        return;
+    }
+    if (conv.archived) {
+        messageInput.disabled = true;
+        submitButton.disabled = true;
+        messageInput.placeholder = i18n[config.uiLanguage].viewingArchived || '正在檢視封存的對話，無法傳送訊息。';
+        return;
+    }
+    const modelInfo = MODELS.find(m => m.id === conv.model);
+    const provider = modelInfo?.provider;
+    let hasApiKey = false;
+    if (provider === 'gemini') {
+        hasApiKey = !!config.apiKeys.gemini;
+    } else if (provider === 'openrouter') {
+        hasApiKey = !!config.apiKeys.openrouter;
+    }
+    messageInput.disabled = !hasApiKey;
+    messageInput.placeholder = hasApiKey ? i18n[config.uiLanguage].enterMessagePlaceholder : i18n[config.uiLanguage].enterApiKeyPlaceholder;
+    if (!hasApiKey || !hasContent) {
+        submitButton.disabled = true;
+        submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
+    } else {
+        submitButton.disabled = false;
+        if (!sendConfirmed) {
+            submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+        } else {
+            submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
+        }
+    }
+};
         const setupSettingsModal = () => {
             ALL_ELEMENTS.geminiApiKeyInput.value = config.apiKeys.gemini;
             ALL_ELEMENTS.openrouterApiKeyInputAll.value = config.apiKeys.openrouter;
@@ -8917,35 +8920,35 @@ ${allContextData.join('\n\n')}`;
                 const confirmVersionBtn = e.target.closest('.confirm-version-btn');
 
                 if (copyBtn) {
-                    const textToCopy = msg.versions[msg.currentVersionIndex].parts.map(p => p.text).join('\n');
-                    copyTextToClipboard(textToCopy)
-                        .then(() => showNotification(i18n[config.uiLanguage].copySuccess || '內容已複製！', 'success'))
-                        .catch(err => showNotification(i18n[config.uiLanguage].copyFailed || '複製失敗！', 'error'));
-                } else if (deleteBtn) {
-                    handleDeleteMessagePair(messageIndex);
-                } else if (regenerateBtn) {
-                    await handleRegenerate(messageIndex);
-                } else if (prevVersionBtn) {
-                    if (msg.currentVersionIndex > 0) {
-                        msg.currentVersionIndex--;
-                        rerenderMessageUI(messageItem, msg);
-                        await saveAppData();
-                    }
-                } else if (nextVersionBtn) {
-                    if (msg.currentVersionIndex < msg.versions.length - 1) {
-                        msg.currentVersionIndex++;
-                        rerenderMessageUI(messageItem, msg);
-                        await saveAppData();
-                    }
-                } else if (confirmVersionBtn) {
-                    const finalVersion = msg.versions[msg.currentVersionIndex];
-                    msg.versions = [finalVersion];
-                    msg.currentVersionIndex = 0;
-                    activeVersionSwitchMessageIndex = null;
-                    rerenderMessageUI(messageItem, msg);
-                    await saveAppData();
-                    updateInputState(); // 解鎖輸入
-                }
+    const textToCopy = msg.versions[msg.currentVersionIndex].parts.map(p => p.text).join('\n');
+    copyTextToClipboard(textToCopy)
+        .then(() => showNotification(i18n[config.uiLanguage].copySuccess || '內容已複製！', 'success'))
+        .catch(err => showNotification(i18n[config.uiLanguage].copyFailed || '複製失敗！', 'error'));
+} else if (deleteBtn) {
+    handleDeleteMessagePair(messageIndex);
+} else if (regenerateBtn) {
+    // ✨ 無論在哪種模式下，點擊重新生成都是一樣的行為
+    await handleRegenerate(messageIndex);
+} else if (prevVersionBtn) {
+    if (msg.currentVersionIndex > 0) {
+        msg.currentVersionIndex--;
+        rerenderMessageUI(messageItem, msg);
+        await saveAppData();
+    }
+} else if (nextVersionBtn) {
+    if (msg.currentVersionIndex < msg.versions.length - 1) {
+        msg.currentVersionIndex++;
+        rerenderMessageUI(messageItem, msg);
+        await saveAppData();
+    }
+} else if (confirmVersionBtn) {
+    // ✨✨✨ 這是最關鍵的修改！✨✨✨
+    // 我們不再刪除其他版本，只是退出切換模式
+    activeVersionSwitchMessageIndex = null;
+    rerenderMessageUI(messageItem, msg); // 重新渲染成標準 UI
+    await saveAppData(); // 儲存當前選擇的 index
+    updateInputState(); // 解鎖輸入框
+}
             });
             ALL_ELEMENTS.addFileBtn.addEventListener('click', (e) => {
                 const popover = ALL_ELEMENTS.fileOptionsPopover;
