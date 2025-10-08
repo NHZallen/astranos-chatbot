@@ -3515,6 +3515,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const minutes = String(date.getMinutes()).padStart(2, '0');
             return `${year}-${month}-${day} ${hours}:${minutes}`;
         };
+        const formatTimestampForAI = (isoString) => {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    // 格式為 [時間 YYYY-MM-DD HH:MM]
+    return `[時間 ${year}-${month}-${day} ${hours}:${minutes}] `;
+};
         const getConfigKey = () => `chatConfig_v_v8.6_${currentUser.username}`;
         const getAppDataKey = () => `chatAppData_v8.6_${currentUser.username}`;
         const getUserKey = (username) => `chatUser_${username}`;
@@ -5008,17 +5019,54 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 apiKey = config.apiKeys.openrouter;
             }
             if (!apiKey) throw new Error(`請先在設定中提供 ${modelInfo.name} 所需的 API 金鑰。`);
-            const historyForApi = conv.messages.slice(0, -1);
-            const currentMessageForApi = { role: 'user', parts: parts };
-            let url, payload, headers;
-            let systemInstruction = null;
-            let baseInstructionText = '';
+            const historyForApi = conv.messages.slice(0, -1).map(msg => {
+    const timestampPrefix = formatTimestampForAI(msg.createdAt);
+    const newParts = msg.parts.map(part => ({ ...part }));
+    if (newParts[0] && newParts[0].text) {
+        newParts[0].text = timestampPrefix + newParts[0].text;
+    } else {
+        newParts.unshift({ text: timestampPrefix });
+    }
+    
+    return {
+        role: msg.role,
+        parts: newParts
+    };
+});
+const currentMessageForApi = { 
+    role: 'user', 
+    parts: (() => {
+        const timestampPrefix = formatTimestampForAI(new Date().toISOString());
+        const newParts = parts.map(part => ({ ...part }));
+        if (newParts[0] && newParts[0].text) {
+            newParts[0].text = timestampPrefix + newParts[0].text;
+        } else {
+            newParts.unshift({ text: timestampPrefix });
+        }
+        return newParts;
+    })()
+};
+
+let url, payload, headers;
+let systemInstruction = null;
+let baseInstructionText = '';
             const langMap = {
-                'zh-TW': '請用繁體中文回覆，除非使用者有特別要求。',
-                'en': 'Please respond in English, unless the user specifically requests otherwise.',
-                'fr': 'Veuillez répondre en français, sauf si l\'utilisateur demande spécifiquement le contraire.'
-            };
-            baseInstructionText = langMap[config.aiDefaultLanguage] || '';
+    'zh-TW': '請用繁體中文回覆，除非使用者有特別要求。',
+    'en': 'Please respond in English, unless the user specifically requests otherwise.',
+    'fr': 'Veuillez répondre en français, sauf si l\'utilisateur demande spécifiquement le contraire.'
+};
+
+// ✨ 核心修改：加入時間感知指令
+const timeAwarenessInstruction = `
+# 核心能力：時間感知
+- 你必須認知到現在的時間。為了幫助你，每一條使用者和你的歷史訊息都會以 "[時間 YYYY-MM-DD HH:MM]" 的格式開頭。
+- 你必須將這些時間戳納入你的思考脈絡。例如，如果使用者正在規劃一個有時限的任務，你需要根據你回覆當下的時間和歷史訊息的時間來評估計畫的可行性。
+- 當你提供與時間相關的計畫或建議時，請明確地將當前時間和你預計的執行時間點結合起來，以提升計畫的實用性與可行性。
+- 你的回覆內容中**不需要**重複附上時間戳，你只需要在內部邏輯中使用這個資訊即可。
+`;
+
+// 將時間指令和語言指令結合起來
+baseInstructionText = timeAwarenessInstruction + (langMap[config.aiDefaultLanguage] || '');
             if (conv.astrasId) {
                 const ast = astras.find(a => a.id === conv.astrasId);
                 if (ast) {
