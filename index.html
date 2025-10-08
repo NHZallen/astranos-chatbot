@@ -10,6 +10,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <!-- ✨ 新增：Google Identity Services SDK -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
     body {
     touch-action: manipulation;
@@ -2122,6 +2124,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                             匯入紀錄
                                         </button>
                                     </div>
+                                    <!-- ✨ 新增：Google 登入按鈕 -->
+                                    <div class="relative flex items-center justify-center my-4">
+                                        <div class="absolute inset-0 flex items-center">
+                                            <div class="w-full border-t border-gray-300"></div>
+                                        </div>
+                                        <div class="relative px-2 bg-white/70 text-sm text-gray-500" data-lang-key="or">或</div>
+                                    </div>
+                                    <button type="button" id="google-signin-btn-auth" class="w-full p-3 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 flex items-center justify-center gap-3 font-semibold text-gray-700 transition-colors" style="display: none;">
+                                        <svg class="w-5 h-5" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"></path><path fill="#FF3D00" d="m6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C16.318 4 9.656 8.337 6.306 14.691z"></path><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.223 0-9.657-3.444-11.386-8.199l-6.571 4.819A20.007 20.007 0 0 0 24 44z"></path><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571l6.19 5.238C43.021 36.258 46 30.676 46 24c0-1.341-.138-2.65-.389-3.917z"></path></svg>
+                                        <span data-lang-key="signInWithGoogle">使用 Google 帳戶登入</span>
+                                    </button>
                                 </form>
                             </div>
                         </div>
@@ -2534,6 +2547,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         <div class="flex flex-col sm:flex-row gap-2">
                             <button id="export-data-btn" class="flex-1 text-center p-2 rounded-md bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-800 font-medium" data-lang-key="exportData">匯出資料</button>
                             <button id="import-data-btn" class="flex-1 text-center p-2 rounded-md bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800 font-medium" data-lang-key="importData">匯入資料</button>
+                        </div>
+                        <!-- ✨ 新增：Google 帳號同步區塊 -->
+                        <div class="mt-6 pt-4 border-t border-[var(--border-color)]">
+                            <h3 class="text-lg font-semibold mb-3" data-lang-key="googleAccountSync">Google 帳號同步</h3>
+                            <p class="text-sm text-[var(--text-secondary)] mb-3" data-lang-key="googleAccountSyncDesc">
+                                將您的對話紀錄與設定綁定至 Google 帳號，以便在不同裝置間同步資料。(此功能仍在開發中)
+                            </p>
+                            <div id="google-sync-container">
+                                <!-- 此內容將由 JavaScript 動態填入 -->
+                            </div>
                         </div>
                         <button id="open-archived-modal-btn" class="w-full text-left p-2 rounded-md hover:bg-[var(--hover-bg)] font-medium mt-4" data-lang-key="manageArchived">
                             管理已封存的對話
@@ -3024,308 +3047,334 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     <script src="./update-logs.js"></script>
     <script src="./main.js"></script>
      <script>
+    // ✨ 新增：Google SDK 載入後的回呼函數
+    function onGoogleScriptLoad() {
+        // 這個函數會在 Google 的 <script> 載入並執行後被呼叫
+        // 我們可以在這裡安全地初始化 Google Auth Client
+        // 實際的初始化邏輯會在 main.js 的 initGoogleAuth 中
+        if (window.initGoogleAuth) {
+            window.initGoogleAuth();
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.add('splash-screen-active');
         const videoSplashScreen = document.getElementById('video-splash-screen');
-        // 現在我們要同時選取兩個影片
         const splashVideoDesktop = document.getElementById('splash-video-desktop');
         const splashVideoMobile = document.getElementById('splash-video-mobile');
         const authContainerForSplash = document.getElementById('auth-container');
-
-        // ✨ 步驟 2.1: 取得我們剛剛新增的按鈕
         const skipBtn = document.getElementById('skip-video-btn');
 
-        // 建立一個共用的函式來處理影片結束後的邏輯
         const handleVideoEnd = () => {
-    document.body.classList.remove('splash-screen-active'); // ✨ 新增這一行來解鎖滾動
-    videoSplashScreen.classList.add('hidden');
-    authContainerForSplash.classList.add('visible');
+            document.body.classList.remove('splash-screen-active');
+            videoSplashScreen.classList.add('hidden');
+            authContainerForSplash.classList.add('visible');
 
-    videoSplashScreen.addEventListener('transitionend', () => {
-        videoSplashScreen.remove();
-    }, { once: true });
-};
+            videoSplashScreen.addEventListener('transitionend', () => {
+                videoSplashScreen.remove();
+            }, { once: true });
+        };
 
-        // ✨ 步驟 2.2: 監聽按鈕的點擊事件，並執行跳過影片的動作
         if (skipBtn) {
             skipBtn.addEventListener('click', handleVideoEnd);
         }
 
-        // 建立一個共用的函式來處理影片播放錯誤
         const handleVideoError = (e) => {
-        console.error("影片播放錯誤:", e.target.id, "直接顯示主頁。");
-        videoSplashScreen.remove();
-        authContainerForSplash.classList.add('visible');
+            console.error("影片播放錯誤:", e.target.id, "直接顯示主頁。");
+            videoSplashScreen.remove();
+            authContainerForSplash.classList.add('visible');
+        };
+
+        splashVideoDesktop.addEventListener('ended', handleVideoEnd);
+        splashVideoMobile.addEventListener('ended', handleVideoEnd);
+        splashVideoDesktop.addEventListener('error', handleVideoError);
+        splashVideoMobile.addEventListener('error', handleVideoError);
+
+        const demoModels = [
+          { id: 'proMax', name: 'Astra-Pro Max', title: 'Astra-Pro Max 對話範例', desc: '深度決策，商業研究最佳拍檔' },
+          { id: 'proPV', name: 'Astra-Pro PV', title: 'Astra-Pro PV 對話範例', desc: '預覽新技術，多模態高速體驗' },
+          { id: 'pro', name: 'Astra-Pro', title: 'Astra-Pro 對話範例', desc: '高效多模態，文檔圖像兼擅' },
+          { id: 'plusPV', name: 'Astra-Plus PV', title: 'Astra-Plus PV 對話範例', desc: '輕量快速，日常應用即刻啟動' },
+          { id: 'mini', name: 'Astra-Mini', title: 'Astra-Mini 對話範例', desc: '強大推理，長文與數理皆能' },
+          { id: 'mill', name: 'Astra-Mill', title: 'Astra-Mill 對話範例', desc: '開源高效，短文生成與結構化' },
+          { id: 'nano', name: 'Astra-Nano', title: 'Astra-Nano 對話範例', desc: '程式專精，技術代碼好幫手' },
+        ];
+        const selectorContainer = document.querySelector('.demo-model-selector');
+        const chatWindow = document.getElementById('demo-chat-window');
+        const chatTitle = document.getElementById('demo-chat-title');
+        if (selectorContainer && chatWindow && chatTitle) {
+            demoModels.forEach((model, index) => {
+                const button = document.createElement('button');
+                button.className = `selector-btn text-center p-3 rounded-lg border-2 border-gray-200 bg-white ${index === 0 ? 'active' : ''}`;
+                button.dataset.modelId = model.id;
+                button.innerHTML = `
+                    <div class="font-semibold text-sm text-gray-800">${model.name}</div>
+                    <div class="text-xs text-gray-500">${model.desc}</div>
+                `;
+                selectorContainer.appendChild(button);
+                const contentDiv = document.createElement('div');
+                contentDiv.id = `demo-chat-${model.id}`;
+                contentDiv.className = `demo-chat-content space-y-6 ${index === 0 ? 'active' : ''}`;
+                contentDiv.innerHTML = demoConversations[model.id];
+                chatWindow.appendChild(contentDiv);
+            });
+            selectorContainer.addEventListener('click', (e) => {
+                const button = e.target.closest('.selector-btn');
+                if (!button) return;
+                const modelId = button.dataset.modelId;
+                selectorContainer.querySelector('.active').classList.remove('active');
+                button.classList.add('active');
+                chatWindow.querySelector('.active').classList.remove('active');
+                document.getElementById(`demo-chat-${modelId}`).classList.add('active');
+                const modelInfo = demoModels.find(m => m.id === modelId);
+                chatTitle.textContent = modelInfo.title;
+            });
+        }
+    });
+
+    const ALL_ELEMENTS = {
+        authContainer: document.getElementById('auth-container'),
+        appContainer: document.getElementById('app-container'),
+        authForm: document.getElementById('auth-form'),
+        usernameInput: document.getElementById('username-input'),
+        passwordInput: document.getElementById('password-input'),
+        importBtnAuth: document.getElementById('import-btn-auth'),
+        importDataModalAuth: document.getElementById('import-data-modal-auth'),
+        importFileInputAuth: document.getElementById('import-file-input-auth'),
+        cancelImportBtnAuth: document.getElementById('cancel-import-btn-auth'),
+        confirmImportBtnAuth: document.getElementById('confirm-import-btn-auth'),
+        logoutBtn: document.getElementById('logout-btn'),
+        usernameDisplay: document.getElementById('username-display'),
+        newChatBtn: document.getElementById('new-chat-btn'),
+        openSearchBtn: document.getElementById('open-search-btn'),
+        historyList: document.getElementById('history-list'),
+        folderList: document.getElementById('folder-list'),
+        newFolderBtn: document.getElementById('new-folder-btn'),
+        settingsBtn: document.getElementById('settings-btn'),
+        headerTitle: document.getElementById('header-title'),
+        modelSwitcherContainer: document.getElementById('model-switcher-container'),
+        chatContainer: document.getElementById('chat-container'),
+        messageList: document.getElementById('message-list'),
+        messageInput: document.getElementById('message-input'),
+        chatForm: document.getElementById('chat-form'),
+        submitButton: document.getElementById('submit-btn'),
+        submitButtonIcon: document.getElementById('submit-btn-icon'),
+        settingsModal: document.getElementById('settings-modal'),
+        saveSettingsBtn: document.getElementById('save-settings-btn'),
+        closeSettingsBtn: document.getElementById('close-settings-btn'),
+        geminiApiKeyInput: document.getElementById('gemini-api-key-input'),
+        openrouterApiKeyInputAll: document.getElementById('openrouter-api-key-input-all'),
+        modelManagementList: document.getElementById('model-management-list'),
+        openArchivedModalBtn: document.getElementById('open-archived-modal-btn'),
+        themeLightBtn: document.getElementById('theme-light-btn'),
+        themeDarkBtn: document.getElementById('theme-dark-btn'),
+        archivedChatsModal: document.getElementById('archived-chats-modal'),
+        closeArchivedModalBtn: document.getElementById('close-archived-modal-btn'),
+        archivedChatsContainer: document.getElementById('archived-chats-container'),
+        viewArchivedChatModal: document.getElementById('view-archived-chat-modal'),
+        viewArchivedTitle: document.getElementById('view-archived-title'),
+        viewArchivedContent: document.getElementById('view-archived-content'),
+        closeViewArchivedModalBtn: document.getElementById('close-view-archived-modal-btn'),
+        closeViewArchivedModalBtnFooter: document.getElementById('close-view-archived-modal-btn-footer'),
+        renameModal: document.getElementById('rename-modal'),
+        renameInput: document.getElementById('rename-input'),
+        saveRenameBtn: document.getElementById('save-rename-btn'),
+        cancelRenameBtn: document.getElementById('cancel-rename-btn'),
+        folderSettingsModal: document.getElementById('folder-settings-modal'),
+        colorSwatchesContainer: document.getElementById('color-swatches-container'),
+        iconOptionsContainer: document.getElementById('icon-options-container'),
+        saveFolderSettingsBtn: document.getElementById('save-folder-settings-btn'),
+        cancelFolderSettingsBtn: document.getElementById('cancel-folder-settings-btn'),
+        notificationContainer: document.getElementById('notification-container'),
+        customDialogModal: document.getElementById('custom-dialog-modal'),
+        customDialogTitle: document.getElementById('custom-dialog-title'),
+        customDialogMessage: document.getElementById('custom-dialog-message'),
+        customDialogInputContainer: document.getElementById('custom-dialog-input-container'),
+        customDialogInput: document.getElementById('custom-dialog-input'),
+        customDialogButtons: document.getElementById('custom-dialog-buttons'),
+        webSearchPopoverBtn: document.getElementById('web-search-popover-btn'),
+        inputIndicatorContainer: document.getElementById('input-indicator-container'),
+        selectionModeBtn: document.getElementById('selection-mode-btn'),
+        batchActionBar: document.getElementById('batch-action-bar'),
+        selectionCount: document.getElementById('selection-count'),
+        cancelSelectionBtn: document.getElementById('cancel-selection-btn'),
+        batchDeleteBtn: document.getElementById('batch-delete-btn'),
+        batchArchiveBtn: document.getElementById('batch-archive-btn'),
+        batchMoveBtn: document.getElementById('batch-move-btn'),
+        batchMoveModal: document.getElementById('batch-move-modal'),
+        batchMoveFolderList: document.getElementById('batch-move-folder-list'),
+        batchMoveCancelBtn: document.getElementById('batch-move-cancel-btn'),
+        batchMoveConfirmBtn: document.getElementById('batch-move-confirm-btn'),
+        userControls: document.getElementById('user-controls'),
+        searchModal: document.getElementById('search-modal'),
+        closeSearchModalBtn: document.getElementById('close-search-modal-btn'),
+        modalSearchInput: document.getElementById('modal-search-input'),
+        modalSearchScopeSelect: document.getElementById('modal-search-scope-select'),
+        searchResultsContainer: document.getElementById('search-results-container'),
+        performSearchBtn: document.getElementById('perform-search-btn'),
+        fileInputContainer: document.getElementById('file-input-container'),
+        addFileBtn: document.getElementById('add-file-btn'),
+        fileOptionsPopover: document.getElementById('file-options-popover'),
+        cameraBtn: document.getElementById('camera-btn'),
+        uploadImageBtn: document.getElementById('upload-image-btn'),
+        uploadFileBtn: document.getElementById('upload-file-btn'),
+        imageVideoInput: document.getElementById('image-video-input'),
+        fileUploadInput: document.getElementById('file-upload-input'),
+        filePreviewContainer: document.getElementById('file-preview-container'),
+        exportDataBtn: document.getElementById('export-data-btn'),
+        importDataBtn: document.getElementById('import-data-btn'),
+        exportDataModal: document.getElementById('export-data-modal'),
+        importDataModal: document.getElementById('import-data-modal'),
+        cancelExportBtn: document.getElementById('cancel-export-btn'),
+        confirmExportBtn: document.getElementById('confirm-export-btn'),
+        exportHistoryCheck: document.getElementById('export-history-check'),
+        exportAstrasCheck: document.getElementById('export-astras-check'),
+        exportSettingsCheck: document.getElementById('export-settings-check'),
+        exportMemoryCheck: document.getElementById('export-memory-check'),
+        cancelImportBtn: document.getElementById('cancel-import-btn'),
+        confirmImportBtn: document.getElementById('confirm-import-btn'),
+        importFileInput: document.getElementById('import-file-input'),
+        sidebar: document.getElementById('sidebar'),
+        sidebarOverlay: document.getElementById('sidebar-overlay'),
+        menuToggleBtn: document.getElementById('menu-toggle-btn'),
+        sidebarOpenHandle: document.getElementById('sidebar-open-handle'),
+        followUpContainer: document.getElementById('follow-up-container'),
+        followUpHeader: document.getElementById('follow-up-header'),
+        followUpPromptsList: document.getElementById('follow-up-prompts-list'),
+        followUpToggleSwitch: document.getElementById('follow-up-toggle-switch'),
+        autoNamingToggleSwitch: document.getElementById('auto-naming-toggle-switch'),
+        autoWebSearchToggleSwitch: document.getElementById('auto-web-search-toggle-switch'),
+        astrasList: document.getElementById('astras-list'),
+        newAstrasBtn: document.getElementById('new-astras-btn'),
+        astrasCreateModal: document.getElementById('astras-create-modal'),
+        astrasNameInput: document.getElementById('astras-name-input'),
+        astrasDescInput: document.getElementById('astras-desc-input'),
+        astrasInstructionsInput: document.getElementById('astras-instructions-input'),
+        saveAstrasBtn: document.getElementById('save-astras-btn'),
+        cancelAstrasBtn: document.getElementById('cancel-astras-btn'),
+        currentAstrasName: document.getElementById('current-astras-name'),
+        aiBubbleColorDropdown: document.getElementById('ai-bubble-color-dropdown'),
+        userBubbleColorDropdown: document.getElementById('user-bubble-color-dropdown'),
+        settingsNav: document.getElementById('settings-nav'),
+        voiceInputBtnMessage: document.getElementById('voice-input-btn-message'),
+        voiceInputBtnSearch: document.getElementById('voice-input-btn-search'),
+        memoryToggle1: document.getElementById('memory-toggle-1'),
+        memoryToggle2: document.getElementById('memory-toggle-2'),
+        personalMemoryList: document.getElementById('personal-memory-list'),
+        addPersonalMemoryBtn: document.getElementById('add-personal-memory-btn'),
+        autoMemoryToggleSwitch: document.getElementById('auto-memory-toggle-switch'),
+        wallpaperContainer: document.getElementById('wallpaper-container'),
+        uploadWallpaperBtn: document.getElementById('upload-wallpaper-btn'),
+        restoreWallpaperBtn: document.getElementById('restore-wallpaper-btn'),
+        wallpaperUploadInput: document.getElementById('wallpaper-upload-input'),
+        uiColorOptions: document.getElementById('ui-color-options'),
+        customColorPickerContainer: document.getElementById('custom-color-picker-container'),
+        customColorSwatches: document.getElementById('custom-color-swatches'),
+        buttonStyleContainer: document.getElementById('button-style-container'),
+        gradientPickerContainer: document.getElementById('gradient-picker-container'),
+        gradientSwatches: document.getElementById('gradient-swatches'),
+        apiKeyWarningBadge: document.getElementById('api-key-warning-badge'),
+        userProfileBtn: document.getElementById('user-profile-btn'),
+        dataDashboardModal: document.getElementById('data-dashboard-modal'),
+        closeDashboardBtn: document.getElementById('close-dashboard-btn'),
+        totalConvStat: document.getElementById('total-conv-stat'),
+        totalFolderStat: document.getElementById('total-folder-stat'),
+        mostUsedModelStat: document.getElementById('most-used-model-stat'),
+        timeAnalysisYearSelect: document.getElementById('time-analysis-year-select'),
+        timeAnalysisMonthSelect: document.getElementById('time-analysis-month-select'),
+        timeAnalysisDaySelect: document.getElementById('time-analysis-day-select'),
+        wallpaperCropModal: document.getElementById('wallpaper-crop-modal'),
+        wallpaperCropImage: document.getElementById('wallpaper-crop-image'),
+        cancelCropBtn: document.getElementById('cancel-crop-btn'),
+        confirmCropBtn: document.getElementById('confirm-crop-btn'),
+        deleteAllDataBtn: document.getElementById('delete-all-data-btn'),
+        loginLanguageSwitcher: document.getElementById('login-language-switcher'),
+        loginLangBtn: document.getElementById('login-lang-btn'),
+        loginLangMenu: document.getElementById('login-lang-menu'),
+        loginLangLabel: document.getElementById('login-lang-label'),
+        uiLanguageSelect: document.getElementById('ui-language-select'),
+        aiLanguageSelect: document.getElementById('ai-language-select'),
+        storeContainer: document.getElementById('store-container'),
+        openStoreBtn: document.getElementById('open-store-btn'),
+        backToChatBtn: document.getElementById('back-to-chat-btn'),
+        storeGrid: document.getElementById('store-grid'),
+        astrasAvatarModal: document.getElementById('astras-avatar-modal'),
+        avatarCropContainer: document.getElementById('avatar-crop-container'),
+        avatarCropImage: document.getElementById('avatar-crop-image'),
+        confirmAvatarCropBtn: document.getElementById('confirm-avatar-crop-btn'),
+        cancelAvatarCropBtn: document.getElementById('cancel-avatar-crop-btn'),
+        astrasAvatarInput: document.getElementById('astras-avatar-input'),
+        scrollToBottomBtn: document.getElementById('scroll-to-bottom-btn'),
+        inputBarContainer: document.getElementById('input-bar-container'),
+        searchViewModal: document.getElementById('search-view-modal'),
+        searchViewTitle: document.getElementById('search-view-title'),
+        searchViewContent: document.getElementById('search-view-content'),
+        closeSearchViewModalBtn: document.getElementById('close-search-view-modal-btn'),
+        searchViewCloseBtn: document.getElementById('search-view-close-btn'),
+        searchViewConfirmBtn: document.getElementById('search-view-confirm-btn'),
+        updateInfoBtn: document.getElementById('update-info-btn'),
+        updateInfoModal: document.getElementById('update-info-modal'),
+        closeUpdateInfoModalBtn: document.getElementById('close-update-info-modal-btn'),
+        updateInfoContent: document.getElementById('update-info-content'),
+        enableUpdateNotificationsToggle: document.getElementById('enable-update-notifications-toggle'),
+        latestUpdateModal: document.getElementById('latest-update-modal'),
+        closeLatestUpdateModalBtn: document.getElementById('close-latest-update-modal-btn'),
+        latestUpdateContent: document.getElementById('latest-update-content'),
+        trashSection: document.getElementById('trash-section'),
+        trashBatchSelectBtn: document.getElementById('trash-batch-select-btn'),
+        emptyTrashBtn: document.getElementById('empty-trash-btn'),
+        trashBatchActionBar: document.getElementById('trash-batch-action-bar'),
+        trashSelectionCount: document.getElementById('trash-selection-count'),
+        trashCancelSelectionBtn: document.getElementById('trash-cancel-selection-btn'),
+        trashBatchRestoreBtn: document.getElementById('trash-batch-restore-btn'),
+        trashBatchDeleteBtn: document.getElementById('trash-batch-delete-btn'),
+        trashListContainer: document.getElementById('trash-list-container'),
+        trashViewModal: document.getElementById('trash-view-modal'),
+        trashViewTitle: document.getElementById('trash-view-title'),
+        trashViewContent: document.getElementById('trash-view-content'),
+        closeTrashViewModalBtn: document.getElementById('close-trash-view-modal-btn'),
+        trashViewCloseBtn: document.getElementById('trash-view-close-btn'),
+        learningModeBtn: document.getElementById('learning-mode-btn'),
+        deepResearchBtn: document.getElementById('deep-research-btn'),
+        feedbackTextarea: document.getElementById('feedback-textarea'),
+        sendFeedbackBtn: document.getElementById('send-feedback-btn'),
+        proposeAstrasBtn: document.getElementById('propose-astras-btn'),
+        astrasProposalModal: document.getElementById('astras-proposal-modal'),
+        proposalNameInput: document.getElementById('proposal-name-input'),
+        proposalDescInput: document.getElementById('proposal-desc-input'),
+        proposalInstructionsInput: document.getElementById('proposal-instructions-input'),
+        cancelProposalBtn: document.getElementById('cancel-proposal-btn'),
+        submitProposalBtn: document.getElementById('submit-proposal-btn'),
+        interactivePlanModal: document.getElementById('interactive-plan-modal'),
+        planEditorStepsContainer: document.getElementById('plan-editor-steps-container'),
+        addPlanStepBtn: document.getElementById('add-plan-step-btn'),
+        confirmPlanBtn: document.getElementById('confirm-plan-btn'),
+        // ✨ 新增 Google 相關元素
+        googleSignInBtnAuth: document.getElementById('google-signin-btn-auth'),
+        googleSyncContainer: document.getElementById('google-sync-container'),
     };
 
-    // 分別為兩個影片都加上 'ended' 和 'error' 的事件監聽
-    // 瀏覽器只會播放其中一個，所以也只會有一個觸發 'ended' 事件
-    splashVideoDesktop.addEventListener('ended', handleVideoEnd);
-    splashVideoMobile.addEventListener('ended', handleVideoEnd);
+    // ✨ 新增 Google 相關全域變數
+    let googleTokenClient;
+    let googleAuthToken = null;
+    const GOOGLE_CLIENT_ID = '864934573575-b5e6t7ga5s35f0cik6c8d8rk0vhh1e82.apps.googleusercontent.com';
 
-    splashVideoDesktop.addEventListener('error', handleVideoError);
-    splashVideoMobile.addEventListener('error', handleVideoError);
-            const demoModels = [
-  { id: 'proMax', name: 'Astra-Pro Max', title: 'Astra-Pro Max 對話範例', desc: '深度決策，商業研究最佳拍檔' },
-  { id: 'proPV', name: 'Astra-Pro PV', title: 'Astra-Pro PV 對話範例', desc: '預覽新技術，多模態高速體驗' },
-  { id: 'pro', name: 'Astra-Pro', title: 'Astra-Pro 對話範例', desc: '高效多模態，文檔圖像兼擅' },
-  { id: 'plusPV', name: 'Astra-Plus PV', title: 'Astra-Plus PV 對話範例', desc: '輕量快速，日常應用即刻啟動' },
-  { id: 'mini', name: 'Astra-Mini', title: 'Astra-Mini 對話範例', desc: '強大推理，長文與數理皆能' },
-  { id: 'mill', name: 'Astra-Mill', title: 'Astra-Mill 對話範例', desc: '開源高效，短文生成與結構化' },
-  { id: 'nano', name: 'Astra-Nano', title: 'Astra-Nano 對話範例', desc: '程式專精，技術代碼好幫手' },
-];
-            const selectorContainer = document.querySelector('.demo-model-selector');
-            const chatWindow = document.getElementById('demo-chat-window');
-            const chatTitle = document.getElementById('demo-chat-title');
-            if (selectorContainer && chatWindow && chatTitle) {
-                demoModels.forEach((model, index) => {
-                    const button = document.createElement('button');
-                    button.className = `selector-btn text-center p-3 rounded-lg border-2 border-gray-200 bg-white ${index === 0 ? 'active' : ''}`;
-                    button.dataset.modelId = model.id;
-                    button.innerHTML = `
-                        <div class="font-semibold text-sm text-gray-800">${model.name}</div>
-                        <div class="text-xs text-gray-500">${model.desc}</div>
-                    `;
-                    selectorContainer.appendChild(button);
-                    const contentDiv = document.createElement('div');
-                    contentDiv.id = `demo-chat-${model.id}`;
-                    contentDiv.className = `demo-chat-content space-y-6 ${index === 0 ? 'active' : ''}`;
-                    contentDiv.innerHTML = demoConversations[model.id];
-                    chatWindow.appendChild(contentDiv);
+    // ✨ 新增 Google Auth 初始化函數
+    window.initGoogleAuth = function() {
+        try {
+            if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+                googleTokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: GOOGLE_CLIENT_ID,
+                    scope: 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile', // 請求讀取 email 和 profile 的權限
+                    callback: handleGoogleCredentialResponse,
                 });
-                selectorContainer.addEventListener('click', (e) => {
-                    const button = e.target.closest('.selector-btn');
-                    if (!button) return;
-                    const modelId = button.dataset.modelId;
-                    selectorContainer.querySelector('.active').classList.remove('active');
-                    button.classList.add('active');
-                    chatWindow.querySelector('.active').classList.remove('active');
-                    document.getElementById(`demo-chat-${modelId}`).classList.add('active');
-                    const modelInfo = demoModels.find(m => m.id === modelId);
-                    chatTitle.textContent = modelInfo.title;
-                });
+            } else {
+                 console.error("Google Identity Services library not fully loaded.");
             }
-        });
-        const ALL_ELEMENTS = {
-            authContainer: document.getElementById('auth-container'),
-            appContainer: document.getElementById('app-container'),
-            authForm: document.getElementById('auth-form'),
-            usernameInput: document.getElementById('username-input'),
-            passwordInput: document.getElementById('password-input'),
-            importBtnAuth: document.getElementById('import-btn-auth'),
-            importDataModalAuth: document.getElementById('import-data-modal-auth'),
-            importFileInputAuth: document.getElementById('import-file-input-auth'),
-            cancelImportBtnAuth: document.getElementById('cancel-import-btn-auth'),
-            confirmImportBtnAuth: document.getElementById('confirm-import-btn-auth'),
-            logoutBtn: document.getElementById('logout-btn'),
-            usernameDisplay: document.getElementById('username-display'),
-            newChatBtn: document.getElementById('new-chat-btn'),
-            openSearchBtn: document.getElementById('open-search-btn'),
-            historyList: document.getElementById('history-list'),
-            folderList: document.getElementById('folder-list'),
-            newFolderBtn: document.getElementById('new-folder-btn'),
-            settingsBtn: document.getElementById('settings-btn'),
-            headerTitle: document.getElementById('header-title'),
-            modelSwitcherContainer: document.getElementById('model-switcher-container'),
-            chatContainer: document.getElementById('chat-container'),
-            messageList: document.getElementById('message-list'),
-            messageInput: document.getElementById('message-input'),
-            chatForm: document.getElementById('chat-form'),
-            submitButton: document.getElementById('submit-btn'),
-            submitButtonIcon: document.getElementById('submit-btn-icon'),
-            settingsModal: document.getElementById('settings-modal'),
-            saveSettingsBtn: document.getElementById('save-settings-btn'),
-            closeSettingsBtn: document.getElementById('close-settings-btn'),
-            geminiApiKeyInput: document.getElementById('gemini-api-key-input'),
-            openrouterApiKeyInputAll: document.getElementById('openrouter-api-key-input-all'),
-            modelManagementList: document.getElementById('model-management-list'),
-            openArchivedModalBtn: document.getElementById('open-archived-modal-btn'),
-            themeLightBtn: document.getElementById('theme-light-btn'),
-            themeDarkBtn: document.getElementById('theme-dark-btn'),
-            archivedChatsModal: document.getElementById('archived-chats-modal'),
-            closeArchivedModalBtn: document.getElementById('close-archived-modal-btn'),
-            archivedChatsContainer: document.getElementById('archived-chats-container'),
-            viewArchivedChatModal: document.getElementById('view-archived-chat-modal'),
-            viewArchivedTitle: document.getElementById('view-archived-title'),
-            viewArchivedContent: document.getElementById('view-archived-content'),
-            closeViewArchivedModalBtn: document.getElementById('close-view-archived-modal-btn'),
-            closeViewArchivedModalBtnFooter: document.getElementById('close-view-archived-modal-btn-footer'),
-            renameModal: document.getElementById('rename-modal'),
-            renameInput: document.getElementById('rename-input'),
-            saveRenameBtn: document.getElementById('save-rename-btn'),
-            cancelRenameBtn: document.getElementById('cancel-rename-btn'),
-            folderSettingsModal: document.getElementById('folder-settings-modal'),
-            colorSwatchesContainer: document.getElementById('color-swatches-container'),
-            iconOptionsContainer: document.getElementById('icon-options-container'),
-            saveFolderSettingsBtn: document.getElementById('save-folder-settings-btn'),
-            cancelFolderSettingsBtn: document.getElementById('cancel-folder-settings-btn'),
-            notificationContainer: document.getElementById('notification-container'),
-            customDialogModal: document.getElementById('custom-dialog-modal'),
-            customDialogTitle: document.getElementById('custom-dialog-title'),
-            customDialogMessage: document.getElementById('custom-dialog-message'),
-            customDialogInputContainer: document.getElementById('custom-dialog-input-container'),
-            customDialogInput: document.getElementById('custom-dialog-input'),
-            customDialogButtons: document.getElementById('custom-dialog-buttons'),
-            webSearchPopoverBtn: document.getElementById('web-search-popover-btn'),
-            inputIndicatorContainer: document.getElementById('input-indicator-container'),
-            selectionModeBtn: document.getElementById('selection-mode-btn'),
-            batchActionBar: document.getElementById('batch-action-bar'),
-            selectionCount: document.getElementById('selection-count'),
-            cancelSelectionBtn: document.getElementById('cancel-selection-btn'),
-            batchDeleteBtn: document.getElementById('batch-delete-btn'),
-            batchArchiveBtn: document.getElementById('batch-archive-btn'),
-            batchMoveBtn: document.getElementById('batch-move-btn'),
-            batchMoveModal: document.getElementById('batch-move-modal'),
-            batchMoveFolderList: document.getElementById('batch-move-folder-list'),
-            batchMoveCancelBtn: document.getElementById('batch-move-cancel-btn'),
-            batchMoveConfirmBtn: document.getElementById('batch-move-confirm-btn'),
-            userControls: document.getElementById('user-controls'),
-            searchModal: document.getElementById('search-modal'),
-            closeSearchModalBtn: document.getElementById('close-search-modal-btn'),
-            modalSearchInput: document.getElementById('modal-search-input'),
-            modalSearchScopeSelect: document.getElementById('modal-search-scope-select'),
-            searchResultsContainer: document.getElementById('search-results-container'),
-            performSearchBtn: document.getElementById('perform-search-btn'),
-            fileInputContainer: document.getElementById('file-input-container'),
-            addFileBtn: document.getElementById('add-file-btn'),
-            fileOptionsPopover: document.getElementById('file-options-popover'),
-            cameraBtn: document.getElementById('camera-btn'),
-            uploadImageBtn: document.getElementById('upload-image-btn'),
-            uploadFileBtn: document.getElementById('upload-file-btn'),
-            imageVideoInput: document.getElementById('image-video-input'),
-            fileUploadInput: document.getElementById('file-upload-input'),
-            filePreviewContainer: document.getElementById('file-preview-container'),
-            exportDataBtn: document.getElementById('export-data-btn'),
-            importDataBtn: document.getElementById('import-data-btn'),
-            exportDataModal: document.getElementById('export-data-modal'),
-            importDataModal: document.getElementById('import-data-modal'),
-            cancelExportBtn: document.getElementById('cancel-export-btn'),
-            confirmExportBtn: document.getElementById('confirm-export-btn'),
-            exportHistoryCheck: document.getElementById('export-history-check'),
-            exportAstrasCheck: document.getElementById('export-astras-check'),
-            exportSettingsCheck: document.getElementById('export-settings-check'),
-            exportMemoryCheck: document.getElementById('export-memory-check'),
-            cancelImportBtn: document.getElementById('cancel-import-btn'),
-            confirmImportBtn: document.getElementById('confirm-import-btn'),
-            importFileInput: document.getElementById('import-file-input'),
-            sidebar: document.getElementById('sidebar'),
-            sidebarOverlay: document.getElementById('sidebar-overlay'),
-            menuToggleBtn: document.getElementById('menu-toggle-btn'),
-            sidebarOpenHandle: document.getElementById('sidebar-open-handle'),
-            followUpContainer: document.getElementById('follow-up-container'),
-            followUpHeader: document.getElementById('follow-up-header'),
-            followUpPromptsList: document.getElementById('follow-up-prompts-list'),
-            followUpToggleSwitch: document.getElementById('follow-up-toggle-switch'),
-            autoNamingToggleSwitch: document.getElementById('auto-naming-toggle-switch'),
-            autoWebSearchToggleSwitch: document.getElementById('auto-web-search-toggle-switch'),
-            astrasList: document.getElementById('astras-list'),
-            newAstrasBtn: document.getElementById('new-astras-btn'),
-            astrasCreateModal: document.getElementById('astras-create-modal'),
-            astrasNameInput: document.getElementById('astras-name-input'),
-            astrasDescInput: document.getElementById('astras-desc-input'),
-            astrasInstructionsInput: document.getElementById('astras-instructions-input'),
-            saveAstrasBtn: document.getElementById('save-astras-btn'),
-            cancelAstrasBtn: document.getElementById('cancel-astras-btn'),
-            currentAstrasName: document.getElementById('current-astras-name'),
-            aiBubbleColorDropdown: document.getElementById('ai-bubble-color-dropdown'),
-            userBubbleColorDropdown: document.getElementById('user-bubble-color-dropdown'),
-            settingsNav: document.getElementById('settings-nav'),
-            voiceInputBtnMessage: document.getElementById('voice-input-btn-message'),
-            voiceInputBtnSearch: document.getElementById('voice-input-btn-search'),
-            memoryToggle1: document.getElementById('memory-toggle-1'),
-            memoryToggle2: document.getElementById('memory-toggle-2'),
-            personalMemoryList: document.getElementById('personal-memory-list'),
-            addPersonalMemoryBtn: document.getElementById('add-personal-memory-btn'),
-            autoMemoryToggleSwitch: document.getElementById('auto-memory-toggle-switch'),
-            wallpaperContainer: document.getElementById('wallpaper-container'),
-            uploadWallpaperBtn: document.getElementById('upload-wallpaper-btn'),
-            restoreWallpaperBtn: document.getElementById('restore-wallpaper-btn'),
-            wallpaperUploadInput: document.getElementById('wallpaper-upload-input'),
-            uiColorOptions: document.getElementById('ui-color-options'),
-            customColorPickerContainer: document.getElementById('custom-color-picker-container'),
-            customColorSwatches: document.getElementById('custom-color-swatches'),
-            buttonStyleContainer: document.getElementById('button-style-container'),
-            gradientPickerContainer: document.getElementById('gradient-picker-container'),
-            gradientSwatches: document.getElementById('gradient-swatches'),
-            apiKeyWarningBadge: document.getElementById('api-key-warning-badge'),
-            userProfileBtn: document.getElementById('user-profile-btn'),
-            dataDashboardModal: document.getElementById('data-dashboard-modal'),
-            closeDashboardBtn: document.getElementById('close-dashboard-btn'),
-            totalConvStat: document.getElementById('total-conv-stat'),
-            totalFolderStat: document.getElementById('total-folder-stat'),
-            mostUsedModelStat: document.getElementById('most-used-model-stat'),
-            timeAnalysisYearSelect: document.getElementById('time-analysis-year-select'),
-            timeAnalysisMonthSelect: document.getElementById('time-analysis-month-select'),
-            timeAnalysisDaySelect: document.getElementById('time-analysis-day-select'),
-            wallpaperCropModal: document.getElementById('wallpaper-crop-modal'),
-            wallpaperCropImage: document.getElementById('wallpaper-crop-image'),
-            cancelCropBtn: document.getElementById('cancel-crop-btn'),
-            confirmCropBtn: document.getElementById('confirm-crop-btn'),
-            deleteAllDataBtn: document.getElementById('delete-all-data-btn'),
-            loginLanguageSwitcher: document.getElementById('login-language-switcher'),
-            loginLangBtn: document.getElementById('login-lang-btn'),
-            loginLangMenu: document.getElementById('login-lang-menu'),
-            loginLangLabel: document.getElementById('login-lang-label'),
-            uiLanguageSelect: document.getElementById('ui-language-select'),
-            aiLanguageSelect: document.getElementById('ai-language-select'),
-            storeContainer: document.getElementById('store-container'),
-            openStoreBtn: document.getElementById('open-store-btn'),
-            backToChatBtn: document.getElementById('back-to-chat-btn'),
-            storeGrid: document.getElementById('store-grid'),
-            astrasAvatarModal: document.getElementById('astras-avatar-modal'),
-            avatarCropContainer: document.getElementById('avatar-crop-container'),
-            avatarCropImage: document.getElementById('avatar-crop-image'),
-            confirmAvatarCropBtn: document.getElementById('confirm-avatar-crop-btn'),
-            cancelAvatarCropBtn: document.getElementById('cancel-avatar-crop-btn'),
-            astrasAvatarInput: document.getElementById('astras-avatar-input'),
-            scrollToBottomBtn: document.getElementById('scroll-to-bottom-btn'),
-            inputBarContainer: document.getElementById('input-bar-container'),
-            searchViewModal: document.getElementById('search-view-modal'),
-            searchViewTitle: document.getElementById('search-view-title'),
-            searchViewContent: document.getElementById('search-view-content'),
-            closeSearchViewModalBtn: document.getElementById('close-search-view-modal-btn'),
-            searchViewCloseBtn: document.getElementById('search-view-close-btn'),
-            searchViewConfirmBtn: document.getElementById('search-view-confirm-btn'),
-            updateInfoBtn: document.getElementById('update-info-btn'),
-            updateInfoModal: document.getElementById('update-info-modal'),
-            closeUpdateInfoModalBtn: document.getElementById('close-update-info-modal-btn'),
-            updateInfoContent: document.getElementById('update-info-content'),
-            enableUpdateNotificationsToggle: document.getElementById('enable-update-notifications-toggle'),
-            latestUpdateModal: document.getElementById('latest-update-modal'),
-            closeLatestUpdateModalBtn: document.getElementById('close-latest-update-modal-btn'),
-            latestUpdateContent: document.getElementById('latest-update-content'),
-            trashSection: document.getElementById('trash-section'),
-            trashBatchSelectBtn: document.getElementById('trash-batch-select-btn'),
-            emptyTrashBtn: document.getElementById('empty-trash-btn'),
-            trashBatchActionBar: document.getElementById('trash-batch-action-bar'),
-            trashSelectionCount: document.getElementById('trash-selection-count'),
-            trashCancelSelectionBtn: document.getElementById('trash-cancel-selection-btn'),
-            trashBatchRestoreBtn: document.getElementById('trash-batch-restore-btn'),
-            trashBatchDeleteBtn: document.getElementById('trash-batch-delete-btn'),
-            trashListContainer: document.getElementById('trash-list-container'),
-            trashViewModal: document.getElementById('trash-view-modal'),
-            trashViewTitle: document.getElementById('trash-view-title'),
-            trashViewContent: document.getElementById('trash-view-content'),
-            closeTrashViewModalBtn: document.getElementById('close-trash-view-modal-btn'),
-            trashViewCloseBtn: document.getElementById('trash-view-close-btn'),
-            learningModeBtn: document.getElementById('learning-mode-btn'),
-            deepResearchBtn: document.getElementById('deep-research-btn'), // ✨ 新增元素
-            feedbackTextarea: document.getElementById('feedback-textarea'),
-            sendFeedbackBtn: document.getElementById('send-feedback-btn'),
-            proposeAstrasBtn: document.getElementById('propose-astras-btn'),
-            astrasProposalModal: document.getElementById('astras-proposal-modal'),
-            proposalNameInput: document.getElementById('proposal-name-input'),
-            proposalDescInput: document.getElementById('proposal-desc-input'),
-            proposalInstructionsInput: document.getElementById('proposal-instructions-input'),
-            cancelProposalBtn: document.getElementById('cancel-proposal-btn'),
-            submitProposalBtn: document.getElementById('submit-proposal-btn'),
-            // ✨ 新增互動式計畫編輯器元素
-            interactivePlanModal: document.getElementById('interactive-plan-modal'),
-            planEditorStepsContainer: document.getElementById('plan-editor-steps-container'),
-            addPlanStepBtn: document.getElementById('add-plan-step-btn'),
-            confirmPlanBtn: document.getElementById('confirm-plan-btn'),
-            cancelPlanBtn: document.getElementById('cancel-plan-btn'),
-        };
+        } catch (error) {
+            console.error("Google Auth initialization failed:", error);
+        }
+    }
         const compareVersions = (v1, v2) => {
             if (!v2) return 1;
             const parts1 = v1.split('.').map(Number);
@@ -4981,7 +5030,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     lastRole = sanitizedMsg.role;
                 }
             });
-            if (cleaned.length > 0 && cleaned[0].role !== 'user') cleaned.shift();
+            if (cleaned.length > 0 && cleaned.role !== 'user') cleaned.shift();
             return cleaned;
         }
         function calculateRelevanceScore(summary, keywords) {
@@ -5074,8 +5123,8 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 }
             }
             if (memoryPrompt) {
-                if (systemInstruction && systemInstruction.parts[0].text) {
-                    systemInstruction.parts[0].text += `\n\n${memoryPrompt}`;
+                if (systemInstruction && systemInstruction.parts.text) {
+                    systemInstruction.parts.text += `\n\n${memoryPrompt}`;
                 } else if (systemInstruction) {
                     systemInstruction.parts.push({ text: `\n\n${memoryPrompt}` });
                 }
@@ -5158,7 +5207,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 
                             try {
                                 const parsed = JSON.parse(jsonStr);
-                                const textChunk = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
+                                const textChunk = parsed?.candidates?.?.content?.parts?.?.text;
 
                                 if (textChunk) {
                                     fullText += textChunk;
@@ -5180,7 +5229,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                             if (data.trim() === '[DONE]') break;
                             try {
                                 const parsed = JSON.parse(data);
-                                const textChunk = parsed.choices[0]?.delta?.content || '';
+                                const textChunk = parsed.choices?.delta?.content || '';
                                 if (textChunk) {
                                     fullText += textChunk;
                                     onChunk(textChunk);
@@ -5218,7 +5267,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     throw new Error(errorData.error?.message || 'API request failed');
                 }
                 const result = await response.json();
-                const jsonString = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                const jsonString = result?.candidates?.?.content?.parts?.?.text;
                 if (jsonString) {
                     let cleanedJsonString = jsonString.trim();
                     if (cleanedJsonString.startsWith("```json")) {
@@ -5264,7 +5313,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 return false;
             }
             const result = await response.json();
-            const text = result?.candidates?.[0]?.content?.parts?.[0]?.text?.trim().toLowerCase();
+            const text = result?.candidates?.?.content?.parts?.?.text?.trim().toLowerCase();
             return text === 'yes';
         }
         const generateTitleAndSummary = async (conv) => {
@@ -5527,6 +5576,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             renderUserBubbleColorDropdown();
             renderUiColorOptions();
             renderTrash();
+            renderGoogleSyncUI(); // ✨ 新增：渲染 Google 同步 UI
             const slider = document.getElementById('deep-research-query-count-slider');
             const label = document.getElementById('deep-research-query-count-label');
 
@@ -5808,46 +5858,46 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             }
         };
         const handleLogin = async (e) => {
-    e.preventDefault();
-    const username = ALL_ELEMENTS.usernameInput.value.trim();
-    const password = ALL_ELEMENTS.passwordInput.value;
-    if (!username || !password) {
-        showNotification(i18n[config.uiLanguage].usernamePasswordRequired || '使用者名稱和密碼皆為必填項目。', 'error');
-        return;
-    }
-    const userKey = getUserKey(username);
-    const savedUser = await getItem(userKey);
-    const passwordHash = await hashString(password);
-    if (savedUser) {
-        const parsedUser = JSON.parse(savedUser);
-        if (parsedUser.passwordHash !== passwordHash) {
-            showNotification(i18n[config.uiLanguage].passwordIncorrect || '密碼錯誤。', 'error');
-            return;
-        }
-        currentUser = parsedUser;
-    } else {
-        currentUser = { username, passwordHash };
-        await setItem(userKey, JSON.stringify(currentUser));
-    }
-    await setItem('chat_lastUser', username);
+            e.preventDefault();
+            const username = ALL_ELEMENTS.usernameInput.value.trim();
+            const password = ALL_ELEMENTS.passwordInput.value;
+            if (!username || !password) {
+                showNotification(i18n[config.uiLanguage].usernamePasswordRequired || '使用者名稱和密碼皆為必填項目。', 'error');
+                return;
+            }
+            const userKey = getUserKey(username);
+            const savedUser = await getItem(userKey);
+            const passwordHash = await hashString(password);
+            if (savedUser) {
+                const parsedUser = JSON.parse(savedUser);
+                if (parsedUser.passwordHash !== passwordHash) {
+                    showNotification(i18n[config.uiLanguage].passwordIncorrect || '密碼錯誤。', 'error');
+                    return;
+                }
+                currentUser = parsedUser;
+            } else {
+                currentUser = { username, passwordHash };
+                await setItem(userKey, JSON.stringify(currentUser));
+            }
+            await setItem('chat_lastUser', username);
 
-    // --- ✨ 這是唯一的修改處 START ---
-    // 在執行淡出前，先移除我們為了顯示登入畫面而加入的 'visible' class
-    ALL_ELEMENTS.authContainer.classList.remove('visible'); 
-    // --- ✨ 這是唯一的修改處 END ---
-
-    ALL_ELEMENTS.authContainer.classList.add('fade-out');
-    ALL_ELEMENTS.appContainer.classList.remove('hidden');
-    requestAnimationFrame(() => {
-        ALL_ELEMENTS.appContainer.classList.add('visible');
-    });
-    ALL_ELEMENTS.authContainer.addEventListener('transitionend', () => {
-        ALL_ELEMENTS.authContainer.style.display = 'none';
-    }, { once: true });
-    initChatApp();
-};
+            ALL_ELEMENTS.authContainer.classList.remove('visible'); 
+            ALL_ELEMENTS.authContainer.classList.add('fade-out');
+            ALL_ELEMENTS.appContainer.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                ALL_ELEMENTS.appContainer.classList.add('visible');
+            });
+            ALL_ELEMENTS.authContainer.addEventListener('transitionend', () => {
+                ALL_ELEMENTS.authContainer.style.display = 'none';
+            }, { once: true });
+            initChatApp();
+        };
         const handleLogout = async () => {
             if (await showCustomConfirm(i18n[config.uiLanguage].confirmLogout || '您確定要登出嗎？', i18n[config.uiLanguage].logoutConfirmation || '登出確認')) {
+                // ✨ 新增：登出時也清除 Google 帳號資訊
+                if (currentUser.googleId) {
+                    await unbindGoogleAccount(false); // 傳入 false 避免不必要的 UI 更新
+                }
                 await removeItem('chat_lastUser');
                 window.location.reload();
             }
@@ -6502,7 +6552,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             await saveConfig();
         };
         const handleImport = async () => {
-            const file = ALL_ELEMENTS.importFileInput.files[0];
+            const file = ALL_ELEMENTS.importFileInput.files;
             if (!file) {
                 showNotification(i18n[config.uiLanguage].selectFileError || '請選擇檔案。', 'error');
                 return;
@@ -6530,7 +6580,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                              if (config.uiTheme.mode === 'adaptive') {
                                 const palette = await getDominantColorPalette(config.customWallpaper);
                                 config.uiTheme.adaptivePalette = palette;
-                                config.uiTheme.adaptiveColor = palette[0] || '#3b82f6';
+                                config.uiTheme.adaptiveColor = palette || '#3b82f6';
                             }
                             await saveConfig();
                         } catch (err) { /* keep default */ }
@@ -6560,7 +6610,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
         const processAuthImport = async () => {
             const username = ALL_ELEMENTS.usernameInput.value.trim();
             const password = ALL_ELEMENTS.passwordInput.value;
-            const file = ALL_ELEMENTS.importFileInputAuth.files[0];
+            const file = ALL_ELEMENTS.importFileInputAuth.files;
 
             if (!file) {
                 showNotification(i18n[config.uiLanguage].selectFileError || '請選擇檔案。', 'error');
@@ -6753,7 +6803,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             currentSpeechRecognition.onresult = (event) => {
                 let transcript = '';
                 for (let i = event.resultIndex; i < event.results.length; i++) {
-                    transcript += event.results[i][0].transcript;
+                    transcript += event.results[i].transcript;
                 }
                 const inputEl = target === 'message' ? ALL_ELEMENTS.messageInput : ALL_ELEMENTS.modalSearchInput;
                 inputEl.value = transcript;
@@ -7236,9 +7286,9 @@ ${JSON.stringify(potentialMemories, null, 2)}
         const hexToRgb = (hex) => {
             const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
             return result ? {
-                r: parseInt(result[1], 16),
-                g: parseInt(result[2], 16),
-                b: parseInt(result[3], 16)
+                r: parseInt(result, 16),
+                g: parseInt(result, 16),
+                b: parseInt(result, 16)
             } : null;
         };
         const getTextColorForBackground = (hexColor) => {
@@ -7255,7 +7305,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 case 'adaptive':
                     if (config.uiTheme.style === 'gradient') {
                         primaryBgOverride = config.uiTheme.adaptiveGradient || `linear-gradient(to right, ${config.uiTheme.adaptiveColor}, #3b82f6)`;
-                        primaryBg = config.uiTheme.adaptivePalette[0] || config.uiTheme.adaptiveColor;
+                        primaryBg = config.uiTheme.adaptivePalette || config.uiTheme.adaptiveColor;
                     } else {
                         primaryBg = config.uiTheme.adaptiveColor;
                     }
@@ -7384,7 +7434,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
             setUserBubbleColor();
         };
         const handleWallpaperUpload = (event) => {
-            const file = event.target.files[0];
+            const file = event.target.files;
             if (!file) return;
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -7418,7 +7468,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
                 config.customWallpaper = imageDataUrl;
                 config.wallpaperBrightness = brightness;
                 config.uiTheme.adaptivePalette = palette;
-                config.uiTheme.adaptiveColor = palette[0] || '#3b82f6';
+                config.uiTheme.adaptiveColor = palette || '#3b82f6';
                 await saveConfig();
                 applyCustomWallpaper();
                 applyUiTheme();
@@ -7561,7 +7611,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
             ALL_ELEMENTS.astrasAvatarInput.click();
         };
         const handleAvatarUpload = (event) => {
-            const file = event.target.files[0];
+            const file = event.target.files;
             if (!file) return;
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -7667,10 +7717,10 @@ ${JSON.stringify(potentialMemories, null, 2)}
             let touchStartY = 0;
             let touchMoveY = 0;
             menu.addEventListener('touchstart', (e) => {
-                touchStartY = e.touches[0].clientY;
+                touchStartY = e.touches.clientY;
             }, { passive: true });
             menu.addEventListener('touchmove', (e) => {
-                touchMoveY = e.touches[0].clientY;
+                touchMoveY = e.touches.clientY;
                 const deltaY = touchMoveY - touchStartY;
                 if (deltaY > 0) {
                     menu.style.transform = `translateY(${deltaY}px)`;
@@ -7751,10 +7801,10 @@ ${JSON.stringify(potentialMemories, null, 2)}
             let touchStartY = 0;
             let touchMoveY = 0;
             menu.addEventListener('touchstart', (e) => {
-                touchStartY = e.touches[0].clientY;
+                touchStartY = e.touches.clientY;
             }, { passive: true });
             menu.addEventListener('touchmove', (e) => {
-                touchMoveY = e.touches[0].clientY;
+                touchMoveY = e.touches.clientY;
                 const deltaY = touchMoveY - touchStartY;
                 if (deltaY > 0) {
                     menu.style.transform = `translateY(${deltaY}px)`;
@@ -9233,6 +9283,11 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
             (async function prefillLastUser() {
                 const last = await getItem('chat_lastUser');
                 if (last) ALL_ELEMENTS.usernameInput.value = last;
+                // ✨ 新增：檢查是否有 Google 帳號綁定紀錄
+                const googleUser = await getItem(`chatUser_google_${last}`);
+                if (googleUser) {
+                    ALL_ELEMENTS.googleSignInBtnAuth.style.display = 'flex';
+                }
                 applyLanguage('zh-TW');
             })();
             const FOLDER_ICONS = ['📁', '📂', '🗂️', '📚', '📝', '🗃️', '📘', '📙', '📗', '📕'];
@@ -9287,6 +9342,122 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
                     ALL_ELEMENTS.loginLangMenu.classList.remove('visible');
                 }
             });
+
+            // ✨ --- 新增 Google 登入相關功能 --- ✨
+
+            // 處理從 Google 登入後的回應
+            async function handleGoogleCredentialResponse(response) {
+                googleAuthToken = response;
+                const userInfo = await getGoogleUserInfo(response.access_token);
+                if (userInfo && userInfo.id) {
+                    // 檢查這個 Google ID 是否已經綁定到某個本地帳號
+                    const googleIdKey = `googleId_${userInfo.id}`;
+                    const linkedUsername = await getItem(googleIdKey);
+
+                    if (linkedUsername) { // 已綁定，直接登入
+                        const userKey = getUserKey(linkedUsername);
+                        const savedUser = await getItem(userKey);
+                        if(savedUser) {
+                            currentUser = JSON.parse(savedUser);
+                            // 更新currentUser中的Google資訊，以防萬一
+                            currentUser.googleId = userInfo.id;
+                            currentUser.googleEmail = userInfo.email;
+                            await setItem(userKey, JSON.stringify(currentUser)); // 保存更新
+                            
+                            ALL_ELEMENTS.authContainer.classList.add('fade-out');
+                            ALL_ELEMENTS.appContainer.classList.remove('hidden');
+                            requestAnimationFrame(() => ALL_ELEMENTS.appContainer.classList.add('visible'));
+                            initChatApp();
+                        } else {
+                            showNotification("找不到綁定的本地帳號資料，登入失敗。", "error");
+                        }
+                    } else { // 未綁定，執行綁定流程
+                        currentUser.googleId = userInfo.id;
+                        currentUser.googleEmail = userInfo.email;
+                        await setItem(getUserKey(currentUser.username), JSON.stringify(currentUser));
+                        await setItem(googleIdKey, currentUser.username); // 建立 Google ID -> username 的對應
+                        showNotification(`成功綁定 Google 帳號: ${userInfo.email}`, 'success');
+                        renderGoogleSyncUI();
+                    }
+                } else {
+                    showNotification('無法獲取 Google 用戶資訊，請重試。', 'error');
+                }
+            }
+
+            // 使用 access_token 獲取使用者資訊
+            async function getGoogleUserInfo(accessToken) {
+                try {
+                    const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                        headers: { 'Authorization': `Bearer ${accessToken}` }
+                    });
+                    if (!response.ok) throw new Error('Failed to fetch user info');
+                    return await response.json();
+                } catch (error) {
+                    console.error('Error fetching Google user info:', error);
+                    return null;
+                }
+            }
+
+            // 請求 Google 授權
+            function requestGoogleAuth() {
+                if (googleTokenClient) {
+                    googleTokenClient.requestAccessToken();
+                } else {
+                    showNotification('Google 登入服務尚未準備就緒，請稍後再試。', 'warning');
+                }
+            }
+
+            // 渲染設定頁面的 Google 同步 UI
+            function renderGoogleSyncUI() {
+                const container = ALL_ELEMENTS.googleSyncContainer;
+                if (!container) return;
+
+                if (currentUser && currentUser.googleId) {
+                    // 已綁定
+                    container.innerHTML = `
+                        <div class="flex items-center justify-between p-2 rounded-lg bg-[var(--hover-bg)]">
+                            <span class="text-sm truncate">已綁定: ${currentUser.googleEmail}</span>
+                            <button id="google-unbind-btn" class="text-sm px-3 py-1.5 rounded-md bg-red-100 text-red-800 hover:bg-red-200">登出 Google 帳號</button>
+                        </div>
+                    `;
+                    document.getElementById('google-unbind-btn').addEventListener('click', () => unbindGoogleAccount(true));
+                } else {
+                    // 未綁定
+                    container.innerHTML = `
+                        <button id="google-bind-btn" class="w-full text-center p-2 rounded-md bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-800 font-medium">綁定 Google 帳號</button>
+                    `;
+                    document.getElementById('google-bind-btn').addEventListener('click', requestGoogleAuth);
+                }
+            }
+
+            // 解除綁定
+            async function unbindGoogleAccount(updateUI = true) {
+                if (!currentUser || !currentUser.googleId) return;
+
+                if (await showCustomConfirm('您確定要解除與此 Google 帳號的綁定嗎？')) {
+                    const googleIdKey = `googleId_${currentUser.googleId}`;
+                    await removeItem(googleIdKey);
+                    delete currentUser.googleId;
+                    delete currentUser.googleEmail;
+                    await setItem(getUserKey(currentUser.username), JSON.stringify(currentUser));
+                    
+                    if (window.google && google.accounts) {
+                        google.accounts.id.revoke(googleIdKey, done => {
+                            console.log('Google token revoked.');
+                        });
+                    }
+
+                    googleAuthToken = null;
+                    showNotification('已解除 Google 帳號綁定。', 'success');
+                    if (updateUI) {
+                        renderGoogleSyncUI();
+                    }
+                }
+            }
+
+            // 登入頁的 Google 登入按鈕事件
+            ALL_ELEMENTS.googleSignInBtnAuth.addEventListener('click', requestGoogleAuth);
+
     </script>
     <script>
     document.addEventListener('touchstart', function(event) {
