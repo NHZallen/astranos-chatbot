@@ -3662,7 +3662,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         messages: (c.messages || []).map(m => ({
                             ...m,
                             createdAt: m.createdAt || c.createdAt,
-                            parts: m.parts || [{ text: m.content }]
+                             // ✨ REGENERATE: Add versions support
+                            versions: m.versions || (m.role === 'model' ? [m.parts] : undefined),
+                            currentVersionIndex: m.currentVersionIndex || 0,
+                            isVersioning: m.isVersioning || false,
+                            parts: m.parts || (m.role === 'model' && m.versions ? m.versions[0] : [{ text: m.content }])
                         }))
                     }));
                     astras = (data.astras || []).map(a => ({ avatarUrl: null, officialId: null, ...a }));
@@ -3814,7 +3818,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>`
                         : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
                     let contentHTML = '';
-                    msg.parts.forEach(part => {
+                    const currentParts = (msg.versions && msg.role === 'model') ? msg.versions[msg.currentVersionIndex] : msg.parts;
+                    currentParts.forEach(part => {
                         if (part.text) {
                              contentHTML += `<div>${isUser ? part.text.replace(/\n/g, '<br>') : renderMarkdown(part.text)}</div>`;
                         } else if (part.inlineData) {
@@ -4613,7 +4618,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const addMessageToUI = (msg, index, shouldSave = true, shouldScroll = true) => {
             const conv = getActiveConversation();
             if (shouldSave) {
-                 conv.messages.push(msg);
+                // ✨ REGENERATE: Initialize versioning for new model messages
+                if(msg.role === 'model') {
+                    msg.versions = [msg.parts];
+                    msg.currentVersionIndex = 0;
+                    msg.isVersioning = false;
+                }
+                conv.messages.push(msg);
+
                 if (conv.messages.length === 1 && msg.role === 'user' && conv.isTemporary && !conv.isRenamed && config.autoNaming) {
                     const textPart = msg.parts.find(p => p.text);
                     if (textPart) {
@@ -4628,81 +4640,135 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const isUser = msg.role === 'user';
             messageDiv.className = `message-item flex items-start gap-2 md:gap-4 ${isUser ? 'justify-end user-message' : 'model-message'}`;
             const icon = isUser ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>` : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
-            let contentHTML = '';
-            let actionButtons = '';
-            let contentPaddingClass = '';
+            
             const isLoadingMessage = !isUser && msg.parts.length === 1 && msg.parts[0].text === '...';
+            
+            const messageBubble = document.createElement('div');
+            messageBubble.className = `p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble relative ${isUser ? 'text-white' : ''}`;
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = `prose prose-sm max-w-none message-content ${isUser ? 'text-white' : 'text-[var(--text-primary)]'}`;
+            
+            messageBubble.appendChild(contentDiv);
+            
+            if (isUser) {
+                messageDiv.append(messageBubble, icon);
+            } else {
+                messageDiv.append(icon, messageBubble);
+            }
+
+            if (ALL_ELEMENTS.messageList.querySelector('.text-center')) ALL_ELEMENTS.messageList.innerHTML = '';
+            ALL_ELEMENTS.messageList.appendChild(messageDiv);
+            
+            // Now, populate the content and buttons
+            updateMessageBubbleContent(messageDiv, msg);
+            
+            if (shouldScroll && isAutoScrolling) {
+                ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
+            }
+            return messageDiv;
+        };
+        
+        // ✨ REGENERATE: New function to update a message bubble's content and controls
+        function updateMessageBubbleContent(messageDiv, msg) {
+            const isUser = msg.role === 'user';
+            const messageBubble = messageDiv.querySelector('.message-bubble');
+            const contentDiv = messageBubble.querySelector('.message-content');
+            
+            // Remove old action buttons if they exist
+            messageBubble.querySelectorAll('.message-actions, .version-switcher, .confirm-version-btn').forEach(el => el.remove());
+            
+            let contentHTML = '';
+            const isLoadingMessage = !isUser && msg.parts && msg.parts.length === 1 && msg.parts[0].text === '...';
+
             if (isLoadingMessage) {
-            contentHTML = `<div class="typing-cursor">&nbsp;</div>`;
-        } else {
+                contentHTML = `<div class="typing-cursor">&nbsp;</div>`;
+            } else {
+                const currentParts = (msg.versions && msg.role === 'model') ? msg.versions[msg.currentVersionIndex] : msg.parts;
+                
                 let textPartsContent = [];
                 let mediaPartsContent = [];
-                msg.parts.forEach(part => {
+                currentParts.forEach(part => {
                     if (part.text) {
                         textPartsContent.push(part.text);
                     } else if (part.inlineData) {
                         mediaPartsContent.push(part.inlineData);
                     }
                 });
+
                 if (textPartsContent.length > 0) {
                     const combinedText = textPartsContent.join('\n');
                     contentHTML += `<div>${isUser ? combinedText.replace(/\n/g, '<br>') : renderMarkdown(combinedText)}</div>`;
                 }
+                
                 if (mediaPartsContent.length > 0) {
                     let mediaHTML = '<div class="mt-2 flex flex-wrap gap-2">';
                     mediaPartsContent.forEach(media => {
                         const src = `data:${media.mimeType};base64,${media.data}`;
                         if (media.mimeType.startsWith('image/')) {
                             mediaHTML += `<img src="${src}" class="max-w-xs max-h-48 rounded-lg object-cover border border-[var(--border-color)]">`;
-                        } else {
-                            mediaHTML += `<div class="p-2 bg-[var(--hover-bg)] rounded-lg text-sm flex items-center gap-2 border border-[var(--border-color)]">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-                                <span>${media.name || '檔案'}</span>
-                            </div>`;
                         }
                     });
                     mediaHTML += '</div>';
                     contentHTML += mediaHTML;
                 }
-                if (!isUser) {
-                    const timeString = formatFullTimestamp(msg.createdAt);
-                    actionButtons = `
-                        <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
-                            <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                            </button>
-                            <span class="text-xs text-gray-400">${timeString}</span></div>
-                    `;
-                    contentPaddingClass = 'pb-8';
-                } else {
-                    const currentConv = getActiveConversation();
-                    if (currentConv && index + 1 < currentConv.messages.length && currentConv.messages[index + 1].role === 'model') {
-                         actionButtons = `
-                            <div class="absolute bottom-2 left-2 flex items-center">
-                                <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                </button>
-                            </div>
-                        `;
-                        contentPaddingClass = 'pb-8';
-                    }
+            }
+
+            contentDiv.innerHTML = contentHTML;
+
+            // Add new action buttons
+            const actionsContainer = document.createElement('div');
+            actionsContainer.className = 'message-actions absolute bottom-2 left-2 right-2 flex justify-between items-center';
+            
+            let leftButtonsHTML = '';
+            let rightButtonsHTML = '';
+            
+            if (!isUser && !isLoadingMessage) {
+                leftButtonsHTML = `
+                    <div class="flex items-center gap-1">
+                        <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        </button>
+                        <button class="regenerate-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].regenerate || '重新生成'}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+                        </button>
+                    </div>`;
+                rightButtonsHTML = `<span class="text-xs text-gray-400">${formatFullTimestamp(msg.createdAt)}</span>`;
+            } else {
+                 const currentConv = getActiveConversation();
+                if (currentConv && parseInt(messageDiv.dataset.messageIndex) + 1 < currentConv.messages.length && currentConv.messages[parseInt(messageDiv.dataset.messageIndex) + 1].role === 'model') {
+                    leftButtonsHTML = `
+                        <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
+                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                        </button>`;
                 }
             }
-            const messageBubble = `
-                <div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble relative ${isUser ? 'text-white' : ''}" >
-                    <div class="prose prose-sm max-w-none ${isUser ? 'text-white' : 'text-[var(--text-primary)]'} ${contentPaddingClass} message-content">${contentHTML}</div>
-                    ${actionButtons}
-                </div>`;
-            messageDiv.innerHTML = isUser ? `${messageBubble}${icon}` : `${icon}${messageBubble}`;
-            if (ALL_ELEMENTS.messageList.querySelector('.text-center')) ALL_ELEMENTS.messageList.innerHTML = '';
-            ALL_ELEMENTS.messageList.appendChild(messageDiv);
-            if (shouldScroll) {
-                if (isAutoScrolling) {
-                    ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
-                }
+            
+            actionsContainer.innerHTML = leftButtonsHTML + rightButtonsHTML;
+            messageBubble.appendChild(actionsContainer);
+            contentDiv.classList.toggle('pb-8', !!leftButtonsHTML || !!rightButtonsHTML);
+
+            // ✨ REGENERATE: Add version switcher UI if needed
+            if (msg.role === 'model' && msg.versions && msg.versions.length > 1) {
+                const versionSwitcher = document.createElement('div');
+                versionSwitcher.className = 'version-switcher absolute -top-3 left-1/2 -translate-x-1/2 flex items-center gap-2 px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-xs shadow';
+                versionSwitcher.innerHTML = `
+                    <button class="version-switch-btn" data-direction="-1" ${msg.currentVersionIndex === 0 ? 'disabled' : ''}>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <span>${msg.currentVersionIndex + 1} / ${msg.versions.length}</span>
+                    <button class="version-switch-btn" data-direction="1" ${msg.currentVersionIndex === msg.versions.length - 1 ? 'disabled' : ''}>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                `;
+                messageBubble.appendChild(versionSwitcher);
+                
+                const confirmBtn = document.createElement('button');
+                confirmBtn.className = 'confirm-version-btn absolute bottom-2 right-2 px-3 py-1 text-xs rounded-md btn-primary';
+                confirmBtn.textContent = i18n[config.uiLanguage].confirm || '確認';
+                actionsContainer.replaceWith(confirmBtn); // Replace the default actions with confirm button
             }
-            return messageDiv;
-        };
+        }
          /**
  * ✨ 全新重構：打字機效果渲染函數 (v2)
  *    - 使用 setInterval 達到勻速輸出
@@ -4851,120 +4917,59 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             const contentDiv = loadingMessageDiv.querySelector('.message-content');
             
             try {
-                let fullResponse = '';
-                const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
-
-                // 1. 先等待 API 回應完全結束，獲取完整文字
-                const completeResponse = await streamApiCall(
-                    userParts,
-                    (chunk) => {
-                        // 在 streamApiCall 內部，我們只收集文字，不渲染
-                    },
+                const completeResponse = await typewriterStream(
+                    contentDiv,
+                    (onChunk) => streamApiCall(
+                        userParts, 
+                        onChunk, 
+                        abortController.signal
+                    ),
                     abortController.signal
                 );
 
-                fullResponse = completeResponse;
-
-                // 2. 將完整的最終訊息保存到對話紀錄中
-                finalAiMessage.parts = [{ text: fullResponse }];
-                conv.messages.push(finalAiMessage);
-                conv.lastUpdatedAt = new Date().toISOString();
-                await saveAppData();
+                // Update the final message in the data model
+                const aiMessageObject = conv.messages[conv.messages.length - 1];
+                aiMessageObject.parts = [{ text: completeResponse }];
+                aiMessageObject.versions = [aiMessageObject.parts]; // Initialize versions array
+                aiMessageObject.currentVersionIndex = 0;
                 
-                // 3. ✨ 啟動打字機動畫，並等待它完成
-                await (async () => {
-                    return new Promise(resolve => {
-                        contentDiv.innerHTML = ''; // 清空等待樣式
-                        let currentIndex = 0;
-                        const typingSpeed = 15;
-
-                        function type() {
-                            if (currentIndex < fullResponse.length && !abortController.signal.aborted) {
-                                const currentText = fullResponse.substring(0, currentIndex + 1);
-                                contentDiv.innerHTML = renderMarkdown(currentText + '▋');
-
-                                let step = 1;
-                                if (currentText.includes('```')) {
-                                    step = 5;
-                                }
-                                
-                                currentIndex += step;
-
-                                const chatContainer = ALL_ELEMENTS.chatContainer;
-                                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
-                                if (isNearBottom) {
-                                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
-                                }
-
-                                setTimeout(type, typingSpeed);
-                            } else {
-                                // 動畫完成或被中止
-                                contentDiv.innerHTML = renderMarkdown(fullResponse); // 最終清理，移除游標
-                                resolve(); // ✨ Promise 完成，通知 await
-                            }
-                        }
-                        
-                        type(); // 啟動
-                    });
-                })();
-
-                // 4. ✨ 只有在打字機動畫結束後，才執行後續任務
                 if (!abortController.signal.aborted) {
                     if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
-                        await generateFollowUpPrompts(userMessage, fullResponse);
+                        await generateFollowUpPrompts(userMessage, completeResponse);
                     }
                     if (config.memoryEnabled1 && config.enableAutoMemory) {
-                        await extractPersonalMemory(userMessage, fullResponse);
+                        await extractPersonalMemory(userMessage, completeResponse);
                     }
                 }
+                
+                await saveAppData();
+                updateMessageBubbleContent(loadingMessageDiv, aiMessageObject);
 
             } catch (error) {
                 if (error.name !== 'AbortError') {
                     const errorMessage = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
                     contentDiv.innerHTML = renderMarkdown(errorMessage);
-                    const finalAiMessage = { role: 'model', parts: [{ text: errorMessage }], createdAt: new Date().toISOString() };
+                    const finalAiMessage = { role: 'model', parts: [{ text: errorMessage }], versions: [[{text: errorMessage}]], currentVersionIndex: 0, createdAt: new Date().toISOString() };
                     conv.messages.push(finalAiMessage);
+                    await saveAppData();
+                    updateMessageBubbleContent(loadingMessageDiv, finalAiMessage);
+                } else {
+                    loadingMessageDiv.remove();
+                    conv.messages.pop();
                     await saveAppData();
                 }
             } finally {
-                // ... finally 區塊的程式碼保持不變 ...
                 abortController = null;
                 updateSubmitButtonState(false);
                 sendConfirmed = false;
                 updateInputState();
-                const lastMessageDiv = ALL_ELEMENTS.messageList.lastElementChild;
-                if (lastMessageDiv && lastMessageDiv.classList.contains('model-message')) {
-                    const bubble = lastMessageDiv.querySelector('.message-bubble');
-                    const content = lastMessageDiv.querySelector('.message-content');
-                    const aiMessageObject = conv.messages[conv.messages.length - 1];
-                    if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute')) {
-                        content.classList.add('pb-8');
-                        const timeString = formatFullTimestamp(aiMessageObject.createdAt);
-                        const actionButtonsHTML = `
-                            <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
-                                <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                                </button>
-                                <span class="text-xs text-gray-400">${timeString}</span>
-                            </div>
-                        `;
-                        bubble.insertAdjacentHTML('beforeend', actionButtonsHTML);
-                    }
-                }
-                const userMessageDiv = lastMessageDiv ? lastMessageDiv.previousElementSibling : null;
-                if (userMessageDiv && userMessageDiv.classList.contains('user-message')) {
-                    const bubble = userMessageDiv.querySelector('.message-bubble');
-                    const content = userMessageDiv.querySelector('.message-content');
-                    if (bubble && content && !bubble.querySelector('.delete-message-btn')) {
-                        content.classList.add('pb-8');
-                        const deleteButtonHTML = `
-                            <div class="absolute bottom-2 left-2 flex items-center">
-                                <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                </button>
-                            </div>
-                        `;
-                        bubble.insertAdjacentHTML('beforeend', deleteButtonHTML);
+                
+                // Attach delete button to the preceding user message if it now has a model response
+                const userMessageIndex = conv.messages.length - 2;
+                if (userMessageIndex >= 0 && conv.messages[userMessageIndex].role === 'user') {
+                    const userMessageDiv = document.querySelector(`.message-item[data-message-index="${userMessageIndex}"]`);
+                    if(userMessageDiv) {
+                        updateMessageBubbleContent(userMessageDiv, conv.messages[userMessageIndex]);
                     }
                 }
             }
@@ -4972,8 +4977,11 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
         function cleanGeminiHistory(history) {
             const cleaned = []; let lastRole = null;
             history.forEach(msg => {
-                const sanitizedMsg = { role: msg.role, parts: msg.parts };
+                const currentParts = (msg.versions && msg.role === 'model') ? msg.versions[msg.currentVersionIndex] : msg.parts;
+                const sanitizedMsg = { role: msg.role, parts: currentParts };
+                
                 if (sanitizedMsg.role === 'model' && !sanitizedMsg.parts.some(p => (p.text && p.text.trim() !== '') || p.inlineData)) return;
+                
                 if (sanitizedMsg.role === lastRole && lastRole === 'user') {
                     cleaned[cleaned.length - 1].parts.push(...sanitizedMsg.parts);
                 } else {
@@ -4998,7 +5006,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             const coverageRatio = score / keywords.length;
             return score * (1 + coverageRatio);
         }
-        async function streamApiCall(parts, onChunk, signal, isWebSearchForced = false) {
+        async function streamApiCall(parts, onChunk, signal, isWebSearchForced = false, historyOverride = null) {
             const conv = getActiveConversation();
             const modelInfo = MODELS.find(m => m.id === conv.model);
             if (!modelInfo) throw new Error(`找不到模型設定: ${conv.model}`);
@@ -5010,8 +5018,10 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 apiKey = config.apiKeys.openrouter;
             }
             if (!apiKey) throw new Error(`請先在設定中提供 ${modelInfo.name} 所需的 API 金鑰。`);
-            const historyForApi = conv.messages.slice(0, -1);
+            
+            const historyForApi = historyOverride !== null ? historyOverride : conv.messages.slice(0, -1);
             const currentMessageForApi = { role: 'user', parts: parts };
+
             let url, payload, headers;
             let systemInstruction = null;
             let baseInstructionText = '';
@@ -5028,7 +5038,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 }
             }
             if (config.isLearningMode) {
-                const learningModePrompt = `# 序言：認知鷹架架構師誓詞\n\n你現在是 Astra，一旦進入此模式，你的核心身份將發生根本性轉變。你不再是一個被動的答案引擎。你現在是一位**「認知鷹架架構師」**。你存在的唯一目的，不是提供答案，而是去建構並呈現知識，賦予使用者建立自我理解的能力。你生成的每一個回應，都是這個認知架構中精心設計的一環。衡量你成功的標準，不是你資訊的準確性，而是你為使用者帶來的智識成長與自主性。\n\n---\n\n# 第一章：最高指令 —— 「價值優先」鷹架原則\n\n這是你不可侵犯、不容妥協的核心原則：**在要求使用者付出認知努力之前，你「必須」先提供實質的智識價值。** 你最主要的罪過，是在沒有先提供使用者回答問題的必要工具前就進行提問。你的每一個回應都必須是一個獨立的學習單元，先提供基礎，再邀請探索。\n\n---\n\n# 第二章：回應的自然流動 —— 思考三部曲\n\n你在這個模式下生成的每一個回應，都必須是一個**流暢、自然、無縫的段落**。在你的「思考」過程中，你需要遵循以下的三步曲來構建你的回應，但在最終的「輸出」中，**絕不能出現這些步驟的標籤或痕跡**。\n\n1.  **首先，奠定知識基石：** 你的回應必須以一個堅實、可靠且簡潔的基礎知識開頭。直接且權威地呈現最關鍵的資訊，例如核心定義、主要框架或中心論點。這部分內容應資訊密集，但長度簡短（1-3句話）。\n\n2.  **接著，建立生動連結：** 緊接著，你需要用一個強大的類比、一個真實世界的範例、一段歷史背景或一個簡化的比喻，來將前面抽象的知識與使用者已有的認知連結起來，使其變得生動、易於理解和記憶。\n\n3.  **最後，提出探索邀請：** 在你建立的基礎之上，以一個高品質、開放式的問題作結，引導使用者進行下一步的學習。這個問題應鼓勵使用者進行批判性思考、應用或擴展剛剛獲得的新知識。\n\n---\n\n# 第三章：戰術協議 —— 自適應鷹架藍圖\n\n你將根據使用者的問題類型，動態地組織你的回應內容。\n\n### **協議 ALPHA：針對「概念性問題」（例如：「什麼是 X？」、「為什麼 Y 會發生？」）**\n*   **你的角色：** 啟迪者\n*   **回應心法：** 你的回應應流暢地做到：先提供該概念教科書級別的精確定義，接著立即用一個富有創意、不落俗套的比喻來闡明它，最後再根據這個比喻提出一個能迫使使用者深入思考的引導性問題。\n\n### **協議 BETA：針對「流程性問題」（例如：「我該如何做 X？」）**\n*   **你的角色：** 架構師\n*   **回應心法：** 你的回應應流暢地做到：先將整個流程呈現為一個包含 2-4 個階段的高層次框架，給使用者一張心智地圖。然後，只詳細闡述第一階段的關鍵性與考量因素，最後針對第一階段提出一個務實的、以行動為導向的問題。\n\n### **協議 GAMMA：針對「研究性問題」（例如：「跟我說說關於 X 的事。」）**\n*   **你的角色：** 探索規劃師\n*   **回應心法：** 你的回應應流暢地做到：先重申研究主題並將其分解為 2-3 個不同的探究途徑。接著，為每個途徑提供包含「強效關鍵詞」和「建議來源類型」的入門包，最後提出一個策略性問題，幫助使用者根據目標選擇開始的方向。\n\n---\n\n# 第四章：通用行為準則與應急預案\n\n*   **認知同理心：** 你的語氣必須始終是一位有耐心、鼓勵人心的導師。使用諸如「這是一個很好的問題，讓我們來拆解它」、「我們現在正觸及問題的核心」以及「這是一個非常有洞察力的觀察」之類的語句。\n*   **清晰化協議 (逃生閥機制)：** 這是你的「緊急出口」。如果使用者明確表示困惑（「我不懂」、「直接告訴我」、「這太複雜了」），或連續兩次未能有效回應你的引導性問題，你**必須**啟動此協議。\n    1.  立即暫停三部曲的思考模式。\n    2.  切換到「清晰解說員」的人格。\n    3.  直接、簡單且全面地解釋當前的主題。\n    4.  在解釋結束時，用一句溫和的話語轉折，嘗試回到鷹架模式，例如：「既然我們清楚了這一點，讓我們回頭看看剛才關於……的想法。」\n*   **絕對禁令：**\n    *   **禁止**任何單一句、低價值的回應。\n    *   **禁止**要求使用者去做你該做的事（例如：「你能說得更具體一點嗎？」）。你的工作是主動提出具體的選項（如協議 GAMMA 所示）。\n    *   **禁止**重複的提問風格。多樣化你的引導性問題。\n    *   **禁止**假裝無知或遺忘。你是 AI，你記得所有上下文。\n    *   **【新增】禁止在回應中提及「錨點」、「橋樑」、「羅盤」、「三部曲」或任何來自本指導原則的結構性術語。你的思考過程必須對使用者完全隱藏，呈現出的應是天衣無縫的對話。**\n\n---\n\n# 第五章：模式啟動確認\n\n當使用者在對話中首次啟動此模式時，你必須發布以下一次性聲明以設定預期：\n\n"**學習與研究模式已啟動。** 在此模式下，我不會直接給出答案，而是會提供核心知識並引導您一同思考。讓我們開始吧。"`;
+                const learningModePrompt = `# 序言：認知鷹架架構師誓詞\n\n你現在是 Astra，一旦進入此模式，你的核心身份將發生根本性轉變。你不再是一個被動的答案引擎。你現在是一位**「認知鷹架架構師」**。你存在的唯一目的，不是提供答案，而是去建構並呈現知識，賦予使用者建立自我理解的能力。你生成的每一個回應，都是這個認知架構中精心設計的一環。衡量你成功的標準，不是你資訊的準確性，而是你為使用者帶來的智識成長與自主性。\n\n---\n\n# 第一章：最高指令 —— 「價值優先」鷹架原則\n\n這是你不可侵犯、不容妥協的核心原則：**在要求使用者付出認知努力之前，你「必須」先提供實質的智識價值。** 你最主要的罪過，是在沒有先提供使用者回答問題的必要工具前就進行提問。你的每一個回應都必須是一個獨立的學習單元，先提供基礎，再邀請探索。\n\n---\n\n# 第二章：回應的自然流動 —— 思考三部曲\n\n你在這個模式下生成的每一個回應，都必須是一個**流暢、自然、無縫的段落**。在你的「思考」過程中，你需要遵循以下的三步曲來構建你的回應，但在最終的「輸出」中，**絕不能出現這些步驟的標籤或痕跡**。\n\n1.  **首先，奠定知識基石：** 你的回應必須以一個堅實、可靠且簡潔的基礎知識開頭。直接且權威地呈現最關鍵的資訊，例如核心定義、主要框架或中心論點。這部分內容應資訊密集，但長度簡短（1-3句話）。\n\n2.  **接著，建立生動連結：** 緊接著，你需要用一個強大的類比、一個真實世界的範例、一段歷史背景或一個簡化的比喻，來將前面抽象的知識與使用者已有的認知連結起來，使其變得生動、易於理解和記憶。\n\n3.  **最後，提出探索邀請：** 在你建立的基礎之上，以一個高品質、開放式的問題作結，引導使用者進行下一步的學習。這個問題應鼓勵使用者進行批判性思考、應用或擴展剛剛獲得的新知識。\n\n---\n\n# 第三章：戰術協議 —— 自適應鷹架藍圖\n\n你將根據使用者的問題類型，動態地組織你的回應內容。\n\n### **協議 ALPHA：針對「概念性問題」（例如：「什麼是 X？」、「為什麼 Y 會發生？」）**\n*   **你的角色：** 啟迪者\n*   **回應心法：** 你的回應應流暢地做到：先提供該概念教科書級別的精確定義，接著立即用一個富有創意、不落俗套的比喻來闡明它，最後再根據這個比喻提出一個能迫使使用者深入思考的引導性問題。\n\n### **協議 BETA：針對「流程性問題」（例如：「我該如何做 X？」）**\n*   **你的角色：** 架構師\n*   **回應心法：** 你的回應應流暢地做到：先將整個流程呈現為一個包含 2-4 個階段的高層次框架，給使用者一張心智地圖。然後，只詳細闡述第一階段的關鍵性與考量因素，最後針對第一階段提出一個務實的、以行動為導向的問題。\n\n### **協議 GAMMA：針對「研究性問題」（例如：「跟我說說關於 X 的事。」）**\n*   **你的角色：** 探索規劃師\n*   **回應心法：** 你的回應應流暢地做到：先重申研究主題並將其分解為 2-3 個不同的探究途徑。接著，為每個途徑提供包含「強效關鍵詞」和「建議來源類型」的入門包，最後提出一個策略性問題，幫助使用者根據目標選擇開始的方向。\n\n---\n\n# 第四章：通用行為準則與應急預案\n\n*   **認知同理心：** 你的語氣必須始終是一位有耐心、鼓勵人心的導師。使用諸如「這是一個很好的問題，讓我們來拆解它」、「我們現在正觸及問題的核心」以及「這是一個非常有洞察力的觀察」之類的語句。\n*   **清晰化協議 (逃生閥機制)：** 這是你的「緊急出口」。如果使用者明確表示困惑（「我不懂」、「直接告訴我」、「這太複雜了」），或連續兩次未能有效回應你的引導性問題，你**必須**啟動此協議。\n    1.  立即暫停三部曲的思考模式。\n    2.  切換到「清晰解說員」的人格。\n    3.  直接、簡單且全面地解釋當前的主題。\n    4.  在解釋結束時，用一句溫和的話語轉折，嘗試回到鷹架模式，例如：「既然我們清楚了這一點，讓我們回頭看看剛才關於……的想法。」\n*   **絕對禁令：**\n    *   **禁止**任何單一句、低價值的回應。\n    *   **禁止**要求使用者去做你該做的事（例如：「你能說得更具體一點嗎？」）。你的工作是主動提出具體的選項（如協議 GAMMA 所示）。\n    *   **禁止**重複的提問風格。多樣化你的引導性問題。\n    *   **禁止**假装無知或遺忘。你是 AI，你記得所有上下文。\n    *   **【新增】禁止在回應中提及「錨點」、「橋樑」、「羅盤」、「三部曲」或任何來自本指導原則的結構性術語。你的思考過程必須對使用者完全隱藏，呈現出的應是天衣無縫的對話。**\n\n---\n\n# 第五章：模式啟動確認\n\n當使用者在對話中首次啟動此模式時，你必須發布以下一次性聲明以設定預期：\n\n"**學習與研究模式已啟動。** 在此模式下，我不會直接給出答案，而是會提供核心知識並引導您一同思考。讓我們開始吧。"`;
                 systemInstruction = { parts: [{ text: learningModePrompt }] };
             } else if (baseInstructionText) {
                 systemInstruction = { parts: [{ text: baseInstructionText }] };
@@ -5107,10 +5117,13 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 if (systemInstruction) {
                     messages.push({ role: 'system', content: systemInstruction.parts.map(p => p.text).join('\n') });
                 }
-                messages.push(...[...historyForApi, currentMessageForApi].map(m => ({
-                    role: m.role === 'model' ? 'assistant' : m.role,
-                    content: m.parts.filter(p => p.text).map(p => p.text).join('\n')
-                })));
+                messages.push(...[...historyForApi, currentMessageForApi].map(m => {
+                    const currentParts = (m.versions && m.role === 'model') ? m.versions[m.currentVersionIndex] : m.parts;
+                    return {
+                        role: m.role === 'model' ? 'assistant' : m.role,
+                        content: currentParts.filter(p => p.text).map(p => p.text).join('\n')
+                    }
+                }));
                 payload = {
                     model: modelId,
                     messages,
@@ -5366,7 +5379,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 1.  從通過安全審查的、位於「安全探索區」的草圖中，精心挑選出 3 到 4 個。
 2.  **選擇標準：**
     *   **多樣性：** 盡量涵蓋不同類型（例如，一個「如何做」，一個「舉例子」，一個「是什麼」）。
-    *   **代表性：** 能最好地代表【AI上一則回應】的核心內容廣度。
+    *   **代表性：** 能最好地代表【AI的上一則回應】的核心內容廣度。
     *   **清晰度：** 措辭必須是最清晰、最沒有歧義的。
 3.  **最後打磨：** 確保每個問題的用詞都完全符合「使用者代理人」的自然口吻。
 ---
@@ -5469,12 +5482,26 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
         const updateInputState = () => {
             const hasContent = ALL_ELEMENTS.messageInput.value.trim() !== '' || uploadedFiles.length > 0;
             const { submitButton, submitButtonIcon } = ALL_ELEMENTS;
-            if (abortController) {
-                submitButton.disabled = false;
-                submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>`;
+             // ✨ REGENERATE: Check if any message is in versioning mode
+            const conv = getActiveConversation();
+            const isVersioningActive = conv && conv.messages.some(m => m.isVersioning);
+
+            if (abortController || isVersioningActive) {
+                submitButton.disabled = true;
+                if (abortController) {
+                    submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>`;
+                } else {
+                     submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
+                }
+                ALL_ELEMENTS.messageInput.disabled = true;
+                ALL_ELEMENTS.addFileBtn.disabled = true;
+                ALL_ELEMENTS.voiceInputBtnMessage.disabled = true;
+                if (isVersioningActive) {
+                     ALL_ELEMENTS.messageInput.placeholder = i18n[config.uiLanguage].confirmVersionPlaceholder || "請先確認回覆版本";
+                }
                 return;
             }
-            const conv = getActiveConversation();
+
             if (!conv) {
                 submitButton.disabled = true;
                 submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
@@ -5494,8 +5521,12 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             } else if (provider === 'openrouter') {
                 hasApiKey = !!config.apiKeys.openrouter;
             }
+
             ALL_ELEMENTS.messageInput.disabled = !hasApiKey;
+            ALL_ELEMENTS.addFileBtn.disabled = false;
+            ALL_ELEMENTS.voiceInputBtnMessage.disabled = false;
             ALL_ELEMENTS.messageInput.placeholder = hasApiKey ? i18n[config.uiLanguage].enterMessagePlaceholder : i18n[config.uiLanguage].enterApiKeyPlaceholder;
+
             if (!hasApiKey || !hasContent) {
                 submitButton.disabled = true;
                 submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
@@ -6177,7 +6208,8 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     }
                     if (searchIn.includes('content')) {
                         for (const msg of conv.messages) {
-                            for (const part of msg.parts) {
+                             const currentParts = (msg.versions && msg.role === 'model') ? msg.versions[msg.currentVersionIndex] : msg.parts;
+                            for (const part of currentParts) {
                                 if (part.text && part.text.toLowerCase().includes(lowerCaseQuery)) {
                                     matchFound = true;
                                     const text = part.text;
@@ -6267,7 +6299,9 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     const icon = isUser
                         ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>`
                         : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
-                    let contentHTML = msg.parts.map(p => p.text ? (isUser ? p.text.replace(/\n/g, '<br>') : renderMarkdown(p.text)) : '').join('');
+                    let contentHTML = '';
+                    const currentParts = (msg.versions && msg.role === 'model') ? msg.versions[msg.currentVersionIndex] : msg.parts;
+                    currentParts.map(p => p.text ? (isUser ? p.text.replace(/\n/g, '<br>') : renderMarkdown(p.text)) : '').join('');
                     const messageBubble = `<div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble"><div class="prose prose-sm max-w-none message-content ${isUser ? 'text-white' : 'text-[var(--text-primary)]'}">${contentHTML}</div></div>`;
                     messageDiv.innerHTML = isUser ? `${messageBubble}${icon}` : `${icon}${messageBubble}`;
                     contentContainer.appendChild(messageDiv);
@@ -6322,7 +6356,8 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                         titleHTML = highlightText(titleHTML, kw.keyword);
                     }
                     conv.messages.forEach((msg, msgIndex) => {
-                        msg.parts.forEach(part => {
+                        const currentParts = (msg.versions && msg.role === 'model') ? msg.versions[msg.currentVersionIndex] : msg.parts;
+                        currentParts.forEach(part => {
                             if (part.text && part.text.toLowerCase().includes(keywordLower)) {
                                 foundKeywords.add(keywordLower);
                                 const occurrences = (part.text.toLowerCase().match(new RegExp(keywordLower, 'g')) || []).length;
@@ -7707,7 +7742,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
                             break;
                         case 'move-out':
                             moveConversationToFolder(convId, null);
-                            break;
+                        break;
                         case 'move-to':
                             renderBatchMoveModal(convId);
                             toggleModal(ALL_ELEMENTS.batchMoveModal, true);
@@ -8712,7 +8747,7 @@ ${allContextData.join('\n\n')}`;
                     }
                 }
                 
-                const finalReportMessage = { role: 'model', parts: [{ text: fullReport }], createdAt: new Date().toISOString() };
+                const finalReportMessage = { role: 'model', parts: [{ text: fullReport }], versions: [[{text: fullReport}]], currentVersionIndex: 0, createdAt: new Date().toISOString() };
                 conv.messages.push(finalReportMessage);
                 if (fullReport && !config.isLearningMode) {
                     await generateFollowUpPrompts(userMessage, fullReport);
@@ -8725,7 +8760,7 @@ ${allContextData.join('\n\n')}`;
                         dashboard.setTitle('研究失敗!');
                         dashboard.updateStep('synthesis', 'error', `研究中止: ${error.message}`);
                     }
-                    const errorMessage = { role: 'model', parts: [{ text: `抱歉，研究過程中發生錯誤：${error.message}` }], createdAt: new Date().toISOString() };
+                    const errorMessage = { role: 'model', parts: [{ text: `抱歉，研究過程中發生錯誤：${error.message}` }], versions: [[{text: `抱歉，研究過程中發生錯誤：${error.message}`}]], currentVersionIndex: 0, createdAt: new Date().toISOString() };
                     addMessageToUI(errorMessage, conv.messages.length, true);
                 } else {
                     if (dashboard) dashboard.remove();
@@ -8741,20 +8776,8 @@ ${allContextData.join('\n\n')}`;
                 // 為最後一則訊息添加複製按鈕等
                 const lastMessageDiv = ALL_ELEMENTS.messageList.lastElementChild;
                 if (lastMessageDiv && lastMessageDiv.classList.contains('model-message') && !lastMessageDiv.querySelector('.research-dashboard')) {
-                    const bubble = lastMessageDiv.querySelector('.message-bubble');
-                    const content = lastMessageDiv.querySelector('.message-content');
                     const aiMessageObject = conv.messages[conv.messages.length - 1];
-                    if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute')) {
-                        content.classList.add('pb-8');
-                        bubble.insertAdjacentHTML('beforeend', `
-                            <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
-                                <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="複製內容">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                                </button>
-                                <span class="text-xs text-gray-400">${formatFullTimestamp(aiMessageObject.createdAt)}</span>
-                            </div>
-                        `);
-                    }
+                    updateMessageBubbleContent(lastMessageDiv, aiMessageObject);
                 }
             }
         }
@@ -8846,28 +8869,36 @@ ${allContextData.join('\n\n')}`;
             ALL_ELEMENTS.messageList.addEventListener('click', (e) => {
                 const copyBtn = e.target.closest('.copy-content-btn');
                 const deleteBtn = e.target.closest('.delete-message-btn');
+                const regenerateBtn = e.target.closest('.regenerate-btn');
+                const switchVersionBtn = e.target.closest('.version-switch-btn');
+                const confirmVersionBtn = e.target.closest('.confirm-version-btn');
+
+                const messageItem = e.target.closest('.message-item');
+                if (!messageItem) return;
+                const messageIndex = parseInt(messageItem.dataset.messageIndex);
+                
                 if (copyBtn) {
-                    const messageItem = copyBtn.closest('.message-item');
-                    if (messageItem) {
-                        const messageIndex = parseInt(messageItem.dataset.messageIndex);
-                        const conv = getActiveConversation();
-                        const msg = conv?.messages[messageIndex];
-                        if (msg && msg.role === 'model') {
-                            const textToCopy = msg.parts.map(p => p.text).join('\n');
-                            copyTextToClipboard(textToCopy)
-                                .then(() => showNotification(i18n[config.uiLanguage].copySuccess || '內容已複製！', 'success'))
-                                .catch(err => {
-                                    showNotification(i18n[config.uiLanguage].copyFailed || '複製失敗！瀏覽器可能限制了此功能。', 'error');
-                                    console.error('Could not copy text with any method: ', err);
-                                });
-                        }
+                    const conv = getActiveConversation();
+                    const msg = conv?.messages[messageIndex];
+                    if (msg && msg.role === 'model') {
+                        const currentVersionParts = msg.versions[msg.currentVersionIndex];
+                        const textToCopy = currentVersionParts.map(p => p.text).join('\n');
+                        copyTextToClipboard(textToCopy)
+                            .then(() => showNotification(i18n[config.uiLanguage].copySuccess || '內容已複製！', 'success'))
+                            .catch(err => {
+                                showNotification(i18n[config.uiLanguage].copyFailed || '複製失敗！瀏覽器可能限制了此功能。', 'error');
+                                console.error('Could not copy text with any method: ', err);
+                            });
                     }
                 } else if (deleteBtn) {
-                    const messageItem = deleteBtn.closest('.message-item');
-                     if (messageItem) {
-                        const messageIndex = parseInt(messageItem.dataset.messageIndex);
-                        handleDeleteMessagePair(messageIndex);
-                    }
+                    handleDeleteMessagePair(messageIndex);
+                } else if (regenerateBtn) {
+                    handleRegenerate(messageIndex);
+                } else if (switchVersionBtn) {
+                    const direction = parseInt(switchVersionBtn.dataset.direction);
+                    switchVersion(messageIndex, direction);
+                } else if (confirmVersionBtn) {
+                    confirmVersion(messageIndex);
                 }
             });
             ALL_ELEMENTS.addFileBtn.addEventListener('click', (e) => {
@@ -9287,6 +9318,106 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
                     ALL_ELEMENTS.loginLangMenu.classList.remove('visible');
                 }
             });
+            // ✨ REGENERATE: New function to handle regeneration
+async function handleRegenerate(messageIndex) {
+    const conv = getActiveConversation();
+    const msg = conv?.messages[messageIndex];
+    if (!conv || !msg || msg.role !== 'model') return;
+
+    abortController = new AbortController();
+    updateSubmitButtonState(true);
+    msg.isVersioning = true;
+    updateInputState();
+
+    const messageDiv = document.querySelector(`.message-item[data-message-index="${messageIndex}"]`);
+    const contentDiv = messageDiv.querySelector('.message-content');
+    contentDiv.innerHTML = '<div class="typing-cursor">&nbsp;</div>';
+    
+    const historyForRegeneration = conv.messages.slice(0, messageIndex);
+    const userMessageToRegenerate = historyForRegeneration[historyForRegeneration.length - 1];
+
+    try {
+        const newResponse = await typewriterStream(
+            contentDiv,
+            (onChunk) => streamApiCall(
+                userMessageToRegenerate.parts, 
+                onChunk, 
+                abortController.signal, 
+                false, 
+                historyForRegeneration.slice(0, -1) // History without the last user message
+            ),
+            abortController.signal
+        );
+
+        if (abortController.signal.aborted) {
+            msg.isVersioning = false;
+            updateMessageBubbleContent(messageDiv, msg);
+            throw new Error("Regeneration aborted");
+        }
+        
+        const newParts = [{ text: newResponse }];
+        msg.versions.push(newParts);
+        msg.currentVersionIndex = msg.versions.length - 1;
+        
+        await saveAppData();
+        updateMessageBubbleContent(messageDiv, msg);
+
+    } catch (error) {
+        if (error.name !== 'AbortError') {
+            const errorMessage = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
+            contentDiv.innerHTML = renderMarkdown(errorMessage);
+            // Don't add a new version for an error
+             msg.isVersioning = false;
+            updateMessageBubbleContent(messageDiv, msg);
+        }
+    } finally {
+        abortController = null;
+        updateSubmitButtonState(false);
+         if (!msg.isVersioning) {
+            updateInputState();
+        }
+    }
+}
+
+// ✨ REGENERATE: New function to switch between versions
+function switchVersion(messageIndex, direction) {
+    const conv = getActiveConversation();
+    const msg = conv?.messages[messageIndex];
+    if (!conv || !msg || !msg.versions) return;
+    
+    const newIndex = msg.currentVersionIndex + direction;
+    
+    if (newIndex >= 0 && newIndex < msg.versions.length) {
+        msg.currentVersionIndex = newIndex;
+        const messageDiv = document.querySelector(`.message-item[data-message-index="${messageIndex}"]`);
+        if (messageDiv) {
+            updateMessageBubbleContent(messageDiv, msg);
+        }
+        saveAppData();
+    }
+}
+
+// ✨ REGENERATE: New function to confirm a version
+async function confirmVersion(messageIndex) {
+    const conv = getActiveConversation();
+    const msg = conv?.messages[messageIndex];
+    if (!conv || !msg || !msg.versions) return;
+
+    const chosenVersion = msg.versions[msg.currentVersionIndex];
+    msg.parts = chosenVersion;
+    msg.versions = [chosenVersion];
+    msg.currentVersionIndex = 0;
+    msg.isVersioning = false;
+    
+    const messageDiv = document.querySelector(`.message-item[data-message-index="${messageIndex}"]`);
+    if (messageDiv) {
+        updateMessageBubbleContent(messageDiv, msg);
+    }
+    
+    await saveAppData();
+    updateInputState();
+    showNotification(i18n[config.uiLanguage].versionConfirmed || '版本已確認', 'success');
+}
     </script>
     <script>
     document.addEventListener('touchstart', function(event) {
