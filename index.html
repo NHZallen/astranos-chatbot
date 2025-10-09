@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.6.1</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.6.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -600,80 +600,36 @@ button:not(.btn-primary):active:not(:disabled) {
     }
     #model-options-popover { transform-origin: top right; }
     #model-options-popover {
-    transform-origin: top right;
-    position: relative; /* 確保子元素可以用絕對定位 */
-    /* 隱藏滑出視窗的內容，這是滑動動畫的關鍵 */
+    /* 移除內邊距，交給子元素處理 */
+    padding: 0;
+    /* 隱藏從側面滑入的內容 */
     overflow: hidden;
-    /* 確保背景在動畫過程中不會閃爍或透明 */
-    background-color: var(--modal-bg);
+    /* 動態高度變化時有過渡效果，這是讓高度變化平滑的關鍵 */
+    transition: opacity 0.15s ease-out, transform 0.15s ease-out, visibility 0.15s, height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 2. 動畫容器：用來處理滑動效果和高度變化 */
-.model-views-container {
-    position: relative;
-    width: 100%;
-    /* 高度變化時，也會有平滑的過渡效果 */
-    transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+/* 建立一個 flex 容器來水平排列兩個視圖 */
+#model-views-container {
+    display: flex;
+    /* 寬度為父容器的兩倍，因為有兩個視圖 */
+    width: 200%;
+    /* 核心動畫：當 transform 改變時，產生滑動效果 */
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 3. 兩個視圖 (Gemini 和 其他模型) 的通用樣式 */
-#gemini-models-view, #other-models-view {
-    /* 讓它們可以疊加並滑動 */
-    position: absolute;
-    width: 100%;
-    top: 0;
-    left: 0;
-    /* 滑動與透明度的動畫效果 */
-    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease-out;
+/* 當切換到「其他模型」時，整個容器向左滑動 50% (即一個視圖的寬度) */
+#model-views-container.show-other-models {
+    transform: translateX(-50%);
 }
 
-/* 4. 控制視圖位置和可見度的 Class */
-/* 當前顯示的視圖 */
-.view-active {
-    transform: translateX(0);
-    opacity: 1;
-    pointer-events: auto; /* 可以點擊 */
-}
-/* 已經滑到左邊隱藏的視圖 */
-.view-hidden-left {
-    transform: translateX(-50px); /* 不需完全滑出，一點點距離效果更好 */
-    opacity: 0;
-    pointer-events: none; /* 隱藏時不能點擊 */
-}
-/* 準備從右邊滑入的視圖 */
-.view-hidden-right {
-    transform: translateX(50px);
-    opacity: 0;
-    pointer-events: none;
-}
-
-/* 5. 視窗內選項的入場動畫效果 */
-@keyframes item-fade-in {
-    from {
-        opacity: 0;
-        transform: translateY(8px) scale(0.98);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-
-/* 當 popover 可見時，為每個選項應用動畫 */
-.popover.visible .model-option-btn-container {
-    animation: item-fade-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-    /* 預設為透明，等待動畫開始 */
-    opacity: 0;
-    /* 使用 var(--stagger-delay) 來自訂每個選項的動畫延遲，產生交錯效果 */
-    animation-delay: var(--stagger-delay, 0s);
-}
-
-/* 6. 讓「返回」按鈕在滾動時能固定在頂部，提升體驗 */
-#back-to-gemini-btn {
-    position: sticky;
-    top: 0;
-    background-color: var(--modal-bg); /* 需要背景色才不會透明 */
-    z-index: 10;
+/* 每個獨立的視圖 (Gemini / 其他模型) 的樣式 */
+.model-view {
+    /* 每個視圖佔據容器寬度的一半 */
+    width: 50%;
+    flex-shrink: 0;
+    /* 將原本在父容器的內邊距移到這裡 */
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
 }
 #file-options-popover {
     background-color: rgba(255, 255, 255, 0.2);
@@ -4730,7 +4686,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             ALL_ELEMENTS.modelSwitcherContainer.innerHTML = '';
             if (!conv) return;
 
-            // --- ✨ 1. 動態計算交錯延遲 & 建立模型選項 HTML ---
+            // 1. 將模型分類
             const visibleModels = config.modelSettings
                 .filter(s => !s.hidden)
                 .sort((a, b) => a.order - b.order)
@@ -4744,87 +4700,98 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const isArchived = conv.archived;
             const translations = i18n[config.uiLanguage] || i18n['zh-TW'];
 
-            const createModelOptionHTML = (model, index) => {
-                const description = translations[model.descriptionKey] || '';
-                const limits = translations[model.limitsKey] || '';
-                // ✨ 新增 style 來自訂每個選項的動畫延遲
+            // 2. 建立 Gemini 模型選項的 HTML
+            let geminiOptionsHTML = geminiModels.map(m => {
+                const description = translations[m.descriptionKey] || '';
+                const limits = translations[m.limitsKey] || '';
                 return `
-                    <div data-model="${model.id}" class="model-option-btn-container ${isArchived ? 'cursor-not-allowed opacity-50' : ''}" style="--stagger-delay: ${index * 30}ms;">
-                        <h4 class="font-semibold">${model.name}</h4>
+                    <div data-model="${m.id}" class="model-option-btn-container ${isArchived ? 'cursor-not-allowed opacity-50' : ''}">
+                        <h4 class="font-semibold">${m.name}</h4>
                         <p class="model-description">${description}<span class="whitespace-nowrap"> (${limits})</span></p>
                     </div>
                 `;
-            };
+            }).join('');
 
-            let geminiOptionsHTML = geminiModels.map(createModelOptionHTML).join('');
-            let otherOptionsHTML = otherModels.map(createModelOptionHTML).join('');
+            // 3. 建立其他模型選項的 HTML
+            let otherOptionsHTML = otherModels.map(m => {
+                const description = translations[m.descriptionKey] || '';
+                const limits = translations[m.limitsKey] || '';
+                return `
+                    <div data-model="${m.id}" class="model-option-btn-container ${isArchived ? 'cursor-not-allowed opacity-50' : ''}">
+                        <h4 class="font-semibold">${m.name}</h4>
+                        <p class="model-description">${description}<span class="whitespace-nowrap"> (${limits})</span></p>
+                    </div>
+                `;
+            }).join('');
 
-            // --- ✨ 2. 組合新的 HTML 結構，包含動畫容器 ---
+            // ✨ 4. 組合最終的選單結構 (包含新的滑動容器)
             ALL_ELEMENTS.modelSwitcherContainer.innerHTML = `
                 <button id="current-model-btn" class="flex items-center gap-2 text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] px-2 py-1 md:px-3 rounded-md ${isArchived ? 'cursor-not-allowed' : ''}" ${isArchived ? 'disabled' : ''}>
                     <span class="font-semibold text-sm md:text-base text-[var(--text-primary)]">${currentModel.name}</span>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </button>
-                <div id="model-options-popover" class="popover absolute right-0 mt-2 w-72 md:w-80 rounded-lg border border-[var(--border-color)] z-50">
-                    <!-- ✨ 新增：動畫容器，用來處理滑動效果和高度變化 -->
-                    <div class="model-views-container">
-                        <!-- 視圖一：Gemini 模型 (預設顯示) -->
-                        <div id="gemini-models-view" class="view-active">
+                <div id="model-options-popover" class="popover absolute right-0 mt-6 w-72 md:w-80 rounded-lg border border-[var(--border-color)] z-50">
+                    <div id="model-views-container">
+                        <!-- 視圖一：Gemini 模型 -->
+                        <div id="gemini-models-view" class="model-view">
                             ${geminiOptionsHTML}
                             ${otherModels.length > 0 ? `
-                                <div class="border-t border-[var(--border-color)] my-1"></div>
+                                <div class="border-t border-[var(--border-color)] my-1 mx-2"></div>
                                 <button id="show-more-models-btn" class="w-full text-center px-4 py-3 hover:bg-[var(--hover-bg)] text-sm font-semibold text-blue-600">
                                     ${translations.moreModels || '更多模型'}
                                 </button>
                             ` : ''}
                         </div>
 
-                        <!-- 視圖二：其他模型 (預設在右側隱藏) -->
-                        <div id="other-models-view" class="view-hidden-right">
-                             <button id="back-to-gemini-btn" class="w-full flex items-center gap-2 text-left px-4 py-3 hover:bg-[var(--hover-bg)] text-sm font-semibold text-blue-600">
+                        <!-- 視圖二：其他模型 -->
+                        <div id="other-models-view" class="model-view">
+                            <button id="back-to-gemini-btn" class="w-full flex items-center gap-2 text-left px-4 py-3 hover:bg-[var(--hover-bg)] text-sm font-semibold text-blue-600">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
                                 ${translations.back || '返回'}
                             </button>
-                            <div class="border-t border-[var(--border-color)] mb-1"></div>
+                            <div class="border-t border-[var(--border-color)] my-1 mx-2"></div>
                             ${otherOptionsHTML}
                         </div>
                     </div>
                 </div>
             `;
 
-            // --- ✨ 3. 綁定事件與動畫邏輯 ---
-            const popover = document.getElementById('model-options-popover');
-            const viewsContainer = popover.querySelector('.model-views-container');
-            const geminiView = document.getElementById('gemini-models-view');
-            const otherView = document.getElementById('other-models-view');
-
-            // ✨ 輔助函式：動態更新容器高度以適應內容，讓外框也能平滑縮放
-            const updatePopoverHeight = (targetView) => {
-                requestAnimationFrame(() => {
-                    viewsContainer.style.height = `${targetView.scrollHeight}px`;
-                });
-            };
-
+            // ✨ 5. 綁定所有事件，並加入動態高度調整
             if (!isArchived) {
-                // 開/關 Popover
+                const popover = document.getElementById('model-options-popover');
+                const viewsContainer = document.getElementById('model-views-container');
+                const geminiView = document.getElementById('gemini-models-view');
+                const otherView = document.getElementById('other-models-view');
+
+                // 輔助函數：調整彈窗高度以適應內容
+                const adjustPopoverHeight = (targetView) => {
+                    if (popover.classList.contains('visible')) {
+                        // 使用 requestAnimationFrame 確保在下一次渲染前計算高度，避免閃爍
+                        requestAnimationFrame(() => {
+                            popover.style.height = `${targetView.scrollHeight}px`;
+                        });
+                    }
+                };
+
+                // 開關選單
                 document.getElementById('current-model-btn').addEventListener('click', () => {
                     const isVisible = popover.classList.toggle('visible');
                     if (isVisible) {
-                        // 打開時，設定初始高度為 Gemini 視圖的高度
-                        updatePopoverHeight(geminiView);
+                        // 打開時，根據當前視圖設定高度
+                        const currentView = viewsContainer.classList.contains('show-other-models') ? otherView : geminiView;
+                        adjustPopoverHeight(currentView);
                     } else {
-                        // 關閉時，延遲重置視圖到初始狀態，避免動畫閃爍
+                        // 關閉時，重置高度為0，產生收起動畫
+                        popover.style.height = '0px';
+                        // 等待動畫結束後重置視圖到預設位置，避免下次打開時位置錯誤
                         setTimeout(() => {
-                            geminiView.classList.add('view-active');
-                            geminiView.classList.remove('view-hidden-left');
-                            otherView.classList.add('view-hidden-right');
-                            otherView.classList.remove('view-active');
-                        }, 350); // 等待 transition 動畫結束
+                            viewsContainer.classList.remove('show-other-models');
+                        }, 300);
                     }
                 });
 
-                // 選擇模型 (此部分邏輯不變)
-                popover.querySelectorAll('.model-option-btn-container').forEach(btn => {
+                // 選擇模型
+                document.querySelectorAll('.model-option-btn-container').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         const newModelId = e.currentTarget.dataset.model;
                         const newModelInfo = MODELS.find(m => m.id === newModelId);
@@ -4843,37 +4810,34 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             updateFileInputUI();
                             updateFunctionButtonsState();
                         }
+                        // 關閉彈窗
+                        const popover = document.getElementById('model-options-popover');
                         popover.classList.remove('visible');
+                        popover.style.height = '0px';
                     });
                 });
 
-                // ✨ 修改：切換到「更多模型」的動畫
+                // 切換視圖的按鈕
                 const showMoreBtn = document.getElementById('show-more-models-btn');
                 if (showMoreBtn) {
                     showMoreBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        updatePopoverHeight(otherView); // 先更新外框高度
-                        geminiView.classList.add('view-hidden-left');
-                        geminiView.classList.remove('view-active');
-                        otherView.classList.add('view-active');
-                        otherView.classList.remove('view-hidden-right');
+                        e.stopPropagation(); // 防止觸發父層的關閉事件
+                        viewsContainer.classList.add('show-other-models');
+                        adjustPopoverHeight(otherView);
                     });
                 }
                 
-                // ✨ 修改：返回「Gemini 模型」的動畫
                 const backBtn = document.getElementById('back-to-gemini-btn');
                 if (backBtn) {
                     backBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        updatePopoverHeight(geminiView); // 更新外框高度
-                        otherView.classList.add('view-hidden-right');
-                        otherView.classList.remove('view-active');
-                        geminiView.classList.add('view-active');
-                        geminiView.classList.remove('view-hidden-left');
+                        viewsContainer.classList.remove('show-other-models');
+                        adjustPopoverHeight(geminiView);
                     });
                 }
             }
-            // (其餘不變的函式)
+
+            // 更新其他UI狀態
             updateFileInputUI();
             updateApiKeyWarningBadge();
         };
