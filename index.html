@@ -2315,9 +2315,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                                     </button>
                                     <div id="file-options-popover" class="popover absolute bottom-full left-0 mb-2 w-56 z-20">
-    <button id="upload-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
-        <!-- 這是一個新的「上傳」SVG 圖示 -->
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+    <!-- ✨ 新的整合上傳按鈕 ✨ -->
+    <button id="upload-all-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
         <span data-lang-key="upload">上傳</span>
     </button>
     <div class="border-t border-[var(--border-color)] my-1"></div>
@@ -2964,7 +2968,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             </div>
         </div>
     </div>
-    <input type="file" id="image-video-input" class="hidden" accept="image/*,video/*" multiple>
     <input type="file" id="file-upload-input" class="hidden" multiple>
     <input type="file" id="wallpaper-upload-input" class="hidden" accept="image/*">
     <input type="file" id="astras-avatar-input" class="hidden" accept="image/*">
@@ -3193,7 +3196,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             fileInputContainer: document.getElementById('file-input-container'),
             addFileBtn: document.getElementById('add-file-btn'),
             fileOptionsPopover: document.getElementById('file-options-popover'),
-            uploadBtn: document.getElementById('upload-btn'),
+            cameraBtn: document.getElementById('camera-btn'),
+            uploadImageBtn: document.getElementById('upload-image-btn'),
+            uploadFileBtn: document.getElementById('upload-file-btn'),
             imageVideoInput: document.getElementById('image-video-input'),
             fileUploadInput: document.getElementById('file-upload-input'),
             filePreviewContainer: document.getElementById('file-preview-container'),
@@ -8881,16 +8886,6 @@ ${allContextData.join('\n\n')}`;
                     popover.classList.add('visible');
                 }
             });
-                ALL_ELEMENTS.uploadBtn.addEventListener('click', () => {
-    ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
-    // 讓使用者可以選擇所有類型的檔案
-    ALL_ELEMENTS.fileUploadInput.setAttribute('accept', '*/*'); 
-    ALL_ELEMENTS.fileUploadInput.click();
-});
-                ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
-                ALL_ELEMENTS.imageVideoInput.setAttribute('capture','environment');
-                ALL_ELEMENTS.imageVideoInput.click();
-            });
             ALL_ELEMENTS.webSearchPopoverBtn.addEventListener('click', async () => {
                 ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
                 const conv = getActiveConversation();
@@ -8904,13 +8899,11 @@ ${allContextData.join('\n\n')}`;
             });
             ALL_ELEMENTS.learningModeBtn.addEventListener('click', toggleLearningMode);
             ALL_ELEMENTS.deepResearchBtn.addEventListener('click', toggleDeepResearchMode);
-                ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
-                ALL_ELEMENTS.imageVideoInput.removeAttribute('capture');
-                ALL_ELEMENTS.imageVideoInput.click();
-            });
-                ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
-                ALL_ELEMENTS.fileUploadInput.click();
-            });
+            document.getElementById('upload-all-btn').addEventListener('click', () => {
+    ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
+    // 統一觸發我們保留的 file-upload-input
+    ALL_ELEMENTS.fileUploadInput.click();
+});
             ALL_ELEMENTS.imageVideoInput.addEventListener('change', handleFileSelection);
             ALL_ELEMENTS.fileUploadInput.addEventListener('change', handleFileSelection);
             ALL_ELEMENTS.selectionModeBtn.addEventListener('click', toggleSelectionMode);
