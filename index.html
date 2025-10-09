@@ -131,9 +131,8 @@
 .sidebar-section-content {
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: max-height 0.2s ease-in-out; 
     padding: 0 0.25rem;
-}
 
 /* 展開時的樣式 */
 .sidebar-section[data-open="true"] .sidebar-section-content {
@@ -372,14 +371,14 @@ button:not(.btn-primary):active:not(:disabled) {
         animation: chatFadeIn 0.3s ease-out forwards;
     }
     .folder-item > .folder-content-container {
-        overflow-y: hidden;
-        transition: max-height 0.35s cubic-bezier(0.4, 0.0, 0.2, 1);
-        max-height: 0;
-    }
+    overflow-y: hidden;
+    transition: max-height 0.2s ease-in-out;
+    max-height: 0;
+}
     .folder-item[data-open="true"] > .folder-content-container {
-        max-height: 100vh;
-        transition: max-height 0.5s cubic-bezier(0.4, 0.0, 0.2, 1);
-    }
+    max-height: 100vh;
+    transition: max-height 0.2s ease-in-out;
+}
     @keyframes pulse-glow {
         from {
             box-shadow: 0 0 0 0px rgba(59, 130, 246, 0.4);
@@ -1034,7 +1033,7 @@ body.custom-wallpaper-active .voice-input-btn.active {
         border-color: rgba(200, 200, 200, 0.5) !important;
     }
     body.custom-wallpaper-active #model-options-popover {
-        background-color: rgba(255, 255, 255, 0.35) !important;
+        background-color: rgba(255, 255, 255, 0.5) !important;
         backdrop-filter: blur(16px) !important;
         -webkit-backdrop-filter: blur(16px) !important;
         border: 1px solid rgba(200, 200, 200, 0.5) !important;
@@ -1551,6 +1550,70 @@ body.custom-wallpaper-active .store-category-btn.active {
     .dark #mobile-context-menu .menu-item.delete svg {
         color: #ef4444 !important;
     }
+    #extension-menu-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 99;
+    opacity: 0;
+    transition: opacity 0.2s linear; /* 遵從要求：線性動畫 0.2 秒 */
+}
+#extension-menu {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: var(--modal-bg);
+    border-top-left-radius: 1.5rem;
+    border-top-right-radius: 1.5rem;
+    z-index: 100;
+    padding: 1rem;
+    transform: translateY(100%);
+    transition: transform 0.2s linear; /* 遵從要求：線性動畫 0.2 秒 */
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+#extension-menu.visible {
+    transform: translateY(0);
+}
+#extension-menu-overlay.visible {
+    opacity: 1;
+}
+#extension-menu .menu-header {
+    padding: 0.5rem 1rem;
+    text-align: center;
+    font-weight: 600;
+    color: var(--text-primary);
+    background-color: var(--sidebar-bg);
+    border-radius: 0.75rem;
+    margin-bottom: 1rem;
+}
+#extension-menu .menu-options {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+#extension-menu .menu-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    gap: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+#extension-menu .menu-item:last-child {
+    border-bottom: none;
+}
+#extension-menu .menu-item:hover {
+    background-color: var(--hover-bg);
+}
+#extension-menu .menu-item svg {
+    width: 24px;
+    height: 24px;
+    color: var(--text-secondary);
+}
     body.custom-wallpaper-active #mobile-context-menu {
         color: #111827 !important;
         background-color: rgba(255, 255, 255, 0.85) !important;
@@ -2305,19 +2368,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                                     </button>
                                     <div id="file-options-popover" class="popover absolute bottom-full left-0 mb-2 w-56 z-20">
-                                        <button id="camera-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>
-                                            <span data-lang-key="camera">相機</span>
-                                        </button>
-                                        <button id="upload-image-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                                            <span data-lang-key="imageVideo">圖片 / 影片</span>
-                                        </button>
-                                        <button id="upload-file-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
-                                            <span data-lang-key="file">檔案</span>
-                                        </button>
-                                        <div class="border-t border-[var(--border-color)] my-1"></div>
+    <button id="unified-upload-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <span data-lang-key="upload">上傳</span>
+    </button>
+    <div class="border-t border-[var(--border-color)] my-1"></div>
                                         <button id="web-search-popover-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
                                             <span data-lang-key="webSearch">聯網搜尋</span>
