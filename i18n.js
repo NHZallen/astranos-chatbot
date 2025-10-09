@@ -57,6 +57,10 @@ window.i18n = {
         howCanIHelp: '有什麼可以為您服務的嗎？',
         viewingArchived: '正在檢視封存的對話，無法傳送訊息。',
 
+        // Model Switcher
+        moreModels: '更多模型',
+        back: '返回',
+
         // Settings Modal
         personalization: '個人化',
         memoryManagement: '記憶管理',
@@ -176,6 +180,7 @@ window.i18n = {
         batchMove: '批次移動',
         batchMoveDesc: '選擇要移動到的資料夾，或移出資料夾。',
         confirm: '確認',
+        pleaseConfirm: '請確認',
         dashboard: '個人數據面板',
         totalConversations: '總對話數',
         totalFolders: '資料夾數量',
@@ -190,11 +195,35 @@ window.i18n = {
         confirmAndApply: '確認並套用',
         setAstrasAvatar: '設定 Astras 頭像',
         cropAvatarDesc: '移動和縮放影像以裁切您喜歡的圓形頭像。',
+        
+        // Interactive Plan Editor
         editResearchPlan: '編輯研究計畫',
         addStep: '新增步驟',
         confirmAndRun: '確認並執行',
         cancelResearch: '取消研究',
         closeEditor: '關閉編輯',
+        step: '步驟',
+        moveUp: '上移',
+        moveDown: '下移',
+        removeThisStep: '移除此步驟',
+        stepTitlePlaceholder: '步驟標題',
+        stepActionPlaceholder: '步驟具體行動',
+        insertStepHere: '在此插入新步驟',
+        planValidationError: '所有步驟的標題和內容都不能為空！',
+        maxStepsWarning: '最多只能有 10 個步驟。',
+
+        // Deep Research Dashboard
+        researchStarting: '啟動深度研究...',
+        researchPlanning: '正在分析主題並規劃研究計畫...',
+        researchSynthesizing: '綜合所有資料並撰寫報告',
+        researchExecutingPlan: '正在執行您確認的研究計畫...',
+        researchUserCancelled: '使用者取消了研究。',
+        researchAborted: '研究已中止。',
+        researchFailed: '研究失敗!',
+        researchStopped: '研究中止: {errorMessage}',
+        researchStepAnalysis: '正在分析與「{stepName}」相關的資料...',
+        researchStepCompleted: '「{stepName}」的資料已整理完畢',
+        researchSynthesizingData: '正在整理現有資料...',
 
         // Popover Menus
         pin: '釘選',
@@ -442,6 +471,10 @@ window.i18n = {
         extendedFeatures: 'Extended Features',
         howCanIHelp: 'How can I help you?',
         viewingArchived: 'Viewing an archived chat. Cannot send messages.',
+        
+        // Model Switcher
+        moreModels: 'More Models',
+        back: 'Back',
 
         // Settings Modal
         personalization: 'Personalization',
@@ -562,6 +595,7 @@ window.i18n = {
         batchMove: 'Batch Move',
         batchMoveDesc: 'Select a folder to move to, or move out of a folder.',
         confirm: 'Confirm',
+        pleaseConfirm: 'Please Confirm',
         dashboard: 'Personal Data Dashboard',
         totalConversations: 'Total Conversations',
         totalFolders: 'Total Folders',
@@ -576,11 +610,35 @@ window.i18n = {
         confirmAndApply: 'Confirm & Apply',
         setAstrasAvatar: 'Set Astras Avatar',
         cropAvatarDesc: 'Move and scale the image to crop your desired circular avatar.',
+        
+        // Interactive Plan Editor
         editResearchPlan: 'Edit Research Plan',
         addStep: 'Add Step',
         confirmAndRun: 'Confirm & Execute',
         cancelResearch: 'Cancel Research',
         closeEditor: 'Close Editor',
+        step: 'Step',
+        moveUp: 'Move Up',
+        moveDown: 'Move Down',
+        removeThisStep: 'Remove this step',
+        stepTitlePlaceholder: 'Step title',
+        stepActionPlaceholder: 'Specific action for this step',
+        insertStepHere: 'Insert new step here',
+        planValidationError: 'All step titles and actions cannot be empty!',
+        maxStepsWarning: 'A maximum of 10 steps is allowed.',
+
+        // Deep Research Dashboard
+        researchStarting: 'Initiating deep research...',
+        researchPlanning: 'Analyzing topic and creating research plan...',
+        researchSynthesizing: 'Synthesizing all data and writing report',
+        researchExecutingPlan: 'Executing your confirmed research plan...',
+        researchUserCancelled: 'Research was cancelled by the user.',
+        researchAborted: 'Research aborted.',
+        researchFailed: 'Research Failed!',
+        researchStopped: 'Research stopped: {errorMessage}',
+        researchStepAnalysis: 'Analyzing data related to "{stepName}"...',
+        researchStepCompleted: 'Data for "{stepName}" has been compiled',
+        researchSynthesizingData: 'Compiling existing data...',
 
         // Popover Menus
         pin: 'Pin',
@@ -828,6 +886,10 @@ window.i18n = {
         extendedFeatures: 'Fonctionnalités étendues',
         howCanIHelp: 'Comment puis-je vous aider ?',
         viewingArchived: 'Consultation d\'un chat archivé. Impossible d\'envoyer des messages.',
+        
+        // Model Switcher
+        moreModels: 'Plus de modèles',
+        back: 'Retour',
 
         // Settings Modal
         personalization: 'Personnalisation',
@@ -948,6 +1010,7 @@ window.i18n = {
         batchMove: 'Déplacement Multiple',
         batchMoveDesc: 'Sélectionnez un dossier de destination, ou retirez d\'un dossier.',
         confirm: 'Confirmer',
+        pleaseConfirm: 'Veuillez confirmer',
         dashboard: 'Tableau de Bord des Données',
         totalConversations: 'Conversations Totales',
         totalFolders: 'Dossiers Totals',
@@ -962,11 +1025,35 @@ window.i18n = {
         confirmAndApply: 'Confirmer & Appliquer',
         setAstrasAvatar: 'Définir l\'avatar de l\'Astras',
         cropAvatarDesc: 'Déplacez et redimensionnez l\'image pour recadrer l\'avatar circulaire souhaité.',
+        
+        // Interactive Plan Editor
         editResearchPlan: 'Modifier le Plan de Recherche',
         addStep: 'Ajouter une Étape',
         confirmAndRun: 'Confirmer & Exécuter',
         cancelResearch: 'Annuler la recherche',
         closeEditor: 'Fermer l\'éditeur',
+        step: 'Étape',
+        moveUp: 'Monter',
+        moveDown: 'Descendre',
+        removeThisStep: 'Supprimer cette étape',
+        stepTitlePlaceholder: 'Titre de l\'étape',
+        stepActionPlaceholder: 'Action spécifique pour cette étape',
+        insertStepHere: 'Insérer une nouvelle étape ici',
+        planValidationError: 'Les titres et actions de toutes les étapes ne peuvent pas être vides !',
+        maxStepsWarning: 'Un maximum de 10 étapes est autorisé.',
+
+        // Deep Research Dashboard
+        researchStarting: 'Lancement de la recherche approfondie...',
+        researchPlanning: 'Analyse du sujet et création du plan de recherche...',
+        researchSynthesizing: 'Synthèse des données et rédaction du rapport',
+        researchExecutingPlan: 'Exécution de votre plan de recherche confirmé...',
+        researchUserCancelled: 'La recherche a été annulée par l\'utilisateur.',
+        researchAborted: 'Recherche interrompue.',
+        researchFailed: 'Échec de la recherche !',
+        researchStopped: 'Recherche arrêtée : {errorMessage}',
+        researchStepAnalysis: 'Analyse des données relatives à "{stepName}"...',
+        researchStepCompleted: 'Les données pour "{stepName}" ont été compilées',
+        researchSynthesizingData: 'Compilation des données existantes...',
 
         // Popover Menus
         pin: 'Épingler',
