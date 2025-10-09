@@ -128,18 +128,20 @@
     height: 1.25rem;
 }
 
-/* ✨ 優化 1：側邊欄動畫流暢度 */
 .sidebar-section-content {
-    max-height: 0;
-    overflow: hidden;
-    /* 將動畫曲線改為 'ease' 並同步處理 padding 動畫，使其更流暢 */
-    transition: max-height 0.3s ease, padding 0.3s ease;
+    display: grid;
+    grid-template-rows: 0fr; /* 預設收合，高度為 0 */
+    transition: grid-template-rows 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     padding: 0 0.25rem;
+}
+
+.sidebar-section-content > div {
+    overflow: hidden; /* 確保內容被裁切 */
 }
 
 /* 展開時的樣式 */
 .sidebar-section[data-open="true"] .sidebar-section-content {
-    max-height: 100vh; /* 給一個足夠大的值 */
+    grid-template-rows: 1fr; /* 展開時，高度由內容撐開 */
     padding-bottom: 0.5rem;
 }
 
@@ -373,18 +375,19 @@ button:not(.btn-primary):active:not(:disabled) {
     .chat-view-transition {
         animation: chatFadeIn 0.3s ease-out forwards;
     }
-    /* ✨ 優化 1：側邊欄動畫流暢度 (資料夾部分) */
     .folder-item > .folder-content-container {
-        overflow-y: hidden;
-        /* 統一動畫時間和曲線 */
-        transition: max-height 0.3s ease;
-        max-height: 0;
-    }
-    .folder-item[data-open="true"] > .folder-content-container {
-        max-height: 100vh;
-        /* 統一動畫時間和曲線 */
-        transition: max-height 0.3s ease;
-    }
+    display: grid;
+    grid-template-rows: 0fr; /* 預設收合 */
+    transition: grid-template-rows 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.folder-item[data-open="true"] > .folder-content-container {
+    grid-template-rows: 1fr; /* 展開 */
+}
+
+.folder-item > .folder-content-container > div {
+    overflow: hidden; /* 確保內容被裁切 */
+}
     @keyframes pulse-glow {
         from {
             box-shadow: 0 0 0 0px rgba(59, 130, 246, 0.4);
@@ -1038,18 +1041,12 @@ body.custom-wallpaper-active .voice-input-btn.active {
         -webkit-backdrop-filter: blur(16px);
         border-color: rgba(200, 200, 200, 0.5) !important;
     }
-    /* ✨ 修正 4：提升模型選單透明度 */
     body.custom-wallpaper-active #model-options-popover {
-        background-color: rgba(255, 255, 255, 0.5) !important;
+        background-color: rgba(255, 255, 255, 0.35) !important;
         backdrop-filter: blur(16px) !important;
         -webkit-backdrop-filter: blur(16px) !important;
         border: 1px solid rgba(200, 200, 200, 0.5) !important;
         box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-    }
-    /* ✨ 修正 4：為深色桌布下的模型選單增加一致的樣式 */
-    body.custom-wallpaper-active.wallpaper-is-dark #model-options-popover {
-        background-color: rgba(30, 30, 30, 0.5) !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
     }
     body.custom-wallpaper-active main > header {
         background-color: rgba(255, 255, 255, 0.25) !important;
@@ -2045,64 +2042,6 @@ body.custom-wallpaper-active .input-indicator-item {
     opacity: 1;
 }
 
-/* ✨ 優化 3：手機版延伸功能彈出視窗樣式 */
-#mobile-extensions-overlay {
-    position: fixed;
-    inset: 0;
-    background-color: rgba(0,0,0,0.5);
-    z-index: 99;
-    opacity: 0;
-    transition: opacity 0.2s linear;
-}
-#mobile-extensions-menu {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background-color: var(--modal-bg);
-    border-top-left-radius: 1.5rem;
-    border-top-right-radius: 1.5rem;
-    z-index: 100;
-    padding: 1rem;
-    transform: translateY(100%);
-    transition: transform 0.2s linear; /* 修正：依照要求改為線性動畫(0.2秒) */
-    max-height: 80vh;
-    display: flex;
-    flex-direction: column;
-    touch-action: none;
-}
-#mobile-extensions-menu.visible {
-    transform: translateY(0);
-}
-#mobile-extensions-overlay.visible {
-    opacity: 1;
-}
-#mobile-extensions-menu .menu-header {
-    padding: 0.5rem 1rem;
-    text-align: center;
-    font-weight: 600;
-    color: var(--text-primary);
-    background-color: var(--sidebar-bg);
-    border-radius: 0.75rem;
-    margin-bottom: 1rem;
-}
-#mobile-extensions-menu .menu-options {
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-}
-#mobile-extensions-menu .menu-item {
-    display: flex;
-    align-items: center;
-    padding: 1rem;
-    gap: 1rem;
-    border-bottom: 1px solid var(--border-color);
-    cursor: pointer;
-    font-size: 1rem;
-    color: var(--text-primary);
-}
-#mobile-extensions-menu .menu-item:last-child { border-bottom: none; }
-#mobile-extensions-menu .menu-item:hover { background-color: var(--hover-bg); }
-#mobile-extensions-menu .menu-item svg { width: 24px; height: 24px; color: var(--text-secondary); }
 
 </style>
 <script>
@@ -2374,12 +2313,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                                     </button>
                                     <div id="file-options-popover" class="popover absolute bottom-full left-0 mb-2 w-56 z-20">
-    <!-- ✨ 優化：將相機、圖片/影片、檔案合併為一個「上傳」按鈕 -->
-    <button id="upload-combined-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
-        <span>上傳</span>
-    </button>
-    <div class="border-t border-[var(--border-color)] my-1"></div>
+                                        <button id="upload-any-file-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+    <span data-lang-key="upload">上傳</span>
+</button>
+                                        <div class="border-t border-[var(--border-color)] my-1"></div>
                                         <button id="web-search-popover-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
                                             <span data-lang-key="webSearch">聯網搜尋</span>
@@ -3053,8 +2991,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     </div>
 </div>
     <div id="mobile-context-menu-wrapper"></div>
-        <div id="mobile-extensions-menu-wrapper"></div>
-<div id="mobile-context-menu-wrapper"></div>
     
     <!-- ✨ 新增：互動式計畫編輯器 Modal -->
     <div id="interactive-plan-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[52]">
@@ -3253,9 +3189,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             fileInputContainer: document.getElementById('file-input-container'),
             addFileBtn: document.getElementById('add-file-btn'),
             fileOptionsPopover: document.getElementById('file-options-popover'),
-            cameraBtn: document.getElementById('camera-btn'),
-            uploadImageBtn: document.getElementById('upload-image-btn'),
-            uploadFileBtn: document.getElementById('upload-file-btn'),
+            uploadAnyFileBtn: document.getElementById('upload-any-file-btn'),
             imageVideoInput: document.getElementById('image-video-input'),
             fileUploadInput: document.getElementById('file-upload-input'),
             filePreviewContainer: document.getElementById('file-preview-container'),
@@ -8822,64 +8756,6 @@ ${allContextData.join('\n\n')}`;
                 }
             }
         }
-         function showMobileExtensionsMenu() {
-    const wrapper = document.getElementById('mobile-extensions-menu-wrapper');
-    if (!wrapper) return;
-
-    // 動態創建選單的 HTML 結構
-    wrapper.innerHTML = `
-        <div id="mobile-extensions-overlay"></div>
-        <div id="mobile-extensions-menu">
-            <div class="menu-header">延伸功能</div>
-            <div class="menu-options"></div>
-        </div>
-    `;
-
-    const menu = wrapper.querySelector('#mobile-extensions-menu');
-    const overlay = wrapper.querySelector('#mobile-extensions-overlay');
-    const optionsContainer = menu.querySelector('.menu-options');
-
-    // 從原本的彈出框中複製所有功能按鈕
-    const originalOptions = document.querySelectorAll('#file-options-popover button');
-    originalOptions.forEach(btn => {
-        if(btn.id) { // 只複製有 id 的按鈕
-            const menuItem = document.createElement('div');
-            menuItem.className = 'menu-item';
-            menuItem.dataset.actionId = btn.id;
-            menuItem.innerHTML = btn.innerHTML; // 複製圖示和文字
-            optionsContainer.appendChild(menuItem);
-        }
-    });
-
-    // 播放顯示動畫
-    requestAnimationFrame(() => {
-        overlay.classList.add('visible');
-        menu.classList.add('visible');
-    });
-
-    // 關閉選單的函數
-    const closeMenu = () => {
-        overlay.classList.remove('visible');
-        menu.classList.remove('visible');
-        menu.addEventListener('transitionend', () => wrapper.innerHTML = '', { once: true });
-    };
-
-    // 點擊背景或選項後關閉選單
-    overlay.addEventListener('click', closeMenu);
-    menu.addEventListener('click', (e) => {
-        const actionTarget = e.target.closest('.menu-item');
-        if (!actionTarget) return;
-
-        const actionId = actionTarget.dataset.actionId;
-        const originalButton = document.getElementById(actionId);
-        if (originalButton) {
-            // 直接觸發原始按鈕的功能
-            originalButton.click();
-        }
-        closeMenu();
-    });
-}
-
         async function initChatApp() {
             injectDeepResearchStyles(); // ✨ 注入樣式
             await loadConfig();
@@ -8993,20 +8869,14 @@ ${allContextData.join('\n\n')}`;
                 }
             });
             ALL_ELEMENTS.addFileBtn.addEventListener('click', (e) => {
-    // ✨ 優化：在手機版上(螢幕寬度小於等於768px)顯示下開式選單
-    if (window.innerWidth <= 768) {
-        showMobileExtensionsMenu();
-    } else {
-        // 在電腦版上維持原本的彈出框
-        const popover = ALL_ELEMENTS.fileOptionsPopover;
-        if (popover.classList.contains('visible')) {
-            popover.classList.remove('visible');
-        } else {
-            closeAllPopovers();
-            popover.classList.add('visible');
-        }
-    }
-});
+                const popover = ALL_ELEMENTS.fileOptionsPopover;
+                if (popover.classList.contains('visible')) {
+                    popover.classList.remove('visible');
+                } else {
+                    closeAllPopovers();
+                    popover.classList.add('visible');
+                }
+            });
             ALL_ELEMENTS.webSearchPopoverBtn.addEventListener('click', async () => {
                 ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
                 const conv = getActiveConversation();
@@ -9020,14 +8890,11 @@ ${allContextData.join('\n\n')}`;
             });
             ALL_ELEMENTS.learningModeBtn.addEventListener('click', toggleLearningMode);
             ALL_ELEMENTS.deepResearchBtn.addEventListener('click', toggleDeepResearchMode);
-            const uploadCombinedBtn = document.getElementById('upload-combined-btn');
-if (uploadCombinedBtn) {
-    uploadCombinedBtn.addEventListener('click', () => {
-        ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
-        // 這裡我們觸發通用檔案上傳，它允許多選任何類型的檔案。
-        ALL_ELEMENTS.fileUploadInput.click();
-    });
-}
+            ALL_ELEMENTS.uploadAnyFileBtn.addEventListener('click', () => {
+    ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
+    // 我們觸發通用的檔案上傳輸入框，讓使用者可以選擇任何類型的檔案
+    ALL_ELEMENTS.fileUploadInput.click();
+});
             ALL_ELEMENTS.imageVideoInput.addEventListener('change', handleFileSelection);
             ALL_ELEMENTS.fileUploadInput.addEventListener('change', handleFileSelection);
             ALL_ELEMENTS.selectionModeBtn.addEventListener('click', toggleSelectionMode);
