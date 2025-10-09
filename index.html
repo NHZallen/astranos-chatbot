@@ -4053,94 +4053,90 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             });
         };
         const createConversationElement = (conv) => {
-    const item = document.createElement('div');
-    item.className = `sidebar-item w-full text-left p-3 rounded-lg flex items-center justify-between cursor-pointer ${conv.id === activeConversationId && !isSelectionMode ? 'active' : ''}`;
-    item.dataset.id = conv.id;
-    const modelInfo = MODELS.find(m => m.id === conv.model);
-    const modelCodename = modelInfo ? modelInfo.name.split(' (')[0] : '';
-    const modelNameSuffix = modelCodename ? `<span class="model-suffix">${modelCodename}</span>` : '';
-    const contentWrapper = document.createElement('div');
-    contentWrapper.className = 'flex-1 flex items-center justify-between truncate';
-    contentWrapper.innerHTML = `
-        <div class="flex-1 flex items-center gap-2 truncate">
-            <span class="truncate">${conv.title}${conv.pinned ? ' <span class="pinned-icon">📌</span>' : ''}</span>
-            ${modelNameSuffix}
-         </div>
-        <button class="chat-options-btn flex-shrink-0 w-6 h-6 rounded-md hover:bg-[var(--hover-bg)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>
-    `;
-    if (isSelectionMode) {
-        item.classList.add('pr-2');
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.className = 'conv-select-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3 flex-shrink-0';
-        checkbox.checked = selectedConversationIds.has(conv.id);
-        checkbox.dataset.id = conv.id;
-        checkbox.addEventListener('change', () => {
-            if (checkbox.checked) {
-                selectedConversationIds.add(conv.id);
-            } else {
-                selectedConversationIds.delete(conv.id);
-            }
-            renderBatchActionBar();
-        });
-        checkbox.addEventListener('click', e => e.stopPropagation());
-        item.appendChild(checkbox);
-        contentWrapper.querySelector('.chat-options-btn').classList.add('hidden');
-    }
-    item.appendChild(contentWrapper);
-    let pressTimer = null;
-    let touchMoved = false;
-    const startPress = (e) => {
-        if (window.innerWidth >= 768 || isSelectionMode) return;
-        touchMoved = false;
-        pressTimer = setTimeout(() => {
-            e.preventDefault();
-            showMobileContextMenu(conv.id, e.currentTarget);
-            pressTimer = null;
-        }, 500);
-    };
-    const cancelPress = () => {
-        clearTimeout(pressTimer);
-        pressTimer = null;
-    };
-
-    // --- ✨ 這裡是修正的關鍵 ✨ ---
-    const handleClick = () => {
-        if (pressTimer || !touchMoved) {
-            cancelPress();
+            const item = document.createElement('div');
+            item.className = `sidebar-item w-full text-left p-3 rounded-lg flex items-center justify-between cursor-pointer ${conv.id === activeConversationId && !isSelectionMode ? 'active' : ''}`;
+            item.dataset.id = conv.id;
+            const modelInfo = MODELS.find(m => m.id === conv.model);
+            const modelCodename = modelInfo ? modelInfo.name.split(' (')[0] : '';
+            const modelNameSuffix = modelCodename ? `<span class="model-suffix">${modelCodename}</span>` : '';
+            const contentWrapper = document.createElement('div');
+            contentWrapper.className = 'flex-1 flex items-center justify-between truncate';
+            contentWrapper.innerHTML = `
+                <div class="flex-1 flex items-center gap-2 truncate">
+                    <span class="truncate">${conv.title}${conv.pinned ? ' <span class="pinned-icon">📌</span>' : ''}</span>
+                    ${modelNameSuffix}
+                 </div>
+                <button class="chat-options-btn flex-shrink-0 w-6 h-6 rounded-md hover:bg-[var(--hover-bg)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>
+            `;
             if (isSelectionMode) {
-                const checkbox = item.querySelector('.conv-select-checkbox');
-                if (checkbox) {
-                    checkbox.checked = !checkbox.checked;
-                    checkbox.dispatchEvent(new Event('change'));
-                }
-            } else {
-                loadChat(conv.id);
-                toggleSidebar(false); // 確保在點擊後，不論螢幕大小，都會嘗試關閉側邊攔
+                item.classList.add('pr-2');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'conv-select-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3 flex-shrink-0';
+                checkbox.checked = selectedConversationIds.has(conv.id);
+                checkbox.dataset.id = conv.id;
+                checkbox.addEventListener('change', () => {
+                    if (checkbox.checked) {
+                        selectedConversationIds.add(conv.id);
+                    } else {
+                        selectedConversationIds.delete(conv.id);
+                    }
+                    renderBatchActionBar();
+                });
+                checkbox.addEventListener('click', e => e.stopPropagation());
+                item.appendChild(checkbox);
+                contentWrapper.querySelector('.chat-options-btn').classList.add('hidden');
             }
-        }
-    };
-    // --- ✨ 修正結束 ✨ ---
-
-    item.addEventListener('touchstart', startPress, { passive: true });
-    item.addEventListener('touchend', cancelPress);
-    item.addEventListener('touchmove', () => {
-        touchMoved = true;
-        cancelPress();
-    }, { passive: true });
-    item.addEventListener('mousedown', startPress);
-    item.addEventListener('mouseup', cancelPress);
-    item.addEventListener('mouseleave', cancelPress);
-    item.addEventListener('click', handleClick);
-    const chatOptionsBtn = contentWrapper.querySelector('.chat-options-btn');
-    if (chatOptionsBtn) {
-        chatOptionsBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            createHistoryMenu(conv.id, chatOptionsBtn);
-        });
-    }
-    return item;
-};
+            item.appendChild(contentWrapper);
+            let pressTimer = null;
+            let touchMoved = false;
+            const startPress = (e) => {
+                if (window.innerWidth >= 768 || isSelectionMode) return;
+                touchMoved = false;
+                pressTimer = setTimeout(() => {
+                    e.preventDefault();
+                    showMobileContextMenu(conv.id, e.currentTarget);
+                    pressTimer = null;
+                }, 500);
+            };
+            const cancelPress = () => {
+                clearTimeout(pressTimer);
+                pressTimer = null;
+            };
+            const handleClick = () => {
+                if (pressTimer || !touchMoved) {
+                    cancelPress();
+                    if (isSelectionMode) {
+                        const checkbox = item.querySelector('.conv-select-checkbox');
+                        if (checkbox) {
+                            checkbox.checked = !checkbox.checked;
+                            checkbox.dispatchEvent(new Event('change'));
+                        }
+                    } else {
+                        loadChat(conv.id);
+                        toggleSidebar(false);
+                    }
+                }
+            };
+            item.addEventListener('touchstart', startPress, { passive: true });
+            item.addEventListener('touchend', cancelPress);
+            item.addEventListener('touchmove', () => {
+                touchMoved = true;
+                cancelPress();
+            }, { passive: true });
+            item.addEventListener('mousedown', startPress);
+            item.addEventListener('mouseup', cancelPress);
+            item.addEventListener('mouseleave', cancelPress);
+            item.addEventListener('click', handleClick);
+            const chatOptionsBtn = contentWrapper.querySelector('.chat-options-btn');
+            if (chatOptionsBtn) {
+                chatOptionsBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    createHistoryMenu(conv.id, chatOptionsBtn);
+                });
+            }
+            return item;
+        };
         const renderArchivedChats = () => {
             ALL_ELEMENTS.archivedChatsContainer.innerHTML = '';
             const archived = conversations.filter(c => c.archived).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -6142,120 +6138,117 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             }
         };
         const performSearchAndRenderResults = async () => {
-    const query = ALL_ELEMENTS.modalSearchInput.value.trim();
-    const scope = ALL_ELEMENTS.modalSearchScopeSelect.value;
-    const container = ALL_ELEMENTS.searchResultsContainer;
-    container.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].searching || '正在搜尋中...'}</p>`;
-    if (!query) {
-        container.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].searchPrompt}</p>`;
-        return;
-    }
-    let results = [];
-    if (scope === 'natural') {
-        try {
-            const weightedKeywords = await generateSearchKeywords(query);
-            if (!weightedKeywords || weightedKeywords.length === 0) {
-                throw new Error(i18n[config.uiLanguage].keywordGenerationFailed || '無法從您的查詢中提取關鍵字。');
+            const query = ALL_ELEMENTS.modalSearchInput.value.trim();
+            const scope = ALL_ELEMENTS.modalSearchScopeSelect.value;
+            const container = ALL_ELEMENTS.searchResultsContainer;
+            container.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].searching || '正在搜尋中...'}</p>`;
+            if (!query) {
+                container.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].searchPrompt}</p>`;
+                return;
             }
-            results = calculateRelevanceScores(weightedKeywords);
-        } catch (error) {
-            container.innerHTML = `<p class="text-center text-red-500">${error.message}</p>`;
-            return;
-        }
-    } else {
-        const lowerCaseQuery = query.toLowerCase();
-        const searchIn = scope === 'keyword-title' ? ['title'] : ['title', 'content'];
-
-        conversations
-            .filter(c => !c.deletedAt)
-            .forEach(conv => {
-                let matchFound = false;
-                let titleHTML = conv.title;
-                let snippetHTML = '';
-                if (searchIn.includes('title') && conv.title.toLowerCase().includes(lowerCaseQuery)) {
-                    matchFound = true;
-                    titleHTML = highlightText(conv.title, query);
-                }
-                if (searchIn.includes('content')) {
-                    for (const msg of conv.messages) {
-                        for (const part of msg.parts) {
-                            if (part.text && part.text.toLowerCase().includes(lowerCaseQuery)) {
-                                matchFound = true;
-                                const text = part.text;
-                                const matchIndex = text.toLowerCase().indexOf(lowerCaseQuery);
-                                const start = Math.max(0, matchIndex - 40);
-                                const end = Math.min(text.length, matchIndex + query.length + 40);
-                                snippetHTML = (start > 0 ? '...' : '') + highlightText(text.substring(start, end), query) + (end < text.length ? '...' : '');
-                                break;
-                            }
-                        }
-                        if (snippetHTML) break;
+            let results = [];
+            if (scope === 'natural') {
+                try {
+                    const weightedKeywords = await generateSearchKeywords(query);
+                    if (!weightedKeywords || weightedKeywords.length === 0) {
+                        throw new Error(i18n[config.uiLanguage].keywordGenerationFailed || '無法從您的查詢中提取關鍵字。');
                     }
+                    results = calculateRelevanceScores(weightedKeywords);
+                } catch (error) {
+                    container.innerHTML = `<p class="text-center text-red-500">${error.message}</p>`;
+                    return;
                 }
-                if (matchFound) {
-                    results.push({ conv, titleHTML, snippetHTML, score: 0 });
-                }
-            });
-        }
-        if (scope === 'natural') {
-            results.sort((a, b) => b.score - a.score);
-        }
-        container.innerHTML = '';
-        if (results.length === 0) {
-            container.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].noResultsFound || '找不到符合的對話。'}</p>`;
-            return;
-        }
-        results.forEach(({ conv, titleHTML, snippetHTML, score }) => {
-            const item = document.createElement('div');
-            item.className = 'p-3 rounded-md hover:bg-[var(--hover-bg)] border border-transparent hover:border-[var(--border-color)]';
-            item.dataset.id = conv.id;
-            const scoreHTML = scope === 'natural' ? `
-                <div class="flex items-center gap-2 mt-2">
-                    <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                        <div class="bg-blue-600 h-2.5 rounded-full" style="width: ${score}%"></div>
+            } else {
+    const lowerCaseQuery = query.toLowerCase();
+    const searchIn = scope === 'keyword-title' ? ['title'] : ['title', 'content'];
+    
+    // ✨ 核心修正：在搜尋前過濾掉垃圾桶中的內容
+    conversations
+        .filter(c => !c.deletedAt)
+        .forEach(conv => {
+            let matchFound = false;
+            let titleHTML = conv.title;
+                    let snippetHTML = '';
+                    if (searchIn.includes('title') && conv.title.toLowerCase().includes(lowerCaseQuery)) {
+                        matchFound = true;
+                        titleHTML = highlightText(conv.title, query);
+                    }
+                    if (searchIn.includes('content')) {
+                        for (const msg of conv.messages) {
+                            for (const part of msg.parts) {
+                                if (part.text && part.text.toLowerCase().includes(lowerCaseQuery)) {
+                                    matchFound = true;
+                                    const text = part.text;
+                                    const matchIndex = text.toLowerCase().indexOf(lowerCaseQuery);
+                                    const start = Math.max(0, matchIndex - 40);
+                                    const end = Math.min(text.length, matchIndex + query.length + 40);
+                                    snippetHTML = (start > 0 ? '...' : '') + highlightText(text.substring(start, end), query) + (end < text.length ? '...' : '');
+                                    break;
+                                }
+                            }
+                            if (snippetHTML) break;
+                        }
+                    }
+                    if (matchFound) {
+                        results.push({ conv, titleHTML, snippetHTML, score: 0 });
+                    }
+                });
+            }
+            if (scope === 'natural') {
+                results.sort((a, b) => b.score - a.score);
+            }
+            container.innerHTML = '';
+            if (results.length === 0) {
+                container.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].noResultsFound || '找不到符合的對話。'}</p>`;
+                return;
+            }
+            results.forEach(({ conv, titleHTML, snippetHTML, score }) => {
+                const item = document.createElement('div');
+                item.className = 'p-3 rounded-md hover:bg-[var(--hover-bg)] border border-transparent hover:border-[var(--border-color)]';
+                item.dataset.id = conv.id;
+                const scoreHTML = scope === 'natural' ? `
+                    <div class="flex items-center gap-2 mt-2">
+                        <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                            <div class="bg-blue-600 h-2.5 rounded-full" style="width: ${score}%"></div>
+                        </div>
+                        <span class="text-sm font-medium text-gray-500 dark:text-gray-400">${score}</span>
                     </div>
-                    <span class="text-sm font-medium text-gray-500 dark:text-gray-400">${score}</span>
-                </div>
-            ` : '';
-            item.innerHTML = `
-                <div class="flex justify-between items-center">
-                    <div class="flex-1 min-w-0">
-                        <div class="font-medium truncate">${titleHTML || highlightText(conv.title, query)}</div>
-                        ${snippetHTML ? `<p class="text-xs text-[var(--text-secondary)] mt-1 truncate">${snippetHTML}</p>` : ''}
+                ` : '';
+                item.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <div class="flex-1 min-w-0">
+                            <div class="font-medium truncate">${titleHTML || highlightText(conv.title, query)}</div>
+                            ${snippetHTML ? `<p class="text-xs text-[var(--text-secondary)] mt-1 truncate">${snippetHTML}</p>` : ''}
+                        </div>
+                        <button data-id="${conv.id}" class="search-view-btn ml-2 flex-shrink-0 text-xs bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full hover:bg-blue-200">${i18n[config.uiLanguage].view || '檢視'}</button>
                     </div>
-                    <button data-id="${conv.id}" class="search-view-btn ml-2 flex-shrink-0 text-xs bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full hover:bg-blue-200">${i18n[config.uiLanguage].view || '檢視'}</button>
-                </div>
-                ${scoreHTML}
-            `;
-            const titleArea = item.querySelector('.flex-1');
-            
-            // --- ✨ 這裡是修正的關鍵 ✨ ---
-            titleArea.addEventListener('click', () => {
-                loadChat(conv.id); // 載入對話
-                toggleSidebar(false); // 關閉側邊攔 (對應行動裝置)
-                toggleModal(ALL_ELEMENTS.searchModal, false); // 關閉搜尋視窗
-                ALL_ELEMENTS.openSearchBtn.classList.remove('active'); // 取消搜尋按鈕的啟用狀態
-            });
-            // --- ✨ 修正結束 ✨ ---
-
-            const viewBtn = item.querySelector('.search-view-btn');
-            viewBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                showConversationInViewModal(conv.id);
-            });
-            let pressTimer = null;
-            item.addEventListener('touchstart', (e) => {
-                if (e.target.closest('button')) return;
-                pressTimer = setTimeout(() => {
-                    e.preventDefault();
+                    ${scoreHTML}
+                `;
+                const titleArea = item.querySelector('.flex-1');
+                titleArea.addEventListener('click', () => {
+    loadChat(conv.id);
+    toggleSidebar(false);
+    toggleModal(ALL_ELEMENTS.searchModal, false);
+    ALL_ELEMENTS.openSearchBtn.classList.remove('active'); // <-- ✨ 加上這一行
+});
+                const viewBtn = item.querySelector('.search-view-btn');
+                viewBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
                     showConversationInViewModal(conv.id);
-                }, 500);
-            }, { passive: false });
-            item.addEventListener('touchend', () => clearTimeout(pressTimer));
-            item.addEventListener('touchmove', () => clearTimeout(pressTimer));
-            container.appendChild(item);
-        });
-    };
+                });
+                let pressTimer = null;
+                item.addEventListener('touchstart', (e) => {
+                    if (e.target.closest('button')) return;
+                    pressTimer = setTimeout(() => {
+                        e.preventDefault();
+                        showConversationInViewModal(conv.id);
+                    }, 500);
+                }, { passive: false });
+                item.addEventListener('touchend', () => clearTimeout(pressTimer));
+                item.addEventListener('touchmove', () => clearTimeout(pressTimer));
+                container.appendChild(item);
+            });
+        };
         const showConversationInViewModal = (convId) => {
             const conv = conversations.find(c => c.id === convId);
             if (!conv) return;
@@ -8884,6 +8877,11 @@ ${allContextData.join('\n\n')}`;
                     popover.classList.add('visible');
                 }
             });
+            ALL_ELEMENTS.cameraBtn.addEventListener('click', () => {
+                ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
+                ALL_ELEMENTS.imageVideoInput.setAttribute('capture','environment');
+                ALL_ELEMENTS.imageVideoInput.click();
+            });
             ALL_ELEMENTS.webSearchPopoverBtn.addEventListener('click', async () => {
                 ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
                 const conv = getActiveConversation();
@@ -8897,6 +8895,15 @@ ${allContextData.join('\n\n')}`;
             });
             ALL_ELEMENTS.learningModeBtn.addEventListener('click', toggleLearningMode);
             ALL_ELEMENTS.deepResearchBtn.addEventListener('click', toggleDeepResearchMode);
+            ALL_ELEMENTS.uploadImageBtn.addEventListener('click', () => {
+                ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
+                ALL_ELEMENTS.imageVideoInput.removeAttribute('capture');
+                ALL_ELEMENTS.imageVideoInput.click();
+            });
+            ALL_ELEMENTS.uploadFileBtn.addEventListener('click', () => {
+                ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
+                ALL_ELEMENTS.fileUploadInput.click();
+            });
             ALL_ELEMENTS.uploadAnyFileBtn.addEventListener('click', () => {
     ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
     // 我們觸發通用的檔案上傳輸入框，讓使用者可以選擇任何類型的檔案
