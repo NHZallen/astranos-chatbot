@@ -1044,7 +1044,7 @@ body.custom-wallpaper-active .voice-input-btn.active {
         border-color: rgba(200, 200, 200, 0.5) !important;
     }
     body.custom-wallpaper-active #model-options-popover {
-        background-color: rgba(255, 255, 255, 0.35) !important;
+        background-color: rgba(255, 255, 255, 0.5) !important;
         backdrop-filter: blur(16px) !important;
         -webkit-backdrop-filter: blur(16px) !important;
         border: 1px solid rgba(200, 200, 200, 0.5) !important;
@@ -1476,6 +1476,81 @@ body.custom-wallpaper-active .store-category-btn.active {
     border-color: transparent !important;
     color: var(--button-primary-text) !important;
     background: var(--button-primary-bg) !important;
+}
+    #extended-functions-menu-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 99;
+    opacity: 0;
+    transition: opacity 0.2s linear; /* 動畫修正 */
+}
+
+#extended-functions-menu {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: var(--modal-bg);
+    border-top-left-radius: 1.5rem;
+    border-top-right-radius: 1.5rem;
+    z-index: 100;
+    padding: 1rem;
+    transform: translateY(100%);
+    transition: transform 0.2s linear; /* 動畫修正 */
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    touch-action: none;
+}
+
+#extended-functions-menu.visible {
+    transform: translateY(0);
+}
+
+#extended-functions-menu-overlay.visible {
+    opacity: 1;
+}
+
+#extended-functions-menu .menu-header {
+    padding: 0.5rem 1rem 1rem;
+    text-align: center;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 1.125rem; /* 稍微放大標題 */
+}
+
+#extended-functions-menu .menu-options {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 兩欄佈局 */
+    gap: 0.75rem; /* 選項間距 */
+}
+
+#extended-functions-menu .menu-item {
+    display: flex;
+    flex-direction: column; /* 圖示在上，文字在下 */
+    align-items: center;
+    justify-content: center;
+    padding: 1rem 0.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    text-align: center;
+}
+
+#extended-functions-menu .menu-item:hover {
+    background-color: var(--hover-bg);
+}
+
+#extended-functions-menu .menu-item svg {
+    width: 28px;
+    height: 28px;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem; /* 圖示與文字間距 */
 }
     #mobile-context-menu-overlay {
         position: fixed;
@@ -2311,11 +2386,22 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             </div>
                             <div class="w-full flex items-end gap-2">
                                 <div id="file-input-container" class="relative">
-    <!-- 我們將原本的 "+" 按鈕改成了這個新的 "上傳" 按鈕 -->
-    <button id="upload-btn" title="上傳" class="flex-shrink-0 h-10 px-3 rounded-full flex items-center justify-center gap-2 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 transition-colors" data-lang-key-title="upload">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <span class="font-medium text-sm" data-lang-key="upload">上傳</span>
-    </button>
+                                    <button id="add-file-btn" title="附加檔案" class="flex-shrink:0 h-10 w-10 rounded-full flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 transition-colors" data-lang-key-title="attachFile">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                    </button>
+                                    <div id="file-options-popover" class="popover absolute bottom-full left-0 mb-2 w-56 z-20">
+                                        <button id="camera-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>
+                                            <span data-lang-key="camera">相機</span>
+                                        </button>
+                                        <button id="upload-image-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                            <span data-lang-key="imageVideo">圖片 / 影片</span>
+                                        </button>
+                                        <button id="upload-file-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+                                            <span data-lang-key="file">檔案</span>
+                                        </button>
                                         <div class="border-t border-[var(--border-color)] my-1"></div>
                                         <button id="web-search-popover-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
@@ -2990,6 +3076,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     </div>
 </div>
     <div id="mobile-context-menu-wrapper"></div>
+        <div id="extended-functions-menu-wrapper"></div>
     
     <!-- ✨ 新增：互動式計畫編輯器 Modal -->
     <div id="interactive-plan-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[52]">
@@ -8757,6 +8844,61 @@ ${allContextData.join('\n\n')}`;
                 }
             }
         }
+         const showExtendedFunctionsMenu = () => {
+    const wrapper = document.getElementById('extended-functions-menu-wrapper');
+    if (!wrapper || wrapper.innerHTML !== '') return;
+
+    const options = [
+        { id: 'camera-btn', svg: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>`, textKey: 'camera' },
+        { id: 'upload-image-btn', svg: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`, textKey: 'imageVideo' },
+        { id: 'upload-file-btn', svg: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>`, textKey: 'file' },
+        { id: 'web-search-popover-btn', svg: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`, textKey: 'webSearch' },
+        { id: 'learning-mode-btn', svg: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 18a6 6 0 0 0 6-6c0-1.657-2.686-3-6-3s-6 1.343-6 3a6 6 0 0 0 6 6z"/><path d="M12 2v10"/></svg>`, textKey: 'learningMode' },
+        { id: 'deep-research-btn', svg: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`, textKey: 'deepResearch' }
+    ];
+
+    const translations = i18n[config.uiLanguage] || i18n['zh-TW'];
+    const optionsHTML = options.map(opt => `
+        <div class="menu-item" data-action-id="${opt.id}">
+            ${opt.svg}
+            <span>${translations[opt.textKey] || opt.textKey}</span>
+        </div>
+    `).join('');
+
+    wrapper.innerHTML = `
+        <div id="extended-functions-menu-overlay"></div>
+        <div id="extended-functions-menu">
+            <div class="menu-header">${translations.extendedFunctions || '延伸功能'}</div>
+            <div class="menu-options">${optionsHTML}</div>
+        </div>
+    `;
+
+    const overlay = document.getElementById('extended-functions-menu-overlay');
+    const menu = document.getElementById('extended-functions-menu');
+    
+    requestAnimationFrame(() => {
+        overlay.classList.add('visible');
+        menu.classList.add('visible');
+    });
+
+    const closeMenu = () => {
+        overlay.classList.remove('visible');
+        menu.classList.remove('visible');
+        menu.addEventListener('transitionend', () => wrapper.innerHTML = '', { once: true });
+    };
+    
+    overlay.addEventListener('click', closeMenu);
+    menu.querySelectorAll('.menu-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const actionId = item.dataset.actionId;
+            const buttonToClick = document.getElementById(actionId);
+            if (buttonToClick) {
+                buttonToClick.click();
+            }
+            closeMenu();
+        });
+    });
+};
         async function initChatApp() {
             injectDeepResearchStyles(); // ✨ 注入樣式
             await loadConfig();
@@ -8870,14 +9012,18 @@ ${allContextData.join('\n\n')}`;
                 }
             });
             ALL_ELEMENTS.addFileBtn.addEventListener('click', (e) => {
-                const popover = ALL_ELEMENTS.fileOptionsPopover;
-                if (popover.classList.contains('visible')) {
-                    popover.classList.remove('visible');
-                } else {
-                    closeAllPopovers();
-                    popover.classList.add('visible');
-                }
-            });
+    if (window.innerWidth >= 768) { // 桌機/平板版：使用原始的彈出視窗
+        const popover = ALL_ELEMENTS.fileOptionsPopover;
+        if (popover.classList.contains('visible')) {
+            popover.classList.remove('visible');
+        } else {
+            closeAllPopovers();
+            popover.classList.add('visible');
+        }
+    } else { // 手機版：使用新的底部滑出選單
+        showExtendedFunctionsMenu();
+    }
+});
             ALL_ELEMENTS.cameraBtn.addEventListener('click', () => {
                 ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
                 ALL_ELEMENTS.imageVideoInput.setAttribute('capture','environment');
@@ -9304,3 +9450,5 @@ ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
 </script>
 </body>
 </html>
+
+
