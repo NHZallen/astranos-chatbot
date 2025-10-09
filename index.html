@@ -590,28 +590,9 @@ button:not(.btn-primary):active:not(:disabled) {
         opacity: 0;
         visibility: hidden;
         transform: scale(0.95) translateY(-10px);
+        transition: opacity 0.15s ease-out, transform 0.15s ease-out, visibility 0.15s;
         transform-origin: top;
     }
-    @keyframes model-switcher-fade-in {
-    from {
-        opacity: 0;
-        transform: translateY(5px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.model-switcher-change-animation {
-    animation: model-switcher-fade-in 0.3s ease-out;
-}
-
-/* 這是優化下拉選單的展開/收合動畫 */
-#model-options-popover {
-    /* 讓動畫更平滑、時間稍長一點 */
-    transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.25s;
-}
     .popover.visible {
         opacity: 1;
         visibility: visible;
@@ -2160,7 +2141,19 @@ body.custom-wallpaper-active .input-indicator-item {
     visibility: visible;
     opacity: 1;
 }
+#current-model-btn svg {
+    transition: transform 0.2s ease-in-out;
+}
 
+/* 2. 當按鈕擁有 .menu-open class 時，旋轉箭頭 */
+#current-model-btn.menu-open svg {
+    transform: rotate(180deg);
+}
+
+/* 3. 優化 Popover 選單從右上角展開的動畫 (您的程式碼已有，這裡再次確認) */
+#model-options-popover {
+    transform-origin: top right; /* 確保動畫從右上角開始 */
+}
 
 </style>
 <script>
@@ -4700,27 +4693,25 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     ${optionsHTML}
                 </div>
             `;
-
-            // ✨ START: 新增的動畫觸發邏輯
-            const modelBtn = document.getElementById('current-model-btn');
-            if (modelBtn) {
-                modelBtn.classList.add('model-switcher-change-animation');
-                modelBtn.addEventListener('animationend', () => {
-                    modelBtn.classList.remove('model-switcher-change-animation');
-                }, { once: true });
-            }
-            // ✨ END: 新增的動畫觸發邏輯
-
             if (!isArchived) {
-                document.getElementById('current-model-btn').addEventListener('click', () => {
-                    const popover = document.getElementById('model-options-popover');
-                    if (popover.classList.contains('visible')) {
-                        popover.classList.remove('visible');
-                    } else {
-                        closeAllPopovers();
+                // ✨ START: 這是修改後的核心邏輯
+                const modelBtn = document.getElementById('current-model-btn');
+                const popover = document.getElementById('model-options-popover');
+                
+                modelBtn.addEventListener('click', () => {
+                    const isOpen = popover.classList.contains('visible');
+                    // 先關閉所有其他的 popover
+                    closeAllPopovers(); 
+                    
+                    // 然後切換當前的狀態
+                    if (!isOpen) {
                         popover.classList.add('visible');
+                        modelBtn.classList.add('menu-open');
                     }
+                    // closeAllPopovers 已經處理了關閉，所以這裡不需要 else
                 });
+                // ✨ END: 核心邏輯修改結束
+
                 document.querySelectorAll('.model-option-btn-container').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         const newModelId = e.currentTarget.dataset.model;
@@ -6839,6 +6830,13 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             document.querySelectorAll('.popover.visible').forEach(popover => {
                 popover.classList.remove('visible');
             });
+            // ✨ START: 這是新增的邏輯
+            // 當關閉所有彈窗時，也要確保模型選擇器按鈕的箭頭恢復原狀
+            const openModelBtn = document.getElementById('current-model-btn');
+            if (openModelBtn) {
+                openModelBtn.classList.remove('menu-open');
+            }
+            // ✨ END: 新增邏輯結束
         }
         async function copyTextToClipboard(text) {
             if (navigator.clipboard && window.isSecureContext) {
@@ -9537,5 +9535,3 @@ ${allContextData.join('\n\n')}`;
 </script>
 </body>
 </html>
-
-
