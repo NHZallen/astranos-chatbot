@@ -226,7 +226,7 @@
     z-index: 100;
     padding: 1rem;
     transform: translateY(100%);
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: transform 0.3s ease-out;
     max-height: 80vh;
     display: flex;
     flex-direction: column;
@@ -590,9 +590,28 @@ button:not(.btn-primary):active:not(:disabled) {
         opacity: 0;
         visibility: hidden;
         transform: scale(0.95) translateY(-10px);
-        transition: opacity 0.15s ease-out, transform 0.15s ease-out, visibility 0.15s;
         transform-origin: top;
     }
+    @keyframes model-switcher-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.model-switcher-change-animation {
+    animation: model-switcher-fade-in 0.3s ease-out;
+}
+
+/* 這是優化下拉選單的展開/收合動畫 */
+#model-options-popover {
+    /* 讓動畫更平滑、時間稍長一點 */
+    transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.25s;
+}
     .popover.visible {
         opacity: 1;
         visibility: visible;
@@ -1594,7 +1613,7 @@ body.custom-wallpaper-active .store-category-btn.active {
         z-index: 100;
         padding: 1rem;
         transform: translateY(100%);
-        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        transition: transform 0.3s ease-out;
         max-height: 80vh;
         display: flex;
         flex-direction: column;
@@ -4650,141 +4669,86 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         };
         const renderModelSwitcher = () => {
-    const conv = getActiveConversation();
-    ALL_ELEMENTS.modelSwitcherContainer.innerHTML = '';
-    if (!conv) return;
-
-    // 1. 將模型分類
-    const visibleModels = config.modelSettings
-        .filter(s => !s.hidden)
-        .sort((a, b) => a.order - b.order)
-        .map(s => MODELS.find(m => m.id === s.id))
-        .filter(Boolean);
-
-    const geminiModels = visibleModels.filter(m => m.provider === 'gemini');
-    const otherModels = visibleModels.filter(m => m.provider !== 'gemini');
-
-    const currentModel = MODELS.find(m => m.id === conv.model) || MODELS[0];
-    const isArchived = conv.archived;
-    const translations = i18n[config.uiLanguage] || i18n['zh-TW'];
-
-    // 2. 建立 Gemini 模型選項的 HTML
-    let geminiOptionsHTML = geminiModels.map(m => {
-        const description = translations[m.descriptionKey] || '';
-        const limits = translations[m.limitsKey] || '';
-        return `
-            <div data-model="${m.id}" class="model-option-btn-container ${isArchived ? 'cursor-not-allowed opacity-50' : ''}">
-                <h4 class="font-semibold">${m.name}</h4>
-                <p class="model-description">${description}<span class="whitespace-nowrap"> (${limits})</span></p>
-            </div>
-        `;
-    }).join('');
-
-    // 3. 建立其他模型選項的 HTML
-    let otherOptionsHTML = otherModels.map(m => {
-        const description = translations[m.descriptionKey] || '';
-        const limits = translations[m.limitsKey] || '';
-        return `
-            <div data-model="${m.id}" class="model-option-btn-container ${isArchived ? 'cursor-not-allowed opacity-50' : ''}">
-                <h4 class="font-semibold">${m.name}</h4>
-                <p class="model-description">${description}<span class="whitespace-nowrap"> (${limits})</span></p>
-            </div>
-        `;
-    }).join('');
-
-    // 4. 組合最終的選單結構 (包含兩個視圖)
-    ALL_ELEMENTS.modelSwitcherContainer.innerHTML = `
-        <button id="current-model-btn" class="flex items-center gap-2 text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] px-2 py-1 md:px-3 rounded-md ${isArchived ? 'cursor-not-allowed' : ''}" ${isArchived ? 'disabled' : ''}>
-            <span class="font-semibold text-sm md:text-base text-[var(--text-primary)]">${currentModel.name}</span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-        </button>
-        <div id="model-options-popover" class="popover absolute right-0 mt-6 w-72 md:w-80 rounded-lg border border-[var(--border-color)] z-50 overflow-hidden">
-            <!-- 視圖一：只顯示 Gemini 模型 -->
-            <div id="gemini-models-view">
-                ${geminiOptionsHTML}
-                ${otherModels.length > 0 ? `
-                    <div class="border-t border-[var(--border-color)] my-1"></div>
-                    <button id="show-more-models-btn" class="w-full text-center px-4 py-3 hover:bg-[var(--hover-bg)] text-sm font-semibold text-blue-600">
-                        更多模型
-                    </button>
-                ` : ''}
-            </div>
-
-            <!-- 視圖二：顯示其他模型 (預設隱藏) -->
-            <div id="other-models-view" style="display: none;">
-                 <button id="back-to-gemini-btn" class="w-full flex items-center gap-2 text-left px-4 py-3 hover:bg-[var(--hover-bg)] text-sm font-semibold text-blue-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                    返回
+            const conv = getActiveConversation();
+            ALL_ELEMENTS.modelSwitcherContainer.innerHTML = '';
+            if (!conv) return;
+            const visibleModels = config.modelSettings
+                .filter(s => !s.hidden)
+                .sort((a, b) => a.order - b.order)
+                .map(s => MODELS.find(m => m.id === s.id))
+                .filter(Boolean);
+            const currentModel = MODELS.find(m => m.id === conv.model) || MODELS[0];
+            const isArchived = conv.archived;
+            let optionsHTML = '';
+            const translations = i18n[config.uiLanguage] || i18n['zh-TW'];
+            visibleModels.forEach(m => {
+                const description = translations[m.descriptionKey] || '';
+                const limits = translations[m.limitsKey] || '';
+                optionsHTML += `
+                    <div data-model="${m.id}" class="model-option-btn-container ${isArchived ? 'cursor-not-allowed opacity-50' : ''}">
+                        <h4 class="font-semibold">${m.name}</h4>
+                        <p class="model-description">${description}<span class="whitespace-nowrap"> (${limits})</span></p>
+                    </div>
+                `;
+            });
+            ALL_ELEMENTS.modelSwitcherContainer.innerHTML = `
+                <button id="current-model-btn" class="flex items-center gap-2 text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] px-2 py-1 md:px-3 rounded-md ${isArchived ? 'cursor-not-allowed' : ''}" ${isArchived ? 'disabled' : ''}>
+                    <span class="font-semibold text-sm md:text-base text-[var(--text-primary)]">${currentModel.name}</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </button>
-                <div class="border-t border-[var(--border-color)] my-1"></div>
-                ${otherOptionsHTML}
-            </div>
-        </div>
-    `;
+                <div id="model-options-popover" class="popover absolute right-0 mt-6 w-72 md:w-80 rounded-lg border border-[var(--border-color)] z-50">
+                    ${optionsHTML}
+                </div>
+            `;
 
-    // 5. 綁定所有事件
-    if (!isArchived) {
-        // 開關選單
-        document.getElementById('current-model-btn').addEventListener('click', () => {
-            const popover = document.getElementById('model-options-popover');
-            popover.classList.toggle('visible');
-            // 如果關閉時不在 Gemini 視圖，則重置回 Gemini 視圖
-            if (!popover.classList.contains('visible')) {
-                setTimeout(() => {
-                    document.getElementById('gemini-models-view').style.display = 'block';
-                    document.getElementById('other-models-view').style.display = 'none';
-                }, 150); // 等待動畫結束
+            // ✨ START: 新增的動畫觸發邏輯
+            const modelBtn = document.getElementById('current-model-btn');
+            if (modelBtn) {
+                modelBtn.classList.add('model-switcher-change-animation');
+                modelBtn.addEventListener('animationend', () => {
+                    modelBtn.classList.remove('model-switcher-change-animation');
+                }, { once: true });
             }
-        });
+            // ✨ END: 新增的動畫觸發邏輯
 
-        // 選擇模型
-        document.querySelectorAll('.model-option-btn-container').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const newModelId = e.currentTarget.dataset.model;
-                const newModelInfo = MODELS.find(m => m.id === newModelId);
-                if (newModelInfo) {
-                    conv.model = newModelInfo.id;
-                    conv.provider = newModelInfo.provider;
-                    config.lastUsedModel = newModelId;
-                    if (config.isDeepResearchMode && newModelInfo.provider !== 'gemini') {
-                        toggleDeepResearchMode();
+            if (!isArchived) {
+                document.getElementById('current-model-btn').addEventListener('click', () => {
+                    const popover = document.getElementById('model-options-popover');
+                    if (popover.classList.contains('visible')) {
+                        popover.classList.remove('visible');
+                    } else {
+                        closeAllPopovers();
+                        popover.classList.add('visible');
                     }
-                    saveAppData();
-                    saveConfig();
-                    renderModelSwitcher(); // 重新渲染以更新顯示
-                    updateInputState();
-                    renderInputIndicators();
-                    updateFileInputUI();
-                    updateFunctionButtonsState();
-                }
-                document.getElementById('model-options-popover').classList.remove('visible');
-            });
-        });
+                });
+                document.querySelectorAll('.model-option-btn-container').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const newModelId = e.currentTarget.dataset.model;
+                        const newModelInfo = MODELS.find(m => m.id === newModelId);
+                        if (newModelInfo) {
+                            conv.model = newModelInfo.id;
+                            conv.provider = newModelInfo.provider;
+                            config.lastUsedModel = newModelId;
 
-        // 切換視圖的按鈕
-        const showMoreBtn = document.getElementById('show-more-models-btn');
-        if (showMoreBtn) {
-            showMoreBtn.addEventListener('click', (e) => {
-                e.stopPropagation(); // 防止觸發父層的關閉事件
-                document.getElementById('gemini-models-view').style.display = 'none';
-                document.getElementById('other-models-view').style.display = 'block';
-            });
-        }
-        
-        const backBtn = document.getElementById('back-to-gemini-btn');
-        if (backBtn) {
-            backBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                document.getElementById('other-models-view').style.display = 'none';
-                document.getElementById('gemini-models-view').style.display = 'block';
-            });
-        }
-    }
+                            if (config.isDeepResearchMode && newModelInfo.provider !== 'gemini') {
+                                toggleDeepResearchMode();
+                            }
 
-    // 更新其他UI狀態
-    updateFileInputUI();
-    updateApiKeyWarningBadge();
-};
+                            saveAppData();
+                            saveConfig();
+                            renderModelSwitcher();
+                            updateInputState();
+                            renderInputIndicators();
+                            updateFileInputUI();
+                            updateFunctionButtonsState();
+                        }
+                        document.getElementById('model-options-popover').classList.remove('visible');
+                    });
+                });
+            }
+            updateFileInputUI();
+            updateApiKeyWarningBadge();
+        };
         const addMessageToUI = (msg, index, shouldSave = true, shouldScroll = true) => {
             const conv = getActiveConversation();
             if (shouldSave) {
