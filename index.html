@@ -2311,16 +2311,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             </div>
                             <div class="w-full flex items-end gap-2">
                                 <div id="file-input-container" class="relative">
-                                    <button id="add-file-btn" title="附加檔案" class="flex-shrink:0 h-10 w-10 rounded-full flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 transition-colors" data-lang-key-title="attachFile">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                                    </button>
-                                    <div id="file-options-popover" class="popover absolute bottom-full left-0 mb-2 w-56 z-20">
-    <button id="unified-upload-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
-    <!-- 雲朵圖示 (表示上傳) -->
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4 4-4-4"/></svg>
-    <span data-lang-key="upload">上傳</span>
+                                    <button id="add-file-btn" title="上傳檔案" class="flex-shrink:0 h-10 w-10 rounded-full flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 transition-colors" data-lang-key-title="uploadFile">
+    <!-- 新的 SVG：雲朵上傳圖標 -->
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.86 8.5"/><path d="M12 18v3"/><path d="m15 21-3-3-3 3"/></svg>
 </button>
-<div class="border-t border-[var(--border-color)] my-1"></div>
+    <div class="border-t border-[var(--border-color)] my-1"></div>
     <button id="web-search-popover-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
         <span data-lang-key="search">搜索</span>
@@ -3193,7 +3188,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             fileInputContainer: document.getElementById('file-input-container'),
             addFileBtn: document.getElementById('add-file-btn'),
             fileOptionsPopover: document.getElementById('file-options-popover'),
-            unifiedUploadBtn: document.getElementById('unified-upload-btn'), // ✨ 新增：合併後的按鈕 ID
+            cameraBtn: document.getElementById('camera-btn'),
+            uploadImageBtn: document.getElementById('upload-image-btn'),
+            uploadFileBtn: document.getElementById('upload-file-btn'),
             imageVideoInput: document.getElementById('image-video-input'),
             fileUploadInput: document.getElementById('file-upload-input'),
             filePreviewContainer: document.getElementById('file-preview-container'),
@@ -8881,16 +8878,41 @@ ${allContextData.join('\n\n')}`;
                     popover.classList.add('visible');
                 }
             });
-            ALL_ELEMENTS.cameraBtn.addEventListener('click', () => {
-                ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
-                ALL_ELEMENTS.imageVideoInput.setAttribute('capture','environment');
-                ALL_ELEMENTS.imageVideoInput.click();
-            });
+
+            // ✨ 新增統一的上傳按鈕邏輯
+            const unifiedUploadBtn = document.getElementById('unified-upload-btn');
+            if (unifiedUploadBtn) {
+                unifiedUploadBtn.addEventListener('click', async () => {
+                    ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
+                    
+                    const uploadOption = await showCustomDialog({
+                        title: '選擇上傳方式',
+                        message: '請選擇您要透過相機拍照、選擇影像檔案或選擇一般檔案。',
+                        buttons: [
+                            { text: '相機/拍照', class: 'p-2 rounded-md hover:bg-[var(--active-bg)]', value: () => 'camera' },
+                            { text: '影像檔案', class: 'p-2 rounded-md hover:bg-[var(--active-bg)]', value: () => 'image' },
+                            { text: '其他檔案', class: 'p-2 rounded-md btn-primary', value: () => 'file' }
+                        ]
+                    });
+
+                    if (uploadOption === 'camera') {
+                        ALL_ELEMENTS.imageVideoInput.setAttribute('capture','environment');
+                        ALL_ELEMENTS.imageVideoInput.click();
+                    } else if (uploadOption === 'image') {
+                        ALL_ELEMENTS.imageVideoInput.removeAttribute('capture');
+                        ALL_ELEMENTS.imageVideoInput.click();
+                    } else if (uploadOption === 'file') {
+                        ALL_ELEMENTS.fileUploadInput.click();
+                    }
+                });
+            }
+            
+            // 保持其他功能按鈕的邏輯不變
             ALL_ELEMENTS.webSearchPopoverBtn.addEventListener('click', async () => {
                 ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
                 const conv = getActiveConversation();
                 if (!conv || conv.provider !== 'gemini' || conv.archived) {
-                    showNotification(i18n[config.uiLanguage].searchNotAvailable || '當前模型不支援或無法使用搜索。', 'warning');
+                    showNotification(i18n[config.uiLanguage].webSearchNotAvailable || '當前模型不支援或無法使用搜索。', 'warning');
                     return;
                 }
                 conv.isWebSearchEnabled = !conv.isWebSearchEnabled;
@@ -8899,12 +8921,8 @@ ${allContextData.join('\n\n')}`;
             });
             ALL_ELEMENTS.learningModeBtn.addEventListener('click', toggleLearningMode);
             ALL_ELEMENTS.deepResearchBtn.addEventListener('click', toggleDeepResearchMode);
-            ALL_ELEMENTS.unifiedUploadBtn.addEventListener('click', () => {
-                ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
-                ALL_ELEMENTS.imageVideoInput.setAttribute('accept','image/*,video/*,application/*,text/*,.pdf,.doc,.docx,.xls,.xlsx');
-                ALL_ELEMENTS.imageVideoInput.removeAttribute('capture'); // 移除強制開啟相機屬性
-                ALL_ELEMENTS.imageVideoInput.click();
-            });
+            
+            // 確保這些輸入元素仍然有事件監聽器來處理檔案選擇
             ALL_ELEMENTS.imageVideoInput.addEventListener('change', handleFileSelection);
             ALL_ELEMENTS.fileUploadInput.addEventListener('change', handleFileSelection);
             ALL_ELEMENTS.selectionModeBtn.addEventListener('click', toggleSelectionMode);
