@@ -2173,7 +2173,11 @@ body.custom-wallpaper-active .input-indicator-item {
     visibility: visible;
     opacity: 1;
 }
-
+body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-editor-step label,
+body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-editor-step input,
+body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-editor-step textarea {
+    color: #000000 !important; 
+}
 
 </style>
 <script>
@@ -3639,43 +3643,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
             const hashArray = Array.from(new Uint8Array(hashBuffer));
             return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        };
-        const parseApiError = async (response) => {
-            const status = response.status;
-            const statusText = response.statusText;
-            let errorDetails = '無法解析錯誤詳情。';
-
-            try {
-                // 嘗試將錯誤回應當作 JSON 來解析
-                const errorData = await response.json();
-
-                // 處理 Gemini API 的錯誤格式 (通常在 error.message)
-                if (errorData.error && errorData.error.message) {
-                    errorDetails = errorData.error.message;
-                }
-                // 處理 OpenRouter API 的錯誤格式 (也在 error.message)
-                else if (errorData.error && errorData.error.code) {
-                     errorDetails = `[${errorData.error.code}] ${errorData.error.message}`;
-                }
-                 // 處理其他可能的 JSON 錯誤格式
-                else if (errorData.message) {
-                    errorDetails = errorData.message;
-                }
-                // 如果 JSON 存在但格式未知，則直接顯示 JSON 內容
-                else {
-                    errorDetails = JSON.stringify(errorData);
-                }
-            } catch (e) {
-                // 如果回應不是 JSON 格式 (例如 502 Gateway Error 回傳 HTML 頁面)
-                try {
-                    errorDetails = await response.text();
-                } catch (textErr) {
-                    errorDetails = '無法讀取錯誤回應內容。';
-                }
-            }
-
-            // 組合成一個詳細的錯誤訊息
-            return `API 請求失敗 (HTTP ${status} ${statusText}): ${errorDetails}`;
         };
         const hexToRgba = (hex, alpha = 1) => {
             if (!hex) return `rgba(255, 255, 255, ${alpha})`;
@@ -5390,10 +5357,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
             }
             const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
-            if (!response.ok) {
-                const errorMessage = await parseApiError(response);
-                throw new Error(errorMessage);
-            }
+            if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'API 請求失敗'); }
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
@@ -5485,8 +5449,8 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     signal
                 });
                 if (!response.ok) {
-                    const errorMessage = await parseApiError(response);
-                    throw new Error(errorMessage);
+                    const errorData = await response.json();
+                    throw new Error(errorData.error?.message || 'API request failed');
                 }
                 const result = await response.json();
                 const jsonString = result?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -8821,10 +8785,7 @@ ${stepCountInstruction}
                     const plannerApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${CHEAP_MODEL_ID}:generateContent?key=${apiKey}`;
                     const plannerResponse = await fetch(plannerApiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(plannerPayload), signal: abortController.signal });
 
-                    if (!plannerResponse.ok) {
-                        const errorMessage = await parseApiError(plannerResponse);
-                        throw new Error(`研究計畫生成失敗: ${errorMessage}`);
-                    }
+                    if (!plannerResponse.ok) throw new Error(`研究計畫生成失敗: ${(await plannerResponse.json()).error?.message || 'API request failed'}`);
                     
                     const result = await plannerResponse.json();
                     const jsonString = result?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -9482,31 +9443,16 @@ ${allContextData.join('\n\n')}`;
                 menu.id = 'attachment-menu';
 
                 // 這裡定義了視窗裡的所有按鈕，未來管理非常方便！
-                const conv = getActiveConversation();
-                const modelInfo = MODELS.find(m => m.id === conv?.model);
-                const provider = modelInfo?.provider;
-
-                let menuItems = [];
-
-                if (provider === 'openrouter') {
-                    // 如果是 OpenRouter 模型，只顯示「學習」和「研究」
-                    menuItems = [
-                        { id: 'learning-mode-btn', svg: `<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V5H6.5A2.5 2.5 0 0 0 4 7.5v12z"/>`, textKey: 'learning', originalElement: ALL_ELEMENTS.learningModeBtn },
-                        { id: 'deep-research-btn', svg: `<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>`, textKey: 'research', originalElement: ALL_ELEMENTS.deepResearchBtn }
-                    ];
-                } else {
-                    // 否則 (Gemini 模型)，顯示所有功能
-                    menuItems = [
-                        { id: 'camera-btn', svg: `<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle>`, textKey: 'camera', originalElement: ALL_ELEMENTS.cameraBtn },
-                        { id: 'upload-image-btn', svg: `<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline>`, textKey: 'image', originalElement: ALL_ELEMENTS.uploadImageBtn },
-                        { id: 'upload-file-btn', svg: `<path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline>`, textKey: 'file', originalElement: ALL_ELEMENTS.uploadFileBtn },
-                        { type: 'divider' },
-                        { id: 'web-search-popover-btn', svg: `<circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>`, textKey: 'search', originalElement: ALL_ELEMENTS.webSearchPopoverBtn },
-                        { id: 'learning-mode-btn', svg: `<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V5H6.5A2.5 2.5 0 0 0 4 7.5v12z"/>`, textKey: 'learning', originalElement: ALL_ELEMENTS.learningModeBtn },
-                        { type: 'divider' },
-                        { id: 'deep-research-btn', svg: `<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>`, textKey: 'research', originalElement: ALL_ELEMENTS.deepResearchBtn }
-                    ];
-                }
+                const menuItems = [
+                    { id: 'camera-btn', svg: `<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle>`, textKey: 'camera', originalElement: ALL_ELEMENTS.cameraBtn },
+                    { id: 'upload-image-btn', svg: `<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline>`, textKey: 'image', originalElement: ALL_ELEMENTS.uploadImageBtn },
+                    { id: 'upload-file-btn', svg: `<path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline>`, textKey: 'file', originalElement: ALL_ELEMENTS.uploadFileBtn },
+                    { type: 'divider' }, // 分隔線
+                    { id: 'web-search-popover-btn', svg: `<circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>`, textKey: 'search', originalElement: ALL_ELEMENTS.webSearchPopoverBtn },
+                    { id: 'learning-mode-btn', svg: `<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V5H6.5A2.5 2.5 0 0 0 4 7.5v12z"/>`, textKey: 'learning', originalElement: ALL_ELEMENTS.learningModeBtn },
+                    { type: 'divider' }, // 分隔線
+                    { id: 'deep-research-btn', svg: `<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>`, textKey: 'research', originalElement: ALL_ELEMENTS.deepResearchBtn }
+                ];
 
                 let itemsHTML = '';
                 menuItems.forEach(item => {
