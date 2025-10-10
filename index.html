@@ -43,6 +43,26 @@
     border-radius: 9999px; /* 讓指示條兩端變圓滑 */
     animation: indicator-pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+@keyframes fadeOutUp {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-100%);
+    }
+}
 @keyframes indicator-pop-in {
     from {
         opacity: 0;
@@ -742,19 +762,31 @@ button:not(.btn-primary):active:not(:disabled) {
     .scroll-area::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
     .scroll-area::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
     #notification-container {
-    position: absolute; /* 改成 absolute，相對於 <main> 定位 */
-    top: 0;
-    left: 0;
-    right: 0; /* 或者 width: 100%; 也可以 */
-    z-index: 20; /* 確保在聊天內容之上，但在彈出視窗之下 */
+    position: fixed; /* 讓它固定在螢幕上 */
+    top: 0;          /* 從頂部開始 */
+    left: 0;         /* 靠左 */
+    right: 0;        /* 靠右，這樣就會橫跨整個畫面寬度 */
+    z-index: 101;    /* 確保它顯示在最上層 */
+    padding: 1rem;   /* 給通知一些呼吸空間 */
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    /* 讓滑鼠可以穿透此容器，點擊到下方的按鈕 */
+    pointer-events: none; 
 }
     .notification {
-    padding: 0.5rem 1rem; /* 縮小上下邊距，讓它變細 */
-    font-weight: 600;
-    text-align: center;
-    border-bottom-width: 1px; /* 設定底部邊框寬度 */
-    border-bottom-style: solid;
-    animation: fadeInDown 0.4s ease-out, fadeOutUp 0.4s ease-in 2.6s forwards;
+    padding: 0.75rem 1.5rem;  /* 稍微調整上下邊距 */
+    border-radius: 0.75rem;   /* 圓角小一點比較好看 */
+    font-weight: 600;         /* 讓文字粗一點，更清晰 */
+    text-align: center;       /* 文字置中 */
+    color: #ffffff;           /* 預設文字顏色為白色 */
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2); /* 給文字一點陰影增加立體感 */
+    /* 套用我們新的動畫效果 */
+    animation: fadeInDown 0.4s ease-out, fadeOutUp 0.4s ease-in 2.7s forwards;
+    pointer-events: auto;     /* 讓通知本身可以被滑鼠互動 */
+    margin: 0 auto;           /* 讓通知在容器內水平置中 */
+    max-width: 500px;         /* 設定最大寬度，在大螢幕上才不會太長 */
+    width: 100%;              /* 寬度盡量填滿 */
 }
     .dark .notification {
         background-color: rgba(20, 20, 20, 0.2);
@@ -762,26 +794,21 @@ button:not(.btn-primary):active:not(:disabled) {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
     }
     .notification.success {
-    --notification-color-rgb: 34, 197, 94; /* 綠色 */
+    background-color: #22c55e;
+    /* 使用 box-shadow 製作光暈效果，顏色就是背景色帶有透明度 */
+    box-shadow: 0 4px 20px -5px rgba(34, 197, 94, 0.6);
 }
 
+/* 紅色：錯誤 */
+.notification.error {
+    background-color: #ef4444;
+    box-shadow: 0 4px 20px -5px rgba(239, 68, 68, 0.6);
+}
+
+/* 橘色：警告 */
 .notification.warning {
-    --notification-color-rgb: 249, 115, 22; /* 橘色 */
-}
-
-.notification.error {
-    --notification-color-rgb: 239, 68, 68; /* 紅色 */
-}
-
-/* 這是共用的樣式，會自動套用上面定義的顏色 */
-.notification.success,
-.notification.warning,
-.notification.error {
-    color: rgb(var(--notification-color-rgb)); /* 文字顏色 */
-    background: linear-gradient(to bottom, rgba(var(--notification-color-rgb), 0.25), transparent); /* 從 25% 透明度的顏色漸變到完全透明 */
-    border-bottom-color: rgba(var(--notification-color-rgb), 0.5); /* 底部邊框線的顏色 */
-    box-shadow: 0 3px 20px -5px rgba(var(--notification-color-rgb), 0.6); /* 核心！這就是科技感光暈 */
-    text-shadow: 0 0 10px rgba(var(--notification-color-rgb), 0.3); /* 讓文字也帶一點點光暈 */
+    background-color: #f97316;
+    box-shadow: 0 4px 20px -5px rgba(249, 115, 22, 0.6);
 }
     .message-item { animation: slideInUp 0.4s ease-out forwards; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
