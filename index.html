@@ -18,6 +18,10 @@
 #open-search-btn.active {
     color: var(--button-primary-bg);
 }
+    main.flex-1 {
+    /* 強制隱藏所有超出寬度的內容 */
+    overflow-x: hidden;
+}
     #history-sidebar-overlay {
     transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -3576,31 +3580,51 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
     // 渲染歷史訊息側邊欄的內容
     function renderHistorySidebarContent() {
-        const { historySidebarList } = ALL_ELEMENTS;
-        const conv = getActiveConversation();
-        
-        historySidebarList.innerHTML = ''; // 先清空舊的列表
+    const { historySidebarList } = ALL_ELEMENTS;
+    const conv = getActiveConversation();
+    
+    historySidebarList.innerHTML = ''; // 先清空舊的列表
 
-        if (!conv || conv.messages.length === 0) {
-            historySidebarList.innerHTML = `<p class="p-4 text-sm text-center text-[var(--text-secondary)]">沒有歷史訊息</p>`;
-            return;
-        }
-
-        conv.messages.forEach((msg, index) => {
-            const textPart = msg.parts.find(p => p.text);
-            let snippet = textPart ? textPart.text : (msg.role === 'user' ? '用戶訊息' : 'AI 回覆');
-            
-            const icon = getMessageTypeIcon(msg);
-            
-            const listItem = document.createElement('div');
-            listItem.className = 'history-sidebar-item';
-            // 儲存訊息的索引，這樣我們才知道要跳到哪一則
-            listItem.dataset.messageIndex = index; 
-            
-            listItem.textContent = icon + snippet;
-            historySidebarList.appendChild(listItem);
-        });
+    if (!conv || conv.messages.length === 0) {
+        historySidebarList.innerHTML = `<p class="p-4 text-sm text-center text-[var(--text-secondary)]">沒有歷史訊息</p>`;
+        return;
     }
+
+    conv.messages.forEach((msg, index) => {
+        const textPart = msg.parts.find(p => p.text);
+        let snippet = textPart ? textPart.text : (msg.role === 'user' ? '用戶訊息' : 'AI 回覆');
+        
+        const icon = getMessageTypeIcon(msg);
+        
+        const listItem = document.createElement('div');
+        listItem.className = 'history-sidebar-item';
+        listItem.dataset.messageIndex = index;
+        
+        // ✨ --- 以下是新增的核心邏輯 --- ✨
+        
+        // 1. 判斷訊息角色並獲取對應顏色設定
+        const isUser = msg.role === 'user';
+        const colorConfig = isUser ? USER_BUBBLE_COLORS : AI_BUBBLE_COLORS;
+        const colorName = isUser ? config.userBubbleColor : config.aiBubbleColor;
+        
+        // 2. 根據當前主題（淺色/深色）取得正確的顏色碼
+        const theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+        const bgColor = (colorConfig[colorName] || colorConfig['default'])[theme];
+
+        // 3. 應用背景色，並稍微降低飽和度/增加透明度，讓它不那麼刺眼
+        // 我們使用 RGBA 來添加透明度
+        const rgbaColor = hexToRgba(bgColor, 0.4); // 40% 的透明度
+        listItem.style.backgroundColor = rgbaColor;
+
+        // 4. 根據背景色，自動決定文字顏色（黑或白）以確保可讀性
+        listItem.style.color = getTextColorForBackground(bgColor);
+        
+        // ✨ --- 新增邏輯結束 --- ✨
+
+        listItem.textContent = icon + snippet;
+        historySidebarList.appendChild(listItem);
+    });
+}
 
     // 處理歷史訊息側邊欄的點擊事件
     function setupHistorySidebarInteractions() {
@@ -3620,7 +3644,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 // 讓訊息滾動到畫面中央
                 targetMessageElement.scrollIntoView({
                     behavior: 'smooth',
-                    block: 'center'
+                    block: 'start'
                 });
 
                 // 添加高亮效果
