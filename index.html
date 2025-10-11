@@ -14,6 +14,48 @@
     body {
     touch-action: manipulation;
 }
+    #history-sidebar-overlay {
+    /* 讓它擁有和左邊遮罩一樣的半透明灰色背景 */
+    background-color: rgba(0, 0, 0, 0.5);
+    
+    /* 確保遮罩層在內容之上(z-10)，但在側邊欄之下 */
+    /* 這裡的 z-index 值與您左側遮罩的 Tailwind class 'z-30' 保持一致 */
+    z-index: 30 !important; 
+}
+
+/* 並且，我們需要稍微提高右側側邊欄本身的層級，確保它在遮罩之上 */
+#history-sidebar {
+    /* 這裡的 z-index 值與您左側側邊欄的 'z-40' 保持一致 */
+    z-index: 40 !important;
+}
+
+/* 當啟用自訂桌布時，我們仍然需要讓這個遮罩變透明，以顯示桌布 */
+body.custom-wallpaper-active #history-sidebar-overlay {
+    background-color: transparent !important;
+}
+
+
+/* 2. 修正高亮動畫不會自動消失的問題 */
+.message-highlight {
+    /* 使用 animation 來實現效果，並加上 'forwards' 關鍵字 */
+    /* 'forwards' 會讓動畫停留在最後一幀的狀態（也就是透明） */
+    animation: highlight-fade 1.5s ease-out forwards;
+}
+
+@keyframes highlight-fade {
+    /* 動畫開始時：黃色高亮 */
+    0% { 
+        background-color: rgba(250, 204, 21, 0.7); 
+    }
+    /* 在 60% 的時間點，仍然保持黃色，創造一個短暫的「停留」效果 */
+    60% { 
+        background-color: rgba(250, 204, 21, 0.7); 
+    }
+    /* 從 60% 到 100%，平滑地淡出為透明 */
+    100% { 
+        background-color: transparent; 
+    }
+}
     #history-sidebar.visible ~ #scroll-to-bottom-btn {
     opacity: 0;
     pointer-events: none;
