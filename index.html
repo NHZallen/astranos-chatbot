@@ -67,17 +67,38 @@ body.custom-wallpaper-active #history-sidebar h3 {
 
 /* 側邊欄內的每個訊息項目樣式 */
 .history-sidebar-item {
+    position: relative; /* ✨ 新增：為了讓指示條可以相對於它定位，非常重要！ */
     padding: 0.75rem;
     border-radius: 0.5rem;
     cursor: pointer;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis; /* 當文字太長時，顯示 ... */
+    text-overflow: ellipsis; 
     font-size: 0.875rem;
     color: var(--text-secondary);
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    padding-left: 1.25rem; /* ✨ 新增：為左側的指示條留出空間 */
+}
+.history-sidebar-item.active {
+    background-color: var(--hover-bg); 
+    color: var(--text-primary) !important; 
+    font-weight: 600; 
+}
+
+.history-sidebar-item.active::before {
+    content: ''; /* 偽元素必須要有 content 屬性 */
+    position: absolute; /* 絕對定位，相對於 .history-sidebar-item */
+    left: 6px; /* 離左邊邊緣的距離 */
+    top: 50%; /* 定位在垂直置中的位置 */
+    transform: translateY(-50%); /* 透過 transform 精準置中 */
+    width: 4px; /* 指示條的寬度 */
+    height: 60%; /* 指示條的高度 */
+    background-color: var(--button-primary-bg);
+    border-radius: 9999px; /* 讓指示條兩端變圓滑 */
+    /* 使用和左邊一樣的彈出動畫 */
+    animation: indicator-pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
 .history-sidebar-item:hover {
@@ -9307,6 +9328,53 @@ ${allContextData.join('\n\n')}`;
                 }
             }
         }
+        function updateActiveHistoryItemOnScroll() {
+    const { chatContainer, messageList, historySidebarList, historySidebar } = ALL_ELEMENTS;
+    
+    // 如果右側邊欄沒有顯示，或聊天視窗不存在，就不用執行
+    if (!historySidebar.classList.contains('visible') || !messageList) return;
+
+    // 設定一個「觀察線」，大概在聊天視窗頂部下方 80px 的位置
+    // 當訊息的上緣滾動到這條線下方時，我們就視其為「當前」訊息
+    const scrollThreshold = chatContainer.getBoundingClientRect().top + 80;
+
+    const messageItems = Array.from(messageList.querySelectorAll('.message-item'));
+    let currentActiveIndex = -1;
+
+    // 從上到下遍歷所有對話訊息
+    for (let i = 0; i < messageItems.length; i++) {
+        const itemRect = messageItems[i].getBoundingClientRect();
+        
+        // 如果訊息的頂部已經滾動到了觀察線的下方，就把它當作當前項目
+        if (itemRect.top >= scrollThreshold) {
+            currentActiveIndex = i;
+            break; // 找到第一個就停止，因為我們只需要最上面的那個
+        }
+    }
+    
+    // 如果循環結束都沒找到 (可能已滾動到底部)，就將最後一則訊息設為高亮
+    if (currentActiveIndex === -1 && messageItems.length > 0) {
+       // 檢查是否真的滾動到底部了
+       const isAtBottom = (chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight) < 1;
+       if(isAtBottom) {
+          currentActiveIndex = messageItems.length - 1;
+       }
+    }
+
+    // 先移除所有項目既有的 'active' 狀態
+    const historyItems = historySidebarList.querySelectorAll('.history-sidebar-item');
+    historyItems.forEach(item => {
+        item.classList.remove('active');
+    });
+
+    // 如果找到了當前項目，就為右側目錄中對應的項目加上 'active'
+    if (currentActiveIndex !== -1) {
+        const activeHistoryItem = historySidebarList.querySelector(`[data-message-index="${currentActiveIndex}"]`);
+        if (activeHistoryItem) {
+            activeHistoryItem.classList.add('active');
+        }
+    }
+}
         async function initChatApp() {
             injectDeepResearchStyles(); // ✨ 注入樣式
             await loadConfig();
@@ -9860,9 +9928,10 @@ ${allContextData.join('\n\n')}`;
             });
 
             // ✨ END: 新增的附件上彈視窗函式與按鈕邏輯
-            setupHistorySidebarInteractions(); // 啟用側邊欄的點擊跳轉功能
+            ALL_ELEMENTS.chatContainer.addEventListener('scroll', throttle(updateActiveHistoryItemOnScroll, 100));
+    setupHistorySidebarInteractions(); // 啟用側邊欄的點擊跳轉功能
     setupHistorySidebarTriggers();   // 啟用側邊欄的滑動和懸停觸發功能
-        }
+}
         const handleDeleteMessagePair = async (index) => {
             const confirmed = await showCustomDialog({
                 title: i18n[config.uiLanguage].deleteConfirmationTitle || '刪除確認',
