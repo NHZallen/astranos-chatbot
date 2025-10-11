@@ -18,6 +18,49 @@
 #open-search-btn.active {
     color: var(--button-primary-bg);
 }
+    #history-sidebar {
+    /* 預設將側邊欄向右移出畫面外 */
+    transform: translateX(100%); 
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    -webkit-user-select: none; /* 防止在滑動時選取文字 */
+    user-select: none;
+}
+
+#history-sidebar.visible {
+    /* 當有 .visible class 時，將側邊欄移回畫面內 */
+    transform: translateX(0); 
+}
+
+/* 側邊欄內的每個訊息項目樣式 */
+.history-sidebar-item {
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* 當文字太長時，顯示 ... */
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.history-sidebar-item:hover {
+    background-color: var(--hover-bg);
+    color: var(--text-primary);
+}
+
+/* 當訊息被跳轉到時的短暫高亮效果 */
+.message-highlight {
+    /* 使用 animation 來實現閃爍效果 */
+    animation: highlight-fade 1.5s ease-out;
+}
+
+@keyframes highlight-fade {
+    0% { background-color: rgba(250, 204, 21, 0.7); } /* 黃色的高亮 */
+    100% { background-color: transparent; }
+}
     .sidebar-item {
     position: relative; /* 這是為了讓指示條可以相對於它定位，非常重要！ */
     border-radius: 0.5rem;
@@ -2424,6 +2467,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 <div id="chat-container" class="flex-1 p-4 md:p-6 overflow-y-auto scroll-area">
                     <div id="message-list" class="space-y-8 max-w-4xl mx-auto"></div>
                 </div>
+                <div id="history-sidebar" class="absolute top-0 right-0 h-full bg-[var(--sidebar-bg)] shadow-lg z-20 w-64 md:w-80 border-l border-[var(--border-color)] flex flex-col">
+    <header class="p-4 border-b border-[var(--border-color)]">
+        <h3 class="font-semibold text-lg" data-lang-key="messageDirectory">訊息目錄</h3>
+    </header>
+    <div id="history-sidebar-list" class="flex-1 overflow-y-auto scroll-area p-2 space-y-1">
+        <!-- 歷史訊息項目將會被 JavaScript 動態加到這裡 -->
+    </div>
+</div>
+
+<!-- ✨ 電腦版懸停觸發區域 ✨ -->
+<div id="history-sidebar-trigger-zone" class="hidden md:block absolute top-0 right-0 h-full w-4 z-10"></div>
                 <button id="scroll-to-bottom-btn" title="滾動到底部">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="6 9 12 15 18 9"></polyline>
@@ -3275,6 +3329,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             headerTitle: document.getElementById('header-title'),
             modelSwitcherContainer: document.getElementById('model-switcher-container'),
             chatContainer: document.getElementById('chat-container'),
+            historySidebar: document.getElementById('history-sidebar'),
+            historySidebarList: document.getElementById('history-sidebar-list'),
+            historySidebarTriggerZone: document.getElementById('history-sidebar-trigger-zone'),
             messageList: document.getElementById('message-list'),
             messageInput: document.getElementById('message-input'),
             chatForm: document.getElementById('chat-form'),
@@ -3473,6 +3530,148 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             confirmPlanBtn: document.getElementById('confirm-plan-btn'),
             cancelPlanBtn: document.getElementById('cancel-plan-btn'),
         };
+        function toggleHistorySidebar(show) {
+        const { historySidebar } = ALL_ELEMENTS;
+        if (show) {
+            historySidebar.classList.add('visible');
+        } else {
+            historySidebar.classList.remove('visible');
+        }
+    }
+
+    // 根據訊息內容，判斷是否顯示圖示
+    function getMessageTypeIcon(message) {
+        if (!message.parts || message.parts.length === 0) {
+            return '';
+        }
+        const hasImage = message.parts.some(p => p.inlineData && p.inlineData.mimeType.startsWith('image/'));
+        const hasFile = message.parts.some(p => p.inlineData && !p.inlineData.mimeType.startsWith('image/'));
+
+        if (hasImage) return '📷 ';
+        if (hasFile) return '📎 ';
+        return '';
+    }
+
+    // 渲染歷史訊息側邊欄的內容
+    function renderHistorySidebarContent() {
+        const { historySidebarList } = ALL_ELEMENTS;
+        const conv = getActiveConversation();
+        
+        historySidebarList.innerHTML = ''; // 先清空舊的列表
+
+        if (!conv || conv.messages.length === 0) {
+            historySidebarList.innerHTML = `<p class="p-4 text-sm text-center text-[var(--text-secondary)]">沒有歷史訊息</p>`;
+            return;
+        }
+
+        conv.messages.forEach((msg, index) => {
+            const textPart = msg.parts.find(p => p.text);
+            let snippet = textPart ? textPart.text : (msg.role === 'user' ? '用戶訊息' : 'AI 回覆');
+            
+            const icon = getMessageTypeIcon(msg);
+            
+            const listItem = document.createElement('div');
+            listItem.className = 'history-sidebar-item';
+            // 儲存訊息的索引，這樣我們才知道要跳到哪一則
+            listItem.dataset.messageIndex = index; 
+            
+            listItem.textContent = icon + snippet;
+            historySidebarList.appendChild(listItem);
+        });
+    }
+
+    // 處理歷史訊息側邊欄的點擊事件
+    function setupHistorySidebarInteractions() {
+        const { historySidebarList, messageList } = ALL_ELEMENTS;
+
+        historySidebarList.addEventListener('click', (e) => {
+            const item = e.target.closest('.history-sidebar-item');
+            if (!item) return;
+
+            const messageIndex = item.dataset.messageIndex;
+            if (messageIndex === undefined) return;
+
+            // 根據索引找到主聊天視窗中對應的那則訊息
+            const targetMessageElement = messageList.querySelector(`[data-message-index="${messageIndex}"]`);
+
+            if (targetMessageElement) {
+                // 讓訊息滾動到畫面中央
+                targetMessageElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+
+                // 添加高亮效果
+                const bubble = targetMessageElement.querySelector('.message-bubble');
+                if (bubble) {
+                    bubble.classList.add('message-highlight');
+                    // 1.5秒後移除高亮效果
+                    setTimeout(() => {
+                        bubble.classList.remove('message-highlight');
+                    }, 1500);
+                }
+
+                // 點擊後自動關閉側邊欄
+                toggleHistorySidebar(false);
+            }
+        });
+    }
+
+    // 設定觸發歷史訊息側邊欄的各種機制
+    function setupHistorySidebarTriggers() {
+        const { chatContainer, historySidebar, historySidebarTriggerZone } = ALL_ELEMENTS;
+
+        // --- 電腦版：滑鼠懸停 ---
+        historySidebarTriggerZone.addEventListener('mouseenter', () => {
+            renderHistorySidebarContent(); // 顯示前先更新內容
+            toggleHistorySidebar(true);
+        });
+
+        historySidebar.addEventListener('mouseleave', () => {
+            toggleHistorySidebar(false);
+        });
+
+        // --- 手機版：右往左滑動 ---
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        chatContainer.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        chatContainer.addEventListener('touchend', (e) => {
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+
+            // 判斷是否為有效的向左滑動
+            if (deltaX < -50 && Math.abs(deltaY) < Math.abs(deltaX) / 2) {
+                renderHistorySidebarContent(); // 顯示前先更新內容
+                toggleHistorySidebar(true);
+            }
+        }, { passive: true });
+
+        // --- 手機版：在側邊欄上左往右滑動來關閉 ---
+        historySidebar.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        historySidebar.addEventListener('touchend', (e) => {
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            
+            if (deltaX > 50 && Math.abs(deltaY) < Math.abs(deltaX) / 2) {
+                toggleHistorySidebar(false);
+            }
+        }, { passive: true });
+    }
         const compareVersions = (v1, v2) => {
             if (!v2) return 1;
             const parts1 = v1.split('.').map(Number);
@@ -9546,6 +9745,8 @@ ${allContextData.join('\n\n')}`;
             });
 
             // ✨ END: 新增的附件上彈視窗函式與按鈕邏輯
+            setupHistorySidebarInteractions(); // 啟用側邊欄的點擊跳轉功能
+    setupHistorySidebarTriggers();   // 啟用側邊欄的滑動和懸停觸發功能
         }
         const handleDeleteMessagePair = async (index) => {
             const confirmed = await showCustomDialog({
