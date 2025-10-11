@@ -18,58 +18,6 @@
 #open-search-btn.active {
     color: var(--button-primary-bg);
 }
-    #history-sidebar-prompt {
-    position: fixed; /* 使用 fixed 定位，確保位置準確 */
-    top: 50%;
-    right: 10px;
-    transform: translateY(-50%);
-    padding: 1rem 1.5rem;
-    background-color: rgba(var(--sidebar-bg-rgb, 247, 247, 248), 0.8); /* 使用 RGB 變數或預設值 */
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-radius: 9999px; /* 膠囊形狀 */
-    border: 1px solid var(--border-color);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-    color: var(--text-primary);
-    font-weight: 500;
-    z-index: 25; /* 比 trigger-zone 高，比 sidebar 低 */
-    cursor: pointer;
-    opacity: 0;
-    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
-    pointer-events: none; /* 預設不可點擊 */
-}
-
-#history-sidebar-prompt.visible {
-    opacity: 1;
-    transform: translateY(-50%) translateX(-10px); /* 出現時稍微向左移動 */
-    pointer-events: auto; /* 可見時才可點擊 */
-}
-
-/* 酷炫的燈光效果 */
-#history-sidebar-prompt::before {
-    content: '';
-    position: absolute;
-    inset: -2px;
-    border-radius: 9999px;
-    background: conic-gradient(
-        from 180deg at 50% 50%,
-        rgba(59, 130, 246, 0.8) 0%,
-        rgba(167, 139, 250, 0.8) 50%,
-        rgba(59, 130, 246, 0.8) 100%
-    );
-    z-index: -1;
-    animation: spin 3s linear infinite;
-}
-
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-/* ✨ 新增：修正在自訂桌布下的標題顏色問題 ✨ */
-body.custom-wallpaper-active #history-sidebar h3 {
-    color: var(--text-primary) !important;
-}
     main.flex-1 {
     /* 強制隱藏所有超出寬度的內容 */
     overflow-x: hidden;
@@ -1236,6 +1184,9 @@ button:not(.btn-primary):active:not(:disabled) {
     }
     body.custom-wallpaper-active #add-file-btn {
     color: var(--text-primary) !important;
+}
+    body.custom-wallpaper-active #history-sidebar h3 {
+    color: #111827 !important; 
 }
 body.custom-wallpaper-active .voice-input-btn {
     color: var(--text-primary) !important;
@@ -3719,73 +3670,50 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     function setupHistorySidebarTriggers() {
     const { chatContainer, historySidebar, historySidebarTriggerZone, historySidebarOverlay } = ALL_ELEMENTS;
 
-    // --- 通用關閉邏輯 ---
+    // --- 點擊遮罩層來關閉 ---
+    // 這是解決手機版關不掉問題最可靠的方法！
     historySidebarOverlay.addEventListener('click', () => {
+        historySidebarOverlay.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    historySidebarOverlay.addEventListener('touchend', (e) => {
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = touchEndY - touchStartY;
+        
+        // 如果是向右滑動超過 50 像素，且不是垂直滑動
+        if (deltaX > 50 && Math.abs(deltaY) < Math.abs(deltaX) / 2) {
+            toggleHistorySidebar(false); // 執行關閉
+        }
+    }, { passive: true });
         toggleHistorySidebar(false);
     });
 
-    // --- 電腦版：新的兩段式觸發邏輯 ---
-    let promptElement = null;
-    let clickCount = 0;
-    let promptTimeout = null;
-
-    // 創建提示元素 (只創建一次)
-    function createPrompt() {
-        if (promptElement) return;
-        promptElement = document.createElement('div');
-        promptElement.id = 'history-sidebar-prompt';
-        promptElement.innerHTML = '✨ <span data-lang-key="messageDirectory">訊息目錄</span>';
-        document.body.appendChild(promptElement);
-        applyLanguage(config.uiLanguage); // 確保文字是正確的語言
-    }
-
-    // 顯示提示
-    function showPrompt() {
-        createPrompt();
-        promptElement.classList.add('visible');
-    }
-
-    // 隱藏提示並重置狀態
-    function hidePrompt() {
-        if (promptElement) {
-            promptElement.classList.remove('visible');
-        }
-        clickCount = 0;
-    }
-
+    // --- 電腦版：滑鼠懸停 ---
     historySidebarTriggerZone.addEventListener('mouseenter', () => {
-        clearTimeout(promptTimeout);
-        showPrompt();
+        renderHistorySidebarContent(); 
+        toggleHistorySidebar(true);
     });
 
-    historySidebarTriggerZone.addEventListener('mouseleave', () => {
-        // 延遲一點時間再隱藏，避免滑鼠快速移動時閃爍
-        promptTimeout = setTimeout(hidePrompt, 300);
-    });
-
-    // 監聽整個觸發區域的點擊
-    historySidebarTriggerZone.addEventListener('click', () => {
-        clickCount++;
-        if (clickCount >= 2) {
-            renderHistorySidebarContent();
-            toggleHistorySidebar(true);
-            hidePrompt(); // 開啟後就隱藏提示
-        }
-    });
-
-    // 當側邊欄可見時，如果滑鼠移出去了，也關閉它
-    historySidebar.addEventListener('mouseleave', () => {
+    // 當滑鼠從側邊欄或遮罩層移開時，才關閉
+    document.body.addEventListener('mousemove', (e) => {
         if (historySidebar.classList.contains('visible')) {
-            toggleHistorySidebar(false);
+            const isOverSidebar = historySidebar.contains(e.target);
+            const isOverTrigger = historySidebarTriggerZone.contains(e.target);
+            if (!isOverSidebar && !isOverTrigger) {
+                toggleHistorySidebar(false);
+            }
         }
     });
 
-
-    // --- 手機版：滑動操作 ---
+    // --- 手機版：右往左滑動打開 ---
     let touchStartX = 0;
     let touchStartY = 0;
 
-    // 在主聊天區右滑打開
     chatContainer.addEventListener('touchstart', (e) => {
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
@@ -3794,6 +3722,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     chatContainer.addEventListener('touchend', (e) => {
         const touchEndX = e.changedTouches[0].clientX;
         const touchEndY = e.changedTouches[0].clientY;
+        
         const deltaX = touchEndX - touchStartX;
         const deltaY = touchEndY - touchStartY;
 
@@ -3803,26 +3732,19 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         }
     }, { passive: true });
 
-    // ✨ 新增：在側邊欄上向右滑動來關閉
+    // --- 手機版：在側邊欄上左往右滑動來關閉 (保留此快捷操作) ---
     historySidebar.addEventListener('touchstart', (e) => {
-        // 只記錄在側邊欄邊緣開始的滑動，避免誤觸
-        if (e.touches[0].clientX < 50) { 
-             touchStartX = e.touches[0].clientX;
-             touchStartY = e.touches[0].clientY;
-        } else {
-            touchStartX = 9999; // 設為一個無效值
-        }
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
     }, { passive: true });
 
     historySidebar.addEventListener('touchend', (e) => {
-        if (touchStartX === 9999) return; // 如果不是從邊緣開始的，則忽略
-
         const touchEndX = e.changedTouches[0].clientX;
         const touchEndY = e.changedTouches[0].clientY;
+
         const deltaX = touchEndX - touchStartX;
         const deltaY = touchEndY - touchStartY;
         
-        // 判斷是否為有效的向右滑動
         if (deltaX > 50 && Math.abs(deltaY) < Math.abs(deltaX) / 2) {
             toggleHistorySidebar(false);
         }
