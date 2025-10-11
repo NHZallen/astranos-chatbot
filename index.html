@@ -3567,31 +3567,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         }, { once: true });
     }
 }
-修改後 (請加入 lockScroll(); 和 unlockScroll();)：
-code
-JavaScript
-function toggleHistorySidebar(show) {
-    const { historySidebar, historySidebarOverlay } = ALL_ELEMENTS;
-    if (show) {
-        lockScroll(); // <--- 在這裡呼叫鎖定！
-        historySidebarOverlay.classList.remove('hidden');
-        // 使用 requestAnimationFrame 確保 "display: block" 生效後再開始動畫
-        requestAnimationFrame(() => {
-            historySidebar.classList.add('visible');
-            historySidebarOverlay.classList.add('visible');
-        });
-    } else {
-        unlockScroll(); // <--- 在這裡呼叫解鎖！
-        historySidebar.classList.remove('visible');
-        historySidebarOverlay.classList.remove('visible');
-        // 等待動畫結束後再徹底隱藏遮罩層
-        historySidebarOverlay.addEventListener('transitionend', () => {
-            if (!historySidebarOverlay.classList.contains('visible')) {
-                historySidebarOverlay.classList.add('hidden');
-            }
-        }, { once: true });
-    }
-}
 
     // 根據訊息內容，判斷是否顯示圖示
     function getMessageTypeIcon(message) {
@@ -3893,7 +3868,6 @@ function toggleHistorySidebar(show) {
         let isTrashSelectionMode = false;
         let selectedTrashIds = new Set();
         let originalMemorySettings = {}; // ✨ 新增：用於儲存原始記憶設定
-        let scrollLockPosition = 0;
         const DB_NAME = 'ChatAppDB';
         const STORE_NAME = 'keyValue';
         let db;
@@ -7225,16 +7199,16 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             showNotification(i18n[config.uiLanguage].modelOrderUpdated || '模型順序已更新');
         };
         function toggleSidebar(show) {
-    const { sidebar, sidebarOverlay } = ALL_ELEMENTS;
-    sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
-    if (sidebarOpen) {
-        sidebar.style.transform = 'translateX(0)';
-        sidebarOverlay.classList.add('visible');
-    } else {
-        sidebar.style.transform = 'translateX(-100%)';
-        sidebarOverlay.classList.remove('visible');
-    }
-}
+            const { sidebar, sidebarOverlay } = ALL_ELEMENTS;
+            sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
+            if (sidebarOpen) {
+                sidebar.style.transform = 'translateX(0)';
+                sidebarOverlay.classList.add('visible');
+            } else {
+                sidebar.style.transform = 'translateX(-100%)';
+                sidebarOverlay.classList.remove('visible');
+            }
+        }
         function closeAllPopovers() {
             document.querySelectorAll('.popover.visible').forEach(popover => {
                 popover.classList.remove('visible');
