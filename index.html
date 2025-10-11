@@ -14,11 +14,6 @@
     body {
     touch-action: manipulation;
 }
-    body.body-scroll-lock {
-    position: fixed;
-    width: 100%;
-    /* top 屬性會由 JavaScript 動態設定 */
-}
     #selection-mode-btn.active,
 #open-search-btn.active {
     color: var(--button-primary-bg);
@@ -3899,36 +3894,6 @@ function toggleHistorySidebar(show) {
         let selectedTrashIds = new Set();
         let originalMemorySettings = {}; // ✨ 新增：用於儲存原始記憶設定
         let scrollLockPosition = 0;
-
-// ✨ 新增：鎖定滾動的函式
-function lockScroll() {
-    // 如果已經鎖定了，就不用再做一次
-    if (document.body.classList.contains('body-scroll-lock')) return;
-
-    // 1. 記住現在滾動到了哪裡 (像加書籤)
-    scrollLockPosition = window.scrollY;
-    
-    // 2. 透過設定 top 樣式，讓畫面看起來還在原地
-    document.body.style.top = `-${scrollLockPosition}px`;
-    
-    // 3. 加上我們剛剛寫的 CSS class 來正式鎖定
-    document.body.classList.add('body-scroll-lock');
-}
-
-// ✨ 新增：解鎖滾動的函式
-function unlockScroll() {
-    // 如果本來就沒鎖，就不用解鎖
-    if (!document.body.classList.contains('body-scroll-lock')) return;
-    
-    // 1. 移除鎖定的 class
-    document.body.classList.remove('body-scroll-lock');
-    
-    // 2. 清除 top 樣式
-    document.body.style.top = '';
-    
-    // 3. 馬上跳回我們剛剛「加書籤」的位置
-    window.scrollTo(0, scrollLockPosition);
-}
         const DB_NAME = 'ChatAppDB';
         const STORE_NAME = 'keyValue';
         let db;
@@ -7263,11 +7228,9 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
     const { sidebar, sidebarOverlay } = ALL_ELEMENTS;
     sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
     if (sidebarOpen) {
-        lockScroll(); // <--- 在這裡呼叫鎖定！
         sidebar.style.transform = 'translateX(0)';
         sidebarOverlay.classList.add('visible');
     } else {
-        unlockScroll(); // <--- 在這裡呼叫解鎖！
         sidebar.style.transform = 'translateX(-100%)';
         sidebarOverlay.classList.remove('visible');
     }
