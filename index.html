@@ -18,46 +18,6 @@
     opacity: 0;
     pointer-events: none;
 }
-    #long-press-preview {
-    position: fixed; /* 固定在螢幕上，不隨頁面滾動 */
-    top: 50%; /* 垂直置中 */
-    left: 50%; /* 水平置中 */
-    transform: translate(-50%, -50%); /* 精準置中 */
-    max-width: 90vw; /* 最大寬度為螢幕寬度的90%，避免超出螢幕 */
-    background-color: rgba(0, 0, 0, 0.8); /* 半透明黑色背景 */
-    color: white; /* 白色文字 */
-    padding: 1rem; /* 內部留白 */
-    border-radius: 0.75rem; /* 圓角 */
-    font-size: 0.9rem; /* 適中的字體大小 */
-    z-index: 9999; /* 確保它在最頂層顯示 */
-    pointer-events: none; /* 讓它本身不能被點擊，避免干擾 */
-    animation: preview-fade-in 0.2s ease-out; /* 套用淡入動畫 */
-    white-space: pre-wrap; /* 讓文字可以自動換行 */
-    word-break: break-word; /* 強制長單字換行 */
-}
-
-/* 預覽視窗的淡出動畫 */
-#long-press-preview.fade-out {
-    animation: preview-fade-out 0.2s ease-in forwards;
-}
-
-/* 淡入動畫的定義 */
-@keyframes preview-fade-in {
-    from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
-    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-}
-
-/* 淡出動畫的定義 */
-@keyframes preview-fade-out {
-    from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-    to { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
-}
-#history-sidebar, #history-sidebar * {
-    -webkit-user-select: none; /* 適用於 Chrome, Safari, Opera */
-    -moz-user-select: none;    /* 適用於 Firefox */
-    -ms-user-select: none;     /* 適用於 IE/Edge */
-    user-select: none;         /* 標準語法 */
-}
     #selection-mode-btn.active,
 #open-search-btn.active {
     color: var(--button-primary-bg);
@@ -3701,33 +3661,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         // ✨ --- 新增邏輯結束 --- ✨
 
         listItem.textContent = icon + snippet;
-        listItem.title = snippet;
         historySidebarList.appendChild(listItem);
-        let pressTimer = null;
-let touchMoved = false;
-
-// 當手指開始觸碰時
-listItem.addEventListener('touchstart', (e) => {
-    touchMoved = false; // 重置移動標記
-    // 設定一個 500 毫秒的計時器，如果到時還沒放開手指，就觸發預覽
-    pressTimer = setTimeout(() => {
-        if (!touchMoved) { // 只有在手指沒有移動過的情況下才顯示
-            e.preventDefault(); // 阻止瀏覽器預設的長按行為 (如選取文字)
-            showLongPressPreview(snippet); // 呼叫我們剛剛創建的函式來顯示預覽
-        }
-    }, 500); // 500毫秒 = 0.5秒
-}, { passive: false });
-
-// 當手指在螢幕上移動時
-listItem.addEventListener('touchmove', () => {
-    touchMoved = true; // 標記為已移動
-    clearTimeout(pressTimer); // 取消計時器，因為這是滑動操作，不是長按
-});
-
-// 當手指離開螢幕時
-listItem.addEventListener('touchend', () => {
-    clearTimeout(pressTimer); // 無論如何都取消計時器
-});
     });
 }
 
@@ -9373,42 +9307,6 @@ ${allContextData.join('\n\n')}`;
                 }
             }
         }
-        function showLongPressPreview(fullText) {
-    // 如果畫面上已經有預覽框，先移除它
-    const existingPreview = document.getElementById('long-press-preview');
-    if (existingPreview) {
-        existingPreview.remove();
-    }
-
-    // 創建新的預覽框元素
-    const previewElement = document.createElement('div');
-    previewElement.id = 'long-press-preview';
-    previewElement.textContent = fullText;
-
-    // 將預覽框添加到 body 中
-    document.body.appendChild(previewElement);
-
-    // 定義一個用來關閉預覽框的函式
-    const closePreview = () => {
-        // 先添加淡出動畫的 class
-        previewElement.classList.add('fade-out');
-        // 在動畫結束後，從畫面中徹底移除元素
-        previewElement.addEventListener('animationend', () => {
-            previewElement.remove();
-        }, { once: true }); // { once: true } 確保事件只觸發一次
-
-        // 移除關閉事件的監聽，避免重複執行
-        window.removeEventListener('touchend', closePreview);
-        window.removeEventListener('click', closePreview); // 也監聽 click 以防萬一
-    };
-
-    // 監聽下一次在螢幕任何地方的觸控結束或點擊事件，用來關閉預覽框
-    // 使用 setTimeout 是為了確保這次創建預覽框的長按事件不會立刻觸發關閉
-    setTimeout(() => {
-        window.addEventListener('touchend', closePreview, { once: true });
-        window.addEventListener('click', closePreview, { once: true });
-    }, 100);
-}
         async function initChatApp() {
             injectDeepResearchStyles(); // ✨ 注入樣式
             await loadConfig();
