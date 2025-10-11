@@ -18,6 +18,14 @@
 #open-search-btn.active {
     color: var(--button-primary-bg);
 }
+    #history-sidebar-overlay {
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#history-sidebar-overlay.visible {
+    display: block; /* 讓它可以被看見 */
+    opacity: 1;   /* 讓它從透明變為半透明 */
+}
     #history-sidebar {
     /* 預設將側邊欄向右移出畫面外 */
     transform: translateX(100%); 
@@ -2467,6 +2475,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 <div id="chat-container" class="flex-1 p-4 md:p-6 overflow-y-auto scroll-area">
                     <div id="message-list" class="space-y-8 max-w-4xl mx-auto"></div>
                 </div>
+                <div id="history-sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-10 opacity-0 hidden"></div>
                 <div id="history-sidebar" class="absolute top-0 right-0 h-full bg-[var(--sidebar-bg)] shadow-lg z-20 w-64 md:w-80 border-l border-[var(--border-color)] flex flex-col">
     <header class="p-4 border-b border-[var(--border-color)]">
         <h3 class="font-semibold text-lg" data-lang-key="messageDirectory">訊息目錄</h3>
@@ -3332,6 +3341,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             historySidebar: document.getElementById('history-sidebar'),
             historySidebarList: document.getElementById('history-sidebar-list'),
             historySidebarTriggerZone: document.getElementById('history-sidebar-trigger-zone'),
+            historySidebarOverlay: document.getElementById('history-sidebar-overlay'),
             messageList: document.getElementById('message-list'),
             messageInput: document.getElementById('message-input'),
             chatForm: document.getElementById('chat-form'),
@@ -3531,13 +3541,25 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             cancelPlanBtn: document.getElementById('cancel-plan-btn'),
         };
         function toggleHistorySidebar(show) {
-        const { historySidebar } = ALL_ELEMENTS;
-        if (show) {
+    const { historySidebar, historySidebarOverlay } = ALL_ELEMENTS;
+    if (show) {
+        historySidebarOverlay.classList.remove('hidden');
+        // 使用 requestAnimationFrame 確保 "display: block" 生效後再開始動畫
+        requestAnimationFrame(() => {
             historySidebar.classList.add('visible');
-        } else {
-            historySidebar.classList.remove('visible');
-        }
+            historySidebarOverlay.classList.add('visible');
+        });
+    } else {
+        historySidebar.classList.remove('visible');
+        historySidebarOverlay.classList.remove('visible');
+        // 等待動畫結束後再徹底隱藏遮罩層
+        historySidebarOverlay.addEventListener('transitionend', () => {
+            if (!historySidebarOverlay.classList.contains('visible')) {
+                historySidebarOverlay.classList.add('hidden');
+            }
+        }, { once: true });
     }
+}
 
     // 根據訊息內容，判斷是否顯示圖示
     function getMessageTypeIcon(message) {
@@ -3619,59 +3641,71 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
     // 設定觸發歷史訊息側邊欄的各種機制
     function setupHistorySidebarTriggers() {
-        const { chatContainer, historySidebar, historySidebarTriggerZone } = ALL_ELEMENTS;
+    const { chatContainer, historySidebar, historySidebarTriggerZone, historySidebarOverlay } = ALL_ELEMENTS;
 
-        // --- 電腦版：滑鼠懸停 ---
-        historySidebarTriggerZone.addEventListener('mouseenter', () => {
-            renderHistorySidebarContent(); // 顯示前先更新內容
-            toggleHistorySidebar(true);
-        });
+    // --- 點擊遮罩層來關閉 ---
+    // 這是解決手機版關不掉問題最可靠的方法！
+    historySidebarOverlay.addEventListener('click', () => {
+        toggleHistorySidebar(false);
+    });
 
-        historySidebar.addEventListener('mouseleave', () => {
-            toggleHistorySidebar(false);
-        });
+    // --- 電腦版：滑鼠懸停 ---
+    historySidebarTriggerZone.addEventListener('mouseenter', () => {
+        renderHistorySidebarContent(); 
+        toggleHistorySidebar(true);
+    });
 
-        // --- 手機版：右往左滑動 ---
-        let touchStartX = 0;
-        let touchStartY = 0;
-
-        chatContainer.addEventListener('touchstart', (e) => {
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-        }, { passive: true });
-
-        chatContainer.addEventListener('touchend', (e) => {
-            const touchEndX = e.changedTouches[0].clientX;
-            const touchEndY = e.changedTouches[0].clientY;
-            
-            const deltaX = touchEndX - touchStartX;
-            const deltaY = touchEndY - touchStartY;
-
-            // 判斷是否為有效的向左滑動
-            if (deltaX < -50 && Math.abs(deltaY) < Math.abs(deltaX) / 2) {
-                renderHistorySidebarContent(); // 顯示前先更新內容
-                toggleHistorySidebar(true);
-            }
-        }, { passive: true });
-
-        // --- 手機版：在側邊欄上左往右滑動來關閉 ---
-        historySidebar.addEventListener('touchstart', (e) => {
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-        }, { passive: true });
-
-        historySidebar.addEventListener('touchend', (e) => {
-            const touchEndX = e.changedTouches[0].clientX;
-            const touchEndY = e.changedTouches[0].clientY;
-
-            const deltaX = touchEndX - touchStartX;
-            const deltaY = touchEndY - touchStartY;
-            
-            if (deltaX > 50 && Math.abs(deltaY) < Math.abs(deltaX) / 2) {
+    // 當滑鼠從側邊欄或遮罩層移開時，才關閉
+    document.body.addEventListener('mousemove', (e) => {
+        if (historySidebar.classList.contains('visible')) {
+            const isOverSidebar = historySidebar.contains(e.target);
+            const isOverTrigger = historySidebarTriggerZone.contains(e.target);
+            if (!isOverSidebar && !isOverTrigger) {
                 toggleHistorySidebar(false);
             }
-        }, { passive: true });
-    }
+        }
+    });
+
+    // --- 手機版：右往左滑動打開 ---
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    chatContainer.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    chatContainer.addEventListener('touchend', (e) => {
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+        
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = touchEndY - touchStartY;
+
+        if (deltaX < -50 && Math.abs(deltaY) < Math.abs(deltaX) / 2) {
+            renderHistorySidebarContent();
+            toggleHistorySidebar(true);
+        }
+    }, { passive: true });
+
+    // --- 手機版：在側邊欄上左往右滑動來關閉 (保留此快捷操作) ---
+    historySidebar.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    historySidebar.addEventListener('touchend', (e) => {
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = touchEndY - touchStartY;
+        
+        if (deltaX > 50 && Math.abs(deltaY) < Math.abs(deltaX) / 2) {
+            toggleHistorySidebar(false);
+        }
+    }, { passive: true });
+}
         const compareVersions = (v1, v2) => {
             if (!v2) return 1;
             const parts1 = v1.split('.').map(Number);
