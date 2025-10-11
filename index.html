@@ -9330,46 +9330,33 @@ ${allContextData.join('\n\n')}`;
         }
         function updateActiveHistoryItemOnScroll() {
     const { chatContainer, messageList, historySidebarList, historySidebar } = ALL_ELEMENTS;
-    
-    // 如果右側邊欄沒有顯示，或聊天視窗不存在，就不用執行
-    if (!historySidebar.classList.contains('visible') || !messageList) return;
 
-    // 設定一個「觀察線」，大概在聊天視窗頂部下方 80px 的位置
-    // 當訊息的上緣滾動到這條線下方時，我們就視其為「當前」訊息
-    const scrollThreshold = chatContainer.getBoundingClientRect().top + 80;
-
-    const messageItems = Array.from(messageList.querySelectorAll('.message-item'));
-    let currentActiveIndex = -1;
-
-    // 從上到下遍歷所有對話訊息
-    for (let i = 0; i < messageItems.length; i++) {
-        const itemRect = messageItems[i].getBoundingClientRect();
-        
-        // 如果訊息的頂部已經滾動到了觀察線的下方，就把它當作當前項目
-        if (itemRect.top >= scrollThreshold) {
-            currentActiveIndex = i;
-            break; // 找到第一個就停止，因為我們只需要最上面的那個
+    // 如果右側邊欄沒有顯示，或聊天視窗裡沒有訊息，就直接結束
+    if (!historySidebar.classList.contains('visible') || !messageList || messageList.children.length === 0) {
+        return;
+    }
+    const containerRect = chatContainer.getBoundingClientRect();
+    const viewportCenterY = containerRect.top + containerRect.height / 2;
+    let bestMatchIndex = -1;
+    let minDistance = Infinity; // 先設定一個無限大的初始距離
+    const messageItems = messageList.querySelectorAll('.message-item');
+    messageItems.forEach(item => {
+        const itemRect = item.getBoundingClientRect();
+        if (itemRect.bottom > containerRect.top && itemRect.top < containerRect.bottom) {
+            const itemCenterY = itemRect.top + itemRect.height / 2;
+            const distance = Math.abs(viewportCenterY - itemCenterY);
+            if (distance < minDistance) {
+                minDistance = distance;
+                bestMatchIndex = item.dataset.messageIndex;
+            }
         }
-    }
-    
-    // 如果循環結束都沒找到 (可能已滾動到底部)，就將最後一則訊息設為高亮
-    if (currentActiveIndex === -1 && messageItems.length > 0) {
-       // 檢查是否真的滾動到底部了
-       const isAtBottom = (chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight) < 1;
-       if(isAtBottom) {
-          currentActiveIndex = messageItems.length - 1;
-       }
-    }
-
-    // 先移除所有項目既有的 'active' 狀態
+    });
     const historyItems = historySidebarList.querySelectorAll('.history-sidebar-item');
     historyItems.forEach(item => {
         item.classList.remove('active');
     });
-
-    // 如果找到了當前項目，就為右側目錄中對應的項目加上 'active'
-    if (currentActiveIndex !== -1) {
-        const activeHistoryItem = historySidebarList.querySelector(`[data-message-index="${currentActiveIndex}"]`);
+    if (bestMatchIndex !== -1) {
+        const activeHistoryItem = historySidebarList.querySelector(`[data-message-index="${bestMatchIndex}"]`);
         if (activeHistoryItem) {
             activeHistoryItem.classList.add('active');
         }
