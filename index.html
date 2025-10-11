@@ -26,6 +26,31 @@
     /* 強制隱藏所有超出寬度的內容 */
     overflow-x: hidden;
 }
+    #history-sidebar .history-sidebar-item {
+    /* 這是為了讓指示條可以相對於它定位，非常重要！ */
+    position: relative; 
+}
+
+#history-sidebar .history-sidebar-item.active {
+    background-color: var(--hover-bg); 
+    color: var(--text-primary) !important; 
+    font-weight: 600; 
+    /* 增加左邊距，為指示條留出空間 */
+    padding-left: 1.25rem; 
+}
+
+#history-sidebar .history-sidebar-item.active::before {
+    content: ''; 
+    position: absolute; 
+    left: 6px; 
+    top: 50%; 
+    transform: translateY(-50%); 
+    width: 4px; 
+    height: 60%; 
+    background-color: var(--button-primary-bg);
+    border-radius: 9999px; 
+    animation: indicator-pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
     #history-sidebar-overlay {
     transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -67,38 +92,17 @@ body.custom-wallpaper-active #history-sidebar h3 {
 
 /* 側邊欄內的每個訊息項目樣式 */
 .history-sidebar-item {
-    position: relative; /* ✨ 新增：為了讓指示條可以相對於它定位，非常重要！ */
     padding: 0.75rem;
     border-radius: 0.5rem;
     cursor: pointer;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis; 
+    text-overflow: ellipsis; /* 當文字太長時，顯示 ... */
     font-size: 0.875rem;
     color: var(--text-secondary);
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding-left: 1.25rem; /* ✨ 新增：為左側的指示條留出空間 */
-}
-.history-sidebar-item.active {
-    background-color: var(--hover-bg); 
-    color: var(--text-primary) !important; 
-    font-weight: 600; 
-}
-
-.history-sidebar-item.active::before {
-    content: ''; /* 偽元素必須要有 content 屬性 */
-    position: absolute; /* 絕對定位，相對於 .history-sidebar-item */
-    left: 6px; /* 離左邊邊緣的距離 */
-    top: 50%; /* 定位在垂直置中的位置 */
-    transform: translateY(-50%); /* 透過 transform 精準置中 */
-    width: 4px; /* 指示條的寬度 */
-    height: 60%; /* 指示條的高度 */
-    background-color: var(--button-primary-bg);
-    border-radius: 9999px; /* 讓指示條兩端變圓滑 */
-    /* 使用和左邊一樣的彈出動畫 */
-    animation: indicator-pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
 .history-sidebar-item:hover {
@@ -3919,6 +3923,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let modelPieChart = null;
         let timeDistChart = null;
         let cropperInstance = null;
+        let messageObserver = null;
         let currentStoreCategory = '全部';
         let editingAstraForAvatarId = null;
         let isAutoScrolling = false;
@@ -4211,6 +4216,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderFollowUpPrompts([]);
         };
         const loadChat = (id) => {
+            if (messageObserver) {
+        messageObserver.disconnect();
+    }
             if (id !== activeConversationId) {
                 const previousConv = getActiveConversation();
                 if (previousConv && previousConv.isTemporary && previousConv.messages.length === 0) {
@@ -4668,6 +4676,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             } else {
                 conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
             }
+            requestAnimationFrame(() => {
+    setupMessageIntersectionObserver();
+});
             void messageList.offsetWidth;
             messageList.classList.add('chat-view-transition');
             updateInputState();
@@ -8536,6 +8547,65 @@ ${JSON.stringify(potentialMemories, null, 2)}
         await saveConfig();
     }
 };
+        /**
+ * @description 設定 Intersection Observer 來監聽聊天視窗中的訊息，並高亮右側對應的目錄項目
+ */
+function setupMessageIntersectionObserver() {
+    // 如果之前有觀察者，先斷開連接，避免重複觀察
+    if (messageObserver) {
+        messageObserver.disconnect();
+    }
+
+    const messageItems = ALL_ELEMENTS.messageList.querySelectorAll('.message-item');
+    const historyItems = ALL_ELEMENTS.historySidebarList.querySelectorAll('.history-sidebar-item');
+
+    // 如果沒有訊息，就不用觀察了
+    if (messageItems.length === 0) {
+        return;
+    }
+    
+    // 觀察者的回呼函式，當有元素進入或離開視窗時會被觸發
+    const observerCallback = (entries) => {
+        let mostVisibleEntry = null;
+
+        // 找出所有可見的 entry 中，可見比例最高的那個
+        for (const entry of entries) {
+            if (entry.isIntersecting) {
+                if (!mostVisibleEntry || entry.intersectionRatio > mostVisibleEntry.intersectionRatio) {
+                    mostVisibleEntry = entry;
+                }
+            }
+        }
+
+        // 如果找到了最可見的訊息
+        if (mostVisibleEntry) {
+            const visibleMessageIndex = mostVisibleEntry.target.dataset.messageIndex;
+
+            // 移除所有歷史項目上的 'active' class
+            historyItems.forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // 找到對應的歷史項目並加上 'active' class
+            const activeHistoryItem = ALL_ELEMENTS.historySidebarList.querySelector(`.history-sidebar-item[data-message-index="${visibleMessageIndex}"]`);
+            if (activeHistoryItem) {
+                activeHistoryItem.classList.add('active');
+            }
+        }
+    };
+
+    // 建立觀察者實例
+    messageObserver = new IntersectionObserver(observerCallback, {
+        root: ALL_ELEMENTS.chatContainer, // 觀察的根元素是聊天容器
+        rootMargin: '0px',
+        threshold: [0.0, 0.25, 0.5, 0.75, 1.0] // 在不同可見比例時都觸發回呼
+    });
+    
+    // 開始觀察每一則訊息
+    messageItems.forEach(item => {
+        messageObserver.observe(item);
+    });
+}
         const renderTrash = () => {
             const container = ALL_ELEMENTS.trashListContainer;
             const deletedConvs = conversations.filter(c => c.deletedAt).sort((a,b) => new Date(b.deletedAt) - new Date(a.deletedAt));
@@ -9328,40 +9398,6 @@ ${allContextData.join('\n\n')}`;
                 }
             }
         }
-        function updateActiveHistoryItemOnScroll() {
-    const { chatContainer, messageList, historySidebarList, historySidebar } = ALL_ELEMENTS;
-
-    // 如果右側邊欄沒有顯示，或聊天視窗裡沒有訊息，就直接結束
-    if (!historySidebar.classList.contains('visible') || !messageList || messageList.children.length === 0) {
-        return;
-    }
-    const containerRect = chatContainer.getBoundingClientRect();
-    const viewportCenterY = containerRect.top + containerRect.height / 2;
-    let bestMatchIndex = -1;
-    let minDistance = Infinity; // 先設定一個無限大的初始距離
-    const messageItems = messageList.querySelectorAll('.message-item');
-    messageItems.forEach(item => {
-        const itemRect = item.getBoundingClientRect();
-        if (itemRect.bottom > containerRect.top && itemRect.top < containerRect.bottom) {
-            const itemCenterY = itemRect.top + itemRect.height / 2;
-            const distance = Math.abs(viewportCenterY - itemCenterY);
-            if (distance < minDistance) {
-                minDistance = distance;
-                bestMatchIndex = item.dataset.messageIndex;
-            }
-        }
-    });
-    const historyItems = historySidebarList.querySelectorAll('.history-sidebar-item');
-    historyItems.forEach(item => {
-        item.classList.remove('active');
-    });
-    if (bestMatchIndex !== -1) {
-        const activeHistoryItem = historySidebarList.querySelector(`[data-message-index="${bestMatchIndex}"]`);
-        if (activeHistoryItem) {
-            activeHistoryItem.classList.add('active');
-        }
-    }
-}
         async function initChatApp() {
             injectDeepResearchStyles(); // ✨ 注入樣式
             await loadConfig();
@@ -9915,10 +9951,9 @@ ${allContextData.join('\n\n')}`;
             });
 
             // ✨ END: 新增的附件上彈視窗函式與按鈕邏輯
-            ALL_ELEMENTS.chatContainer.addEventListener('scroll', throttle(updateActiveHistoryItemOnScroll, 100));
-    setupHistorySidebarInteractions(); // 啟用側邊欄的點擊跳轉功能
+            setupHistorySidebarInteractions(); // 啟用側邊欄的點擊跳轉功能
     setupHistorySidebarTriggers();   // 啟用側邊欄的滑動和懸停觸發功能
-}
+        }
         const handleDeleteMessagePair = async (index) => {
             const confirmed = await showCustomDialog({
                 title: i18n[config.uiLanguage].deleteConfirmationTitle || '刪除確認',
