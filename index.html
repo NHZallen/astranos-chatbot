@@ -9403,48 +9403,24 @@ ${allContextData.join('\n\n')}`;
             }
         }
  /**
- * 將對話內容及當前設定打包，並以非同步方式寄送到指定的 Google Apps Script 端點
+ * 將對話內容打包並以非同步方式寄送到指定的 Google Apps Script 端點
  * @param {object} userMessageObject - 使用者發送的訊息物件
  * @param {string} aiResponseText - AI 回覆的完整文字內容
  */
 async function sendConversationToMail(userMessageObject, aiResponseText) {
+    // 確認這裡是你從 Google Apps Script 複製的、以 /exec 結尾的正確網址
     const FORM_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzDz8mauVmRsJtSxpXbfMiMCnx0Mofqh0r3YV_riwRTwugf8EUgzsD_gCwfwSvmOqV4yg/exec';
 
     const conv = getActiveConversation();
-    if (!conv) return; // 如果找不到當前對話，就直接返回
-
-    // --- ✨✨✨ 核心修改：在這裡收集所有額外資訊 ✨✨✨ ---
-
-    // 1. 取得使用的模型名稱
-    const modelInfo = MODELS.find(m => m.id === conv.model);
-    const modelName = modelInfo ? modelInfo.name : '未知模型';
-
-    // 2. 取得使用的 Astra 名稱
-    let astraName = "無";
-    if (conv.astrasId) {
-        const astra = astras.find(a => a.id === conv.astrasId);
-        if (astra) {
-            astraName = astra.name;
-        }
-    }
-
-    // 3. 收集所有啟用的功能
-    const enabledFeatures = [];
-    if (conv.isWebSearchEnabled) {
-        enabledFeatures.push("聯網搜尋");
-    }
-    if (config.isLearningMode) {
-        enabledFeatures.push("學習模式");
-    }
-    if (config.isDeepResearchMode) {
-        enabledFeatures.push("深度研究");
-    }
-    const featuresString = enabledFeatures.length > 0 ? enabledFeatures.join(', ') : "無";
-
-    // --- ✨✨✨ 資訊收集完畢 ✨✨✨ ---
-
-    const conversationTitle = conv.title || 'N/A';
+    const conversationTitle = conv?.title || 'N/A';
     
+    // ✨✨✨ 這是本次的核心修改 ✨✨✨
+    // 1. 取得當前使用的模型資訊
+    const modelInfo = MODELS.find(m => m.id === conv?.model);
+    // 2. 取得模型的顯示名稱，如果找不到就用 ID，再找不到就顯示 "未知"
+    const modelName = modelInfo ? modelInfo.name : (conv?.model || '未知模型');
+    
+    // 格式化使用者訊息
     const userContent = userMessageObject.parts.map(part => {
         if (part.text) {
             return part.text;
@@ -9454,16 +9430,15 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
         return '';
     }).join('\n');
 
-    // 準備要寄送的資料物件 (包含所有新欄位)
+    // 準備要寄送的資料物件
     const dataToSend = {
+        // 這次我們不指定 formType，讓它走 Apps Script 的 default 分支
         subject: `Astra 對話紀錄: ${conversationTitle}`,
         timestamp: new Date().toISOString(),
         conversation: conversationTitle,
+        model_used: modelName, // <-- 3. 把模型名稱加入要發送的資料中！
         user_message: userContent,
-        ai_response: aiResponseText,
-        model_used: modelName,              // 新增
-        astras_used: astrasName,              // 新增
-        enabled_features: featuresString    // 新增
+        ai_response: aiResponseText
     };
 
     // 使用 fetch API 以 POST 方式非同步發送資料
@@ -9473,10 +9448,11 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             mode: 'no-cors',
             body: JSON.stringify(dataToSend)
         });
-        console.log('對話紀錄及相關設定已發送至 Google Apps Script。');
+
+        console.log('對話紀錄已發送至 Google Apps Script。請檢查您的試算表和 Gmail。');
 
     } catch (error) {
-        console.error('寄送對話紀錄時發生網路錯誤:', error);
+        console.error('寄送對話紀錄到 Google Apps Script 時發生網路錯誤:', error);
     }
 }
         async function initChatApp() {
