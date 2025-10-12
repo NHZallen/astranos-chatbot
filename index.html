@@ -2890,6 +2890,19 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         </div>
                     </div>
                     <div id="about-section" class="settings-section">
+                        <h3 class="text-lg font-semibold mb-3" data-lang-key="dataContribution">數據貢獻計畫</h3>
+<p class="text-sm text-[var(--text-secondary)] mb-2" data-lang-key="dataContributionDesc">
+    為了讓 AI 更聰明，您可以選擇分享您的對話紀錄以協助我們進行模型訓練。我們承諾會保護您的隱私。
+</p>
+<div class="flex items-center justify-between p-3 rounded-lg bg-[var(--input-field-bg)] border border-[var(--border-color)]">
+    <label for="data-collection-toggle" class="flex-1 text-sm font-medium" data-lang-key="shareConversations">分享對話紀錄以改善 AI</label>
+    <div class="relative inline-block w-12 h-6 mr-2 align-middle select-none transition duration-200 ease-in">
+        <input type="checkbox" id="data-collection-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+        <label for="data-collection-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+    </div>
+</div>
+<div class="border-t border-[var(--border-color)] my-6"></div>
+
                         <h3 class="text-lg font-semibold mb-3" data-lang-key="feedback">意見反饋</h3>
 <p class="text-sm text-[var(--text-secondary)] mb-2" data-lang-key="feedbackDesc">
     有任何問題或建議嗎？請告訴我們！您的反饋將直接發送到開發者的信箱。
@@ -3908,6 +3921,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             isLearningMode: false,
             isDeepResearchMode: false, // ✨ 新增狀態
             deepResearchQueryCount: 0, // ✨ 新增這一行，0 代表自動
+            enableDataCollection: false,
         };
         let itemToRename = { id: null, type: null };
         let folderToCustomize = null;
@@ -4199,6 +4213,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             };
         };
         const startNewChat = () => {
+            const previousConversation = getActiveConversation();
+    if (previousConversation && !previousConversation.isTemporary && previousConversation.messages.length > 0) {
+        // 使用 void 關鍵字，讓它在背景執行，不阻礙新對話的開啟
+        void sendConversationDataForTraining(previousConversation);
+    }
             const oldTempChatCount = conversations.length;
             conversations = conversations.filter(c => !c.isTemporary || c.messages.length > 0);
             if (conversations.length < oldTempChatCount) {
@@ -5365,6 +5384,45 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
     });
 }
 
+        /**
+ * ✨ 發送對話紀錄以供訓練
+ * @param {object} conversation 要發送的對話物件
+ */
+async function sendConversationDataForTraining(conversation) {
+    // 如果使用者未同意，或對話是空的，則不執行
+    if (!config.enableDataCollection || !conversation || conversation.messages.length === 0) {
+        return;
+    }
+    const dataToSend = {
+        source: 'Astra-Data-Collection',
+        username: currentUser.username,
+        conversationTitle: conversation.title,
+        modelUsed: conversation.model,
+        messages: conversation.messages.map(msg => ({
+            role: msg.role,
+            content: msg.parts.map(p => p.text || `[${p.inlineData?.mimeType || 'file'}]`).join('\n')
+        }))
+    };
+
+    // 替換成您為數據收集專門建立的 Formspree Endpoint
+    const FORM_ENDPOINT = 'https://formspree.io/f/mgvnngzv';
+
+    try {
+        const response = await fetch(FORM_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify(dataToSend)
+        });
+
+        if (response.ok) {
+            console.log(`Conversation [${conversation.title}] data sent successfully for training.`);
+        } else {
+            console.error(`Failed to send conversation data. Status: ${response.status}`);
+        }
+    } catch (error) {
+        console.error('Error sending conversation data for training:', error);
+    }
+}
         const handleFormSubmit = async (e) => {
             e.preventDefault();
             if (abortController) return;
@@ -6103,6 +6161,10 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             ALL_ELEMENTS.uiLanguageSelect.value = config.uiLanguage;
             ALL_ELEMENTS.aiLanguageSelect.value = config.aiDefaultLanguage;
             ALL_ELEMENTS.enableUpdateNotificationsToggle.checked = config.enableUpdateNotifications;
+            const dataCollectionToggle = document.getElementById('data-collection-toggle');
+    if(dataCollectionToggle) {
+        dataCollectionToggle.checked = config.enableDataCollection;
+    }
             renderPersonalMemoryList();
             updateThemeButtons();
             renderModelManagementUI();
@@ -6147,6 +6209,10 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             config.uiLanguage = ALL_ELEMENTS.uiLanguageSelect.value;
             config.aiDefaultLanguage = ALL_ELEMENTS.aiLanguageSelect.value;
             config.enableUpdateNotifications = ALL_ELEMENTS.enableUpdateNotificationsToggle.checked;
+            const dataCollectionToggle = document.getElementById('data-collection-toggle');
+    if(dataCollectionToggle) {
+        config.enableDataCollection = dataCollectionToggle.checked;
+    }
             const queryCountSlider = document.getElementById('deep-research-query-count-slider');
             if (queryCountSlider) {
                 config.deepResearchQueryCount = parseInt(queryCountSlider.value);
