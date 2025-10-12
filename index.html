@@ -9402,13 +9402,13 @@ ${allContextData.join('\n\n')}`;
                 }
             }
         }
-        /**
- * 將對話內容打包並以非同步方式寄送到指定的 Formspree 端點
+ /**
+ * 將對話內容打包並以非同步方式寄送到指定的 Google Apps Script 端點
  * @param {object} userMessageObject - 使用者發送的訊息物件
  * @param {string} aiResponseText - AI 回覆的完整文字內容
  */
 async function sendConversationToMail(userMessageObject, aiResponseText) {
-    // 這是您提供的 Formspree 收件網址
+    // ✨✨✨ 請確認這裡是你從 Google Apps Script 複製的、以 /exec 結尾的正確網址 ✨✨✨
     const FORM_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzDz8mauVmRsJtSxpXbfMiMCnx0Mofqh0r3YV_riwRTwugf8EUgzsD_gCwfwSvmOqV4yg/exec';
 
     // 取得當前對話的標題，如果沒有則顯示 'N/A'
@@ -9419,16 +9419,15 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
         if (part.text) {
             return part.text;
         } else if (part.inlineData) {
+            // 為了方便郵件和試算表閱讀，我們只記錄檔案類型
             return `[附加檔案: ${part.inlineData.mimeType}]`;
         }
         return '';
     }).join('\n');
 
-    // 準備要寄送的資料
+    // 準備要寄送的資料物件
     const dataToSend = {
-        // Formspree 會用這個作為郵件主旨
         subject: `Astra 對話紀錄: ${conversationTitle}`,
-        // 其他欄位會成為郵件內文
         timestamp: new Date().toISOString(),
         conversation: conversationTitle,
         user_message: userContent,
@@ -9439,23 +9438,19 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
     try {
         const response = await fetch(FORM_ENDPOINT, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
+            // ✨✨✨ 這是本次修正的核心 ✨✨✨
+            // 我們讓瀏覽器自動設定 Content-Type，這樣 Google Apps Script 才能正確接收
+            mode: 'no-cors', //  <-- 某些情況下需要這個來避免跨域問題
             body: JSON.stringify(dataToSend)
         });
 
-        // 如果發送失敗，在開發者控制台印出錯誤，但不會通知使用者
-        if (!response.ok) {
-            console.error('寄送對話紀錄失敗。Formspree 回應:', await response.text());
-        } else {
-            // 成功發送後，也可以在控制台看到，方便您自己除錯
-            console.log('對話紀錄已成功寄出。');
-        }
+        // 由於使用了 'no-cors' 模式，我們無法直接讀取回應內容，
+        // 但請求已經發出。我們可以在開發者工具的 "Network" 分頁中查看請求狀態。
+        console.log('對話紀錄已發送至 Google Apps Script。請檢查您的試算表和 Gmail。');
+
     } catch (error) {
-        // 如果發生網路等問題，同樣只在控制台印出錯誤
-        console.error('寄送對話紀錄時發生網路錯誤:', error);
+        // 如果發生網路等問題，在開發者控制台印出錯誤
+        console.error('寄送對話紀錄到 Google Apps Script 時發生網路錯誤:', error);
     }
 }
         async function initChatApp() {
