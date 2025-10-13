@@ -5046,15 +5046,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     const processedModels = MODELS.map(model => {
         const provider = model.provider;
         let tier = [];
-        let company = null; // 新增 company 屬性
+        let company = null;
 
         if (provider === 'gemini') {
             tier = ['free', 'paid'];
-            company = 'google'; // 將 Gemini 歸類於 google
+            company = 'google';
         } else if (provider === 'openrouter') {
             tier = model.id.includes(':free') ? ['free'] : ['paid'];
-            // 從 id 中解析出公司名稱，例如 'openai/gpt-4o' -> 'openai'
-            company = model.id.split('/')[0]; 
+            company = model.id.split('/')[0];
         }
         return { ...model, tier, company };
     });
@@ -5069,7 +5068,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     const isArchived = conv.archived;
     const translations = i18n[config.uiLanguage] || i18n['zh-TW'];
 
-    // --- ✨ 核心修改 1：擴展 HTML 結構以容納四個視圖 ---
     const popoverHTML = `
         <button id="current-model-btn" class="flex items-center gap-2 text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] px-2 py-1 md:px-3 rounded-md ${isArchived ? 'cursor-not-allowed' : ''}" ${isArchived ? 'disabled' : ''}>
             <span class="font-semibold text-sm md:text-base text-[var(--text-primary)]">${currentModel.name}</span>
@@ -5077,19 +5075,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         </button>
         <div id="model-options-popover" class="popover absolute right-0 mt-6 w-72 md:w-80 rounded-lg border border-[var(--border-color)] z-50">
             <div id="model-views-container" style="width: 400%; display: flex; transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1); align-items: flex-start;">
-                
-                <!-- 視圖 1 (索引 0): 服務商選擇 -->
                 <div id="provider-view" class="model-view" style="width: 25%; flex-shrink: 0; padding-top: 0.5rem; padding-bottom: 0.5rem;"></div>
-
-                <!-- 視圖 2 (索引 1): 類型選擇 (免費/付費) -->
                 <div id="tier-view" class="model-view" style="width: 25%; flex-shrink: 0; padding-top: 0.5rem; padding-bottom: 0.5rem;"></div>
-
-                <!-- 視圖 3 (索引 2): AI 公司選擇 (新！) -->
                 <div id="company-view" class="model-view" style="width: 25%; flex-shrink: 0; padding-top: 0.5rem; padding-bottom: 0.5rem;"></div>
-
-                <!-- 視圖 4 (索引 3): 最終模型清單 -->
                 <div id="model-list-view" class="model-view" style="width: 25%; flex-shrink: 0; padding-top: 0.5rem; padding-bottom: 0.5rem;"></div>
-
             </div>
         </div>
     `;
@@ -5099,7 +5088,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     const viewsContainer = document.getElementById('model-views-container');
     const providerView = document.getElementById('provider-view');
     const tierView = document.getElementById('tier-view');
-    const companyView = document.getElementById('company-view'); // 獲取新視圖
+    const companyView = document.getElementById('company-view');
     const modelListView = document.getElementById('model-list-view');
 
     const adjustPopoverHeight = (targetView) => {
@@ -5108,8 +5097,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         });
     };
 
-    // --- ✨ 核心修改 2：更新導航函式以適應四個視圖 ---
-    const navigateToView = (viewIndex) => { 
+    const navigateToView = (viewIndex) => {
         viewsContainer.style.transform = `translateX(-${viewIndex * 25}%)`;
         const targetView = viewsContainer.children[viewIndex];
         adjustPopoverHeight(targetView);
@@ -5123,7 +5111,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             </div>
         `;
     };
-    
+
     const createBackButtonHTML = (textKey, targetViewIndex) => {
         return `
             <button class="back-btn w-full flex items-center gap-2 text-left px-4 py-3 hover:bg-[var(--hover-bg)] text-sm font-semibold text-blue-600" data-target-view="${targetViewIndex}">
@@ -5145,8 +5133,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         btn.addEventListener('click', () => {
             const provider = btn.dataset.provider;
             tierView.innerHTML = createBackButtonHTML('back', 0);
-            
-            const tiers = ['free', 'paid']; 
+
+            const tiers = ['free', 'paid'];
             tierView.innerHTML += tiers.map(tier => `
                 <div class="model-option-btn-container tier-btn" data-provider="${provider}" data-tier="${tier}">
                     <h4 class="font-semibold capitalize">${tier === 'free' ? (translations.freeModels || '免費模型') : (translations.paidModels || '付費模型')}</h4>
@@ -5158,16 +5146,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     const selectedProvider = tierBtn.dataset.provider;
                     const selectedTier = tierBtn.dataset.tier;
 
-                    // --- ✨ 核心修改 3：在這裡加入判斷，決定下一步是去「公司選擇」還是「模型清單」 ---
-                    
                     if (selectedProvider === 'openrouter') {
-                        // 如果是 OpenRouter，就進入「公司選擇」流程
                         const companies = [...new Set(visibleModels
                             .filter(m => m.provider === selectedProvider && m.tier.includes(selectedTier))
                             .map(m => m.company)
                         )];
 
-                        companyView.innerHTML = createBackButtonHTML('back', 1); // 返回按鈕指向「類型選擇」視圖 (索引 1)
+                        companyView.innerHTML = createBackButtonHTML('back', 1);
                         companyView.innerHTML += companies.map(company => `
                             <div class="model-option-btn-container company-btn" data-provider="${selectedProvider}" data-tier="${selectedTier}" data-company="${company}">
                                 <h4 class="font-semibold capitalize">${company}</h4>
@@ -5177,21 +5162,20 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         if (companies.length === 0) {
                             companyView.innerHTML += `<p class="p-4 text-center text-sm text-[var(--text-secondary)]">${translations.noModelsInTier || '此類別中沒有可用模型。'}</p>`;
                         }
-                        
-                        // 為公司按鈕添加事件
+
                         companyView.querySelectorAll('.company-btn').forEach(companyBtn => {
                             companyBtn.addEventListener('click', () => {
                                 const finalProvider = companyBtn.dataset.provider;
                                 const finalTier = companyBtn.dataset.tier;
                                 const finalCompany = companyBtn.dataset.company;
 
-                                const finalModels = visibleModels.filter(m => 
-                                    m.provider === finalProvider && 
+                                const finalModels = visibleModels.filter(m =>
+                                    m.provider === finalProvider &&
                                     m.tier.includes(finalTier) &&
                                     m.company === finalCompany
                                 );
-                                
-                                modelListView.innerHTML = createBackButtonHTML('back', 2); // 返回按鈕指向「公司選擇」視圖 (索引 2)
+
+                                modelListView.innerHTML = createBackButtonHTML('back', 2);
                                 modelListView.innerHTML += finalModels.map(model => {
                                     const modelIdentifier = (model.descriptionKey || '').replace('model_', '').replace('_desc', '');
                                     const tierKey = `model_${modelIdentifier}_tier_${finalTier}`;
@@ -5199,19 +5183,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                     return createModelOptionHTML(model, descriptionText);
                                 }).join('');
 
-                                navigateToView(3); // 導航到最終的「模型清單」視圖
+                                navigateToView(3);
                             });
                         });
-
-                        navigateToView(2); // 導航到「公司選擇」視圖
-
+                        navigateToView(2);
                     } else {
-                        // 如果是 Gemini (或其他未來可能加入的單一公司服務商)，直接跳到模型清單
-                        const filteredModels = visibleModels.filter(m => 
+                        const filteredModels = visibleModels.filter(m =>
                             m.provider === selectedProvider && m.tier.includes(selectedTier)
                         );
 
-                        modelListView.innerHTML = createBackButtonHTML('back', 1); // 返回按鈕指向「類型選擇」視圖 (索引 1)
+                        modelListView.innerHTML = createBackButtonHTML('back', 1);
                         modelListView.innerHTML += filteredModels.map(model => {
                             const modelIdentifier = (model.descriptionKey || '').replace('model_', '').replace('_desc', '');
                             const tierKey = `model_${modelIdentifier}_tier_${selectedTier}`;
@@ -5222,31 +5203,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         if (filteredModels.length === 0) {
                             modelListView.innerHTML += `<p class="p-4 text-center text-sm text-[var(--text-secondary)]">${translations.noModelsInTier || '此類別中沒有可用模型。'}</p>`;
                         }
-                        
-                        navigateToView(3); // 直接導航到最終的「模型清單」視圖
+                        navigateToView(3);
                     }
-
-                    // 為最終的模型清單項目添加點擊事件 (這段邏輯可以共用)
-                    modelListView.querySelectorAll('.model-option-btn-container').forEach(modelBtn => {
-                        modelBtn.addEventListener('click', () => {
-                            if (isArchived) return;
-                            
-                            const newModelId = modelBtn.dataset.modelId;
-                            const newModelInfo = MODELS.find(m => m.id === newModelId);
-                            if (newModelInfo) {
-                                conv.model = newModelInfo.id;
-                                conv.provider = newModelInfo.provider;
-                                config.lastUsedModel = newModelId;
-                                if (config.isDeepResearchMode && newModelInfo.provider !== 'gemini') {
-                                    toggleDeepResearchMode();
-                                }
-                                saveAppData();
-                                saveConfig();
-                                renderAll();
-                            }
-                            popover.classList.remove('visible');
-                        });
-                    });
                 });
             });
             navigateToView(1);
@@ -5260,13 +5218,41 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             navigateToView(targetViewIndex);
         }
     });
-    
+
+    // ✨✨✨ 核心修復：使用事件委派來處理最終模型清單的點擊事件 ✨✨✨
+    // 我們將事件監聽器綁定在父容器 `modelListView` 上
+    modelListView.addEventListener('click', (e) => {
+        // 檢查被點擊的元素是否是 (或在)一個模型選項按鈕內
+        const modelBtn = e.target.closest('.model-option-btn-container');
+        if (!modelBtn || !modelBtn.dataset.modelId) {
+            return; // 如果不是，就什麼都不做
+        }
+
+        if (isArchived) return;
+
+        const newModelId = modelBtn.dataset.modelId;
+        const newModelInfo = MODELS.find(m => m.id === newModelId);
+
+        if (newModelInfo) {
+            conv.model = newModelInfo.id;
+            conv.provider = newModelInfo.provider;
+            config.lastUsedModel = newModelId;
+            if (config.isDeepResearchMode && newModelInfo.provider !== 'gemini') {
+                toggleDeepResearchMode();
+            }
+            saveAppData();
+            saveConfig();
+            renderAll();
+        }
+        popover.classList.remove('visible');
+    });
+
     document.getElementById('current-model-btn').addEventListener('click', () => {
         const isVisible = popover.classList.toggle('visible');
         if (isVisible) {
             navigateToView(0);
         } else {
-            popover.style.height = ''; 
+            popover.style.height = '';
         }
     });
 };
