@@ -5039,39 +5039,36 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     if (!conv) return;
 
     // --- 步驟 1: 資料準備 ---
-    // 動態為每個模型物件添加 'tier' 屬性，方便後續篩選
     const processedModels = MODELS.map(model => {
         if (model.provider === 'gemini') {
-            // 根據您的需求，所有 Gemini 模型都歸類為同時支援免費和付費
             return { ...model, tier: ['free', 'paid'] };
         } else if (model.provider === 'openrouter') {
-            // 對於 OpenRouter 模型，我們檢查 ID 中是否包含 ':free' 來判斷
             const tier = model.id.includes(':free') ? ['free'] : ['paid'];
             return { ...model, tier };
         }
-        return model; // 其他情況保持不變
+        return model;
     });
 
-    // 篩選出設定中可見的模型
     const visibleModels = config.modelSettings
         .filter(s => !s.hidden)
         .sort((a, b) => a.order - b.order)
         .map(s => processedModels.find(m => m.id === s.id))
-        .filter(Boolean); // 過濾掉可能找不到的模型
+        .filter(Boolean);
 
     const currentModel = processedModels.find(m => m.id === conv.model) || processedModels[0];
     const isArchived = conv.archived;
     const translations = i18n[config.uiLanguage] || i18n['zh-TW'];
 
     // --- 步驟 2: 建立新的多層選單 HTML 結構 ---
-    // 我們建立一個包含三個面板（視圖）的容器，它將水平滑動來切換畫面
     const popoverHTML = `
         <button id="current-model-btn" class="flex items-center gap-2 text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] px-2 py-1 md:px-3 rounded-md ${isArchived ? 'cursor-not-allowed' : ''}" ${isArchived ? 'disabled' : ''}>
             <span class="font-semibold text-sm md:text-base text-[var(--text-primary)]">${currentModel.name}</span>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </button>
         <div id="model-options-popover" class="popover absolute right-0 mt-6 w-72 md:w-80 rounded-lg border border-[var(--border-color)] z-50">
-            <div id="model-views-container" style="width: 300%; display: flex; transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);">
+            
+            <!-- ✨✨✨ 唯一的修改在這裡！我們在 style 屬性中增加了 align-items: flex-start; ✨✨✨ -->
+            <div id="model-views-container" style="width: 300%; display: flex; transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1); align-items: flex-start;">
                 
                 <!-- 視圖 1: 服務商選擇 (第一層) -->
                 <div id="provider-view" class="model-view" style="width: 33.333%; flex-shrink: 0; padding-top: 0.5rem; padding-bottom: 0.5rem;"></div>
@@ -5087,29 +5084,25 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     `;
     ALL_ELEMENTS.modelSwitcherContainer.innerHTML = popoverHTML;
 
-    // --- 步驟 3: JavaScript 互動邏輯 ---
-    // 獲取我們剛剛建立的各個 HTML 元素
+    // --- 步驟 3: JavaScript 互動邏輯 (這部分與之前相同，無需修改) ---
     const popover = document.getElementById('model-options-popover');
     const viewsContainer = document.getElementById('model-views-container');
     const providerView = document.getElementById('provider-view');
     const tierView = document.getElementById('tier-view');
     const modelListView = document.getElementById('model-list-view');
 
-    // 輔助函式：平滑地調整彈出視窗的高度以適應內容
     const adjustPopoverHeight = (targetView) => {
         requestAnimationFrame(() => {
             popover.style.height = `${targetView.scrollHeight}px`;
         });
     };
 
-    // 輔助函式：導航到指定的視圖
-    const navigateToView = (viewIndex) => { // 0: 服務商, 1: 類型, 2: 模型清單
+    const navigateToView = (viewIndex) => {
         viewsContainer.style.transform = `translateX(-${viewIndex * 33.333}%)`;
         const targetView = viewsContainer.children[viewIndex];
         adjustPopoverHeight(targetView);
     };
 
-    // 輔助函式：產生單個模型選項的 HTML
     const createModelOptionHTML = (model) => {
         const description = translations[model.descriptionKey] || '';
         const limits = translations[model.limitsKey] || '';
@@ -5121,7 +5114,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         `;
     };
     
-    // 輔助函式：產生一個返回按鈕
     const createBackButtonHTML = (textKey, targetViewIndex) => {
         return `
             <button class="back-btn w-full flex items-center gap-2 text-left px-4 py-3 hover:bg-[var(--hover-bg)] text-sm font-semibold text-blue-600" data-target-view="${targetViewIndex}">
@@ -5132,25 +5124,19 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         `;
     };
 
-    // --- 填充各個視圖的內容並綁定事件 ---
-
-    // 1. 填充「服務商選擇」視圖 (這是初始畫面)
-    const providers = [...new Set(visibleModels.map(m => m.provider))]; // 取得所有不重複的服務商
+    const providers = [...new Set(visibleModels.map(m => m.provider))];
     providerView.innerHTML = providers.map(provider => `
         <div class="model-option-btn-container provider-btn" data-provider="${provider}">
             <h4 class="font-semibold capitalize">${provider}</h4>
         </div>
     `).join('');
 
-    // 2. 為「服務商選擇」視圖中的按鈕添加點擊事件
     providerView.querySelectorAll('.provider-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const provider = btn.dataset.provider;
             
-            // 產生返回按鈕，點擊後會回到服務商選擇視圖 (索引 0)
             tierView.innerHTML = createBackButtonHTML('back', 0);
             
-            // 產生「免費」和「付費」按鈕
             const tiers = ['free', 'paid']; 
             tierView.innerHTML += tiers.map(tier => `
                 <div class="model-option-btn-container tier-btn" data-provider="${provider}" data-tier="${tier}">
@@ -5158,34 +5144,27 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 </div>
             `).join('');
 
-            // 為剛剛產生的「類型」按鈕添加點擊事件
             tierView.querySelectorAll('.tier-btn').forEach(tierBtn => {
                 tierBtn.addEventListener('click', () => {
                     const selectedProvider = tierBtn.dataset.provider;
                     const selectedTier = tierBtn.dataset.tier;
                     
-                    // 根據服務商和類型篩選出最終的模型
                     const filteredModels = visibleModels.filter(m => 
                         m.provider === selectedProvider && m.tier.includes(selectedTier)
                     );
 
-                    // 產生返回按鈕，點擊後會回到類型選擇視圖 (索引 1)
                     modelListView.innerHTML = createBackButtonHTML('back', 1);
-                    // 產生最終的模型清單
                     modelListView.innerHTML += filteredModels.map(createModelOptionHTML).join('');
 
-                    // 如果篩選後沒有模型，顯示提示訊息
                     if (filteredModels.length === 0) {
                         modelListView.innerHTML += `<p class="p-4 text-center text-sm text-[var(--text-secondary)]">${translations.noModelsInTier || '此類別中沒有可用模型。'}</p>`;
                     }
 
-                    // 為最終的模型清單項目添加點擊事件
                     modelListView.querySelectorAll('.model-option-btn-container').forEach(modelBtn => {
                         modelBtn.addEventListener('click', () => {
-                            if (isArchived) return; // 如果對話已封存，則不執行任何操作
+                            if (isArchived) return;
                             
                             const newModelId = modelBtn.dataset.modelId;
-                            // 這是您原本選擇模型後的邏輯，我們將其保留
                             const newModelInfo = MODELS.find(m => m.id === newModelId);
                             if (newModelInfo) {
                                 conv.model = newModelInfo.id;
@@ -5196,19 +5175,18 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                 }
                                 saveAppData();
                                 saveConfig();
-                                renderAll(); // 重新渲染整個介面以更新顯示
+                                renderAll();
                             }
-                            popover.classList.remove('visible'); // 選擇後關閉彈出視窗
+                            popover.classList.remove('visible');
                         });
                     });
-                    navigateToView(2); // 導航到「模型清單」視圖
+                    navigateToView(2);
                 });
             });
-            navigateToView(1); // 導航到「類型選擇」視圖
+            navigateToView(1);
         });
     });
 
-    // 處理所有「返回」按鈕的通用邏輯
     viewsContainer.addEventListener('click', (e) => {
         const backBtn = e.target.closest('.back-btn');
         if (backBtn) {
@@ -5217,14 +5195,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         }
     });
     
-    // 處理彈出視窗的打開和關閉
     document.getElementById('current-model-btn').addEventListener('click', () => {
         const isVisible = popover.classList.toggle('visible');
         if (isVisible) {
-            // 當打開時，永遠重置到第一個視圖（服務商選擇）
             navigateToView(0);
         } else {
-            // 當關閉時，重置高度
             popover.style.height = ''; 
         }
     });
