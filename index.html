@@ -7269,82 +7269,205 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             reader.readAsText(file);
         };
         const renderModelManagementUI = () => {
-            const container = ALL_ELEMENTS.modelManagementList;
-            container.innerHTML = '';
-            const sortedModels = [...config.modelSettings].sort((a, b) => a.order - b.order);
-            sortedModels.forEach((setting, index) => {
-                const modelInfo = MODELS.find(m => m.id === setting.id);
-                if (!modelInfo) return;
-                const item = document.createElement('div');
-                item.className = 'model-management-item flex items-center p-2 bg-[var(--input-field-bg)] rounded-lg';
-                item.dataset.modelId = modelInfo.id;
-                item.innerHTML = `
-                    <span class="flex-1 font-medium">${modelInfo.name}</span>
-                    <input type="radio" name="default-model-radio" class="w-4 h-4 mr-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" ${config.defaultModel === modelInfo.id ? 'checked' : ''}>
-                    <button class="toggle-visibility-btn p-1 rounded-full hover:bg-[var(--hover-bg)]" title="${setting.hidden ? (i18n[config.uiLanguage].show || '顯示') : (i18n[config.uiLanguage].hide || '隱藏')}">
-                        ${setting.hidden
-                            ? '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.243 4.243l-4.243-4.243" /></svg>'
-                            : '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.432 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573 3.007-9.963 7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>'
-                        }
-                    </button>
-                    <div class="flex gap-1 ml-2">
-                        <button class="move-up-btn p-1 rounded hover:bg-[var(--hover-bg)]disabled:opacity-50" ${index === 0 ? 'disabled' : ''}>↑</button>
-                        <button class="move-down-btn p-1 rounded hover:bg-[var(--hover-bg)] disabled:opacity-50" ${index === sortedModels.length - 1 ? 'disabled' : ''}>↓</button>
-                    </div>
-                `;
-                container.appendChild(item);
-            });
-            container.querySelectorAll('.toggle-visibility-btn').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    const item = e.currentTarget.closest('.model-management-item');
-                    const modelId = item.dataset.modelId;
-                    const setting = config.modelSettings.find(s => s.id === modelId);
-                    if (!setting) return;
-                    setting.hidden = !setting.hidden;
-                    await saveConfig();
-                    renderModelManagementUI();
-                    renderModelSwitcher();
-                });
-            });
-            container.querySelectorAll('input[name="default-model-radio"]').forEach(radio => {
-                radio.addEventListener('change', async (e) => {
-                    const item = e.currentTarget.closest('.model-management-item');
-                    const modelId = item.dataset.modelId;
-                    config.defaultModel = modelId;
-                    await saveConfig();
-                    renderModelSwitcher();
-                    showNotification(i18n[config.uiLanguage].defaultModelUpdated || '預設模型已更新');
-                });
-            });
-            container.querySelectorAll('.move-up-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const item = e.currentTarget.closest('.model-management-item');
-                    const modelId = item.dataset.modelId;
-                    moveModelOrder(modelId, 'up');
-                });
-            });
-            container.querySelectorAll('.move-down-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const item = e.currentTarget.closest('.model-management-item');
-                    const modelId = item.dataset.modelId;
-                    moveModelOrder(modelId, 'down');
-                });
-            });
-        };
-        const moveModelOrder = (modelId, direction) => {
-            const index = config.modelSettings.findIndex(s => s.id === modelId);
-            if (index === -1) return;
-            if (direction === 'up' && index > 0) {
-                [config.modelSettings[index - 1], config.modelSettings[index]] = [config.modelSettings[index], config.modelSettings[index - 1]];
-            } else if (direction === 'down' && index < config.modelSettings.length - 1) {
-                [config.modelSettings[index], config.modelSettings[index + 1]] = [config.modelSettings[index + 1], config.modelSettings[index]];
+    const container = ALL_ELEMENTS.modelManagementList;
+    container.innerHTML = '';
+
+    // --- 步驟 1: 準備並分類所有模型 ---
+    const processedModels = MODELS.map(model => {
+        const provider = model.provider;
+        let tier = [];
+        let company = null;
+        if (provider === 'gemini') {
+            tier = ['free', 'paid'];
+            company = 'google'; 
+        } else if (provider === 'openrouter') {
+            tier = model.id.includes(':free') ? ['free'] : ['paid'];
+            company = model.id.split('/')[0];
+        }
+        return { ...model, tier, company };
+    });
+
+    const sortedModels = [...config.modelSettings]
+        .sort((a, b) => a.order - b.order)
+        .map(setting => ({
+            setting,
+            info: processedModels.find(m => m.id === setting.id)
+        }))
+        .filter(item => item.info); // 確保模型存在
+
+    // 建立巢狀結構來存放分類後的模型
+    const categorizedModels = {};
+
+    sortedModels.forEach(item => {
+        const { info, setting } = item;
+        const { provider, tier, company } = info;
+
+        if (!categorizedModels[provider]) categorizedModels[provider] = {};
+        
+        tier.forEach(t => {
+            if (!categorizedModels[provider][t]) categorizedModels[provider][t] = {};
+            
+            if (provider === 'openrouter') {
+                if (!categorizedModels[provider][t][company]) categorizedModels[provider][t][company] = [];
+                categorizedModels[provider][t][company].push(item);
+            } else {
+                if (!categorizedModels[provider][t]['models']) categorizedModels[provider][t]['models'] = [];
+                categorizedModels[provider][t]['models'].push(item);
             }
-            config.modelSettings.forEach((s, i) => s.order = i);
-            saveConfig();
-            renderModelManagementUI();
-            renderModelSwitcher();
-            showNotification(i18n[config.uiLanguage].modelOrderUpdated || '模型順序已更新');
-        };
+        });
+    });
+
+    // --- 步驟 2: 根據分類後的結構動態產生 HTML ---
+    
+    // 輔助函式：產生單個可排序的模型項目
+    const createModelItemHTML = (item, index, total) => {
+        const { setting, info } = item;
+        return `
+            <div class="model-management-item flex items-center p-2 bg-[var(--input-field-bg)] rounded-lg mb-1" data-model-id="${info.id}">
+                <span class="flex-1 font-medium">${info.name}</span>
+                <input type="radio" name="default-model-radio" class="w-4 h-4 mr-4 text-blue-600" ${config.defaultModel === info.id ? 'checked' : ''}>
+                <button class="toggle-visibility-btn p-1 rounded-full hover:bg-[var(--hover-bg)]" title="${setting.hidden ? '顯示' : '隱藏'}">
+                    ${setting.hidden ? '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.243 4.243l-4.243-4.243" /></svg>' : '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.432 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573 3.007-9.963 7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>'}
+                </button>
+                <div class="flex gap-1 ml-2">
+                    <button class="move-up-btn p-1 rounded hover:bg-[var(--hover-bg)] disabled:opacity-50" ${index === 0 ? 'disabled' : ''}>↑</button>
+                    <button class="move-down-btn p-1 rounded hover:bg-[var(--hover-bg)] disabled:opacity-50" ${index === total - 1 ? 'disabled' : ''}>↓</button>
+                </div>
+            </div>
+        `;
+    };
+
+    // 輔助函式：建立一個可折疊的區塊
+    const createCollapsibleSection = (title, level = 0) => {
+        const details = document.createElement('details');
+        details.className = `collapsible-section level-${level}`;
+        details.style.marginLeft = `${level * 15}px`;
+        details.innerHTML = `
+            <summary class="collapsible-summary text-sm font-semibold capitalize cursor-pointer p-2 rounded hover:bg-[var(--hover-bg)]">${title}</summary>
+            <div class="collapsible-content pl-4 pt-1"></div>
+        `;
+        return details;
+    };
+
+    // 遍歷提供商
+    for (const provider in categorizedModels) {
+        const providerSection = createCollapsibleSection(provider, 0);
+        const providerContent = providerSection.querySelector('.collapsible-content');
+        
+        // 遍歷費用類型
+        for (const tier in categorizedModels[provider]) {
+            const tierSection = createCollapsibleSection(tier === 'free' ? '免費模型' : '付費模型', 1);
+            const tierContent = tierSection.querySelector('.collapsible-content');
+            
+            const tierData = categorizedModels[provider][tier];
+
+            if (provider === 'openrouter') {
+                // 遍歷公司
+                for (const company in tierData) {
+                    const companySection = createCollapsibleSection(company, 2);
+                    const companyContent = companySection.querySelector('.collapsible-content');
+                    const models = tierData[company];
+                    
+                    companyContent.innerHTML = models.map((item, index) => createModelItemHTML(item, index, models.length)).join('');
+                    tierContent.appendChild(companySection);
+                }
+            } else { // for Gemini
+                const models = tierData['models'] || [];
+                tierContent.innerHTML = models.map((item, index) => createModelItemHTML(item, index, models.length)).join('');
+            }
+            providerContent.appendChild(tierSection);
+        }
+        container.appendChild(providerSection);
+    }
+    
+    // --- 步驟 3: 綁定事件 ---
+    container.querySelectorAll('.toggle-visibility-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const modelId = e.currentTarget.closest('.model-management-item').dataset.modelId;
+            const setting = config.modelSettings.find(s => s.id === modelId);
+            if (setting) {
+                setting.hidden = !setting.hidden;
+                await saveConfig();
+                renderModelManagementUI(); // 重繪整個UI
+            }
+        });
+    });
+
+    container.querySelectorAll('input[name="default-model-radio"]').forEach(radio => {
+        radio.addEventListener('change', async (e) => {
+            const modelId = e.currentTarget.closest('.model-management-item').dataset.modelId;
+            config.defaultModel = modelId;
+            await saveConfig();
+            // 不需重繪，只需通知即可
+            showNotification(i18n[config.uiLanguage].defaultModelUpdated || '預設模型已更新');
+        });
+    });
+
+    container.querySelectorAll('.move-up-btn, .move-down-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const modelId = e.currentTarget.closest('.model-management-item').dataset.modelId;
+            const direction = e.currentTarget.classList.contains('move-up-btn') ? 'up' : 'down';
+            moveModelOrder(modelId, direction);
+        });
+    });
+};
+        const moveModelOrder = async (modelId, direction) => {
+    // 獲取模型及其詳細分類資訊
+    const allModelsInfo = MODELS.map(model => {
+        let tier = [];
+        let company = null;
+        if (model.provider === 'gemini') {
+            tier = ['free', 'paid'];
+            company = 'google';
+        } else if (model.provider === 'openrouter') {
+            tier = model.id.includes(':free') ? ['free'] : ['paid'];
+            company = model.id.split('/')[0];
+        }
+        return { ...model, tier, company };
+    });
+
+    const modelToMoveInfo = allModelsInfo.find(m => m.id === modelId);
+    if (!modelToMoveInfo) return;
+
+    // 找出與被移動模型屬於同一分類的所有模型設定
+    const siblingSettings = config.modelSettings.filter(setting => {
+        const info = allModelsInfo.find(m => m.id === setting.id);
+        if (!info) return false;
+        
+        // 判斷是否在同一個最終群組
+        const sameProvider = info.provider === modelToMoveInfo.provider;
+        const sameTier = info.tier.some(t => modelToMoveInfo.tier.includes(t));
+        const sameCompany = info.company === modelToMoveInfo.company;
+
+        return sameProvider && sameTier && sameCompany;
+    }).sort((a, b) => a.order - b.order);
+
+    const localIndex = siblingSettings.findIndex(s => s.id === modelId);
+
+    if (direction === 'up' && localIndex > 0) {
+        // 在本地群組中找到要交換位置的目標
+        const targetSetting = siblingSettings[localIndex - 1];
+        // 在全域設定中找到它們的索引
+        const globalIndex1 = config.modelSettings.findIndex(s => s.id === modelId);
+        const globalIndex2 = config.modelSettings.findIndex(s => s.id === targetSetting.id);
+        // 交換它們的 order 值
+        [config.modelSettings[globalIndex1].order, config.modelSettings[globalIndex2].order] = [config.modelSettings[globalIndex2].order, config.modelSettings[globalIndex1].order];
+
+    } else if (direction === 'down' && localIndex < siblingSettings.length - 1) {
+        const targetSetting = siblingSettings[localIndex + 1];
+        const globalIndex1 = config.modelSettings.findIndex(s => s.id === modelId);
+        const globalIndex2 = config.modelSettings.findIndex(s => s.id === targetSetting.id);
+        [config.modelSettings[globalIndex1].order, config.modelSettings[globalIndex2].order] = [config.modelSettings[globalIndex2].order, config.modelSettings[globalIndex1].order];
+    }
+    
+    // 根據新的 order 值重新排序整個陣列，並更新 order 屬性以確保連續性
+    config.modelSettings.sort((a, b) => a.order - b.order);
+    config.modelSettings.forEach((s, i) => s.order = i);
+
+    await saveConfig();
+    renderModelManagementUI(); // 重新渲染UI
+    showNotification(i18n[config.uiLanguage].modelOrderUpdated || '模型順序已更新');
+};
         function toggleSidebar(show) {
             const { sidebar, sidebarOverlay } = ALL_ELEMENTS;
             sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
