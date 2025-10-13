@@ -5035,14 +5035,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         const renderModelSwitcher = () => {
     const conv = getActiveConversation();
-    ALL_ELEMENTS.modelSwitcherContainer.innerHTML = ''; // 每次渲染前都先清空，避免重複
+    ALL_ELEMENTS.modelSwitcherContainer.innerHTML = '';
     if (!conv) return;
 
-    // --- 步驟 1: 資料準備 ---
     const processedModels = MODELS.map(model => {
+        // 為 Gemini 模型添加免費和付費標籤
         if (model.provider === 'gemini') {
             return { ...model, tier: ['free', 'paid'] };
-        } else if (model.provider === 'openrouter') {
+        } 
+        // 根據 ID 為 OpenRouter 模型添加標籤
+        else if (model.provider === 'openrouter') {
             const tier = model.id.includes(':free') ? ['free'] : ['paid'];
             return { ...model, tier };
         }
@@ -5059,32 +5061,21 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     const isArchived = conv.archived;
     const translations = i18n[config.uiLanguage] || i18n['zh-TW'];
 
-    // --- 步驟 2: 建立新的多層選單 HTML 結構 ---
     const popoverHTML = `
         <button id="current-model-btn" class="flex items-center gap-2 text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] px-2 py-1 md:px-3 rounded-md ${isArchived ? 'cursor-not-allowed' : ''}" ${isArchived ? 'disabled' : ''}>
             <span class="font-semibold text-sm md:text-base text-[var(--text-primary)]">${currentModel.name}</span>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </button>
         <div id="model-options-popover" class="popover absolute right-0 mt-6 w-72 md:w-80 rounded-lg border border-[var(--border-color)] z-50">
-            
-            <!-- ✨✨✨ 唯一的修改在這裡！我們在 style 屬性中增加了 align-items: flex-start; ✨✨✨ -->
             <div id="model-views-container" style="width: 300%; display: flex; transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1); align-items: flex-start;">
-                
-                <!-- 視圖 1: 服務商選擇 (第一層) -->
                 <div id="provider-view" class="model-view" style="width: 33.333%; flex-shrink: 0; padding-top: 0.5rem; padding-bottom: 0.5rem;"></div>
-
-                <!-- 視圖 2: 類型選擇 (免費/付費) (第二層) -->
                 <div id="tier-view" class="model-view" style="width: 33.333%; flex-shrink: 0; padding-top: 0.5rem; padding-bottom: 0.5rem;"></div>
-
-                <!-- 視圖 3: 最終模型清單 (第三層) -->
                 <div id="model-list-view" class="model-view" style="width: 33.333%; flex-shrink: 0; padding-top: 0.5rem; padding-bottom: 0.5rem;"></div>
-
             </div>
         </div>
     `;
     ALL_ELEMENTS.modelSwitcherContainer.innerHTML = popoverHTML;
 
-    // --- 步驟 3: JavaScript 互動邏輯 (這部分與之前相同，無需修改) ---
     const popover = document.getElementById('model-options-popover');
     const viewsContainer = document.getElementById('model-views-container');
     const providerView = document.getElementById('provider-view');
@@ -5103,13 +5094,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         adjustPopoverHeight(targetView);
     };
 
-    const createModelOptionHTML = (model) => {
-        const description = translations[model.descriptionKey] || '';
-        const limits = translations[model.limitsKey] || '';
+    // ✨✨✨ 核心修改 1：修改 createModelOptionHTML 函式 ✨✨✨
+    // 讓它直接接收完整的 descriptionText，而不是自己去組合
+    const createModelOptionHTML = (model, descriptionText) => {
         return `
             <div data-model-id="${model.id}" class="model-option-btn-container ${isArchived ? 'cursor-not-allowed opacity-50' : ''}">
                 <h4 class="font-semibold">${model.name}</h4>
-                <p class="model-description">${description}<span class="whitespace-nowrap"> (${limits})</span></p>
+                <p class="model-description">${descriptionText}</p>
             </div>
         `;
     };
@@ -5134,7 +5125,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     providerView.querySelectorAll('.provider-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const provider = btn.dataset.provider;
-            
             tierView.innerHTML = createBackButtonHTML('back', 0);
             
             const tiers = ['free', 'paid']; 
@@ -5154,7 +5144,22 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     );
 
                     modelListView.innerHTML = createBackButtonHTML('back', 1);
-                    modelListView.innerHTML += filteredModels.map(createModelOptionHTML).join('');
+
+                    // ✨✨✨ 核心修改 2：動態生成 i18n 鍵並傳遞給 createModelOptionHTML ✨✨✨
+                    modelListView.innerHTML += filteredModels.map(model => {
+                        // 1. 從 descriptionKey 中提取模型的唯一識別名稱 (例如: ProMax, Mini)
+                        //    我們假設 key 的格式是 'model_NAME_desc'
+                        const modelIdentifier = (model.descriptionKey || '').replace('model_', '').replace('_desc', '');
+                        
+                        // 2. 根據識別名稱和使用者選擇的 tier (free/paid) 來組合出新的 i18n key
+                        const tierKey = `model_${modelIdentifier}_tier_${selectedTier}`;
+                        
+                        // 3. 從 i18n 物件中取得對應的描述文字
+                        const descriptionText = translations[tierKey] || ''; // 如果找不到，就顯示空字串
+                        
+                        // 4. 將模型物件和我們剛剛取得的描述文字傳遞給輔助函式
+                        return createModelOptionHTML(model, descriptionText);
+                    }).join('');
 
                     if (filteredModels.length === 0) {
                         modelListView.innerHTML += `<p class="p-4 text-center text-sm text-[var(--text-secondary)]">${translations.noModelsInTier || '此類別中沒有可用模型。'}</p>`;
