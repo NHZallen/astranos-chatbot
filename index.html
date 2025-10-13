@@ -5041,8 +5041,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     const translations = i18n[config.uiLanguage] || i18n['zh-TW'];
 
     // 1. 建立基本 HTML 結構
-    // 我們建立一個按鈕來顯示當前模型，以及一個彈出視窗 (popover)。
-    // 彈出視窗內有一個滑動容器 (model-views-container)，裡面包含三個面板 (model-view)。
     ALL_ELEMENTS.modelSwitcherContainer.innerHTML = `
         <button id="current-model-btn" class="flex items-center gap-2 text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] px-2 py-1 md:px-3 rounded-md ${isArchived ? 'cursor-not-allowed' : ''}" ${isArchived ? 'disabled' : ''}>
             <span class="font-semibold text-sm md:text-base text-[var(--text-primary)]">${currentModel.name}</span>
@@ -5122,7 +5120,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         `;
         planView.querySelector('.model-back-btn').addEventListener('click', () => {
             viewsContainer.style.transform = 'translateX(0)'; // 滑回第一層
-            adjustPopoverHeight(providerView);
+            adjustPopoverHeight(providerView); // ✨ 修正點 #1
         });
         planView.querySelectorAll('.plan-option').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -5138,14 +5136,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     const renderModelListView = (provider, plan) => {
         const planName = plan === 'free' ? (translations.freeModels || '免費模型') : (translations.paidModels || '付費模型');
 
-        // --- 核心過濾邏輯 ---
         let filteredModels = MODELS.filter(m => !config.modelSettings.find(s => s.id === m.id)?.hidden);
         
         if (provider === 'gemini') {
-            // **特殊需求**：如果是 Gemini，無論選免費還是付費，都顯示所有 Gemini 模型
             filteredModels = filteredModels.filter(m => m.provider === 'gemini');
         } else {
-            // 正常 OpenRouter 邏輯
             filteredModels = filteredModels.filter(m => m.provider === provider);
             if (plan === 'free') {
                 filteredModels = filteredModels.filter(m => m.id.includes(':free'));
@@ -5172,7 +5167,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
         modelsView.querySelector('.model-back-btn').addEventListener('click', () => {
             viewsContainer.style.transform = 'translateX(-33.3333%)'; // 滑回第二層
-            adjustPopoverHeight(planView);
+            adjustPopoverHeight(planView); // ✨ 修正點 #2
         });
         
         if (!isArchived) {
@@ -5198,13 +5193,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     };
 
     // 6. 初始設定與主按鈕事件
-    renderProviderView(); // 程式一開始，先準備好第一層的內容
+    renderProviderView(); 
 
     if (!isArchived) {
         document.getElementById('current-model-btn').addEventListener('click', () => {
             const isVisible = popover.classList.toggle('visible');
             if (isVisible) {
-                // 每次打開時，都回到第一層
                 viewsContainer.style.transform = 'translateX(0)';
                 adjustPopoverHeight(providerView);
             } else {
@@ -5213,7 +5207,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         });
     }
     
-    // 更新其他UI狀態
     updateFunctionButtonsState();
     updateApiKeyWarningBadge();
 };
