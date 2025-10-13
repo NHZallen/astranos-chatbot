@@ -406,19 +406,19 @@ window.i18n = {
 
 
         // Model Descriptions & Limits
-        model_ProMax_desc: '深度推理專長，專業研究與複雜決策首選。',
+        model_ProMax_desc: '費用-免費；百萬輸入/1.25$、百萬輸出/10$。',
         model_ProMax_limits: '5次/分鐘、100次/天',
-        model_ProPV_desc: '測試最新功能，兼具速度與多模態體驗。',
+        model_ProPV_desc: '費用-免費；百萬輸入/0.3$、百萬輸出/2.5$。',
         model_ProPV_limits: '10次/分鐘、250次/天',
-        model_Pro_desc: '高效多模態模型，影像與文字分析並行。',
+        model_Pro_desc: '費用-免費；百萬輸入/0.3$、百萬輸出/2.5$。',
         model_Pro_limits: '10次/分鐘、250次/天',
-        model_PlusPV_desc: '超輕量快速，適合低延遲與日常應用。',
+        model_PlusPV_desc: '費用-免費；百萬輸入/0.1$、百萬輸出/0.4$。',
         model_PlusPV_limits: '15次/分鐘、1000次/天',
-        model_Mini_desc: '強大推理與長文處理，適合多步推理與深度問答。',
+        model_Mini_desc: '費用-免費。',
         model_Mini_limits: '20次/分鐘、50次/天',
-        model_Mill_desc: '開源高效，短文生成與結構化任務合適。',
+        model_Mill_desc: '費用-免費。',
         model_Mill_limits: '20次/分鐘、50次/天',
-        model_Nano_desc: '中文與技術領域專長，適合專業知識與程式開發。',
+        model_Nano_desc: '費用-免費。',
         model_Nano_limits: '20次/分鐘、50次/天',
 
 
@@ -852,19 +852,19 @@ window.i18n = {
 
 
         // Model Descriptions & Limits
-        model_ProMax_desc: 'Expert in deep reasoning, best choice for professional research and complex decisions.',
+        model_ProMax_desc: 'Cost – Free; $1.25 per million input tokens, $10 per million output tokens.',
         model_ProMax_limits: '5 req/min, 100 req/day',
-        model_ProPV_desc: 'Preview latest features, combining speed with multimodal capabilities.',
+        model_ProPV_desc: 'Cost – Free; $0.3 per million input tokens, $2.5 per million output tokens.',
         model_ProPV_limits: '10 req/min, 250 req/day',
-        model_Pro_desc: 'Efficient multimodal model for both image and text analysis.',
+        model_Pro_desc: 'Cost – Free; $0.3 per million input tokens, $2.5 per million output tokens.',
         model_Pro_limits: '10 req/min, 250 req/day',
-        model_PlusPV_desc: 'Lightweight and fast, ideal for low-latency and everyday applications.',
+        model_PlusPV_desc: 'Cost – Free; $0.1 per million input tokens, $0.4 per million output tokens.',
         model_PlusPV_limits: '15 req/min, 1000 req/day',
-        model_Mini_desc: 'Strong in reasoning and long-form handling, great for multi-step logic and deep Q&A.',
+        model_Mini_desc: 'Cost – Free.',
         model_Mini_limits: '20 req/min, 50 req/day',
-        model_Mill_desc: 'Open-source and efficient, suitable for short text generation and structured tasks.',
+        model_Mill_desc: 'Cost – Free.',
         model_Mill_limits: '20 req/min, 50 req/day',
-        model_Nano_desc: 'Specialized in Chinese and technical fields, ideal for expert knowledge and coding tasks.',
+        model_Nano_desc: 'Cost – Free.',
         model_Nano_limits: '20 req/min, 50 req/day',
 
 
@@ -1298,19 +1298,19 @@ window.i18n = {
 
 
         // Model Descriptions & Limits
-        model_ProMax_desc: 'Spécialiste du raisonnement profond, choix idéal pour recherche professionnelle et décisions complexes.',
+        model_ProMax_desc: 'Coût – Gratuit ; 1,25 $ par million de jetons d’entrée, 10 $ par million de jetons de sortie.',
         model_ProMax_limits: '5 req/min, 100 req/jour',
-        model_ProPV_desc: 'Aperçu des dernières fonctions, alliant rapidité et capacités multimodales.',
+        model_ProPV_desc: 'Coût – Gratuit ; 0.3 $ par million de jetons d’entrée, 2.5 $ par million de jetons de sortie.',
         model_ProPV_limits: '10 req/min, 250 req/jour',
-        model_Pro_desc: 'Modèle multimodal efficace pour analyser textes et images.',
+        model_Pro_desc: 'Coût – Gratuit ; 0.3 $ par million de jetons d’entrée, 2.5 $ par million de jetons de sortie.',
         model_Pro_limits: '10 req/min, 250 req/jour',
-        model_PlusPV_desc: 'Léger et rapide, idéal pour faible latence et usages quotidiens.',
+        model_PlusPV_desc: 'Coût – Gratuit ; 0.1 $ par million de jetons d’entrée, 0.4 $ par million de jetons de sortie.',
         model_PlusPV_limits: '15 req/min, 1000 req/jour',
-        model_Mini_desc: 'Fort en raisonnement et textes longs, adapté aux logiques complexes et questions approfondies.',
+        model_Mini_desc: 'Coût – Gratuit.',
         model_Mini_limits: '20 req/min, 50 req/jour',
-        model_Mill_desc: 'Open source et efficace, parfait pour génération de courts textes et tâches structurées.',
+        model_Mill_desc: 'Coût – Gratuit.',
         model_Mill_limits: '20 req/min, 50 req/jour',
-        model_Nano_desc: 'Spécialisé en chinois et domaines techniques, idéal pour savoirs experts et développement.',
+        model_Nano_desc: 'Coût – Gratuit.',
         model_Nano_limits: '20 req/min, 50 req/jour',
 
 
