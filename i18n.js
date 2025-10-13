@@ -406,20 +406,20 @@ window.i18n = {
 
 
         // Model Descriptions & Limits
-        model_ProMax_desc: '費用-免費；百萬輸入/1.25$、百萬輸出/10$。',
-        model_ProMax_limits: '5次/分鐘、100次/天',
-        model_ProPV_desc: '費用-免費；百萬輸入/0.3$、百萬輸出/2.5$。',
-        model_ProPV_limits: '10次/分鐘、250次/天',
-        model_Pro_desc: '費用-免費；百萬輸入/0.3$、百萬輸出/2.5$。',
-        model_Pro_limits: '10次/分鐘、250次/天',
-        model_PlusPV_desc: '費用-免費；百萬輸入/0.1$、百萬輸出/0.4$。',
-        model_PlusPV_limits: '15次/分鐘、1000次/天',
-        model_Mini_desc: '費用-免費。',
-        model_Mini_limits: '20次/分鐘、50次/天',
-        model_Mill_desc: '費用-免費。',
-        model_Mill_limits: '20次/分鐘、50次/天',
-        model_Nano_desc: '費用-免費。',
-        model_Nano_limits: '20次/分鐘、50次/天',
+        model_ProMax_tier_free: '費用-免費 (5次/分鐘、100次/天)',
+        model_ProMax_tier_paid: '百萬輸入/1.25$、百萬輸出/10$',
+        model_ProPV_tier_free: '費用-免費 (10次/分鐘、250次/天)',
+        model_ProPV_tier_paid: '百萬輸入/0.3$、百萬輸出/2.5$',
+        model_Pro_tier_free: '費用-免費 (10次/分鐘、250次/天)',
+        model_Pro_tier_paid: '百萬輸入/0.3$、百萬輸出/2.5$',
+        model_PlusPV_tier_free: '費用-免費 (15次/分鐘、1000次/天)',
+        model_PlusPV_tier_paid: '百萬輸入/0.1$、百萬輸出/0.4$',
+        model_Mini_tier_free: '費用-免費 (20次/分鐘、50次/天)',
+        model_Mini_tier_paid: '不提供', // OpenRouter 免費模型沒有對應的付費版
+        model_Mill_tier_free: '費用-免費 (20次/分鐘、50次/天)',
+        model_Mill_tier_paid: '不提供',
+        model_Nano_tier_free: '費用-免費 (20次/分鐘、50次/天)',
+        model_Nano_tier_paid: '不提供',
 
 
 
@@ -852,20 +852,21 @@ window.i18n = {
 
 
         // Model Descriptions & Limits
-        model_ProMax_desc: 'Cost – Free; $1.25 per million input tokens, $10 per million output tokens.',
-        model_ProMax_limits: '5 req/min, 100 req/day',
-        model_ProPV_desc: 'Cost – Free; $0.3 per million input tokens, $2.5 per million output tokens.',
-        model_ProPV_limits: '10 req/min, 250 req/day',
-        model_Pro_desc: 'Cost – Free; $0.3 per million input tokens, $2.5 per million output tokens.',
-        model_Pro_limits: '10 req/min, 250 req/day',
-        model_PlusPV_desc: 'Cost – Free; $0.1 per million input tokens, $0.4 per million output tokens.',
-        model_PlusPV_limits: '15 req/min, 1000 req/day',
-        model_Mini_desc: 'Cost – Free.',
-        model_Mini_limits: '20 req/min, 50 req/day',
-        model_Mill_desc: 'Cost – Free.',
-        model_Mill_limits: '20 req/min, 50 req/day',
-        model_Nano_desc: 'Cost – Free.',
-        model_Nano_limits: '20 req/min, 50 req/day',
+        model_ProMax_tier_free: 'Cost - Free (5 req/min, 100 req/day)',
+        model_ProMax_tier_paid: '$1.25/M input, $10/M output',
+        model_ProPV_tier_free: 'Cost - Free (10 req/min, 250 req/day)',
+        model_ProPV_tier_paid: '$0.3/M input, $2.5/M output',
+        model_Pro_tier_free: 'Cost - Free (10 req/min, 250 req/day)',
+        model_Pro_tier_paid: '$0.3/M input, $2.5/M output',
+        model_PlusPV_tier_free: 'Cost - Free (15 req/min, 1000 req/day)',
+        model_PlusPV_tier_paid: '$0.1/M input, $0.4/M output',
+        model_Mini_tier_free: 'Cost - Free (20 req/min, 50 req/day)',
+        model_Mini_tier_paid: 'Not available',
+        model_Mill_tier_free: 'Cost - Free (20 req/min, 50 req/day)',
+        model_Mill_tier_paid: 'Not available',
+        model_Nano_tier_free: 'Cost - Free (20 req/min, 50 req/day)',
+        model_Nano_tier_paid: 'Not available',
+
 
 
 
@@ -1298,20 +1299,20 @@ window.i18n = {
 
 
         // Model Descriptions & Limits
-        model_ProMax_desc: 'Coût – Gratuit ; 1,25 $ par million de jetons d’entrée, 10 $ par million de jetons de sortie.',
-        model_ProMax_limits: '5 req/min, 100 req/jour',
-        model_ProPV_desc: 'Coût – Gratuit ; 0.3 $ par million de jetons d’entrée, 2.5 $ par million de jetons de sortie.',
-        model_ProPV_limits: '10 req/min, 250 req/jour',
-        model_Pro_desc: 'Coût – Gratuit ; 0.3 $ par million de jetons d’entrée, 2.5 $ par million de jetons de sortie.',
-        model_Pro_limits: '10 req/min, 250 req/jour',
-        model_PlusPV_desc: 'Coût – Gratuit ; 0.1 $ par million de jetons d’entrée, 0.4 $ par million de jetons de sortie.',
-        model_PlusPV_limits: '15 req/min, 1000 req/jour',
-        model_Mini_desc: 'Coût – Gratuit.',
-        model_Mini_limits: '20 req/min, 50 req/jour',
-        model_Mill_desc: 'Coût – Gratuit.',
-        model_Mill_limits: '20 req/min, 50 req/jour',
-        model_Nano_desc: 'Coût – Gratuit.',
-        model_Nano_limits: '20 req/min, 50 req/jour',
+        model_ProMax_tier_free: 'Coût - Gratuit (5 req/min, 100 req/jour)',
+        model_ProMax_tier_paid: '1,25 $/M entrée, 10 $/M sortie',
+        model_ProPV_tier_free: 'Coût - Gratuit (10 req/min, 250 req/jour)',
+        model_ProPV_tier_paid: '0,3 $/M entrée, 2,5 $/M sortie',
+        model_Pro_tier_free: 'Coût - Gratuit (10 req/min, 250 req/jour)',
+        model_Pro_tier_paid: '0,3 $/M entrée, 2,5 $/M sortie',
+        model_PlusPV_tier_free: 'Coût - Gratuit (15 req/min, 1000 req/jour)',
+        model_PlusPV_tier_paid: '0,1 $/M entrée, 0,4 $/M sortie',
+        model_Mini_tier_free: 'Coût - Gratuit (20 req/min, 50 req/jour)',
+        model_Mini_tier_paid: 'Non disponible',
+        model_Mill_tier_free: 'Coût - Gratuit (20 req/min, 50 req/jour)',
+        model_Mill_tier_paid: 'Non disponible',
+        model_Nano_tier_free: 'Coût - Gratuit (20 req/min, 50 req/jour)',
+        model_Nano_tier_paid: 'Non disponible',
 
 
 
