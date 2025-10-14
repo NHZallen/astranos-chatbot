@@ -4731,19 +4731,18 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const allSeparators = document.querySelectorAll('#file-options-popover .border-t');
 
         if (provider === 'openrouter') {
-    // 對於 OpenRouter，只隱藏相機、圖片和網路搜尋功能
-    [cameraBtn, uploadImageBtn, webSearchPopoverBtn].forEach(btn => btn.style.display = 'none');
-    
-    // 明確顯示 OpenRouter 支援的功能：檔案、學習、研究
-    uploadFileBtn.style.display = 'flex'; // ✨ 這是關鍵修改：讓檔案按鈕顯示
-    learningModeBtn.style.display = 'flex';
-    deepResearchBtn.style.display = 'flex';
+            // 對於 OpenRouter，隱藏與「檔案上傳」和「網路搜尋」相關的功能
+            [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn].forEach(btn => btn.style.display = 'none');
+            
+            // 明確顯示 OpenRouter 支援的功能：「學習模式」和「深度研究」
+            learningModeBtn.style.display = 'flex';
+            deepResearchBtn.style.display = 'flex';
 
-    // 隱藏不需要的分隔線
-    if (allSeparators.length > 0) allSeparators[0].style.display = 'none'; 
-    if (allSeparators.length > 1) allSeparators[1].style.display = 'block'; 
+            // 隱藏不需要的分隔線
+            if (allSeparators.length > 0) allSeparators[0].style.display = 'none'; // 隱藏網路搜尋前的分隔線
+            if (allSeparators.length > 1) allSeparators[1].style.display = 'block';// 確保深度研究前的分隔線是顯示的
 
-} else { // Gemini 模型
+        } else { // Gemini 模型
             // 對於 Gemini，顯示所有功能按鈕和分隔線
             allButtons.forEach(btn => btn.style.display = 'flex');
             allSeparators.forEach(sep => sep.style.display = 'block');
@@ -5798,74 +5797,26 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 }
                 headers = { 'Content-Type': 'application/json' };
             } else {
-    url = 'https://openrouter.ai/api/v1/chat/completions';
-    const messages = [];
-    if (systemInstruction) {
-        messages.push({ role: 'system', content: systemInstruction.parts.map(p => p.text).join('\n') });
-    }
-    // ✨ START: 這是核心修改部分
-    [...historyForApi, currentMessageForApi].forEach(m => {
-        const role = m.role === 'model' ? 'assistant' : m.role;
-        let content = [];
-        
-        // 處理文字部分
-        const textContent = m.parts.filter(p => p.text).map(p => p.text).join('\n');
-        if (textContent) {
-            content.push({
-                type: 'text',
-                text: textContent,
-            });
-        }
-
-        // 只在使用者的最新訊息中處理檔案
-        if (role === 'user' && m === currentMessageForApi && uploadedFiles.length > 0) {
-            uploadedFiles.forEach(file => {
-                content.push({
-                    type: 'file',
-                    file: {
-                        filename: file.name,
-                        file_data: file.base64, // 直接使用我們已經有的 base64 字串
-                    },
-                });
-            });
-        }
-        
-        // 如果 content 陣列只有一個文字項目，則簡化為字串格式，以相容舊的無檔案對話
-        const finalContent = content.length === 1 && content[0].type === 'text' ? content[0].text : content;
-
-        messages.push({
-            role: role,
-            content: finalContent
-        });
-    });
-    // ✨ END: 核心修改結束
-    
-    payload = {
-            model: modelId,
-            messages,
-            stream: true,
-            ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
-            ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
-            ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
-        };
-
-        // ✨ START: 這是本次新增的關鍵程式碼 ✨
-        // 檢查是否有檔案正在被上傳，如果有，就加入 plugins 設定
-        if (uploadedFiles.length > 0) {
-            payload.plugins = [
-                {
-                    id: 'file-parser',
-                    pdf: {
-                        engine: 'pdf-text', // 您可以根據需求更換引擎，例如 'nougat'
-                    },
-                },
-            ];
-        }
-        // ✨ END: 新增程式碼結束 ✨
-
-        headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
-    }
-    const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
+                url = 'https://openrouter.ai/api/v1/chat/completions';
+                const messages = [];
+                if (systemInstruction) {
+                    messages.push({ role: 'system', content: systemInstruction.parts.map(p => p.text).join('\n') });
+                }
+                messages.push(...[...historyForApi, currentMessageForApi].map(m => ({
+                    role: m.role === 'model' ? 'assistant' : m.role,
+                    content: m.parts.filter(p => p.text).map(p => p.text).join('\n')
+                })));
+                payload = {
+                    model: modelId,
+                    messages,
+                    stream: true,
+                    ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
+                    ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
+                    ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
+                };
+                headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
+            }
+            const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
             if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'API 請求失敗'); }
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
@@ -9373,14 +9324,13 @@ function setupMessageIntersectionObserver() {
             const userParts = [{ text: userMessage }];
             if (hasFiles) {
                 uploadedFiles.forEach(file => {
-    userParts.push({
-        inlineData: {
-            name: file.name, // ✨ 新增這一行來保存檔案名稱
-            mimeType: file.type,
-            data: file.base64.split(',')[1]
-        }
-    });
-});
+                    userParts.push({
+                        inlineData: {
+                            mimeType: file.type,
+                            data: file.base64.split(',')[1]
+                        }
+                    });
+                });
             }
 
             const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
@@ -10223,7 +10173,6 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
     if (provider === 'openrouter') {
         // 如果是 OpenRouter 模型，只留下「學習」和「研究」
         visibleMenuItems = allMenuItems.filter(item => 
-            item.id === 'upload-file-btn' ||
             item.id === 'learning-mode-btn' || 
             item.id === 'deep-research-btn'
         );
