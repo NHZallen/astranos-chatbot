@@ -4731,18 +4731,19 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const allSeparators = document.querySelectorAll('#file-options-popover .border-t');
 
         if (provider === 'openrouter') {
-            // 對於 OpenRouter，隱藏與「檔案上傳」和「網路搜尋」相關的功能
-            [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn].forEach(btn => btn.style.display = 'none');
-            
-            // 明確顯示 OpenRouter 支援的功能：「學習模式」和「深度研究」
-            learningModeBtn.style.display = 'flex';
-            deepResearchBtn.style.display = 'flex';
+    // 對於 OpenRouter，只隱藏相機、圖片和網路搜尋功能
+    [cameraBtn, uploadImageBtn, webSearchPopoverBtn].forEach(btn => btn.style.display = 'none');
+    
+    // 明確顯示 OpenRouter 支援的功能：檔案、學習、研究
+    uploadFileBtn.style.display = 'flex'; // ✨ 這是關鍵修改：讓檔案按鈕顯示
+    learningModeBtn.style.display = 'flex';
+    deepResearchBtn.style.display = 'flex';
 
-            // 隱藏不需要的分隔線
-            if (allSeparators.length > 0) allSeparators[0].style.display = 'none'; // 隱藏網路搜尋前的分隔線
-            if (allSeparators.length > 1) allSeparators[1].style.display = 'block';// 確保深度研究前的分隔線是顯示的
+    // 隱藏不需要的分隔線
+    if (allSeparators.length > 0) allSeparators[0].style.display = 'none'; 
+    if (allSeparators.length > 1) allSeparators[1].style.display = 'block'; 
 
-        } else { // Gemini 模型
+} else { // Gemini 模型
             // 對於 Gemini，顯示所有功能按鈕和分隔線
             allButtons.forEach(btn => btn.style.display = 'flex');
             allSeparators.forEach(sep => sep.style.display = 'block');
@@ -5797,18 +5798,51 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 }
                 headers = { 'Content-Type': 'application/json' };
             } else {
-                url = 'https://openrouter.ai/api/v1/chat/completions';
-                const messages = [];
-                if (systemInstruction) {
-                    messages.push({ role: 'system', content: systemInstruction.parts.map(p => p.text).join('\n') });
-                }
-                messages.push(...[...historyForApi, currentMessageForApi].map(m => ({
-                    role: m.role === 'model' ? 'assistant' : m.role,
-                    content: m.parts.filter(p => p.text).map(p => p.text).join('\n')
-                })));
-                payload = {
-                    model: modelId,
-                    messages,
+    url = 'https://openrouter.ai/api/v1/chat/completions';
+    const messages = [];
+    if (systemInstruction) {
+        messages.push({ role: 'system', content: systemInstruction.parts.map(p => p.text).join('\n') });
+    }
+    // ✨ START: 這是核心修改部分
+    [...historyForApi, currentMessageForApi].forEach(m => {
+        const role = m.role === 'model' ? 'assistant' : m.role;
+        let content = [];
+        
+        // 處理文字部分
+        const textContent = m.parts.filter(p => p.text).map(p => p.text).join('\n');
+        if (textContent) {
+            content.push({
+                type: 'text',
+                text: textContent,
+            });
+        }
+
+        // 只在使用者的最新訊息中處理檔案
+        if (role === 'user' && m === currentMessageForApi && uploadedFiles.length > 0) {
+            uploadedFiles.forEach(file => {
+                content.push({
+                    type: 'file',
+                    file: {
+                        filename: file.name,
+                        file_data: file.base64, // 直接使用我們已經有的 base64 字串
+                    },
+                });
+            });
+        }
+        
+        // 如果 content 陣列只有一個文字項目，則簡化為字串格式，以相容舊的無檔案對話
+        const finalContent = content.length === 1 && content[0].type === 'text' ? content[0].text : content;
+
+        messages.push({
+            role: role,
+            content: finalContent
+        });
+    });
+    // ✨ END: 核心修改結束
+    
+    payload = {
+        model: modelId,
+        messages,
                     stream: true,
                     ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
                     ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
