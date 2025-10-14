@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.7.5</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.7.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -4117,6 +4117,43 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             };
         };
+        /**
+ * 將引用來源 (annotations) 注入到文字中，轉換為 Markdown 格式的註腳連結。
+ * @param {string} text - AI 回覆的原始純文字。
+ * @param {Array} annotations - 從 API 收到的引用來源陣列。
+ * @returns {string} - 已經插入 Markdown 連結的新文字。
+ */
+function injectCitationsAsMarkdown(text, annotations) {
+    if (!annotations || annotations.length === 0) {
+        return text;
+    }
+
+    // 根據 start_index 從大到小排序，這樣在修改字串時才不會影響後續的索引
+    const sortedAnnotations = [...annotations].sort((a, b) => b.url_citation.start_index - a.url_citation.start_index);
+
+    let newText = text;
+    const citationMap = new Map();
+    let citationCounter = 1;
+
+    sortedAnnotations.forEach(annotation => {
+        const { start_index, end_index, url, title } = annotation.url_citation;
+        const originalSegment = newText.substring(start_index, end_index);
+        
+        // 檢查這個 URL 是否已經有編號了
+        if (!citationMap.has(url)) {
+            citationMap.set(url, citationCounter++);
+        }
+        const citationNumber = citationMap.get(url);
+
+        // 建立 Markdown 格式的連結: [¹](url "滑鼠懸停時顯示的標題")
+        const citationLink = ` **[\`${citationNumber}\`](${url} "${title || '來源'}")**`;
+        
+        // 替換文字
+        newText = newText.slice(0, start_index) + originalSegment + citationLink + newText.slice(end_index);
+    });
+
+    return newText;
+}
         const renderMarkdown = (text) => {
             const dirty = marked.parse(text);
             const clean = DOMPurify.sanitize(dirty);
@@ -5549,7 +5586,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
 
                 // 1. 先等待 API 回應完全結束，獲取完整文字
-                const completeResponse = await streamApiCall(
+                 const { fullText: completeResponse, annotations } = await streamApiCall(
                     userParts,
                     (chunk) => {
                         // 在 streamApiCall 內部，我們只收集文字，不渲染
@@ -5559,6 +5596,9 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 
                 fullResponse = completeResponse;
                 sendConversationToMail(userMessageObject, fullResponse);
+                const responseToRender = (annotations && annotations.length > 0)
+                    ? injectCitationsAsMarkdown(fullResponse, annotations)
+                    : fullResponse;
 
                 // 2. 將完整的最終訊息保存到對話紀錄中
                 finalAiMessage.parts = [{ text: fullResponse }];
@@ -5574,8 +5614,8 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                         const typingSpeed = 15;
 
                         function type() {
-                            if (currentIndex < fullResponse.length && !abortController.signal.aborted) {
-                                const currentText = fullResponse.substring(0, currentIndex + 1);
+                            if (currentIndex < responseToRender.length && !abortController.signal.aborted) {
+                                const currentText = responseToRender.substring(0, currentIndex + 1);
                                 contentDiv.innerHTML = renderMarkdown(currentText + '▋');
 
                                 let step = 1;
@@ -5594,7 +5634,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                                 setTimeout(type, typingSpeed);
                             } else {
                                 // 動畫完成或被中止
-                                contentDiv.innerHTML = renderMarkdown(fullResponse); // 最終清理，移除游標
+                                 contentDiv.innerHTML = renderMarkdown(responseToRender); // 最終清理，移除游標
                                 resolve(); // ✨ Promise 完成，通知 await
                             }
                         }
@@ -5694,6 +5734,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             return score * (1 + coverageRatio);
         }
         async function streamApiCall(parts, onChunk, signal, isWebSearchForced = false) {
+            let finalMessage = null;
             const conv = getActiveConversation();
             const modelInfo = MODELS.find(m => m.id === conv.model);
             if (!modelInfo) throw new Error(`找不到模型設定: ${conv.model}`);
@@ -5814,6 +5855,16 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
                     ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
                 };
+                if (conv.isWebSearchEnabled) {
+                    payload.plugins = [
+                        {
+                            "id": "web",
+                            "engine": "exa", // 你可以選擇 "google" 或 "exa"
+                            "max_results": 5, // 最多回傳 5 個搜尋結果
+                            "search_prompt": "Some relevant web results:" // 將搜尋結果附加到訊息流的提示
+                        }
+                    ];
+                }
                 headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
             }
             const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
@@ -5875,6 +5926,9 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                             if (data.trim() === '[DONE]') break;
                             try {
                                 const parsed = JSON.parse(data);
+                                if (parsed.choices[0].message) {
+                                    finalMessage = parsed.choices[0].message;
+                                }
                                 const textChunk = parsed.choices[0]?.delta?.content || '';
                                 if (textChunk) {
                                     fullText += textChunk;
@@ -5885,7 +5939,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     }
                 }
             }
-            return fullText;
+            return { fullText, annotations: finalMessage?.annotations || null };
         }
         async function callApiWithSchema(prompt, responseSchema, signal) {
             const apiKey = config.apiKeys.gemini;
