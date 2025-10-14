@@ -5123,9 +5123,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     const categoryView = document.getElementById('category-view');
     const modelListView = document.getElementById('model-list-view');
 
+    // ✨✨✨ 核心修正 1：修改 adjustPopoverHeight 函式 ✨✨✨
     const adjustPopoverHeight = (targetView) => {
         requestAnimationFrame(() => {
-            popover.style.height = `${targetView.scrollHeight}px`;
+            const newHeight = `${targetView.scrollHeight}px`;
+            // 同時設定外層和內層容器的高度，讓它們保持一致
+            popover.style.height = newHeight;
+            viewsContainer.style.height = newHeight; 
         });
     };
 
@@ -5177,20 +5181,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     const selectedProvider = tierBtn.dataset.provider;
                     const selectedTier = tierBtn.dataset.tier;
                     
-                    // ✨✨✨ 核心邏輯修改處 ✨✨✨
-                    // 如果是 Gemini，直接跳到最終列表
                     if (selectedProvider === 'gemini') {
                         const filteredModels = visibleModels.filter(m => m.provider === selectedProvider && m.tier.includes(selectedTier));
-                        modelListView.innerHTML = createBackButtonHTML('back', 1); // 返回到 Tier 頁
+                        modelListView.innerHTML = createBackButtonHTML('back', 1);
                         modelListView.innerHTML += filteredModels.map(model => {
                             const baseKey = model.descriptionKey;
                             const tierKey = `${baseKey}_tier_${selectedTier}`;
                             const descriptionText = translations[tierKey] || '';
                             return createModelOptionHTML(model, descriptionText);
                         }).join('');
-                        navigateToView(4); // 跳到最後一頁
+                        navigateToView(4);
                     } else { 
-                        // 如果是 OpenRouter (或其他未來多公司的服務商)，進入公司選擇頁
                         const companies = [...new Set(visibleModels
                             .filter(m => m.provider === selectedProvider && m.tier.includes(selectedTier))
                             .map(m => m.company)
@@ -5201,7 +5202,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                 <h4 class="font-semibold capitalize">${company}</h4>
                             </div>
                         `).join('');
-
                         if (companies.length === 0) {
                             companyView.innerHTML += `<p class="p-4 text-center text-sm text-[var(--text-secondary)]">${translations.noModelsInTier || '此類別中沒有可用模型。'}</p>`;
                         }
@@ -5215,9 +5215,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                 const hasCategories = finalCompany === 'openai' || finalCompany === 'x-ai';
 
                                 if (hasCategories) {
-                                    // 進入新的「用途分類」頁面
                                     const categories = [...new Set(companyModels.map(m => m.category || 'general'))];
-                                    categoryView.innerHTML = createBackButtonHTML('back', 2); // 返回到 Company 頁
+                                    categoryView.innerHTML = createBackButtonHTML('back', 2);
                                     
                                     const categoryOrder = ['general', 'thinking', 'coding'];
                                     categories.sort((a, b) => categoryOrder.indexOf(a) - categoryOrder.indexOf(b));
@@ -5235,7 +5234,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                             const selectedCategory = catBtn.dataset.category;
                                             const finalModels = companyModels.filter(m => (m.category || 'general') === selectedCategory);
                                             
-                                            modelListView.innerHTML = createBackButtonHTML('back', 3); // 返回到 Category 頁
+                                            modelListView.innerHTML = createBackButtonHTML('back', 3);
                                             modelListView.innerHTML += finalModels.map(model => {
                                                 const baseKey = model.descriptionKey;
                                                 const tierKey = `${baseKey}_tier_${finalTier}`;
@@ -5247,8 +5246,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                     });
                                     navigateToView(3);
                                 } else {
-                                    // 對於沒有額外分類的公司，直接顯示模型列表
-                                    modelListView.innerHTML = createBackButtonHTML('back', 2); // 返回到 Company 頁
+                                    modelListView.innerHTML = createBackButtonHTML('back', 2);
                                     modelListView.innerHTML += companyModels.map(model => {
                                         const baseKey = model.descriptionKey;
                                         const tierKey = `${baseKey}_tier_${finalTier}`;
@@ -5300,7 +5298,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         if (isVisible) {
             navigateToView(0);
         } else {
-            popover.style.height = '';
+            // ✨✨✨ 核心修正 2：關閉時，同時重置內外兩個容器的高度 ✨✨✨
+            popover.style.height = ''; 
+            viewsContainer.style.height = '';
         }
     });
 };
