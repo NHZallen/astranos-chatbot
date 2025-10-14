@@ -5126,12 +5126,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     };
 
     const createModelOptionHTML = (model, descriptionText) => {
-        // ✨✨✨ 這是修正的一部分：確保即使 descriptionText 是空的，<p> 標籤也會被渲染
-        const desc = descriptionText || '...'; // Fallback text
         return `
             <div data-model-id="${model.id}" class="model-option-btn-container ${isArchived ? 'cursor-not-allowed opacity-50' : ''}">
                 <h4 class="font-semibold">${model.name}</h4>
-                <p class="model-description">${desc}</p>
+                <p class="model-description">${descriptionText}</p>
             </div>
         `;
     };
@@ -5200,10 +5198,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                 );
 
                                 modelListView.innerHTML = createBackButtonHTML('back', 2);
-                                // ✨✨✨ 這是第一個修正點 ✨✨✨
+                                
+                                // ✨✨✨ 核心修正 1：修正組合 i18n key 的方式 ✨✨✨
                                 modelListView.innerHTML += finalModels.map(model => {
-                                    // 直接使用 model.descriptionKey 來獲取翻譯
-                                    const descriptionText = translations[model.descriptionKey] || model.descriptionKey;
+                                    // 直接使用完整的 descriptionKey 作為基礎
+                                    const baseKey = model.descriptionKey;
+                                    // 組合出最終的 key，例如 "model_gpt_5_pro_desc_tier_paid"
+                                    const tierKey = `${baseKey}_tier_${finalTier}`;
+                                    const descriptionText = translations[tierKey] || '';
                                     return createModelOptionHTML(model, descriptionText);
                                 }).join('');
 
@@ -5217,10 +5219,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         );
 
                         modelListView.innerHTML = createBackButtonHTML('back', 1);
-                        // ✨✨✨ 這是第二個修正點 ✨✨✨
+                        
+                        // ✨✨✨ 核心修正 2：同樣修正這裡組合 i18n key 的方式 ✨✨✨
                         modelListView.innerHTML += filteredModels.map(model => {
-                            // 同樣，直接使用 model.descriptionKey
-                            const descriptionText = translations[model.descriptionKey] || model.descriptionKey;
+                            const baseKey = model.descriptionKey;
+                            const tierKey = `${baseKey}_tier_${selectedTier}`;
+                            const descriptionText = translations[tierKey] || '';
                             return createModelOptionHTML(model, descriptionText);
                         }).join('');
 
@@ -5245,9 +5249,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
     modelListView.addEventListener('click', (e) => {
         const modelBtn = e.target.closest('.model-option-btn-container');
-        if (!modelBtn || !modelBtn.dataset.modelId) {
-            return;
-        }
+        if (!modelBtn || !modelBtn.dataset.modelId) return;
 
         if (isArchived) return;
 
