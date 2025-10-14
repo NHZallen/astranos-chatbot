@@ -5464,14 +5464,14 @@ function processAnnotationsAndRender(text, annotations) {
             }
             return messageDiv;
         };
-         /**
+/**
  * ✨ 全新重構：打字機效果渲染函數 (v2)
  *    - 使用 setInterval 達到勻速輸出
  *    - 隱藏 Markdown 特殊字元，避免渲染過程中的視覺干擾
- * @param {HTMLElement} targetElement 要顯示文字的目標 DOM 元素
- * @param {function(function(string): void): Promise<void>} streamApiCallFn 啟動 API 呼叫的函數
+* @param {HTMLElement} targetElement 要顯示文字的目標 DOM 元素
+ * @param {function(function(string): void): Promise<any>} streamApiCallFn 啟動 API 呼叫的函數
  * @param {AbortSignal} signal 用於中止操作的 AbortSignal
- * @returns {Promise<string>} 返回完整的 AI 回應字串
+ * @returns {Promise<string>} 返回完整的 AI 回應純文字
  */
 function typewriterStream(targetElement, streamApiCallFn, signal) {
     return new Promise((resolve, reject) => {
@@ -5479,64 +5479,57 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
         let textQueue = '';
         let isStreaming = true;
         
-        // ✨ [新增] 定義在打字過程中需要隱藏的 Markdown 特殊字元
-        const MARKDOWN_CHARS_TO_HIDE = new Set(['*', '_', '#', '`', '[', ']', '(', ')', '|', '-', '=', '~']);
-        
-        // ✨ [新增] 控制打字速度 (毫秒)，數值越小越快
-        const typingSpeed = 25; 
+        // 我們可以稍微加快打字速度，因為渲染的開銷不大
+        const typingSpeed = 20; 
 
+        // 清空目標元素，但不加游標，因為游標會在 Markdown 渲染時動態添加
         targetElement.innerHTML = '';
-        targetElement.classList.add('typing-cursor');
 
         const intervalId = setInterval(() => {
             if (signal.aborted) {
                 clearInterval(intervalId);
-                targetElement.classList.remove('typing-cursor');
-                // 雖然被中止，但仍然解析當前已收到的內容
+                // 中止時，也進行一次最終的完整渲染 (不帶游標)
+                targetElement.innerHTML = renderMarkdown(fullText);
                 resolve(fullText); 
                 return;
             }
 
+            // 如果佇列中有文字，或者串流已結束但佇列還沒清空
             if (textQueue.length > 0) {
-                const char = textQueue.charAt(0);
-                textQueue = textQueue.substring(1);
-                
-                fullText += char;
+                // 為了流暢性，一次可以處理多個字元
+                const chunk = textQueue.substring(0, Math.min(textQueue.length, 5));
+                textQueue = textQueue.substring(chunk.length);
+                fullText += chunk;
 
-                // ✨ [核心修改] 只有當字元不是特殊 Markdown 字元時，才創建 DOM 元素來顯示它
-                if (!MARKDOWN_CHARS_TO_HIDE.has(char)) {
-                    const span = document.createElement('span');
-                    span.className = 'fade-in-char';
-
-                    if (char === '\n') {
-                        targetElement.appendChild(document.createElement('br'));
-                    } else {
-                        span.textContent = char;
-                        targetElement.appendChild(span);
-                    }
-                }
+                // ✨✨✨ 核心修改：即時渲染 Markdown ✨✨✨
+                // 在當前已收到的文字後面加上一個模擬的打字游標
+                const textWithCursor = fullText + '▋';
+                // 每次都完整地重新渲染，這樣表格、程式碼塊等就會被即時建立和更新
+                targetElement.innerHTML = renderMarkdown(textWithCursor);
                 
                 // 保持捲動到底部
                 const chatContainer = ALL_ELEMENTS.chatContainer;
-                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
+                // 稍微放寬判斷條件，確保在內容快速增加時也能觸發
+                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 100;
                 if (isNearBottom) {
                     chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
                 }
             } else if (!isStreaming) {
                 // 資料流結束且佇列已空
                 clearInterval(intervalId);
-                targetElement.classList.remove('typing-cursor');
+                // 進行最後一次不帶游標的完整渲染
+                targetElement.innerHTML = renderMarkdown(fullText);
                 resolve(fullText); // 成功完成，返回完整字串
             }
         }, typingSpeed);
 
-        // 啟動 API 呼叫，並在結束時更新 isStreaming 狀態
+        // 啟動 API 呼叫
         streamApiCallFn((chunk) => {
             textQueue += chunk;
         }).catch(error => {
             clearInterval(intervalId);
-            targetElement.classList.remove('typing-cursor');
-            reject(error); // 如果 API 呼叫出錯，則拒絕 Promise
+            targetElement.innerHTML = renderMarkdown(fullText); // 顯示錯誤前已收到的內容
+            reject(error);
         }).finally(() => {
             isStreaming = false;
         });
@@ -5613,40 +5606,48 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             
             try {
     const finalAiMessage = { role: 'model', parts: [], createdAt: new Date().toISOString() };
+    let fullResponseText = '';
+    let finalAnnotations = [];
 
-    // 1. 等待 API 回應完全結束，同時獲取完整文字和註解
-    const { fullText, annotations } = await streamApiCall(
-        userParts,
-        (chunk) => {
-            // 這裡的 onChunk 仍然可以保留，如果你有即時顯示文字的需求
+    // 1. ✨ 使用我們重構的 typewriterStream 函式來實現打字機效果
+    //    這個函式會在內部呼叫 streamApiCall
+    fullResponseText = await typewriterStream(
+        contentDiv, // 打字機效果要顯示在哪個 DOM 元素上
+        async (onChunk) => { // 這裡定義了如何啟動 API 呼叫
+            const { fullText, annotations } = await streamApiCall(
+                userParts,
+                onChunk, // 將 streamApiCall 的文字片段直接傳給打字機
+                abortController.signal
+            );
+            // 當 streamApiCall 完成後，我們儲存它的最終結果
+            finalAnnotations = annotations;
+            return fullText; // typewriterStream 需要這個回傳值
         },
-        abortController.signal
+        abortController.signal // 傳入中止信號
     );
     
-    // 將對話發送到後台記錄
-    sendConversationToMail(userMessageObject, fullText);
+    // 2. ✨ 當打字機效果完成後，使用我們的新函式來處理引用
+    const finalHtml = processAnnotationsAndRender(fullResponseText, finalAnnotations);
 
-    // 2. 將完整的最終訊息保存到對話紀錄中（只保存純文字）
-    finalAiMessage.parts = [{ text: fullText }];
+    // 3. ✨ 將包含引用的最終 HTML 內容，替換掉剛剛打字機顯示的內容
+    contentDiv.innerHTML = finalHtml;
+    
+    // 將對話發送到後台記錄
+    sendConversationToMail(userMessageObject, fullResponseText);
+
+    // 4. 將完整的最終訊息（僅純文字）保存到對話紀錄中
+    finalAiMessage.parts = [{ text: fullResponseText }];
     conv.messages.push(finalAiMessage);
     conv.lastUpdatedAt = new Date().toISOString();
     await saveAppData();
     
-    // 3. ✨ 使用我們的新函式來處理文字和註解，生成最終的 HTML
-    const finalHtml = processAnnotationsAndRender(fullText, annotations);
-
-    // 4. ✨ 直接將最終生成的 HTML 渲染到畫面上（這裡我們取代了打字機效果）
-    contentDiv.innerHTML = finalHtml;
-    // 確保聊天視窗滾動到底部
-    ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
-
-    // 5. 執行後續任務
+    // 5. 執行後續任務 (例如產生追問建議)
     if (!abortController.signal.aborted) {
-        if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
-            await generateFollowUpPrompts(userMessage, fullText);
+        if (config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
+            await generateFollowUpPrompts(userMessage, fullResponseText);
         }
         if (config.memoryEnabled1 && config.enableAutoMemory) {
-            await extractPersonalMemory(userMessage, fullText);
+            await extractPersonalMemory(userMessage, fullResponseText);
         }
     }
 
