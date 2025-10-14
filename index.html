@@ -4768,12 +4768,24 @@ function injectCitationsAsMarkdown(text, annotations) {
         const allSeparators = document.querySelectorAll('#file-options-popover .border-t');
 
         if (provider === 'openrouter') {
-            [cameraBtn, uploadImageBtn, uploadFileBtn].forEach(btn => btn.style.display = 'none');
-            [webSearchPopoverBtn, learningModeBtn, deepResearchBtn].forEach(btn => btn.style.display = 'flex');
+            // ✨ 修正後的程式碼 START ✨
+            // 對於 OpenRouter，隱藏與「檔案上傳」相關的功能
+            cameraBtn.style.display = 'none';
+            uploadImageBtn.style.display = 'none';
+            uploadFileBtn.style.display = 'none';
+            
+            // 明確顯示 OpenRouter 支援的功能：「網路搜尋」、「學習模式」和「深度研究」
+            webSearchPopoverBtn.style.display = 'flex'; // ✨ 確保明確設定為 flex
+            learningModeBtn.style.display = 'flex';
+            deepResearchBtn.style.display = 'flex';
+
+            // 處理分隔線的顯示
             const allSeparators = document.querySelectorAll('#file-options-popover .border-t');
-            if (allSeparators.length > 0) allSeparators[0].style.display = 'none'; // 隱藏檔案和搜尋之間的分隔線
-            if (allSeparators.length > 1) allSeparators[1].style.display = 'block';// 確保研究功能前的分隔線是顯示的
-            // ✨ 核心修改 END ✨
+            // 隱藏第一個分隔線 (在檔案上傳和網路搜尋之間)
+            if (allSeparators.length > 0) allSeparators[0].style.display = 'none';
+            // 確保第二個分隔線 (在學習和研究之間) 是顯示的
+            if (allSeparators.length > 1) allSeparators[1].style.display = 'block';
+            // ✨ 修正後的程式碼 END ✨
 
         } else { // Gemini 模型
             // 對於 Gemini，顯示所有功能按鈕和分隔線
@@ -10221,11 +10233,15 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
     // 3. 根據模型 (provider) 來決定要顯示哪些按鈕
     let visibleMenuItems;
     if (provider === 'openrouter') {
-        // 如果是 OpenRouter 模型，只留下「學習」和「研究」
+        // ✨ 修正後的程式碼 START ✨
+        // 如果是 OpenRouter 模型，留下「網路搜尋」、「學習」和「研究」相關按鈕
         visibleMenuItems = allMenuItems.filter(item => 
+            item.id === 'web-search-popover-btn' || // ✨ 新增這一行
             item.id === 'learning-mode-btn' || 
-            item.id === 'deep-research-btn'
+            item.id === 'deep-research-btn' ||
+            item.type === 'divider' // 保留分隔線
         );
+        // ✨ 修正後的程式碼 END ✨
     } else {
         // 否則 (例如 Gemini 模型)，顯示全部按鈕
         visibleMenuItems = allMenuItems;
