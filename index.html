@@ -4721,32 +4721,33 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         
         const updateFunctionButtonsState = () => {
-    const { cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn } = ALL_ELEMENTS;
-    const conv = getActiveConversation();
-    if (!conv) return;
-    const modelInfo = MODELS.find(m => m.id === conv.model);
-    const provider = modelInfo?.provider;
-    const allButtons = [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn];
-    const allSeparators = document.querySelectorAll('#file-options-popover .border-t');
+            const { cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn } = ALL_ELEMENTS;
+            const separator = document.querySelector('#file-options-popover .border-t');
+            const conv = getActiveConversation();
+            if (!conv) return;
+            const modelInfo = MODELS.find(m => m.id === conv.model);
+            const provider = modelInfo?.provider;
+            const allButtons = [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn];
+        const allSeparators = document.querySelectorAll('#file-options-popover .border-t');
 
-    if (provider === 'openrouter') {
-        // 對於 OpenRouter，隱藏與「檔案上傳」和「網路搜尋」相關的功能
-        [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn].forEach(btn => btn.style.display = 'none');
-        
-        // 明確顯示 OpenRouter 支援的功能：「學習模式」和「深度研究」
-        learningModeBtn.style.display = 'flex';
-        deepResearchBtn.style.display = 'flex';
+        if (provider === 'openrouter') {
+            // 對於 OpenRouter，隱藏與「檔案上傳」和「網路搜尋」相關的功能
+            [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn].forEach(btn => btn.style.display = 'none');
+            
+            // 明確顯示 OpenRouter 支援的功能：「學習模式」和「深度研究」
+            learningModeBtn.style.display = 'flex';
+            deepResearchBtn.style.display = 'flex';
 
-        // 隱藏不需要的分隔線
-        if (allSeparators.length > 0) allSeparators[0].style.display = 'none'; // 隱藏檔案和搜索之間的分隔線
-        if (allSeparators.length > 1) allSeparators[1].style.display = 'block';// 確保學習和研究之間的分隔線是顯示的
+            // 隱藏不需要的分隔線
+            if (allSeparators.length > 0) allSeparators[0].style.display = 'none'; // 隱藏網路搜尋前的分隔線
+            if (allSeparators.length > 1) allSeparators[1].style.display = 'block';// 確保深度研究前的分隔線是顯示的
 
-    } else { // 針對 Gemini 模型
-        // 對於 Gemini，顯示所有功能按鈕和分隔線
-        allButtons.forEach(btn => btn.style.display = 'flex');
-        allSeparators.forEach(sep => sep.style.display = 'block');
-    }
-};
+        } else { // Gemini 模型
+            // 對於 Gemini，顯示所有功能按鈕和分隔線
+            allButtons.forEach(btn => btn.style.display = 'flex');
+            allSeparators.forEach(sep => sep.style.display = 'block');
+        }
+        };
 
         const toggleLearningMode = async () => {
             if (config.isDeepResearchMode) {
@@ -5184,10 +5185,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         const filteredModels = visibleModels.filter(m => m.provider === selectedProvider && m.tier.includes(selectedTier));
                         modelListView.innerHTML = createBackButtonHTML('back', 1);
                         modelListView.innerHTML += filteredModels.map(model => {
-    const baseKey = model.descriptionKey;
-    const descriptionText = translations[baseKey] || '（說明文字遺失）';
-    return createModelOptionHTML(model, descriptionText);
-}).join('');
+                            const baseKey = model.descriptionKey;
+                            const tierKey = `${baseKey}_tier_${selectedTier}`;
+                            const descriptionText = translations[tierKey] || '';
+                            return createModelOptionHTML(model, descriptionText);
+                        }).join('');
                         navigateToView(4);
                     } else { 
                         const companies = [...new Set(visibleModels
@@ -10159,8 +10161,10 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
         { id: 'camera-btn', svg: `<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle>`, textKey: 'camera', originalElement: ALL_ELEMENTS.cameraBtn },
         { id: 'upload-image-btn', svg: `<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline>`, textKey: 'image', originalElement: ALL_ELEMENTS.uploadImageBtn },
         { id: 'upload-file-btn', svg: `<path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline>`, textKey: 'file', originalElement: ALL_ELEMENTS.uploadFileBtn },
+        { type: 'divider' }, // 分隔線
         { id: 'web-search-popover-btn', svg: `<circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>`, textKey: 'search', originalElement: ALL_ELEMENTS.webSearchPopoverBtn },
         { id: 'learning-mode-btn', svg: `<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V5H6.5A2.5 2.5 0 0 0 4 7.5v12z"/>`, textKey: 'learning', originalElement: ALL_ELEMENTS.learningModeBtn },
+        { type: 'divider' }, // 分隔線
         { id: 'deep-research-btn', svg: `<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>`, textKey: 'research', originalElement: ALL_ELEMENTS.deepResearchBtn }
     ];
 
@@ -10178,13 +10182,20 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
     }
 
     let itemsHTML = '';
-    visibleMenuItems.forEach(item => {
-        itemsHTML += `
-            <div class="menu-item" data-trigger-id="${item.id}">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${item.svg}</svg>
-                <span data-lang-key="${item.textKey}">${i18n[config.uiLanguage][item.textKey] || item.textKey}</span>
-            </div>
-        `;
+    visibleMenuItems.forEach((item, index) => {
+        if (item.type === 'divider') {
+            // 只有當這個分隔線前後都有按鈕時才顯示它
+            if (index > 0 && index < visibleMenuItems.length - 1) {
+                 // 在CSS中透過border-bottom實現，這裡不需要添加HTML
+            }
+        } else {
+            itemsHTML += `
+                <div class="menu-item" data-trigger-id="${item.id}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${item.svg}</svg>
+                    <span data-lang-key="${item.textKey}">${i18n[config.uiLanguage][item.textKey] || item.textKey}</span>
+                </div>
+            `;
+        }
     });
 
     menu.innerHTML = `
@@ -10195,6 +10206,7 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
     wrapper.appendChild(overlay);
     wrapper.appendChild(menu);
 
+    // 後續的顯示動畫、關閉邏輯都和原本一樣
     requestAnimationFrame(() => {
         overlay.classList.add('visible');
         menu.classList.add('visible');
