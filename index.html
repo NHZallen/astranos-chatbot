@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.7.5</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.7.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -4721,33 +4721,35 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         
         const updateFunctionButtonsState = () => {
-            const { cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn } = ALL_ELEMENTS;
-            const separator = document.querySelector('#file-options-popover .border-t');
-            const conv = getActiveConversation();
-            if (!conv) return;
-            const modelInfo = MODELS.find(m => m.id === conv.model);
-            const provider = modelInfo?.provider;
-            const allButtons = [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn];
-        const allSeparators = document.querySelectorAll('#file-options-popover .border-t');
+    const { cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn } = ALL_ELEMENTS;
+    const allSeparators = document.querySelectorAll('#file-options-popover .border-t');
+    const conv = getActiveConversation();
+    if (!conv) return;
 
-        if (provider === 'openrouter') {
-            // 對於 OpenRouter，隱藏與「檔案上傳」和「網路搜尋」相關的功能
-            [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn].forEach(btn => btn.style.display = 'none');
-            
-            // 明確顯示 OpenRouter 支援的功能：「學習模式」和「深度研究」
-            learningModeBtn.style.display = 'flex';
-            deepResearchBtn.style.display = 'flex';
+    const modelInfo = MODELS.find(m => m.id === conv.model);
+    const provider = modelInfo?.provider;
+    
+    // 定義所有按鈕和它們對應的 DOM 元素
+    const allButtons = [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn];
 
-            // 隱藏不需要的分隔線
-            if (allSeparators.length > 0) allSeparators[0].style.display = 'none'; // 隱藏網路搜尋前的分隔線
-            if (allSeparators.length > 1) allSeparators[1].style.display = 'block';// 確保深度研究前的分隔線是顯示的
+    if (provider === 'openrouter') {
+        // 對於 OpenRouter 模型：
+        // 1. 隱藏所有與檔案上傳相關的按鈕
+        [cameraBtn, uploadImageBtn, uploadFileBtn].forEach(btn => btn.style.display = 'none');
+        
+        // 2. 顯示網路搜尋、學習、研究模式的按鈕
+        [webSearchPopoverBtn, learningModeBtn, deepResearchBtn].forEach(btn => btn.style.display = 'flex');
 
-        } else { // Gemini 模型
-            // 對於 Gemini，顯示所有功能按鈕和分隔線
-            allButtons.forEach(btn => btn.style.display = 'flex');
-            allSeparators.forEach(sep => sep.style.display = 'block');
-        }
-        };
+        // 3. 調整分隔線的顯示
+        if (allSeparators.length > 0) allSeparators[0].style.display = 'block'; // 確保第一條分隔線顯示
+        if (allSeparators.length > 1) allSeparators[1].style.display = 'block'; // 確保第二條分隔線顯示
+
+    } else { // 預設行為 (例如 Gemini 模型)
+        // 顯示所有功能按鈕和分隔線
+        allButtons.forEach(btn => btn.style.display = 'flex');
+        allSeparators.forEach(sep => sep.style.display = 'block');
+    }
+};
 
         const toggleLearningMode = async () => {
             if (config.isDeepResearchMode) {
@@ -5304,6 +5306,49 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         }
     });
 };
+        /**
+ * ✨ 全新函式：呈現帶有註釋 (引用) 的訊息 ✨
+ * @param {HTMLElement} contentDiv - 要填入內容的訊息泡泡 div 元素
+ * @param {string} text - AI 回覆的完整文字
+ * @param {Array} annotations - 從 API 收到的註釋陣列
+ */
+function renderMessageWithAnnotations(contentDiv, text, annotations) {
+    // 建立一個陣列來存放格式化後的引用資料
+    const citations = [];
+    let annotatedText = text;
+
+    // 為了避免在插入標籤時搞亂後續文字的索引，我們先將註釋「從後往前」排序
+    annotations.sort((a, b) => b.url_citation.end_index - a.url_citation.end_index);
+
+    annotations.forEach((anno, index) => {
+        const { url, title, start_index, end_index } = anno.url_citation;
+        // 引用編號從 1 開始
+        const citationNumber = annotations.length - index;
+        
+        // 將引用資料存起來，稍後用來建立來源列表
+        citations.unshift({ number: citationNumber, url, title }); // unshift 會將項目加到陣列最前面
+
+        // 從後往前，在原始文字的指定位置插入上標引用連結
+        annotatedText = 
+            annotatedText.slice(0, end_index) +
+            `<sup><a href="#cite-source-${citationNumber}" class="text-blue-500 no-underline hover:underline">[${citationNumber}]</a></sup>` +
+            annotatedText.slice(end_index);
+    });
+
+    // 建立來源列表的 HTML 字串
+    let sourcesHtml = '<div class="mt-4 border-t border-[var(--border-color)] pt-2">';
+    sourcesHtml += `<h4 class="font-semibold text-sm mb-2">${i18n[config.uiLanguage].sources || '來源'}:</h4>`;
+    sourcesHtml += '<ol class="list-decimal list-inside text-sm space-y-1">';
+    citations.forEach(cite => {
+        // 確保 title 不是空的，並對特殊字元進行轉義以策安全
+        const safeTitle = cite.title ? cite.title.replace(/</g, "&lt;").replace(/>/g, "&gt;") : new URL(cite.url).hostname;
+        sourcesHtml += `<li id="cite-source-${cite.number}" class="truncate"><a href="${cite.url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline" title="${safeTitle}">${safeTitle}</a></li>`;
+    });
+    sourcesHtml += '</ol></div>';
+
+    // 將處理過的文字進行 Markdown 渲染，然後附加來源列表的 HTML
+    contentDiv.innerHTML = renderMarkdown(annotatedText) + sourcesHtml;
+}
         const addMessageToUI = (msg, index, shouldSave = true, shouldScroll = true) => {
             const conv = getActiveConversation();
             if (shouldSave) {
@@ -5545,74 +5590,58 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             const contentDiv = loadingMessageDiv.querySelector('.message-content');
             
             try {
-                let fullResponse = '';
-                const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
+    let fullResponse = '';
+    // ✨ --- 新增變數來接收註釋 --- ✨
+    let annotations = null;
 
-                // 1. 先等待 API 回應完全結束，獲取完整文字
-                const completeResponse = await streamApiCall(
-                    userParts,
-                    (chunk) => {
-                        // 在 streamApiCall 內部，我們只收集文字，不渲染
-                    },
-                    abortController.signal
-                );
+    const finalAiMessage = { role: 'model', parts: [], createdAt: new Date().toISOString() };
 
-                fullResponse = completeResponse;
-                sendConversationToMail(userMessageObject, fullResponse);
+    // ✨ --- 修改對 streamApiCall 的呼叫 --- ✨
+    // 現在它會回傳一個物件，我們用解構賦值來接收 fullText 和 annotations
+    const streamResult = await streamApiCall(
+        userParts,
+        (chunk) => {
+            // 這個即時更新畫面的部分保持不變
+            contentDiv.innerHTML = renderMarkdown(fullResponse + chunk + '▋');
+            fullResponse += chunk;
+            const chatContainer = ALL_ELEMENTS.chatContainer;
+            const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
+            if (isNearBottom) {
+                chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+            }
+        },
+        abortController.signal
+    );
 
-                // 2. 將完整的最終訊息保存到對話紀錄中
-                finalAiMessage.parts = [{ text: fullResponse }];
-                conv.messages.push(finalAiMessage);
-                conv.lastUpdatedAt = new Date().toISOString();
-                await saveAppData();
-                
-                // 3. ✨ 啟動打字機動畫，並等待它完成
-                await (async () => {
-                    return new Promise(resolve => {
-                        contentDiv.innerHTML = ''; // 清空等待樣式
-                        let currentIndex = 0;
-                        const typingSpeed = 15;
+    // 從回傳的物件中取得最終結果
+    fullResponse = streamResult.fullText;
+    annotations = streamResult.annotations;
 
-                        function type() {
-                            if (currentIndex < fullResponse.length && !abortController.signal.aborted) {
-                                const currentText = fullResponse.substring(0, currentIndex + 1);
-                                contentDiv.innerHTML = renderMarkdown(currentText + '▋');
+    sendConversationToMail(userMessageObject, fullResponse);
 
-                                let step = 1;
-                                if (currentText.includes('```')) {
-                                    step = 5;
-                                }
-                                
-                                currentIndex += step;
+    // ✨ --- 根據是否有註釋來決定如何呈現 --- ✨
+    if (annotations && annotations.length > 0) {
+        // 如果有註釋，就呼叫我們的新函式來呈現
+        renderMessageWithAnnotations(contentDiv, fullResponse, annotations);
+        finalAiMessage.parts.push({ text: fullResponse }); 
+    } else {
+        // 如果沒有，就維持原本的呈現方式
+        contentDiv.innerHTML = renderMarkdown(fullResponse);
+        finalAiMessage.parts.push({ text: fullResponse });
+    }
 
-                                const chatContainer = ALL_ELEMENTS.chatContainer;
-                                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
-                                if (isNearBottom) {
-                                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
-                                }
-
-                                setTimeout(type, typingSpeed);
-                            } else {
-                                // 動畫完成或被中止
-                                contentDiv.innerHTML = renderMarkdown(fullResponse); // 最終清理，移除游標
-                                resolve(); // ✨ Promise 完成，通知 await
-                            }
-                        }
-                        
-                        type(); // 啟動
-                    });
-                })();
-
-                // 4. ✨ 只有在打字機動畫結束後，才執行後續任務
-                if (!abortController.signal.aborted) {
-                    if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
-                        await generateFollowUpPrompts(userMessage, fullResponse);
-                    }
-                    if (config.memoryEnabled1 && config.enableAutoMemory) {
-                        await extractPersonalMemory(userMessage, fullResponse);
-                    }
-                }
-
+    conv.messages.push(finalAiMessage);
+    conv.lastUpdatedAt = new Date().toISOString();
+    await saveAppData();
+    
+    if (fullResponse && !abortController.signal.aborted) {
+        if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
+            await generateFollowUpPrompts(userMessage, fullResponse);
+        }
+        if (config.memoryEnabled1 && config.enableAutoMemory) {
+            await extractPersonalMemory(userMessage, fullResponse);
+        }
+    }
             } catch (error) {
                 if (error.name !== 'AbortError') {
                     const errorMessage = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
@@ -5796,96 +5825,133 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     payload.tools = [{"googleSearch": {}}];
                 }
                 headers = { 'Content-Type': 'application/json' };
+            } else { // provider === 'openrouter'
+    url = 'https://openrouter.ai/api/v1/chat/completions';
+    const messages = [];
+    if (systemInstruction) {
+        messages.push({ role: 'system', content: systemInstruction.parts.map(p => p.text).join('\n') });
+    }
+    messages.push(...[...historyForApi, currentMessageForApi].map(m => ({
+        role: m.role === 'model' ? 'assistant' : m.role,
+        content: m.parts.filter(p => p.text).map(p => p.text).join('\n')
+    })));
+
+    payload = {
+        model: modelId,
+        messages,
+        stream: true,
+        ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
+        ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
+        ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
+    };
+    
+    // ✨ --- 新增部分 START --- ✨
+    // 檢查目前對話是否啟用了網路搜尋
+    if (conv.isWebSearchEnabled) {
+        // 如果啟用，就在 payload 中加入 plugins 參數
+        payload.plugins = [{
+            id: "web",
+            engine: "exa", // 您可以根據需求更換引擎，例如 "google"
+            max_results: 5,
+            search_prompt: "Some relevant web results:"
+        }];
+    }
+    // ✨ --- 新增部分 END --- ✨
+
+    headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
+}
+
+const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
+
+if (!response.ok) {
+    const errText = await response.text();
+    try {
+        const errJson = JSON.parse(errText);
+        throw new Error(errJson.error?.message || 'API 請求失敗');
+    } catch (e) {
+        throw new Error(`API 請求失敗: ${response.status} ${errText}`);
+    }
+}
+
+const reader = response.body.getReader();
+const decoder = new TextDecoder();
+let buffer = '';
+let fullText = '';
+// ✨ --- 新增變數用來儲存註釋 --- ✨
+let annotations = null;
+
+while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    // ✨ --- 更新 OpenRouter 的回應處理邏輯 --- ✨
+    if (provider === 'openrouter') {
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // 保留最後一個可能不完整的行
+        for (const line of lines) {
+            if (line.startsWith('data: ')) {
+                const data = line.substring(6);
+                if (data.trim() === '[DONE]') break;
+                try {
+                    const parsed = JSON.parse(data);
+                    
+                    // 處理正常的文字流
+                    const textChunk = parsed.choices[0]?.delta?.content || '';
+                    if (textChunk) {
+                        fullText += textChunk;
+                        onChunk(textChunk);
+                    }
+                    
+                    // 在串流的最後，OpenRouter 會傳一個帶有 finish_reason 的 chunk
+                    // 這個 chunk 可能會包含完整的 message 物件，裡面就有 annotations
+                    if (parsed.choices[0]?.finish_reason && parsed.choices[0]?.message?.annotations) {
+                        annotations = parsed.choices[0].message.annotations;
+                    }
+
+                } catch (e) { 
+                    // 忽略解析錯誤，因為串流中可能有不完整的 JSON
+                }
+            }
+        }
+    } else { // Gemini 的邏輯保持不變
+        // ... 原本 Gemini 的 while 迴圈邏輯 ...
+         while (true) {
+            const firstBrace = buffer.indexOf('{');
+            if (firstBrace === -1) break;
+            let braceCount = 0;
+            let endIndex = -1;
+            for (let i = firstBrace; i < buffer.length; i++) {
+                if (buffer[i] === '{') braceCount++;
+                else if (buffer[i] === '}') braceCount--;
+                if (braceCount === 0) {
+                    endIndex = i;
+                    break;
+                }
+            }
+            if (endIndex !== -1) {
+                const jsonStr = buffer.substring(firstBrace, endIndex + 1);
+                buffer = buffer.substring(endIndex + 1);
+                try {
+                    const parsed = JSON.parse(jsonStr);
+                    const textChunk = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (textChunk) {
+                        fullText += textChunk;
+                        onChunk(textChunk);
+                    }
+                } catch (e) {
+                    console.warn("解析 Gemini 串流中的 JSON 區塊時出錯:", e, "區塊內容:", jsonStr);
+                }
             } else {
-                url = 'https://openrouter.ai/api/v1/chat/completions';
-                const messages = [];
-                if (systemInstruction) {
-                    messages.push({ role: 'system', content: systemInstruction.parts.map(p => p.text).join('\n') });
-                }
-                messages.push(...[...historyForApi, currentMessageForApi].map(m => ({
-                    role: m.role === 'model' ? 'assistant' : m.role,
-                    content: m.parts.filter(p => p.text).map(p => p.text).join('\n')
-                })));
-                payload = {
-                    model: modelId,
-                    messages,
-                    stream: true,
-                    ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
-                    ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
-                    ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
-                };
-                headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
+                break;
             }
-            const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
-            if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'API 請求失敗'); }
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = '';
-            let fullText = '';
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
-                buffer += decoder.decode(value, { stream: true });
-                if (provider === 'gemini') {
-                    while (true) {
-                        const firstBrace = buffer.indexOf('{');
-                        if (firstBrace === -1) {
-                            break;
-                        }
+        }
+    }
+}
 
-                        let braceCount = 0;
-                        let endIndex = -1;
-                        for (let i = firstBrace; i < buffer.length; i++) {
-                            if (buffer[i] === '{') {
-                                braceCount++;
-                            } else if (buffer[i] === '}') {
-                                braceCount--;
-                            }
-                            if (braceCount === 0) {
-                                endIndex = i;
-                                break;
-                            }
-                        }
-
-                        if (endIndex !== -1) {
-                            const jsonStr = buffer.substring(firstBrace, endIndex + 1);
-                            buffer = buffer.substring(endIndex + 1);
-
-                            try {
-                                const parsed = JSON.parse(jsonStr);
-                                const textChunk = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-                                if (textChunk) {
-                                    fullText += textChunk;
-                                    onChunk(textChunk);
-                                }
-                            } catch (e) {
-                                console.warn("解析 Gemini 串流中的 JSON 區塊時出錯:", e, "區塊內容:", jsonStr);
-                            }
-                        } else {
-                            break;
-                        }
-                    }
-                } else {
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop();
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            const data = line.substring(6);
-                            if (data.trim() === '[DONE]') break;
-                            try {
-                                const parsed = JSON.parse(data);
-                                const textChunk = parsed.choices[0]?.delta?.content || '';
-                                if (textChunk) {
-                                    fullText += textChunk;
-                                    onChunk(textChunk);
-                                }
-                            } catch (e) { /* Ignore */ }
-                        }
-                    }
-                }
-            }
-            return fullText;
+// ✨ --- 修改函式的回傳值 --- ✨
+// 將原本只回傳文字，改成回傳一個包含文字和註釋的物件
+return { fullText, annotations };
         }
         async function callApiWithSchema(prompt, responseSchema, signal) {
             const apiKey = config.apiKeys.gemini;
