@@ -9875,16 +9875,22 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
                 ALL_ELEMENTS.imageVideoInput.click();
             });
             ALL_ELEMENTS.webSearchPopoverBtn.addEventListener('click', async () => {
-                ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
-                const conv = getActiveConversation();
-                if (!conv || conv.provider !== 'gemini' || conv.archived) {
-                    showNotification(i18n[config.uiLanguage].webSearchNotAvailable || '當前模型不支援或無法使用聯網搜尋。', 'warning');
-                    return;
-                }
-                conv.isWebSearchEnabled = !conv.isWebSearchEnabled;
-                renderInputIndicators();
-                await saveAppData();
-            });
+    ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
+    const conv = getActiveConversation();
+    
+    // ✨ 這是修正的核心 ✨
+    // 檢查模型是否為 Gemini 或 OpenRouter
+    const isSupportedProvider = conv && (conv.provider === 'gemini' || conv.provider === 'openrouter');
+
+    if (!isSupportedProvider || conv.archived) {
+        showNotification(i18n[config.uiLanguage].webSearchNotAvailable || '當前模型不支援或無法使用聯網搜尋。', 'warning');
+        return;
+    }
+    
+    conv.isWebSearchEnabled = !conv.isWebSearchEnabled;
+    renderInputIndicators();
+    await saveAppData();
+});
             ALL_ELEMENTS.learningModeBtn.addEventListener('click', toggleLearningMode);
             ALL_ELEMENTS.deepResearchBtn.addEventListener('click', toggleDeepResearchMode);
             ALL_ELEMENTS.uploadImageBtn.addEventListener('click', () => {
