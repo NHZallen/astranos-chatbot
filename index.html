@@ -4731,22 +4731,24 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const allSeparators = document.querySelectorAll('#file-options-popover .border-t');
 
         if (provider === 'openrouter') {
-            // 對於 OpenRouter，隱藏與「檔案上傳」和「網路搜尋」相關的功能
-            [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn].forEach(btn => btn.style.display = 'none');
-            
-            // 明確顯示 OpenRouter 支援的功能：「學習模式」和「深度研究」
-            learningModeBtn.style.display = 'flex';
-            deepResearchBtn.style.display = 'flex';
+            cameraBtn.style.display = 'none';
+    uploadImageBtn.style.display = 'none';
+    uploadFileBtn.style.display = 'none';
+    webSearchPopoverBtn.style.display = 'none';
+    
+    // 2. 強制顯示我們需要的「學習」和「研究」按鈕
+    learningModeBtn.style.display = 'flex';
+    deepResearchBtn.style.display = 'flex';
 
-            // 隱藏不需要的分隔線
-            if (allSeparators.length > 0) allSeparators[0].style.display = 'none'; // 隱藏網路搜尋前的分隔線
-            if (allSeparators.length > 1) allSeparators[1].style.display = 'block';// 確保深度研究前的分隔線是顯示的
+    // 3. 處理分隔線：隱藏第一條，顯示第二條
+    if (allSeparators.length > 0) allSeparators[0].style.display = 'none';
+    if (allSeparators.length > 1) allSeparators[1].style.display = 'block';
 
-        } else { // Gemini 模型
-            // 對於 Gemini，顯示所有功能按鈕和分隔線
-            allButtons.forEach(btn => btn.style.display = 'flex');
-            allSeparators.forEach(sep => sep.style.display = 'block');
-        }
+} else { // Gemini 模型
+    // 對於 Gemini 等其他模型，恢復顯示所有功能
+    allButtons.forEach(btn => btn.style.display = 'flex');
+    allSeparators.forEach(sep => sep.style.display = 'block');
+}
         };
 
         const toggleLearningMode = async () => {
@@ -10170,16 +10172,16 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
 
     // 3. 根據模型 (provider) 來決定要顯示哪些按鈕
     let visibleMenuItems;
-    if (provider === 'openrouter') {
-        // 如果是 OpenRouter 模型，只留下「學習」和「研究」
-        visibleMenuItems = allMenuItems.filter(item => 
-            item.id === 'learning-mode-btn' || 
-            item.id === 'deep-research-btn'
-        );
-    } else {
-        // 否則 (例如 Gemini 模型)，顯示全部按鈕
-        visibleMenuItems = allMenuItems;
-    }
+if (provider === 'openrouter') {
+    // 當模型是 OpenRouter 時，我們只顯示「學習」和「研究」
+    visibleMenuItems = allMenuItems.filter(item => 
+        item.id === 'learning-mode-btn' || 
+        item.id === 'deep-research-btn'
+    );
+} else {
+    // 對於其他模型（如 Gemini），保持顯示所有項目
+    visibleMenuItems = allMenuItems;
+}
 
     let itemsHTML = '';
     visibleMenuItems.forEach((item, index) => {
