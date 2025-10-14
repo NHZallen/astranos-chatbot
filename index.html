@@ -22,17 +22,6 @@
 #open-search-btn.active {
     color: var(--button-primary-bg);
 }
-    .category-header {
-    padding: 0.75rem 1rem 0.25rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    border-top: 1px solid var(--border-color);
-}
-#model-list-view .category-header:first-of-type {
-    border-top: none;
-}
     main.flex-1 {
     /* 強制隱藏所有超出寬度的內容 */
     overflow-x: hidden;
@@ -5115,11 +5104,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </button>
         <div id="model-options-popover" class="popover absolute right-0 mt-6 w-72 md:w-80 rounded-lg border border-[var(--border-color)] z-50">
-            <div id="model-views-container" style="width: 400%; display: flex; transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1); align-items: flex-start;">
-                <div id="provider-view" class="model-view" style="width: 25%; flex-shrink: 0; padding-top: 0.5rem; padding-bottom: 0.5rem;"></div>
-                <div id="tier-view" class="model-view" style="width: 25%; flex-shrink: 0; padding-top: 0.5rem; padding-bottom: 0.5rem;"></div>
-                <div id="company-view" class="model-view" style="width: 25%; flex-shrink: 0; padding-top: 0.5rem; padding-bottom: 0.5rem;"></div>
-                <div id="model-list-view" class="model-view" style="width: 25%; flex-shrink: 0; padding-top: 0.5rem; padding-bottom: 0.5rem;"></div>
+            <div id="model-views-container" style="width: 500%; display: flex; transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1); align-items: flex-start;">
+                <div id="provider-view" class="model-view" style="width: 20%; flex-shrink: 0; padding-top: 0.5rem; padding-bottom: 0.5rem;"></div>
+                <div id="tier-view" class="model-view" style="width: 20%; flex-shrink: 0; padding-top: 0.5rem; padding-bottom: 0.5rem;"></div>
+                <div id="company-view" class="model-view" style="width: 20%; flex-shrink: 0; padding-top: 0.5rem; padding-bottom: 0.5rem;"></div>
+                <div id="category-view" class="model-view" style="width: 20%; flex-shrink: 0; padding-top: 0.5rem; padding-bottom: 0.5rem;"></div>
+                <div id="model-list-view" class="model-view" style="width: 20%; flex-shrink: 0; padding-top: 0.5rem; padding-bottom: 0.5rem;"></div>
             </div>
         </div>
     `;
@@ -5130,6 +5120,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     const providerView = document.getElementById('provider-view');
     const tierView = document.getElementById('tier-view');
     const companyView = document.getElementById('company-view');
+    const categoryView = document.getElementById('category-view');
     const modelListView = document.getElementById('model-list-view');
 
     const adjustPopoverHeight = (targetView) => {
@@ -5139,7 +5130,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     };
 
     const navigateToView = (viewIndex) => {
-        viewsContainer.style.transform = `translateX(-${viewIndex * 25}%)`;
+        viewsContainer.style.transform = `translateX(-${viewIndex * 20}%)`;
         const targetView = viewsContainer.children[viewIndex];
         adjustPopoverHeight(targetView);
     };
@@ -5152,7 +5143,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             </div>
         `;
     };
-
+    
     const createBackButtonHTML = (textKey, targetViewIndex) => {
         return `
             <button class="back-btn w-full flex items-center gap-2 text-left px-4 py-3 hover:bg-[var(--hover-bg)] text-sm font-semibold text-blue-600" data-target-view="${targetViewIndex}">
@@ -5164,8 +5155,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     };
 
     const providers = [...new Set(visibleModels.map(m => m.provider))];
-    
-    // ✨✨✨ 核心修正：將被省略的程式碼還原 ✨✨✨
     providerView.innerHTML = providers.map(provider => `
         <div class="model-option-btn-container provider-btn" data-provider="${provider}">
             <h4 class="font-semibold capitalize">${provider}</h4>
@@ -5176,7 +5165,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         btn.addEventListener('click', () => {
             const provider = btn.dataset.provider;
             tierView.innerHTML = createBackButtonHTML('back', 0);
-
             const tiers = ['free', 'paid'];
             tierView.innerHTML += tiers.map(tier => `
                 <div class="model-option-btn-container tier-btn" data-provider="${provider}" data-tier="${tier}">
@@ -5188,13 +5176,25 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 tierBtn.addEventListener('click', () => {
                     const selectedProvider = tierBtn.dataset.provider;
                     const selectedTier = tierBtn.dataset.tier;
-
-                    if (selectedProvider === 'openrouter') {
+                    
+                    // ✨✨✨ 核心邏輯修改處 ✨✨✨
+                    // 如果是 Gemini，直接跳到最終列表
+                    if (selectedProvider === 'gemini') {
+                        const filteredModels = visibleModels.filter(m => m.provider === selectedProvider && m.tier.includes(selectedTier));
+                        modelListView.innerHTML = createBackButtonHTML('back', 1); // 返回到 Tier 頁
+                        modelListView.innerHTML += filteredModels.map(model => {
+                            const baseKey = model.descriptionKey;
+                            const tierKey = `${baseKey}_tier_${selectedTier}`;
+                            const descriptionText = translations[tierKey] || '';
+                            return createModelOptionHTML(model, descriptionText);
+                        }).join('');
+                        navigateToView(4); // 跳到最後一頁
+                    } else { 
+                        // 如果是 OpenRouter (或其他未來多公司的服務商)，進入公司選擇頁
                         const companies = [...new Set(visibleModels
                             .filter(m => m.provider === selectedProvider && m.tier.includes(selectedTier))
                             .map(m => m.company)
                         )];
-
                         companyView.innerHTML = createBackButtonHTML('back', 1);
                         companyView.innerHTML += companies.map(company => `
                             <div class="model-option-btn-container company-btn" data-provider="${selectedProvider}" data-tier="${selectedTier}" data-company="${company}">
@@ -5205,70 +5205,61 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         if (companies.length === 0) {
                             companyView.innerHTML += `<p class="p-4 text-center text-sm text-[var(--text-secondary)]">${translations.noModelsInTier || '此類別中沒有可用模型。'}</p>`;
                         }
-
+                        
                         companyView.querySelectorAll('.company-btn').forEach(companyBtn => {
                             companyBtn.addEventListener('click', () => {
                                 const finalProvider = companyBtn.dataset.provider;
                                 const finalTier = companyBtn.dataset.tier;
                                 const finalCompany = companyBtn.dataset.company;
-
-                                const finalModels = visibleModels.filter(m =>
-                                    m.provider === finalProvider &&
-                                    m.tier.includes(finalTier) &&
-                                    m.company === finalCompany
-                                );
-
-                                modelListView.innerHTML = createBackButtonHTML('back', 2);
-                                const hasCategories = finalModels.some(m => m.category);
+                                const companyModels = visibleModels.filter(m => m.provider === finalProvider && m.tier.includes(finalTier) && m.company === finalCompany);
+                                const hasCategories = finalCompany === 'openai' || finalCompany === 'x-ai';
 
                                 if (hasCategories) {
-                                    const groupedByCat = finalModels.reduce((acc, model) => {
-                                        const cat = model.category || 'general';
-                                        if (!acc[cat]) acc[cat] = [];
-                                        acc[cat].push(model);
-                                        return acc;
-                                    }, {});
+                                    // 進入新的「用途分類」頁面
+                                    const categories = [...new Set(companyModels.map(m => m.category || 'general'))];
+                                    categoryView.innerHTML = createBackButtonHTML('back', 2); // 返回到 Company 頁
+                                    
                                     const categoryOrder = ['general', 'thinking', 'coding'];
-                                    categoryOrder.forEach(categoryKey => {
-                                        if (groupedByCat[categoryKey]) {
-                                            const categoryNameKey = `category${categoryKey.charAt(0).toUpperCase() + categoryKey.slice(1)}`;
-                                            const categoryName = translations[categoryNameKey] || categoryKey;
-                                            modelListView.innerHTML += `<h5 class="category-header">${categoryName}</h5>`;
-                                            modelListView.innerHTML += groupedByCat[categoryKey].map(model => {
+                                    categories.sort((a, b) => categoryOrder.indexOf(a) - categoryOrder.indexOf(b));
+
+                                    categoryView.innerHTML += categories.map(cat => {
+                                        const categoryNameKey = `category${cat.charAt(0).toUpperCase() + cat.slice(1)}`;
+                                        const categoryName = translations[categoryNameKey] || cat;
+                                        return `<div class="model-option-btn-container category-btn" data-category="${cat}">
+                                                    <h4 class="font-semibold">${categoryName}</h4>
+                                                </div>`;
+                                    }).join('');
+
+                                    categoryView.querySelectorAll('.category-btn').forEach(catBtn => {
+                                        catBtn.addEventListener('click', () => {
+                                            const selectedCategory = catBtn.dataset.category;
+                                            const finalModels = companyModels.filter(m => (m.category || 'general') === selectedCategory);
+                                            
+                                            modelListView.innerHTML = createBackButtonHTML('back', 3); // 返回到 Category 頁
+                                            modelListView.innerHTML += finalModels.map(model => {
                                                 const baseKey = model.descriptionKey;
                                                 const tierKey = `${baseKey}_tier_${finalTier}`;
                                                 const descriptionText = translations[tierKey] || '';
                                                 return createModelOptionHTML(model, descriptionText);
                                             }).join('');
-                                        }
+                                            navigateToView(4);
+                                        });
                                     });
+                                    navigateToView(3);
                                 } else {
-                                    modelListView.innerHTML += finalModels.map(model => {
+                                    // 對於沒有額外分類的公司，直接顯示模型列表
+                                    modelListView.innerHTML = createBackButtonHTML('back', 2); // 返回到 Company 頁
+                                    modelListView.innerHTML += companyModels.map(model => {
                                         const baseKey = model.descriptionKey;
                                         const tierKey = `${baseKey}_tier_${finalTier}`;
                                         const descriptionText = translations[tierKey] || '';
                                         return createModelOptionHTML(model, descriptionText);
                                     }).join('');
+                                    navigateToView(4);
                                 }
-                                navigateToView(3);
                             });
                         });
                         navigateToView(2);
-                    } else {
-                        const filteredModels = visibleModels.filter(m =>
-                            m.provider === selectedProvider && m.tier.includes(selectedTier)
-                        );
-                        modelListView.innerHTML = createBackButtonHTML('back', 1);
-                        modelListView.innerHTML += filteredModels.map(model => {
-                            const baseKey = model.descriptionKey;
-                            const tierKey = `${baseKey}_tier_${selectedTier}`;
-                            const descriptionText = translations[tierKey] || '';
-                            return createModelOptionHTML(model, descriptionText);
-                        }).join('');
-                        if (filteredModels.length === 0) {
-                           modelListView.innerHTML += `<p class="p-4 text-center text-sm text-[var(--text-secondary)]">${translations.noModelsInTier || '此類別中沒有可用模型。'}</p>`;
-                        }
-                        navigateToView(3);
                     }
                 });
             });
