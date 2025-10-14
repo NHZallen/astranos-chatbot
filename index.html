@@ -2862,6 +2862,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                     <span id="deep-research-query-count-label" class="text-sm font-semibold w-20 text-center">自動</span>
                                 </div>
                             </div>
+                            <div>
+    <label for="openrouter-max-results-slider" class="block text-sm font-medium mb-1" data-lang-key="openRouterMaxResults">OpenRouter 搜尋結果數量</label>
+    <p class="text-xs text-[var(--text-secondary)] mb-3" data-lang-key="openRouterMaxResultsDesc">
+        設定使用 OpenRouter 模型進行 Web 搜尋時，回傳的結果數量上限。
+    </p>
+    <div class="flex items-center gap-4">
+        <input type="range" id="openrouter-max-results-slider" min="3" max="10" step="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700">
+        <span id="openrouter-max-results-label" class="text-sm font-semibold w-20 text-center">5 個</span>
+    </div>
+</div>
                         </div>
                     </div>
                     <div id="trash-section" class="settings-section">
@@ -3942,6 +3952,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             isLearningMode: false,
             isDeepResearchMode: false, // ✨ 新增狀態
             deepResearchQueryCount: 0, // ✨ 新增這一行，0 代表自動
+            openRouterWebSearchMaxResults: 5,
         };
         let itemToRename = { id: null, type: null };
         let folderToCustomize = null;
@@ -4720,34 +4731,35 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             updateInputState();
         };
         
-        const updateFunctionButtonsState = () => {
-            const { cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn } = ALL_ELEMENTS;
-            const separator = document.querySelector('#file-options-popover .border-t');
-            const conv = getActiveConversation();
-            if (!conv) return;
-            const modelInfo = MODELS.find(m => m.id === conv.model);
-            const provider = modelInfo?.provider;
-            const allButtons = [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn];
-        const allSeparators = document.querySelectorAll('#file-options-popover .border-t');
+    const updateFunctionButtonsState = () => {
+    const { cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn } = ALL_ELEMENTS;
+    const conv = getActiveConversation();
+    if (!conv) return;
 
-        if (provider === 'openrouter') {
-            // 對於 OpenRouter，隱藏與「檔案上傳」和「網路搜尋」相關的功能
-            [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn].forEach(btn => btn.style.display = 'none');
-            
-            // 明確顯示 OpenRouter 支援的功能：「學習模式」和「深度研究」
-            learningModeBtn.style.display = 'flex';
-            deepResearchBtn.style.display = 'flex';
+    const modelInfo = MODELS.find(m => m.id === conv.model);
+    const provider = modelInfo?.provider;
+    
+    // 定義所有按鈕和分隔線
+    const allButtons = [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn];
+    const allSeparators = document.querySelectorAll('#file-options-popover .border-t');
 
-            // 隱藏不需要的分隔線
-            if (allSeparators.length > 0) allSeparators[0].style.display = 'none'; // 隱藏網路搜尋前的分隔線
-            if (allSeparators.length > 1) allSeparators[1].style.display = 'block';// 確保深度研究前的分隔線是顯示的
+    if (provider === 'openrouter') {
+        // 對於 OpenRouter，隱藏與「檔案上傳」相關的功能
+        [cameraBtn, uploadImageBtn, uploadFileBtn].forEach(btn => btn.style.display = 'none');
+        
+        // 明確顯示 OpenRouter 支援的功能
+        [webSearchPopoverBtn, learningModeBtn, deepResearchBtn].forEach(btn => btn.style.display = 'flex');
 
-        } else { // Gemini 模型
-            // 對於 Gemini，顯示所有功能按鈕和分隔線
-            allButtons.forEach(btn => btn.style.display = 'flex');
-            allSeparators.forEach(sep => sep.style.display = 'block');
-        }
-        };
+        // 調整分隔線的顯示
+        if (allSeparators.length > 0) allSeparators[0].style.display = 'none'; // 隱藏檔案上傳和搜尋之間的分隔線
+        if (allSeparators.length > 1) allSeparators[1].style.display = 'block'; // 確保學習和研究之間的分隔線是顯示的
+
+    } else { // 預設行為 (例如 Gemini 模型)
+        // 顯示所有功能按鈕和分隔線
+        allButtons.forEach(btn => btn.style.display = 'flex');
+        allSeparators.forEach(sep => sep.style.display = 'block');
+    }
+};
 
         const toggleLearningMode = async () => {
             if (config.isDeepResearchMode) {
@@ -5547,11 +5559,12 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             try {
                 let fullResponse = '';
                 const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
+                
 
                 // 1. 先等待 API 回應完全結束，獲取完整文字
-                const completeResponse = await streamApiCall(
-                    userParts,
-                    (chunk) => {
+                const { fullText: completeResponse, annotations } = await streamApiCall(
+    userParts,
+    (chunk) => {
                         // 在 streamApiCall 內部，我們只收集文字，不渲染
                     },
                     abortController.signal
@@ -5694,6 +5707,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             return score * (1 + coverageRatio);
         }
         async function streamApiCall(parts, onChunk, signal, isWebSearchForced = false) {
+            let collectedAnnotations = [];
             const conv = getActiveConversation();
             const modelInfo = MODELS.find(m => m.id === conv.model);
             if (!modelInfo) throw new Error(`找不到模型設定: ${conv.model}`);
@@ -5814,6 +5828,16 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
                     ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
                 };
+                if (conv.isWebSearchEnabled) {
+                    payload.plugins = [
+                        {
+                            id: "web",
+                            engine: "exa",
+                            max_results: config.openRouterWebSearchMaxResults, // 使用我們設定的值
+                            search_prompt: "Some relevant web results based on the user's query:"
+                        }
+                    ];
+                }
                 headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
             }
             const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
@@ -5874,18 +5898,22 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                             const data = line.substring(6);
                             if (data.trim() === '[DONE]') break;
                             try {
-                                const parsed = JSON.parse(data);
                                 const textChunk = parsed.choices[0]?.delta?.content || '';
-                                if (textChunk) {
-                                    fullText += textChunk;
-                                    onChunk(textChunk);
-                                }
+                            if (textChunk) {
+                                fullText += textChunk;
+                                onChunk(textChunk);
+                            }
+                            
+                            // 檢查是否有 annotations
+                            if (parsed.choices[0]?.delta?.content === null && parsed.choices[0]?.annotations) {
+                                collectedAnnotations.push(...parsed.choices[0].annotations);
+                            }
                             } catch (e) { /* Ignore */ }
                         }
                     }
                 }
             }
-            return fullText;
+            return { fullText, annotations: collectedAnnotations };
         }
         async function callApiWithSchema(prompt, responseSchema, signal) {
             const apiKey = config.apiKeys.gemini;
@@ -6242,9 +6270,16 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     const sectionId = item.dataset.section + '-section';
                     document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
                     document.getElementById(sectionId).classList.add('active');
-                });
-            });
-        };
+                const orSlider = document.getElementById('openrouter-max-results-slider');
+    const orLabel = document.getElementById('openrouter-max-results-label');
+    if (orSlider && orLabel) {
+        orSlider.value = config.openRouterWebSearchMaxResults;
+        orLabel.textContent = `${config.openRouterWebSearchMaxResults} 個`;
+        orSlider.addEventListener('input', () => {
+            orLabel.textContent = `${orSlider.value} 個`;
+        });
+    }
+};
         const saveSettings = async () => {
             config.apiKeys.gemini = ALL_ELEMENTS.geminiApiKeyInput.value.trim();
             config.apiKeys.openrouter = ALL_ELEMENTS.openrouterApiKeyInputAll.value.trim();
@@ -6263,6 +6298,11 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             if (queryCountSlider) {
                 config.deepResearchQueryCount = parseInt(queryCountSlider.value);
             }
+            const orSlider = document.getElementById('openrouter-max-results-slider');
+    if (orSlider) {
+        config.openRouterWebSearchMaxResults = parseInt(orSlider.value);
+    }
+
             const selectedThemeMode = document.querySelector('input[name="color-theme"]:checked').value;
             const selectedCustomColor = ALL_ELEMENTS.customColorSwatches.querySelector('.selected')?.dataset.color || config.uiTheme.customColor;
             const selectedStyle = document.querySelector('input[name="color-style"]:checked')?.value || 'single';
@@ -9595,6 +9635,22 @@ ${allContextData.join('\n\n')}`;
                 if (fullReport && !config.isLearningMode) {
                     await generateFollowUpPrompts(userMessage, fullReport);
                 }
+                if (annotations && annotations.length > 0) {
+                let sourcesHtml = '<hr class="my-4 border-[var(--border-color)]"><h4 class="font-semibold text-sm mb-2">參考來源</h4><ol class="list-decimal list-inside text-sm space-y-1">';
+                annotations.forEach(anno => {
+                    if (anno.type === 'url_citation' && anno.url_citation) {
+                        const { url, title } = anno.url_citation;
+                        // 對 URL 和標題進行 HTML 編碼以防止 XSS
+                        const safeTitle = title.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                        const safeUrl = url.replace(/"/g, "&quot;");
+                        sourcesHtml += `<li><a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline break-all">${safeTitle}</a></li>`;
+                    }
+                });
+                sourcesHtml += '</ol>';
+                
+                // 將來源列表附加到訊息後面
+                reportContentDiv.innerHTML += sourcesHtml;
+            }
 
             } catch (error) {
                 if (error.name !== 'AbortError' && error.message !== "使用者取消了研究。") {
