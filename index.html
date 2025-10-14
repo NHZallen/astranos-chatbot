@@ -4732,10 +4732,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
         if (provider === 'openrouter') {
             // 對於 OpenRouter，隱藏與「檔案上傳」和「網路搜尋」相關的功能
-            [cameraBtn, uploadImageBtn, webSearchPopoverBtn].forEach(btn => btn.style.display = 'none');
-            // ✨ START: PDF Upload Integration (1/5) - Keep file button for OpenRouter
-            uploadFileBtn.style.display = 'flex'; // 保持檔案上傳按鈕可見
-            // ✨ END: PDF Upload Integration (1/5)
+            [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn].forEach(btn => btn.style.display = 'none');
             
             // 明確顯示 OpenRouter 支援的功能：「學習模式」和「深度研究」
             learningModeBtn.style.display = 'flex';
@@ -5679,7 +5676,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     lastRole = sanitizedMsg.role;
                 }
             });
-            if (cleaned.length > 0 && cleaned.role !== 'user') cleaned.shift();
+            if (cleaned.length > 0 && cleaned[0].role !== 'user') cleaned.shift();
             return cleaned;
         }
         function calculateRelevanceScore(summary, keywords) {
@@ -5772,8 +5769,8 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 }
             }
             if (memoryPrompt) {
-                if (systemInstruction && systemInstruction.parts.text) {
-                    systemInstruction.parts.text += `\n\n${memoryPrompt}`;
+                if (systemInstruction && systemInstruction.parts[0].text) {
+                    systemInstruction.parts[0].text += `\n\n${memoryPrompt}`;
                 } else if (systemInstruction) {
                     systemInstruction.parts.push({ text: `\n\n${memoryPrompt}` });
                 }
@@ -5800,85 +5797,24 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 }
                 headers = { 'Content-Type': 'application/json' };
             } else {
-                 // ✨ START: PDF Upload Integration (2/5) - Build OpenRouter request
                 url = 'https://openrouter.ai/api/v1/chat/completions';
-                
-                const openRouterMessages = [];
-
+                const messages = [];
                 if (systemInstruction) {
-                    openRouterMessages.push({ role: 'system', content: systemInstruction.parts.map(p => p.text).join('\n') });
+                    messages.push({ role: 'system', content: systemInstruction.parts.map(p => p.text).join('\n') });
                 }
-
-                // Process history
-                historyForApi.forEach(msg => {
-                    const contentParts = [];
-                    let hasText = false;
-                    msg.parts.forEach(part => {
-                        if (part.text) {
-                            contentParts.push({ type: 'text', text: part.text });
-                            hasText = true;
-                        } else if (part.inlineData && part.inlineData.mimeType === 'application/pdf') {
-                            contentParts.push({
-                                type: 'file',
-                                file: {
-                                    filename: part.name || 'document.pdf',
-                                    file_data: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`
-                                }
-                            });
-                        }
-                    });
-                     // OpenRouter requires a text part even if only a file is present.
-                    if (contentParts.length > 0 && !hasText) {
-                         contentParts.unshift({ type: 'text', text: ' ' });
-                    }
-
-                    if(contentParts.length > 0){
-                        openRouterMessages.push({
-                            role: msg.role === 'model' ? 'assistant' : 'user',
-                            content: contentParts.length === 1 ? contentParts : contentParts
-                        });
-                    }
-                });
-
-                // Process current message
-                const currentUserContent = [];
-                let hasCurrentUserText = false;
-                currentMessageForApi.parts.forEach(part => {
-                    if (part.text) {
-                        currentUserContent.push({ type: 'text', text: part.text });
-                        hasCurrentUserText = true;
-                    } else if (part.inlineData && part.inlineData.mimeType === 'application/pdf') {
-                        const file = uploadedFiles.find(f => `data:${f.type};base64,${f.base64.split(',')[1]}` === `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`);
-                        currentUserContent.push({
-                            type: 'file',
-                            file: {
-                                filename: file ? file.name : 'document.pdf',
-                                file_data: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`
-                            }
-                        });
-                    }
-                });
-                // Ensure a text part exists for the current user message if there's a file
-                if (currentUserContent.length > 0 && !hasCurrentUserText) {
-                    currentUserContent.unshift({ type: 'text', text: '請分析這個文件。' });
-                }
-                 if(currentUserContent.length > 0){
-                    openRouterMessages.push({
-                        role: 'user',
-                        content: currentUserContent.length === 1 ? currentUserContent : currentUserContent
-                    });
-                }
-
+                messages.push(...[...historyForApi, currentMessageForApi].map(m => ({
+                    role: m.role === 'model' ? 'assistant' : m.role,
+                    content: m.parts.filter(p => p.text).map(p => p.text).join('\n')
+                })));
                 payload = {
                     model: modelId,
-                    messages: openRouterMessages,
+                    messages,
                     stream: true,
                     ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
                     ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
                     ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
                 };
                 headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
-                 // ✨ END: PDF Upload Integration (2/5)
             }
             const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
             if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'API 請求失敗'); }
@@ -5917,7 +5853,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 
                             try {
                                 const parsed = JSON.parse(jsonStr);
-                                const textChunk = parsed?.candidates?.?.content?.parts?.?.text;
+                                const textChunk = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
 
                                 if (textChunk) {
                                     fullText += textChunk;
@@ -5939,7 +5875,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                             if (data.trim() === '[DONE]') break;
                             try {
                                 const parsed = JSON.parse(data);
-                                const textChunk = parsed.choices?.delta?.content || '';
+                                const textChunk = parsed.choices[0]?.delta?.content || '';
                                 if (textChunk) {
                                     fullText += textChunk;
                                     onChunk(textChunk);
@@ -5977,7 +5913,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     throw new Error(errorData.error?.message || 'API request failed');
                 }
                 const result = await response.json();
-                const jsonString = result?.candidates?.?.content?.parts?.?.text;
+                const jsonString = result?.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (jsonString) {
                     let cleanedJsonString = jsonString.trim();
                     if (cleanedJsonString.startsWith("```json")) {
@@ -6023,7 +5959,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 return false;
             }
             const result = await response.json();
-            const text = result?.candidates?.?.content?.parts?.?.text?.trim().toLowerCase();
+            const text = result?.candidates?.[0]?.content?.parts?.[0]?.text?.trim().toLowerCase();
             return text === 'yes';
         }
         const generateTitleAndSummary = async (conv) => {
@@ -6125,7 +6061,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 1.  從通過安全審查的、位於「安全探索區」的草圖中，精心挑選出 3 到 4 個。
 2.  **選擇標準：**
     *   **多樣性：** 盡量涵蓋不同類型（例如，一個「如何做」，一個「舉例子」，一個「是什麼」）。
-    *   **代表性：** 能最好地代表【AI的上一則回應】的核心內容廣度。
+    *   **代表性：** 能最好地代表【AI上一則回應】的核心內容廣度。
     *   **清晰度：** 措辭必須是最清晰、最沒有歧義的。
 3.  **最後打磨：** 確保每個問題的用詞都完全符合「使用者代理人」的自然口吻。
 ---
@@ -7120,27 +7056,18 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             return results;
         };
         const renderFilePreviews = () => {
-            // ✨ START: PDF Upload Integration (3/5) - Update file preview
             const { filePreviewContainer } = ALL_ELEMENTS;
             filePreviewContainer.innerHTML = '';
             uploadedFiles.forEach(file => {
                 const previewEl = document.createElement('div');
                 previewEl.className = 'relative w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden file-preview-item';
-                
                 if (file.type.startsWith('image/')) {
-                    previewEl.innerHTML = `<img src="${file.base64}" class="w-full h-full object-cover" title="${file.name}">`;
-                } else if (file.type === 'application/pdf') {
-                    // Specific preview for PDF files
-                    previewEl.innerHTML = `<div class="w-full h-full flex items-center justify-center bg-red-100" title="${file.name}">
-                       <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-red-500" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM11 17H9v-2h2v2zm4.75-5.5c-.28.5-.75.75-1.25.75s-1-.25-1.25-.75c-.25-.5-.25-1 0-1.5.25-.5.75-.75 1.25-.75s1 .25 1.25.75c.25.5.25 1 0 1.5zm-3.25 2h-1.5V9.25c0-.41.34-.75.75-.75s.75.34.75.75V13.5z"/></svg>
-                    </div>`;
+                    previewEl.innerHTML = `<img src="${file.base64}" class="w-full h-full object-cover">`;
                 } else {
-                    // Generic file preview
-                    previewEl.innerHTML = `<div class="w-full h-full flex items-center justify-center" title="${file.name}">
+                    previewEl.innerHTML = `<div class="w-full h-full flex items-center justify-center">
                        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
                     </div>`;
                 }
-
                 const removeBtn = document.createElement('button');
                 removeBtn.className = 'absolute top-0 right-0 m-1 w-5 h-5 bg-black bg-opacity-50 text-white rounded-full flex items-center justify-center text-xs';
                 removeBtn.innerHTML = '&times;';
@@ -7149,22 +7076,11 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 filePreviewContainer.appendChild(previewEl);
             });
             updateInputState();
-            // ✨ END: PDF Upload Integration (3/5)
         };
         const handleFileSelection = (event) => {
             const files = event.target.files;
             if (!files) return;
-
-            // ✨ START: PDF Upload Integration (4/5) - Check file type for OpenRouter
-            const conv = getActiveConversation();
-            const modelInfo = MODELS.find(m => m.id === conv?.model);
-            const is_open_router = modelInfo?.provider === 'openrouter';
-
             Array.from(files).forEach(file => {
-                 if (is_open_router && !file.type.startsWith('image/') && file.type !== 'application/pdf') {
-                    showNotification(`OpenRouter 模型目前僅支援圖片及 PDF 檔案。已略過 "${file.name}"。`, 'warning');
-                    return; // Skip this file
-                }
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     uploadedFiles.push({
@@ -7177,7 +7093,6 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 reader.readAsDataURL(file);
             });
             event.target.value = '';
-            // ✨ END: PDF Upload Integration (4/5)
         };
         const removeFile = (fileId) => {
             uploadedFiles = uploadedFiles.filter(f => f.id !== fileId);
@@ -7282,7 +7197,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             await saveConfig();
         };
         const handleImport = async () => {
-            const file = ALL_ELEMENTS.importFileInput.files;
+            const file = ALL_ELEMENTS.importFileInput.files[0];
             if (!file) {
                 showNotification(i18n[config.uiLanguage].selectFileError || '請選擇檔案。', 'error');
                 return;
@@ -7310,7 +7225,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                              if (config.uiTheme.mode === 'adaptive') {
                                 const palette = await getDominantColorPalette(config.customWallpaper);
                                 config.uiTheme.adaptivePalette = palette;
-                                config.uiTheme.adaptiveColor = palette || '#3b82f6';
+                                config.uiTheme.adaptiveColor = palette[0] || '#3b82f6';
                             }
                             await saveConfig();
                         } catch (err) { /* keep default */ }
@@ -7340,7 +7255,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
         const processAuthImport = async () => {
             const username = ALL_ELEMENTS.usernameInput.value.trim();
             const password = ALL_ELEMENTS.passwordInput.value;
-            const file = ALL_ELEMENTS.importFileInputAuth.files;
+            const file = ALL_ELEMENTS.importFileInputAuth.files[0];
 
             if (!file) {
                 showNotification(i18n[config.uiLanguage].selectFileError || '請選擇檔案。', 'error');
@@ -7402,7 +7317,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             company = 'google'; 
         } else if (provider === 'openrouter') {
             tier = model.id.includes(':free') ? ['free'] : ['paid'];
-            company = model.id.split('/');
+            company = model.id.split('/')[0];
         }
         return { ...model, tier, company };
     });
@@ -7541,7 +7456,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             company = 'google';
         } else if (model.provider === 'openrouter') {
             tier = model.id.includes(':free') ? ['free'] : ['paid'];
-            company = model.id.split('/');
+            company = model.id.split('/')[0];
         }
         return { ...model, tier, company };
     });
@@ -7656,7 +7571,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             currentSpeechRecognition.onresult = (event) => {
                 let transcript = '';
                 for (let i = event.resultIndex; i < event.results.length; i++) {
-                    transcript += event.results[i].transcript;
+                    transcript += event.results[i][0].transcript;
                 }
                 const inputEl = target === 'message' ? ALL_ELEMENTS.messageInput : ALL_ELEMENTS.modalSearchInput;
                 inputEl.value = transcript;
@@ -8723,6 +8638,7 @@ ${JSON.stringify(potentialMemories, null, 2)}
             `;
             menuWrapper.appendChild(overlay);
             menuWrapper.appendChild(menu);
+            document.body.appendChild(menuWrapper);
             requestAnimationFrame(() => {
                 overlay.classList.add('visible');
                 menu.classList.add('visible');
@@ -9910,21 +9826,10 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
                 ALL_ELEMENTS.imageVideoInput.removeAttribute('capture');
                 ALL_ELEMENTS.imageVideoInput.click();
             });
-             // ✨ START: PDF Upload Integration (5/5) - Modify file upload button listener
             ALL_ELEMENTS.uploadFileBtn.addEventListener('click', () => {
                 ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
-                const conv = getActiveConversation();
-                const modelInfo = MODELS.find(m => m.id === conv?.model);
-                // For OpenRouter, specifically accept PDFs. For others, accept anything.
-                if (modelInfo?.provider === 'openrouter') {
-                    ALL_ELEMENTS.fileUploadInput.accept = 'application/pdf';
-                } else {
-                    ALL_ELEMENTS.fileUploadInput.accept = '*/*';
-                }
                 ALL_ELEMENTS.fileUploadInput.click();
             });
-            // ✨ END: PDF Upload Integration (5/5)
-
             ALL_ELEMENTS.imageVideoInput.addEventListener('change', handleFileSelection);
             ALL_ELEMENTS.fileUploadInput.addEventListener('change', handleFileSelection);
             ALL_ELEMENTS.selectionModeBtn.addEventListener('click', toggleSelectionMode);
