@@ -4768,16 +4768,12 @@ function injectCitationsAsMarkdown(text, annotations) {
         const allSeparators = document.querySelectorAll('#file-options-popover .border-t');
 
         if (provider === 'openrouter') {
-            // 對於 OpenRouter，隱藏與「檔案上傳」和「網路搜尋」相關的功能
-            [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn].forEach(btn => btn.style.display = 'none');
-            
-            // 明確顯示 OpenRouter 支援的功能：「學習模式」和「深度研究」
-            learningModeBtn.style.display = 'flex';
-            deepResearchBtn.style.display = 'flex';
-
-            // 隱藏不需要的分隔線
-            if (allSeparators.length > 0) allSeparators[0].style.display = 'none'; // 隱藏網路搜尋前的分隔線
-            if (allSeparators.length > 1) allSeparators[1].style.display = 'block';// 確保深度研究前的分隔線是顯示的
+            [cameraBtn, uploadImageBtn, uploadFileBtn].forEach(btn => btn.style.display = 'none');
+            [webSearchPopoverBtn, learningModeBtn, deepResearchBtn].forEach(btn => btn.style.display = 'flex');
+            const allSeparators = document.querySelectorAll('#file-options-popover .border-t');
+            if (allSeparators.length > 0) allSeparators[0].style.display = 'none'; // 隱藏檔案和搜尋之間的分隔線
+            if (allSeparators.length > 1) allSeparators[1].style.display = 'block';// 確保研究功能前的分隔線是顯示的
+            // ✨ 核心修改 END ✨
 
         } else { // Gemini 模型
             // 對於 Gemini，顯示所有功能按鈕和分隔線
@@ -9865,7 +9861,7 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             ALL_ELEMENTS.webSearchPopoverBtn.addEventListener('click', async () => {
                 ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
                 const conv = getActiveConversation();
-                if (!conv || conv.provider !== 'gemini' || conv.archived) {
+                if (!conv || !['gemini', 'openrouter'].includes(conv.provider) || conv.archived) {
                     showNotification(i18n[config.uiLanguage].webSearchNotAvailable || '當前模型不支援或無法使用聯網搜尋。', 'warning');
                     return;
                 }
