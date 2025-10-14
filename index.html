@@ -4724,35 +4724,31 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const { cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn } = ALL_ELEMENTS;
             const conv = getActiveConversation();
             if (!conv) return;
-
             const modelInfo = MODELS.find(m => m.id === conv.model);
             const provider = modelInfo?.provider;
-
-            // 所有按鈕和分隔線的列表
+            
+            // 將所有按鈕和分隔線先收集起來
             const allButtons = [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn];
             const allSeparators = document.querySelectorAll('#file-options-popover .border-t');
 
+            // 根據 provider 決定顯示/隱藏
             if (provider === 'openrouter') {
-                // ✨ 核心修改 START ✨
-                // 對於 OpenRouter，我們現在啟用「檔案上傳」功能
-                uploadFileBtn.style.display = 'flex'; 
-
-                // 根據你的要求，保持禁用相機、圖片和網路搜尋
+                // 對於 OpenRouter，隱藏相機、影像和網路搜尋
                 cameraBtn.style.display = 'none';
                 uploadImageBtn.style.display = 'none';
                 webSearchPopoverBtn.style.display = 'none';
-
-                // OpenRouter 支援的功能保持顯示
+                
+                // 明確顯示 OpenRouter 支援的功能：檔案、學習、研究
+                uploadFileBtn.style.display = 'flex'; // ✨ 確保檔案按鈕是顯示的
                 learningModeBtn.style.display = 'flex';
                 deepResearchBtn.style.display = 'flex';
 
-                // 根據按鈕的顯示狀態，調整分隔線
-                if (allSeparators.length > 0) allSeparators[0].style.display = 'none'; // 隱藏檔案和搜尋之間的分隔線
-                if (allSeparators.length > 1) allSeparators[1].style.display = 'block';// 顯示學習和研究之間的分隔線
-                // ✨ 核心修改 END ✨
+                // 隱藏不需要的分隔線
+                if (allSeparators.length > 0) allSeparators[0].style.display = 'none'; // 檔案和搜尋之間的分隔線
+                if (allSeparators.length > 1) allSeparators[1].style.display = 'block';// 學習和研究之間的分隔線
 
-            } else { // Gemini 模型
-                // 對於 Gemini，顯示所有功能按鈕和分隔線
+            } else { // 預設情況 (例如 Gemini)
+                // 顯示所有功能按鈕和分隔線
                 allButtons.forEach(btn => btn.style.display = 'flex');
                 allSeparators.forEach(sep => sep.style.display = 'block');
             }
@@ -5707,6 +5703,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             const modelInfo = MODELS.find(m => m.id === conv.model);
             if (!modelInfo) throw new Error(`找不到模型設定: ${conv.model}`);
             const { provider, id: modelId } = modelInfo;
+
             let apiKey;
             if (provider === 'gemini') {
                 apiKey = config.apiKeys.gemini;
@@ -5714,6 +5711,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 apiKey = config.apiKeys.openrouter;
             }
             if (!apiKey) throw new Error(`請先在設定中提供 ${modelInfo.name} 所需的 API 金鑰。`);
+
             const historyForApi = conv.messages.slice(0, -1);
             const currentMessageForApi = { role: 'user', parts: parts };
             let url, payload, headers;
@@ -5745,31 +5743,20 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     memoryPrompt += `個人習慣記憶：\n${enabledMemories}\n`;
                 }
             }
-
             if (config.memoryEnabled2 && conv.messages.length > 0) {
                 try {
                     const currentUserMessage = conv.messages[conv.messages.length - 1].parts.map(p => p.text).join(' ');
                     const keywordPrompt = `從以下句子中提取出 3 到 5 個最重要的核心關鍵詞或主題，並以 JSON 陣列的格式回傳。例如：["關鍵詞1", "關鍵詞2", "關鍵詞3"]。\n\n句子："${currentUserMessage}"`;
                     const keywordSchema = { type: "ARRAY", items: { type: "STRING" } };
                     const keywords = await callApiWithSchema(keywordPrompt, keywordSchema);
-
                     if (keywords && keywords.length > 0) {
                         const scoredConversations = conversations
                             .filter(c => c.id !== conv.id && c.summary && !c.archived && !c.deletedAt)
-                            .map(c => ({
-                                ...c,
-                                relevance: calculateRelevanceScore(c.summary, keywords)
-                            }))
+                            .map(c => ({ ...c, relevance: calculateRelevanceScore(c.summary, keywords) }))
                             .filter(c => c.relevance > 0);
-
-                        const topConversations = scoredConversations
-                            .sort((a, b) => b.relevance - a.relevance)
-                            .slice(0, 15);
-
+                        const topConversations = scoredConversations.sort((a, b) => b.relevance - a.relevance).slice(0, 15);
                         if (topConversations.length > 0) {
-                            const memorySummaries = topConversations
-                                .map(c => `- ${c.title}: ${c.summary}`)
-                                .join('\n');
+                            const memorySummaries = topConversations.map(c => `- ${c.title}: ${c.summary}`).join('\n');
                             memoryPrompt += `\n相關歷史對話摘要 (從使用者過往對話中檢索到的相關內容，請作為背景參考):\n${memorySummaries}\n`;
                         }
                     }
@@ -5782,8 +5769,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     systemInstruction.parts[0].text += `\n\n${memoryPrompt}`;
                 } else if (systemInstruction) {
                     systemInstruction.parts.push({ text: `\n\n${memoryPrompt}` });
-                }
-                else {
+                } else {
                     systemInstruction = { parts: [{ text: memoryPrompt }] };
                 }
             }
@@ -5805,82 +5791,95 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     payload.tools = [{"googleSearch": {}}];
                 }
                 headers = { 'Content-Type': 'application/json' };
-            } else {
-                // ✨ 核心修改 START：重構 OpenRouter 的請求 ✨
+            } else { // provider === 'openrouter'
                 url = 'https://openrouter.ai/api/v1/chat/completions';
                 headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
-                
                 const messages = [];
-                // 1. 處理系統指令 (System Prompt)
+
                 if (systemInstruction) {
                     messages.push({ role: 'system', content: systemInstruction.parts.map(p => p.text).join('\n') });
                 }
-                
-                // 2. 處理歷史訊息 (簡化為純文字)
+
+                // 處理歷史訊息 (假設它們不包含檔案)
                 historyForApi.forEach(m => {
-                    // 忽略沒有文字的歷史訊息
-                    const messageText = m.parts.filter(p => p.text).map(p => p.text).join('\n');
-                    if (messageText) {
-                        messages.push({
-                            role: m.role === 'model' ? 'assistant' : m.role,
-                            content: messageText
-                        });
-                    }
+                    messages.push({
+                        role: m.role === 'model' ? 'assistant' : 'user',
+                        content: m.parts.filter(p => p.text).map(p => p.text).join('\n')
+                    });
                 });
 
-                // 3. 處理當前要發送的訊息 (包含文字和檔案)
-                const currentUserMessageContent = [];
-                const textPart = parts.find(p => p.text);
-                if (textPart && textPart.text) {
-                    currentUserMessageContent.push({
-                        type: 'text',
-                        text: textPart.text
-                    });
-                }
+                // ✨ --- 這是針對 OpenRouter 檔案上傳的核心修改 --- ✨
 
-                // 直接從全域變數 uploadedFiles 取得檔案資訊
-                if (uploadedFiles.length > 0) {
-                    uploadedFiles.forEach(file => {
-                        currentUserMessageContent.push({
+                // 1. 從當前訊息中分離出文字和檔案部分
+                const currentUserText = currentMessageForApi.parts.filter(p => p.text).map(p => p.text).join('\n');
+                const currentUserFiles = uploadedFiles; // 直接使用全域的 uploadedFiles 陣列
+
+                let contentPayload;
+
+                // 2. 檢查是否有檔案需要上傳
+                if (currentUserFiles.length > 0) {
+                    // 如果有檔案，content 必須是一個陣列
+                    contentPayload = [];
+                    // 首先加入文字部分
+                    if (currentUserText) {
+                        contentPayload.push({
+                            type: 'text',
+                            text: currentUserText
+                        });
+                    }
+                    // 接著為每個檔案加入一個物件
+                    currentUserFiles.forEach(file => {
+                        contentPayload.push({
                             type: 'file',
                             file: {
                                 filename: file.name,
-                                file_data: file.base64 // `file.base64` 已經包含了 "data:application/pdf;base64,..." 前綴
-                            }
+                                file_data: file.base64, // `file.base64` 已經是完整的 data URL
+                            },
                         });
                     });
+                } else {
+                    // 如果沒有檔案，content 就只是普通的文字字串
+                    contentPayload = currentUserText;
                 }
+
+                // 3. 將處理好的當前訊息加入 messages 陣列
+                messages.push({
+                    role: 'user',
+                    content: contentPayload
+                });
                 
-                // 只有當內容不為空時才加入 messages 陣列
-                if (currentUserMessageContent.length > 0) {
-                     messages.push({
-                        role: 'user',
-                        content: currentUserMessageContent
-                    });
-                }
-               
+                // 4. 建立最終的 payload
                 payload = {
-                    model: modelId,
-                    messages: messages,
+                    model: modelId.replace(':free', ''), // OpenRouter 不需要 :free 後綴
+                    messages,
                     stream: true,
                     ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
                     ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
                     ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
-                    // 根據 OpenRouter 文件，可以加入 plugin 參數（可選）
-                    plugins: [
-                      {
-                        id: 'file-parser'
-                      }
-                    ]
                 };
-                // ✨ 核心修改 END ✨
+
+                // 5. 如果上傳的檔案中有 PDF，加入您提供的 plugin 設定
+                if (currentUserFiles.some(file => file.type === 'application/pdf')) {
+                    payload.plugins = [
+                      {
+                        id: 'file-parser',
+                        pdf: {
+                          engine: 'pdf-text',
+                        },
+                      },
+                    ];
+                }
+                 // ✨ --- 核心修改結束 --- ✨
             }
+
             const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
             if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'API 請求失敗'); }
+            
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
             let fullText = '';
+
             while (true) {
                 const { value, done } = await reader.read();
                 if (done) break;
@@ -5888,32 +5887,23 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 if (provider === 'gemini') {
                     while (true) {
                         const firstBrace = buffer.indexOf('{');
-                        if (firstBrace === -1) {
-                            break;
-                        }
-
+                        if (firstBrace === -1) break;
                         let braceCount = 0;
                         let endIndex = -1;
                         for (let i = firstBrace; i < buffer.length; i++) {
-                            if (buffer[i] === '{') {
-                                braceCount++;
-                            } else if (buffer[i] === '}') {
-                                braceCount--;
-                            }
+                            if (buffer[i] === '{') braceCount++;
+                            else if (buffer[i] === '}') braceCount--;
                             if (braceCount === 0) {
                                 endIndex = i;
                                 break;
                             }
                         }
-
                         if (endIndex !== -1) {
                             const jsonStr = buffer.substring(firstBrace, endIndex + 1);
                             buffer = buffer.substring(endIndex + 1);
-
                             try {
                                 const parsed = JSON.parse(jsonStr);
                                 const textChunk = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
-
                                 if (textChunk) {
                                     fullText += textChunk;
                                     onChunk(textChunk);
@@ -5925,7 +5915,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                             break;
                         }
                     }
-                } else {
+                } else { // provider === 'openrouter'
                     const lines = buffer.split('\n');
                     buffer = lines.pop();
                     for (const line of lines) {
@@ -5939,7 +5929,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                                     fullText += textChunk;
                                     onChunk(textChunk);
                                 }
-                            } catch (e) { /* Ignore */ }
+                            } catch (e) { /* 忽略解析錯誤 */ }
                         }
                     }
                 }
@@ -10197,99 +10187,96 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
 
             // 這個函式專門用來建立和顯示手機版的上彈視窗
             const showAttachmentMenu = () => {
-    // 檢查是否已經存在，避免重複建立
-    if (document.getElementById('attachment-menu')) return;
+                if (document.getElementById('attachment-menu')) return;
+                const wrapper = document.getElementById('attachment-menu-wrapper');
+                wrapper.innerHTML = ''; 
+                const overlay = document.createElement('div');
+                overlay.id = 'attachment-menu-overlay';
+                const menu = document.createElement('div');
+                menu.id = 'attachment-menu';
+            
+                const conv = getActiveConversation();
+                const modelInfo = MODELS.find(m => m.id === conv?.model);
+                const provider = modelInfo?.provider;
+            
+                const allMenuItems = [
+                    { id: 'camera-btn', svg: `<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle>`, textKey: 'camera', originalElement: ALL_ELEMENTS.cameraBtn },
+                    { id: 'upload-image-btn', svg: `<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline>`, textKey: 'image', originalElement: ALL_ELEMENTS.uploadImageBtn },
+                    { id: 'upload-file-btn', svg: `<path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline>`, textKey: 'file', originalElement: ALL_ELEMENTS.uploadFileBtn },
+                    { type: 'divider' }, 
+                    { id: 'web-search-popover-btn', svg: `<circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>`, textKey: 'search', originalElement: ALL_ELEMENTS.webSearchPopoverBtn },
+                    { id: 'learning-mode-btn', svg: `<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V5H6.5A2.5 2.5 0 0 0 4 7.5v12z"/>`, textKey: 'learning', originalElement: ALL_ELEMENTS.learningModeBtn },
+                    { type: 'divider' }, 
+                    { id: 'deep-research-btn', svg: `<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>`, textKey: 'research', originalElement: ALL_ELEMENTS.deepResearchBtn }
+                ];
+            
+                let visibleMenuItems;
+                if (provider === 'openrouter') {
+                    // 如果是 OpenRouter，只顯示檔案、學習和研究
+                    visibleMenuItems = allMenuItems.filter(item => 
+                        item.id === 'upload-file-btn' ||
+                        item.id === 'learning-mode-btn' || 
+                        item.id === 'deep-research-btn' ||
+                        item.type === 'divider' // 保留分隔線以便後續處理
+                    );
+                } else {
+                    visibleMenuItems = allMenuItems;
+                }
+            
+                let itemsHTML = '';
+                visibleMenuItems.forEach((item, index) => {
+                    if (item.type === 'divider') {
+                        // 確保分隔線前後都有可見的項目
+                        const prevItem = visibleMenuItems[index - 1];
+                        const nextItem = visibleMenuItems[index + 1];
+                        if (prevItem && prevItem.type !== 'divider' && nextItem && nextItem.type !== 'divider') {
+                           // CSS會自動處理邊框，這裡不需要添加HTML
+                        }
+                    } else {
+                        itemsHTML += `
+                            <div class="menu-item" data-trigger-id="${item.id}">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${item.svg}</svg>
+                                <span data-lang-key="${item.textKey}">${i18n[config.uiLanguage][item.textKey] || item.textKey}</span>
+                            </div>
+                        `;
+                    }
+                });
 
-    const wrapper = document.getElementById('attachment-menu-wrapper');
-    wrapper.innerHTML = ''; // 清空舊內容
-
-    const overlay = document.createElement('div');
-    overlay.id = 'attachment-menu-overlay';
-
-    const menu = document.createElement('div');
-    menu.id = 'attachment-menu';
-
-    // 【這就是修正的核心】
-    // 1. 先取得當前對話框正在使用的 AI 模型資訊
-    const conv = getActiveConversation();
-    const modelInfo = MODELS.find(m => m.id === conv?.model);
-    const provider = modelInfo?.provider;
-
-    // 2. 定義所有可能的按鈕
-    const allMenuItems = [
-        { id: 'camera-btn', svg: `<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle>`, textKey: 'camera', originalElement: ALL_ELEMENTS.cameraBtn },
-        { id: 'upload-image-btn', svg: `<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline>`, textKey: 'image', originalElement: ALL_ELEMENTS.uploadImageBtn },
-        { id: 'upload-file-btn', svg: `<path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline>`, textKey: 'file', originalElement: ALL_ELEMENTS.uploadFileBtn },
-        { type: 'divider' }, // 分隔線
-        { id: 'web-search-popover-btn', svg: `<circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>`, textKey: 'search', originalElement: ALL_ELEMENTS.webSearchPopoverBtn },
-        { id: 'learning-mode-btn', svg: `<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V5H6.5A2.5 2.5 0 0 0 4 7.5v12z"/>`, textKey: 'learning', originalElement: ALL_ELEMENTS.learningModeBtn },
-        { type: 'divider' }, // 分隔線
-        { id: 'deep-research-btn', svg: `<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>`, textKey: 'research', originalElement: ALL_ELEMENTS.deepResearchBtn }
-    ];
-
-    // 3. 根據模型 (provider) 來決定要顯示哪些按鈕
-    let visibleMenuItems;
-    if (provider === 'openrouter') {
-        // 如果是 OpenRouter 模型，只留下「學習」和「研究」
-        visibleMenuItems = allMenuItems.filter(item => 
-            item.id === 'learning-mode-btn' || 
-            item.id === 'deep-research-btn'
-        );
-    } else {
-        // 否則 (例如 Gemini 模型)，顯示全部按鈕
-        visibleMenuItems = allMenuItems;
-    }
-
-    let itemsHTML = '';
-    visibleMenuItems.forEach((item, index) => {
-        if (item.type === 'divider') {
-            // 只有當這個分隔線前後都有按鈕時才顯示它
-            if (index > 0 && index < visibleMenuItems.length - 1) {
-                 // 在CSS中透過border-bottom實現，這裡不需要添加HTML
-            }
-        } else {
-            itemsHTML += `
-                <div class="menu-item" data-trigger-id="${item.id}">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${item.svg}</svg>
-                    <span data-lang-key="${item.textKey}">${i18n[config.uiLanguage][item.textKey] || item.textKey}</span>
-                </div>
-            `;
-        }
-    });
-
-    menu.innerHTML = `
-        <div class="menu-header" data-lang-key="attachFile">${i18n[config.uiLanguage].attachFile || '附加檔案'}</div>
-        <div class="menu-options">${itemsHTML}</div>
-    `;
-    
-    wrapper.appendChild(overlay);
-    wrapper.appendChild(menu);
-
-    // 後續的顯示動畫、關閉邏輯都和原本一樣
-    requestAnimationFrame(() => {
-        overlay.classList.add('visible');
-        menu.classList.add('visible');
-    });
-    
-    const closeMenu = () => {
-        overlay.classList.remove('visible');
-        menu.classList.remove('visible');
-        menu.addEventListener('transitionend', () => wrapper.innerHTML = '', { once: true });
-    };
-
-    overlay.addEventListener('click', closeMenu);
-
-    menu.querySelectorAll('.menu-item').forEach(menuItem => {
-        menuItem.addEventListener('click', () => {
-            const triggerId = menuItem.dataset.triggerId;
-            const originalElement = allMenuItems.find(i => i.id === triggerId)?.originalElement;
-            if (originalElement) {
-                originalElement.click();
-            }
-            closeMenu();
-        });
-    });
-};
+                // 移除連續的分隔線樣式 (如果有的話)
+                itemsHTML = itemsHTML.replace(/<div class="border-t[^>]+><\/div>\s*<div class="border-t[^>]+><\/div>/g, '<div class="border-t border-[var(--border-color)] my-1"></div>');
+            
+                menu.innerHTML = `
+                    <div class="menu-header" data-lang-key="attachFile">${i18n[config.uiLanguage].attachFile || '附加檔案'}</div>
+                    <div class="menu-options">${itemsHTML}</div>
+                `;
+                
+                wrapper.appendChild(overlay);
+                wrapper.appendChild(menu);
+            
+                requestAnimationFrame(() => {
+                    overlay.classList.add('visible');
+                    menu.classList.add('visible');
+                });
+                
+                const closeMenu = () => {
+                    overlay.classList.remove('visible');
+                    menu.classList.remove('visible');
+                    menu.addEventListener('transitionend', () => wrapper.innerHTML = '', { once: true });
+                };
+            
+                overlay.addEventListener('click', closeMenu);
+            
+                menu.querySelectorAll('.menu-item').forEach(menuItem => {
+                    menuItem.addEventListener('click', () => {
+                        const triggerId = menuItem.dataset.triggerId;
+                        const originalElement = allMenuItems.find(i => i.id === triggerId)?.originalElement;
+                        if (originalElement) {
+                            originalElement.click();
+                        }
+                        closeMenu();
+                    });
+                });
+            };
 
             // 這是新的「附加檔案」按鈕點擊事件
             ALL_ELEMENTS.addFileBtn.addEventListener('click', (e) => {
