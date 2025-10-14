@@ -5385,7 +5385,18 @@ function injectCitationsAsMarkdown(text, annotations) {
                 });
                 if (textPartsContent.length > 0) {
                     const combinedText = textPartsContent.join('\n');
-                    contentHTML += `<div>${isUser ? combinedText.replace(/\n/g, '<br>') : renderMarkdown(combinedText)}</div>`;
+
+                    // ✨ START: 核心修正 ✨
+                    if (isUser) {
+                        contentHTML += `<div>${combinedText.replace(/\n/g, '<br>')}</div>`;
+                    } else {
+                        // 如果是 AI 訊息，檢查是否有儲存的 annotations
+                        const textToRender = (msg.annotations && msg.annotations.length > 0)
+                            ? injectCitationsAsMarkdown(combinedText, msg.annotations)
+                            : combinedText;
+                        contentHTML += `<div>${renderMarkdown(textToRender)}</div>`;
+                    }
+                    // ✨ END: 核心修正 ✨
                 }
                 if (mediaPartsContent.length > 0) {
                     let mediaHTML = '<div class="mt-2 flex flex-wrap gap-2">';
@@ -5593,13 +5604,10 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 let fullResponse = '';
                 const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
 
-                // 1. 先等待 API 回應完全結束，獲取完整文字
-                 const { fullText: completeResponse, annotations } = await streamApiCall(
-                    userParts,
-                    (chunk) => {
-                        // 在 streamApiCall 內部，我們只收集文字，不渲染
-                    },
-                    abortController.signal
+                // 1. 先等待 API 回應完全結束，獲取完整文字和引用來源
+                // ✨ 修改這一行來解構回傳的物件 ✨
+                const { fullText: completeResponse, annotations } = await streamApiCall(
+                    // ... (省略) ...
                 );
 
                 fullResponse = completeResponse;
@@ -5610,6 +5618,14 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 
                 // 2. 將完整的最終訊息保存到對話紀錄中
                 finalAiMessage.parts = [{ text: fullResponse }];
+                
+                // ✨ START: 新增程式碼 ✨
+                // 將 annotations 一起存入訊息物件中
+                if (annotations && annotations.length > 0) {
+                    finalAiMessage.annotations = annotations;
+                }
+                // ✨ END: 新增程式碼 ✨
+
                 conv.messages.push(finalAiMessage);
                 conv.lastUpdatedAt = new Date().toISOString();
                 await saveAppData();
