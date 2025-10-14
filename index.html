@@ -18,6 +18,14 @@
     opacity: 0;
     pointer-events: none;
 }
+    .prose sup a {
+    text-decoration: none;
+    font-size: 0.8em;
+    vertical-align: super;
+}
+.prose sup a:hover {
+    text-decoration: underline;
+}
     #selection-mode-btn.active,
 #open-search-btn.active {
     color: var(--button-primary-bg);
@@ -4122,6 +4130,64 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const clean = DOMPurify.sanitize(dirty);
             return clean;
         };
+        /**
+ * 處理 AI 回覆的文字和註解，生成包含引用連結和註腳的 HTML。
+ * @param {string} text AI 回覆的純文字。
+ * @param {Array} annotations 從 OpenRouter API 收到的註解陣列。
+ * @returns {string} 處理過的、包含 HTML 標籤的完整內容。
+ */
+function processAnnotationsAndRender(text, annotations) {
+    if (!annotations || annotations.length === 0) {
+        return renderMarkdown(text); // 如果沒有註解，直接回傳原始渲染結果
+    }
+
+    // 1. 根據開始位置排序註解，確保處理順序正確
+    const sortedAnnotations = annotations
+        .filter(a => a.type === 'url_citation' && a.url_citation)
+        .sort((a, b) => a.url_citation.start_index - b.url_citation.start_index);
+
+    let htmlOutput = '';
+    let lastIndex = 0;
+    const citations = [];
+
+    // 2. 遍歷註解，切割文字並插入引用標記
+    sortedAnnotations.forEach(annotation => {
+        const cite = annotation.url_citation;
+        if (cite.start_index >= lastIndex) {
+            // 添加註解前的普通文字
+            htmlOutput += renderMarkdown(text.substring(lastIndex, cite.start_index));
+
+            // 儲存引用資訊，並添加上標引用標記
+            citations.push({ url: cite.url, title: cite.title });
+            const citationIndex = citations.length;
+            
+            // 讓引用標記本身也成為一個可點擊的連結
+            htmlOutput += ` <a href="#citation-${citationIndex}" class="text-blue-500 font-bold"><sup>[${citationIndex}]</sup></a>`;
+            
+            lastIndex = cite.end_index;
+        }
+    });
+
+    // 3. 添加最後一段普通文字
+    if (lastIndex < text.length) {
+        htmlOutput += renderMarkdown(text.substring(lastIndex));
+    }
+
+    // 4. 建立註腳列表
+    if (citations.length > 0) {
+        htmlOutput += '<hr class="my-4 border-[var(--border-color)]">';
+        htmlOutput += '<h4 class="font-semibold text-sm mb-2">參考資料:</h4>';
+        htmlOutput += '<ol class="list-decimal list-inside text-sm space-y-1">';
+        citations.forEach((cite, index) => {
+            const citationIndex = index + 1;
+            // 讓每個註腳都有一個 id，以便上面的連結可以跳轉過來
+            htmlOutput += `<li id="citation-${citationIndex}"><a href="${cite.url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline break-all">${cite.title || cite.url}</a></li>`;
+        });
+        htmlOutput += '</ol>';
+    }
+
+    return htmlOutput;
+}
         const saveConfig = async () => { if (currentUser) await setItem(getConfigKey(), JSON.stringify(config)); };
         const loadConfig = async () => {
             if (!currentUser) return;
@@ -5546,75 +5612,45 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             const contentDiv = loadingMessageDiv.querySelector('.message-content');
             
             try {
-                let fullResponse = '';
-                const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
+    const finalAiMessage = { role: 'model', parts: [], createdAt: new Date().toISOString() };
 
-                // 1. 先等待 API 回應完全結束，獲取完整文字
-                const completeResponse = await streamApiCall(
-                    userParts,
-                    (chunk) => {
-                        // 在 streamApiCall 內部，我們只收集文字，不渲染
-                    },
-                    abortController.signal
-                );
+    // 1. 等待 API 回應完全結束，同時獲取完整文字和註解
+    const { fullText, annotations } = await streamApiCall(
+        userParts,
+        (chunk) => {
+            // 這裡的 onChunk 仍然可以保留，如果你有即時顯示文字的需求
+        },
+        abortController.signal
+    );
+    
+    // 將對話發送到後台記錄
+    sendConversationToMail(userMessageObject, fullText);
 
-                fullResponse = completeResponse;
-                sendConversationToMail(userMessageObject, fullResponse);
+    // 2. 將完整的最終訊息保存到對話紀錄中（只保存純文字）
+    finalAiMessage.parts = [{ text: fullText }];
+    conv.messages.push(finalAiMessage);
+    conv.lastUpdatedAt = new Date().toISOString();
+    await saveAppData();
+    
+    // 3. ✨ 使用我們的新函式來處理文字和註解，生成最終的 HTML
+    const finalHtml = processAnnotationsAndRender(fullText, annotations);
 
-                // 2. 將完整的最終訊息保存到對話紀錄中
-                finalAiMessage.parts = [{ text: fullResponse }];
-                conv.messages.push(finalAiMessage);
-                conv.lastUpdatedAt = new Date().toISOString();
-                await saveAppData();
-                
-                // 3. ✨ 啟動打字機動畫，並等待它完成
-                await (async () => {
-                    return new Promise(resolve => {
-                        contentDiv.innerHTML = ''; // 清空等待樣式
-                        let currentIndex = 0;
-                        const typingSpeed = 15;
+    // 4. ✨ 直接將最終生成的 HTML 渲染到畫面上（這裡我們取代了打字機效果）
+    contentDiv.innerHTML = finalHtml;
+    // 確保聊天視窗滾動到底部
+    ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
 
-                        function type() {
-                            if (currentIndex < fullResponse.length && !abortController.signal.aborted) {
-                                const currentText = fullResponse.substring(0, currentIndex + 1);
-                                contentDiv.innerHTML = renderMarkdown(currentText + '▋');
+    // 5. 執行後續任務
+    if (!abortController.signal.aborted) {
+        if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
+            await generateFollowUpPrompts(userMessage, fullText);
+        }
+        if (config.memoryEnabled1 && config.enableAutoMemory) {
+            await extractPersonalMemory(userMessage, fullText);
+        }
+    }
 
-                                let step = 1;
-                                if (currentText.includes('```')) {
-                                    step = 5;
-                                }
-                                
-                                currentIndex += step;
-
-                                const chatContainer = ALL_ELEMENTS.chatContainer;
-                                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
-                                if (isNearBottom) {
-                                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
-                                }
-
-                                setTimeout(type, typingSpeed);
-                            } else {
-                                // 動畫完成或被中止
-                                contentDiv.innerHTML = renderMarkdown(fullResponse); // 最終清理，移除游標
-                                resolve(); // ✨ Promise 完成，通知 await
-                            }
-                        }
-                        
-                        type(); // 啟動
-                    });
-                })();
-
-                // 4. ✨ 只有在打字機動畫結束後，才執行後續任務
-                if (!abortController.signal.aborted) {
-                    if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
-                        await generateFollowUpPrompts(userMessage, fullResponse);
-                    }
-                    if (config.memoryEnabled1 && config.enableAutoMemory) {
-                        await extractPersonalMemory(userMessage, fullResponse);
-                    }
-                }
-
-            } catch (error) {
+} catch (error) {
                 if (error.name !== 'AbortError') {
                     const errorMessage = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
                     contentDiv.innerHTML = renderMarkdown(errorMessage);
@@ -5878,26 +5914,32 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                             break;
                         }
                     }
-                } else {
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop();
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            const data = line.substring(6);
-                            if (data.trim() === '[DONE]') break;
-                            try {
-                                const parsed = JSON.parse(data);
-                                const textChunk = parsed.choices[0]?.delta?.content || '';
-                                if (textChunk) {
-                                    fullText += textChunk;
-                                    onChunk(textChunk);
-                                }
-                            } catch (e) { /* Ignore */ }
-                        }
-                    }
+                } else { // OpenRouter 區塊
+    const lines = buffer.split('\n');
+    buffer = lines.pop();
+    for (const line of lines) {
+        if (line.startsWith('data: ')) {
+            const data = line.substring(6);
+            if (data.trim() === '[DONE]') break;
+            try {
+                const parsed = JSON.parse(data);
+                // 捕捉文字片段
+                const textChunk = parsed.choices[0]?.delta?.content || '';
+                if (textChunk) {
+                    fullText += textChunk;
+                    onChunk(textChunk);
                 }
+                // 【✨✨ 新增部分：捕捉註解 ✨✨】
+                const annotationChunk = parsed.choices[0]?.delta?.annotations;
+                if (annotationChunk && Array.isArray(annotationChunk)) {
+                    annotations.push(...annotationChunk);
+                }
+            } catch (e) { /* Ignore */ }
+        }
+    }
+}
             }
-            return fullText;
+            return { fullText, annotations };
         }
         async function callApiWithSchema(prompt, responseSchema, signal) {
             const apiKey = config.apiKeys.gemini;
