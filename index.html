@@ -4722,40 +4722,33 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         
         const updateFunctionButtonsState = () => {
             const { cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn } = ALL_ELEMENTS;
-            const separator = document.querySelector('#file-options-popover .border-t');
+            const allSeparators = document.querySelectorAll('#file-options-popover .border-t');
             const conv = getActiveConversation();
             if (!conv) return;
+
             const modelInfo = MODELS.find(m => m.id === conv.model);
             const provider = modelInfo?.provider;
-            const allButtons = [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn];
-        const allSeparators = document.querySelectorAll('#file-options-popover .border-t');
 
-        if (provider === 'openrouter') {
-            // 對於 OpenRouter，隱藏與「檔案上傳」和「網路搜尋」相關的功能
-            
-            // ▼▼▼▼▼ 主要修改處 START ▼▼▼▼▼
-            // 只隱藏相機、影像和搜尋按鈕，保留檔案按鈕
-            [cameraBtn, uploadImageBtn, webSearchPopoverBtn].forEach(btn => btn.style.display = 'none');
-
-            // 特別確保「檔案」按鈕是顯示的
-            if (uploadFileBtn) {
-                uploadFileBtn.style.display = 'flex';
-            }
-            // ▲▲▲▲▲ 主要修改處 END ▲▲▲▲▲
-            
-            // 明確顯示 OpenRouter 支援的功能：「學習模式」和「深度研究」
-            learningModeBtn.style.display = 'flex';
-            deepResearchBtn.style.display = 'flex';
-
-            // 隱藏不需要的分隔線
-            if (allSeparators.length > 0) allSeparators[0].style.display = 'none'; // 隱藏網路搜尋前的分隔線
-            if (allSeparators.length > 1) allSeparators[1].style.display = 'block';// 確保深度研究前的分隔線是顯示的
-
-        } else { // Gemini 模型
-            // 對於 Gemini，顯示所有功能按鈕和分隔線
-            allButtons.forEach(btn => btn.style.display = 'flex');
+            // 預設先讓所有按鈕和分隔線顯示，以便重置狀態
+            [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn].forEach(btn => btn.style.display = 'flex');
             allSeparators.forEach(sep => sep.style.display = 'block');
-        }
+
+            if (provider === 'openrouter') {
+                // 如果是 OpenRouter 模型，則隱藏指定的功能
+                cameraBtn.style.display = 'none'; // 隱藏相機
+                uploadImageBtn.style.display = 'none'; // 隱藏影像
+                webSearchPopoverBtn.style.display = 'none'; // 隱藏搜索
+
+                // 確保檔案、學習、研究按鈕是顯示的 (雖然預設已顯示，但這樣更明確)
+                uploadFileBtn.style.display = 'flex';
+                learningModeBtn.style.display = 'flex';
+                deepResearchBtn.style.display = 'flex';
+                
+                // 隱藏「檔案」和「搜索」之間的那個分隔線
+                if (allSeparators.length > 0) allSeparators[0].style.display = 'none';
+            }
+            // 如果是 Gemini 模型 (或其他)，則所有按鈕都會因為上面的預設顯示而保持可見，不需額外處理
+        };
 
         const toggleLearningMode = async () => {
             if (config.isDeepResearchMode) {
@@ -5800,67 +5793,60 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 if (systemInstruction) {
                     payload.systemInstruction = systemInstruction;
                 }
-                if (conv.isWebSearchEnabled || isWebSearchForced) {
+                if (conv.isWebSearchEnabled || isWebSearchForced) { // ✨ 修改點
                     payload.tools = [{"googleSearch": {}}];
                 }
                 headers = { 'Content-Type': 'application/json' };
-            } else { // 這個 else 區塊處理 OpenRouter 模型，包含了檔案上傳邏輯
+            } else { // 新的、支援檔案上傳的 OpenRouter 處理部分
                 url = 'https://openrouter.ai/api/v1/chat/completions';
-                headers = {
-                    'Authorization': `Bearer ${apiKey}`,
-                    'Content-Type': 'application/json'
-                };
+                headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
 
-                // 1. 準備歷史訊息，並將其格式轉換為 OpenRouter 的格式
-                const messages = historyForApi.map(msg => ({
-                    role: msg.role === 'model' ? 'assistant' : 'user',
-                    // 將 Gemini 的 'parts' 陣列轉換為 OpenRouter 的單一 'content' 字串
-                    content: msg.parts.map(part => part.text || '').join('\n')
-                }));
-
-                // 如果有系統指令 (例如 Astras 指令)，將其加到訊息陣列的最前面
+                const messages = [];
+                // 1. 處理系統指令 (如果有的話)
                 if (systemInstruction) {
-                    messages.unshift({
-                        role: 'system',
-                        content: systemInstruction.parts.map(p => p.text).join('\n')
-                    });
+                    messages.push({ role: 'system', content: systemInstruction.parts.map(p => p.text).join('\n') });
                 }
 
-                // 2. 建立本次使用者訊息的 'content' 陣列 (包含文字和檔案)
-                const userMessageContent = [];
+                // 2. 處理歷史對話紀錄 (保持純文字)
+                historyForApi.forEach(m => {
+                    messages.push({
+                        role: m.role === 'model' ? 'assistant' : m.role,
+                        content: m.parts.filter(p => p.text).map(p => p.text).join('\n')
+                    });
+                });
 
-                // 從傳入的 'parts' 參數中找到文字部分
-                const textPart = parts.find(p => p.text);
+                // 3. 處理當前要發送的使用者訊息 (包含文字和檔案)
+                const currentUserContent = [];
+                const textPart = currentMessageForApi.parts.find(p => p.text);
                 if (textPart && textPart.text) {
-                    userMessageContent.push({
+                    currentUserContent.push({
                         type: 'text',
                         text: textPart.text
                     });
                 }
-
-                // 從全域變數 'uploadedFiles' 陣列中讀取檔案資訊
-                // 你的程式碼已經將檔案轉為 Base64 並存在這裡了
+                
+                // 從你的 uploadedFiles 陣列中讀取檔案資料
+                // 你的檔案處理程式碼已經將檔案轉為正確的 Base64 格式，這裡直接使用即可！
                 uploadedFiles.forEach(file => {
-                    userMessageContent.push({
+                    currentUserContent.push({
                         type: 'file',
                         file: {
                             filename: file.name,
-                            file_data: file.base64 // file.base64 就是 FileReader 產生的 Data URL
+                            file_data: file.base64 // 使用你已經轉好的完整 Base64 Data URL
                         }
                     });
                 });
 
-                // 3. 將包含文字和檔案的 'content' 陣列組合成一條完整的使用者訊息
+                // 將處理好的文字和檔案陣列加入到 messages 中
                 messages.push({
                     role: 'user',
-                    content: userMessageContent
+                    content: currentUserContent
                 });
-
-                // 4. 建構最終要發送給 OpenRouter 的 payload
+                
                 payload = {
                     model: modelId,
-                    messages: messages,
-                    stream: true, // 確保啟用串流式回覆
+                    messages: messages, // 使用我們剛剛建立的、包含檔案的 messages 陣列
+                    stream: true,
                     ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
                     ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
                     ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
