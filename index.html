@@ -5087,7 +5087,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const provider = model.provider;
         let tier = [];
         let company = null;
-        let category = model.category || null; // 讀取我們新增的 category 屬性
+        let category = model.category || null;
 
         if (provider === 'gemini') {
             tier = ['free', 'paid'];
@@ -5164,18 +5164,48 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     };
 
     const providers = [...new Set(visibleModels.map(m => m.provider))];
-    providerView.innerHTML = providers.map(provider => `...`).join(''); // ... (此處程式碼不變，為節省篇幅省略) ...
+    
+    // ✨✨✨ 核心修正：將被省略的程式碼還原 ✨✨✨
+    providerView.innerHTML = providers.map(provider => `
+        <div class="model-option-btn-container provider-btn" data-provider="${provider}">
+            <h4 class="font-semibold capitalize">${provider}</h4>
+        </div>
+    `).join('');
 
     providerView.querySelectorAll('.provider-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            // ... (此處 tier 選擇邏輯不變，為節省篇幅省略) ...
+            const provider = btn.dataset.provider;
+            tierView.innerHTML = createBackButtonHTML('back', 0);
+
+            const tiers = ['free', 'paid'];
+            tierView.innerHTML += tiers.map(tier => `
+                <div class="model-option-btn-container tier-btn" data-provider="${provider}" data-tier="${tier}">
+                    <h4 class="font-semibold capitalize">${tier === 'free' ? (translations.freeModels || '免費模型') : (translations.paidModels || '付費模型')}</h4>
+                </div>
+            `).join('');
+
             tierView.querySelectorAll('.tier-btn').forEach(tierBtn => {
                 tierBtn.addEventListener('click', () => {
                     const selectedProvider = tierBtn.dataset.provider;
                     const selectedTier = tierBtn.dataset.tier;
-                    
+
                     if (selectedProvider === 'openrouter') {
-                        // ... (此處 company 選擇邏輯不變) ...
+                        const companies = [...new Set(visibleModels
+                            .filter(m => m.provider === selectedProvider && m.tier.includes(selectedTier))
+                            .map(m => m.company)
+                        )];
+
+                        companyView.innerHTML = createBackButtonHTML('back', 1);
+                        companyView.innerHTML += companies.map(company => `
+                            <div class="model-option-btn-container company-btn" data-provider="${selectedProvider}" data-tier="${selectedTier}" data-company="${company}">
+                                <h4 class="font-semibold capitalize">${company}</h4>
+                            </div>
+                        `).join('');
+
+                        if (companies.length === 0) {
+                            companyView.innerHTML += `<p class="p-4 text-center text-sm text-[var(--text-secondary)]">${translations.noModelsInTier || '此類別中沒有可用模型。'}</p>`;
+                        }
+
                         companyView.querySelectorAll('.company-btn').forEach(companyBtn => {
                             companyBtn.addEventListener('click', () => {
                                 const finalProvider = companyBtn.dataset.provider;
@@ -5189,43 +5219,33 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                 );
 
                                 modelListView.innerHTML = createBackButtonHTML('back', 2);
-
-                                // ✨✨✨ 核心修改：判斷是否需要分組顯示 ✨✨✨
                                 const hasCategories = finalModels.some(m => m.category);
 
                                 if (hasCategories) {
-                                    // 按 category 屬性分組
                                     const groupedByCat = finalModels.reduce((acc, model) => {
-                                        const cat = model.category || 'general'; // 若無分類則歸為通用
+                                        const cat = model.category || 'general';
                                         if (!acc[cat]) acc[cat] = [];
                                         acc[cat].push(model);
                                         return acc;
                                     }, {});
-
-                                    const categoryOrder = ['general', 'thinking', 'coding']; // 自訂義顯示順序
-                                    
+                                    const categoryOrder = ['general', 'thinking', 'coding'];
                                     categoryOrder.forEach(categoryKey => {
                                         if (groupedByCat[categoryKey]) {
                                             const categoryNameKey = `category${categoryKey.charAt(0).toUpperCase() + categoryKey.slice(1)}`;
                                             const categoryName = translations[categoryNameKey] || categoryKey;
-
-                                            // 增加分類標題
                                             modelListView.innerHTML += `<h5 class="category-header">${categoryName}</h5>`;
-                                            
-                                            // 顯示該分類下的模型
                                             modelListView.innerHTML += groupedByCat[categoryKey].map(model => {
-                                                const modelIdentifier = (model.descriptionKey || '').replace('model_', '').replace('_desc', '');
-                                                const tierKey = `${modelIdentifier}_tier_${finalTier}`;
+                                                const baseKey = model.descriptionKey;
+                                                const tierKey = `${baseKey}_tier_${finalTier}`;
                                                 const descriptionText = translations[tierKey] || '';
                                                 return createModelOptionHTML(model, descriptionText);
                                             }).join('');
                                         }
                                     });
                                 } else {
-                                    // 如果沒有分類，則直接顯示列表
                                     modelListView.innerHTML += finalModels.map(model => {
-                                        const modelIdentifier = (model.descriptionKey || '').replace('model_', '').replace('_desc', '');
-                                        const tierKey = `${modelIdentifier}_tier_${finalTier}`;
+                                        const baseKey = model.descriptionKey;
+                                        const tierKey = `${baseKey}_tier_${finalTier}`;
                                         const descriptionText = translations[tierKey] || '';
                                         return createModelOptionHTML(model, descriptionText);
                                     }).join('');
@@ -5234,18 +5254,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             });
                         });
                         navigateToView(2);
-                    } else { // Gemini and other single-company providers
+                    } else {
                         const filteredModels = visibleModels.filter(m =>
                             m.provider === selectedProvider && m.tier.includes(selectedTier)
                         );
                         modelListView.innerHTML = createBackButtonHTML('back', 1);
                         modelListView.innerHTML += filteredModels.map(model => {
-                            const modelIdentifier = (model.descriptionKey || '').replace('model_', '').replace('_desc', '');
-                            const tierKey = `${modelIdentifier}_tier_${selectedTier}`;
+                            const baseKey = model.descriptionKey;
+                            const tierKey = `${baseKey}_tier_${selectedTier}`;
                             const descriptionText = translations[tierKey] || '';
                             return createModelOptionHTML(model, descriptionText);
                         }).join('');
-                        
                         if (filteredModels.length === 0) {
                            modelListView.innerHTML += `<p class="p-4 text-center text-sm text-[var(--text-secondary)]">${translations.noModelsInTier || '此類別中沒有可用模型。'}</p>`;
                         }
@@ -5268,12 +5287,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     modelListView.addEventListener('click', (e) => {
         const modelBtn = e.target.closest('.model-option-btn-container');
         if (!modelBtn || !modelBtn.dataset.modelId) return;
-
         if (isArchived) return;
-
         const newModelId = modelBtn.dataset.modelId;
         const newModelInfo = MODELS.find(m => m.id === newModelId);
-
         if (newModelInfo) {
             conv.model = newModelInfo.id;
             conv.provider = newModelInfo.provider;
