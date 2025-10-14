@@ -21,6 +21,10 @@ window.i18n = {
 
 
 
+
+
+
+
         // Main App UI
         newChat: '新對話',
         batchSelect: '批次選取',
@@ -64,12 +68,18 @@ window.i18n = {
 
 
 
+
+
+
+
         // Model Switcher
         moreModels: '更多模型',
         back: '返回',
         categoryGeneral: '通用模型',
         categoryThinking: '思考模型',
         categoryCoding: '編程模型',
+
+
 
 
         // Settings Modal
@@ -146,6 +156,10 @@ window.i18n = {
         show: '顯示',
         hide: '隱藏',
         trash: '垃圾桶',
+
+
+
+
 
 
 
@@ -229,6 +243,10 @@ window.i18n = {
 
 
 
+
+
+
+
         // Deep Research Dashboard
         researchStarting: '啟動深度研究...',
         researchPlanning: '正在分析主題並規劃研究計畫...',
@@ -241,6 +259,10 @@ window.i18n = {
         researchStepAnalysis: '正在分析與「{stepName}」相關的資料...',
         researchStepCompleted: '「{stepName}」的資料已整理完畢',
         researchSynthesizingData: '正在整理現有資料...',
+
+
+
+
 
 
 
@@ -258,10 +280,18 @@ window.i18n = {
 
 
 
+
+
+
+
         // Astras Store
         subscribe: '訂閱',
         unsubscribe: '取消訂閱',
         manage: '管理',
+
+
+
+
 
 
 
@@ -283,6 +313,10 @@ window.i18n = {
         allModels: "全部模型",
         auto: '自動',
         queriesSuffix: '次',
+
+
+
+
 
 
 
@@ -406,15 +440,19 @@ window.i18n = {
 
 
 
+
+
+
+
         // Model Descriptions & Limits
-        model_gemini_2_5_pro_tier_free: '費用-免費 (5次/分鐘、100次/天)',
-        model_gemini_2_5_pro_tier_paid: '百萬輸入/1.25$、百萬輸出/10$',
-        model_gemini_2_5_flash_pv_tier_free: '費用-免費 (10次/分鐘、250次/天)',
-        model_gemini_2_5_flash_pv_tier_paid: '百萬輸入/0.3$、百萬輸出/2.5$',
-        model_gemini_2_5_flash_tier_free: '費用-免費 (10次/分鐘、250次/天)',
-        model_gemini_2_5_flash_tier_paid: '百萬輸入/0.3$、百萬輸出/2.5$',
-        model_gemini_2_5_flash_lite_pv_tier_free: '費用-免費 (15次/分鐘、1000次/天)',
-        model_gemini_2_5_flash_lite_pv_tier_paid: '百萬輸入/0.1$、百萬輸出/0.4$',
+        model_gemini_2_5_pro_desc_tier_free: '費用-免費 (5次/分鐘、100次/天)',
+        model_gemini_2_5_pro_desc_tier_paid: '百萬輸入/1.25$、百萬輸出/10$',
+        model_gemini_2_5_flash_pv_desc_tier_free: '費用-免費 (10次/分鐘、250次/天)',
+        model_gemini_2_5_flash_pv_desc_tier_paid: '百萬輸入/0.3$、百萬輸出/2.5$',
+        model_gemini_2_5_flash_desc_tier_free: '費用-免費 (10次/分鐘、250次/天)',
+        model_gemini_2_5_flash_desc_tier_paid: '百萬輸入/0.3$、百萬輸出/2.5$',
+        model_gemini_2_5_flash_lite_pv_desc_tier_free: '費用-免費 (15次/分鐘、1000次/天)',
+        model_gemini_2_5_flash_lite_pv_desc_tier_paid: '百萬輸入/0.1$、百萬輸出/0.4$',
         
         // OpenRouter Free
         model_deepseek_v3_1_desc_tier_free: '費用-免費 (20次/分鐘、50次/天)',
@@ -425,6 +463,7 @@ window.i18n = {
         model_qwen3_235b_desc_tier_paid: '不提供',
         model_deepseek_r1t2_chimera_desc_tier_free: '費用-免費 (20次/分鐘、50次/天)',
         model_deepseek_r1t2_chimera_desc_tier_paid: '不提供',
+
 
         // OpenAI Paid
         model_gpt_5_pro_desc_tier_free: '不提供',
@@ -456,9 +495,11 @@ window.i18n = {
         model_claude_sonnet_4_desc_tier_free: '不提供',
         model_claude_sonnet_4_desc_tier_paid: '百萬輸入/3$、百萬輸出/15$',
 
+
         // Deepseek Paid
         model_deepseek_v3_1_terminus_desc_tier_free: '不提供',
         model_deepseek_v3_1_terminus_desc_tier_paid: '百萬輸入/0.23$、百萬輸出/0.90$',
+
 
         // x-ai Paid
         model_grok_4_fast_desc_tier_free: '不提供',
@@ -466,13 +507,17 @@ window.i18n = {
         model_grok_code_fast_1_desc_tier_free: '不提供',
         model_grok_code_fast_1_desc_tier_paid: '百萬輸入/0.20$、百萬輸出/1.50$',
 
+
         // Qwen Paid
         model_qwen3_coder_desc_tier_free: '不提供',
         model_qwen3_coder_desc_tier_paid: '百萬輸入/0.22$、百萬輸出/0.95$',
 
+
         // MoonshotAI Paid
         model_kimi_k2_0905_desc_tier_free: '不提供',
         model_kimi_k2_0905_desc_tier_paid: '百萬輸入/0.39$、百萬輸出/1.90$',
+
+
 
 
         // Official Astras
@@ -517,6 +562,10 @@ window.i18n = {
         demoChatTitle: 'Astra-ProMax Conversation Example',
         copyright: 'Copyright © ASTRA',
         currentLanguageName: 'English',
+
+
+
+
 
 
 
@@ -567,6 +616,9 @@ window.i18n = {
         categoryGeneral: 'General Models',
         categoryThinking: 'Thinking Models',
         categoryCoding: 'Coding Models',
+
+
+
 
 
 
@@ -644,6 +696,10 @@ window.i18n = {
         show: 'Show',
         hide: 'Hide',
         trash: 'Trash',
+
+
+
+
 
 
 
@@ -727,6 +783,10 @@ window.i18n = {
 
 
 
+
+
+
+
         // Deep Research Dashboard
         researchStarting: 'Initiating deep research...',
         researchPlanning: 'Analyzing topic and creating research plan...',
@@ -739,6 +799,10 @@ window.i18n = {
         researchStepAnalysis: 'Analyzing data related to "{stepName}"...',
         researchStepCompleted: 'Data for "{stepName}" has been compiled',
         researchSynthesizingData: 'Compiling existing data...',
+
+
+
+
 
 
 
@@ -756,10 +820,18 @@ window.i18n = {
 
 
 
+
+
+
+
         // Astras Store
         subscribe: 'Subscribe',
         unsubscribe: 'Unsubscribe',
         manage: 'Manage',
+
+
+
+
 
 
 
@@ -781,6 +853,10 @@ window.i18n = {
         allModels: "All Models",
         auto: 'Auto',
         queriesSuffix: ' queries',
+
+
+
+
 
 
 
@@ -904,6 +980,10 @@ window.i18n = {
 
 
 
+
+
+
+
         // Model Descriptions & Limits
         model_gemini_2_5_pro_desc_tier_free: 'Cost - Free (5 req/min, 100 req/day)',
         model_gemini_2_5_pro_desc_tier_paid: '$1.25/M input, $10/M output',
@@ -922,6 +1002,7 @@ window.i18n = {
         model_qwen3_235b_desc_tier_paid: 'Not available',
         model_deepseek_r1t2_chimera_desc_tier_free: 'Cost - Free (20 req/min, 50 req/day)',
         model_deepseek_r1t2_chimera_desc_tier_paid: 'Not available',
+
 
         model_gpt_5_pro_desc_tier_free: 'Not available',
         model_gpt_5_pro_desc_tier_paid: '$15/M input, $120/M output',
@@ -946,10 +1027,12 @@ window.i18n = {
         model_gpt_oss_120b_desc_tier_free: 'Not available',
         model_gpt_oss_120b_desc_tier_paid: '$0.04/M input, $0.40/M output',
 
+
         model_claude_sonnet_4_5_desc_tier_free: 'Not available',
         model_claude_sonnet_4_5_desc_tier_paid: '$3/M input, $15/M output',
         model_claude_sonnet_4_desc_tier_free: 'Not available',
         model_claude_sonnet_4_desc_tier_paid: '$3/M input, $15/M output',
+
 
         model_deepseek_v3_1_terminus_desc_tier_free: 'Not available',
         model_deepseek_v3_1_terminus_desc_tier_paid: '$0.23/M input, $0.90/M output',
@@ -962,8 +1045,14 @@ window.i18n = {
         model_qwen3_coder_desc_tier_free: 'Not available',
         model_qwen3_coder_desc_tier_paid: '$0.22/M input, $0.95/M output',
 
+
         model_kimi_k2_0905_desc_tier_free: 'Not available',
         model_kimi_k2_0905_desc_tier_paid: '$0.39/M input, $1.90/M output',
+
+
+
+
+
 
 
 
@@ -1015,6 +1104,10 @@ window.i18n = {
 
 
 
+
+
+
+
         // Main App UI
         newChat: 'Nouveau Chat',
         batchSelect: 'Sélection Multiple',
@@ -1061,6 +1154,9 @@ window.i18n = {
         categoryGeneral: 'Modèles Généraux',
         categoryThinking: 'Modèles de Réflexion',
         categoryCoding: 'Modèles de Codage',
+
+
+
 
 
 
@@ -1138,6 +1234,10 @@ window.i18n = {
         show: 'Afficher',
         hide: 'Masquer',
         trash: 'Corbeille',
+
+
+
+
 
 
 
@@ -1221,6 +1321,10 @@ window.i18n = {
 
 
 
+
+
+
+
         // Deep Research Dashboard
         researchStarting: 'Lancement de la recherche approfondie...',
         researchPlanning: 'Analyse du sujet et création du plan de recherche...',
@@ -1233,6 +1337,10 @@ window.i18n = {
         researchStepAnalysis: 'Analyse des données relatives à "{stepName}"...',
         researchStepCompleted: 'Les données pour "{stepName}" ont été compilées',
         researchSynthesizingData: 'Compilation des données existantes...',
+
+
+
+
 
 
 
@@ -1250,10 +1358,18 @@ window.i18n = {
 
 
 
+
+
+
+
         // Astras Store
         subscribe: 'S\'abonner',
         unsubscribe: 'Se désabonner',
         manage: 'Gérer',
+
+
+
+
 
 
 
@@ -1275,6 +1391,10 @@ window.i18n = {
         allModels: "Tous les modèles",
         auto: 'Auto',
         queriesSuffix: ' requêtes',
+
+
+
+
 
 
 
@@ -1398,6 +1518,10 @@ window.i18n = {
 
 
 
+
+
+
+
         // Model Descriptions & Limits
         model_gemini_2_5_pro_desc_tier_free: 'Coût - Gratuit (5 req/min, 100 req/jour)',
         model_gemini_2_5_pro_desc_tier_paid: '1,25 $/M entrée, 10 $/M sortie',
@@ -1416,6 +1540,7 @@ window.i18n = {
         model_qwen3_235b_desc_tier_paid: 'Non disponible',
         model_deepseek_r1t2_chimera_desc_tier_free: 'Coût - Gratuit (20 req/min, 50 req/jour)',
         model_deepseek_r1t2_chimera_desc_tier_paid: 'Non disponible',
+
 
         model_gpt_5_pro_desc_tier_free: 'Non disponible',
         model_gpt_5_pro_desc_tier_paid: '15 $/M entrée, 120 $/M sortie',
@@ -1440,24 +1565,33 @@ window.i18n = {
         model_gpt_oss_120b_desc_tier_free: 'Non disponible',
         model_gpt_oss_120b_desc_tier_paid: '0,04 $/M entrée, 0,40 $/M sortie',
 
+
         model_claude_sonnet_4_5_desc_tier_free: 'Non disponible',
         model_claude_sonnet_4_5_desc_tier_paid: '3 $/M entrée, 15 $/M sortie',
         model_claude_sonnet_4_desc_tier_free: 'Non disponible',
         model_claude_sonnet_4_desc_tier_paid: '3 $/M entrée, 15 $/M sortie',
 
+
         model_deepseek_v3_1_terminus_desc_tier_free: 'Non disponible',
         model_deepseek_v3_1_terminus_desc_tier_paid: '0,23 $/M entrée, 0,90 $/M sortie',
+
 
         model_grok_4_fast_desc_tier_free: 'Non disponible',
         model_grok_4_fast_desc_tier_paid: '0,20 $/M entrée, 0,50 $/M sortie',
         model_grok_code_fast_1_desc_tier_free: 'Non disponible',
         model_grok_code_fast_1_desc_tier_paid: '0,20 $/M entrée, 1,50 $/M sortie',
 
+
         model_qwen3_coder_desc_tier_free: 'Non disponible',
         model_qwen3_coder_desc_tier_paid: '0,22 $/M entrée, 0,95 $/M sortie',
 
+
         model_kimi_k2_0905_desc_tier_free: 'Non disponible',
         model_kimi_k2_0905_desc_tier_paid: '0,39 $/M entrée, 1,90 $/M sortie',
+
+
+
+
 
 
 
