@@ -5126,10 +5126,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     };
 
     const createModelOptionHTML = (model, descriptionText) => {
+        // ✨✨✨ 這是修正的一部分：確保即使 descriptionText 是空的，<p> 標籤也會被渲染
+        const desc = descriptionText || '...'; // Fallback text
         return `
             <div data-model-id="${model.id}" class="model-option-btn-container ${isArchived ? 'cursor-not-allowed opacity-50' : ''}">
                 <h4 class="font-semibold">${model.name}</h4>
-                <p class="model-description">${descriptionText}</p>
+                <p class="model-description">${desc}</p>
             </div>
         `;
     };
@@ -5198,10 +5200,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                 );
 
                                 modelListView.innerHTML = createBackButtonHTML('back', 2);
+                                // ✨✨✨ 這是第一個修正點 ✨✨✨
                                 modelListView.innerHTML += finalModels.map(model => {
-                                    const modelIdentifier = (model.descriptionKey || '').replace('model_', '').replace('_desc', '');
-                                    const tierKey = `model_${modelIdentifier}_tier_${finalTier}`;
-                                    const descriptionText = translations[tierKey] || '';
+                                    // 直接使用 model.descriptionKey 來獲取翻譯
+                                    const descriptionText = translations[model.descriptionKey] || model.descriptionKey;
                                     return createModelOptionHTML(model, descriptionText);
                                 }).join('');
 
@@ -5215,10 +5217,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         );
 
                         modelListView.innerHTML = createBackButtonHTML('back', 1);
+                        // ✨✨✨ 這是第二個修正點 ✨✨✨
                         modelListView.innerHTML += filteredModels.map(model => {
-                            const modelIdentifier = (model.descriptionKey || '').replace('model_', '').replace('_desc', '');
-                            const tierKey = `model_${modelIdentifier}_tier_${selectedTier}`;
-                            const descriptionText = translations[tierKey] || '';
+                            // 同樣，直接使用 model.descriptionKey
+                            const descriptionText = translations[model.descriptionKey] || model.descriptionKey;
                             return createModelOptionHTML(model, descriptionText);
                         }).join('');
 
@@ -5241,13 +5243,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         }
     });
 
-    // ✨✨✨ 核心修復：使用事件委派來處理最終模型清單的點擊事件 ✨✨✨
-    // 我們將事件監聽器綁定在父容器 `modelListView` 上
     modelListView.addEventListener('click', (e) => {
-        // 檢查被點擊的元素是否是 (或在)一個模型選項按鈕內
         const modelBtn = e.target.closest('.model-option-btn-container');
         if (!modelBtn || !modelBtn.dataset.modelId) {
-            return; // 如果不是，就什麼都不做
+            return;
         }
 
         if (isArchived) return;
