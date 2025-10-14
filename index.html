@@ -5841,16 +5841,31 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
     // ✨ END: 核心修改結束
     
     payload = {
-        model: modelId,
-        messages,
-                    stream: true,
-                    ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
-                    ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
-                    ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
-                };
-                headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
-            }
-            const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
+            model: modelId,
+            messages,
+            stream: true,
+            ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
+            ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
+            ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
+        };
+
+        // ✨ START: 這是本次新增的關鍵程式碼 ✨
+        // 檢查是否有檔案正在被上傳，如果有，就加入 plugins 設定
+        if (uploadedFiles.length > 0) {
+            payload.plugins = [
+                {
+                    id: 'file-parser',
+                    pdf: {
+                        engine: 'pdf-text', // 您可以根據需求更換引擎，例如 'nougat'
+                    },
+                },
+            ];
+        }
+        // ✨ END: 新增程式碼結束 ✨
+
+        headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
+    }
+    const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
             if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'API 請求失敗'); }
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
@@ -9358,13 +9373,14 @@ function setupMessageIntersectionObserver() {
             const userParts = [{ text: userMessage }];
             if (hasFiles) {
                 uploadedFiles.forEach(file => {
-                    userParts.push({
-                        inlineData: {
-                            mimeType: file.type,
-                            data: file.base64.split(',')[1]
-                        }
-                    });
-                });
+    userParts.push({
+        inlineData: {
+            name: file.name, // ✨ 新增這一行來保存檔案名稱
+            mimeType: file.type,
+            data: file.base64.split(',')[1]
+        }
+    });
+});
             }
 
             const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
