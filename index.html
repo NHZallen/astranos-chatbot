@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.7.6</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.7.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -13,25 +13,6 @@
     <style>
     body {
     touch-action: manipulation;
-}
-    .prose a code {
-    background-color: var(--active-bg) !important;
-    color: var(--button-primary-bg) !important;
-    font-weight: bold;
-    font-size: 0.75em !important;
-    padding: 2px 5px !important;
-    border-radius: 4px !important;
-    border: 1px solid var(--border-color) !important;
-    vertical-align: super;
-    text-decoration: none !important;
-    transition: all 0.2s ease-in-out;
-}
-
-.prose a:hover code {
-    background-color: var(--button-primary-bg) !important;
-    color: var(--button-primary-text) !important;
-    border-color: var(--button-primary-bg) !important;
-    transform: scale(1.1);
 }
     #history-sidebar.visible ~ #scroll-to-bottom-btn {
     opacity: 0;
@@ -4136,43 +4117,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 }
             };
         };
-        /**
- * 將引用來源 (annotations) 注入到文字中，轉換為 Markdown 格式的註腳連結。
- * @param {string} text - AI 回覆的原始純文字。
- * @param {Array} annotations - 從 API 收到的引用來源陣列。
- * @returns {string} - 已經插入 Markdown 連結的新文字。
- */
-function injectCitationsAsMarkdown(text, annotations) {
-    if (!annotations || annotations.length === 0) {
-        return text;
-    }
-
-    // 根據 start_index 從大到小排序，這樣在修改字串時才不會影響後續的索引
-    const sortedAnnotations = [...annotations].sort((a, b) => b.url_citation.start_index - a.url_citation.start_index);
-
-    let newText = text;
-    const citationMap = new Map();
-    let citationCounter = 1;
-
-    sortedAnnotations.forEach(annotation => {
-        const { start_index, end_index, url, title } = annotation.url_citation;
-        const originalSegment = newText.substring(start_index, end_index);
-        
-        // 檢查這個 URL 是否已經有編號了
-        if (!citationMap.has(url)) {
-            citationMap.set(url, citationCounter++);
-        }
-        const citationNumber = citationMap.get(url);
-
-        // 建立 Markdown 格式的連結: [¹](url "滑鼠懸停時顯示的標題")
-        const citationLink = ` **[\`${citationNumber}\`](${url} "${title || '來源'}")**`;
-        
-        // 替換文字
-        newText = newText.slice(0, start_index) + originalSegment + citationLink + newText.slice(end_index);
-    });
-
-    return newText;
-}
         const renderMarkdown = (text) => {
             const dirty = marked.parse(text);
             const clean = DOMPurify.sanitize(dirty);
@@ -4395,28 +4339,10 @@ function injectCitationsAsMarkdown(text, annotations) {
                         ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>`
                         : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
                     let contentHTML = '';
-
-                    // ✨ START: 新增与修改的部分 ✨
-                    // 1. 先将所有文字部分组合起来
-                    const textParts = msg.parts.filter(p => p.text).map(p => p.text).join('\n');
-                    
-                    // 2. 如果有文字内容，就进行处理
-                    if (textParts) {
-                        if (isUser) {
-                            // 如果是使用者，直接替换换行符
-                            contentHTML += `<div>${textParts.replace(/\n/g, '<br>')}</div>`;
-                        } else {
-                            // 如果是 AI，检查是否有 annotations 并注入
-                            const textToRender = (msg.annotations && msg.annotations.length > 0)
-                                ? injectCitationsAsMarkdown(textParts, msg.annotations)
-                                : textParts;
-                            contentHTML += `<div>${renderMarkdown(textToRender)}</div>`;
-                        }
-                    }
-
-                    // 3. 单独处理非文字部分 (如图片)
                     msg.parts.forEach(part => {
-                        if (part.inlineData) {
+                        if (part.text) {
+                             contentHTML += `<div>${isUser ? part.text.replace(/\n/g, '<br>') : renderMarkdown(part.text)}</div>`;
+                        } else if (part.inlineData) {
                             const src = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
                              if (part.inlineData.mimeType.startsWith('image/')) {
                                 contentHTML += `<img src="${src}" class="mt-2 max-w-xs max-h-48 rounded-lg object-cover border border-[var(--border-color)]">`;
@@ -4805,24 +4731,16 @@ function injectCitationsAsMarkdown(text, annotations) {
         const allSeparators = document.querySelectorAll('#file-options-popover .border-t');
 
         if (provider === 'openrouter') {
-            // ✨ 修正後的程式碼 START ✨
-            // 對於 OpenRouter，隱藏與「檔案上傳」相關的功能
-            cameraBtn.style.display = 'none';
-            uploadImageBtn.style.display = 'none';
-            uploadFileBtn.style.display = 'none';
+            // 對於 OpenRouter，隱藏與「檔案上傳」和「網路搜尋」相關的功能
+            [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn].forEach(btn => btn.style.display = 'none');
             
-            // 明確顯示 OpenRouter 支援的功能：「網路搜尋」、「學習模式」和「深度研究」
-            webSearchPopoverBtn.style.display = 'flex'; // ✨ 確保明確設定為 flex
+            // 明確顯示 OpenRouter 支援的功能：「學習模式」和「深度研究」
             learningModeBtn.style.display = 'flex';
             deepResearchBtn.style.display = 'flex';
 
-            // 處理分隔線的顯示
-            const allSeparators = document.querySelectorAll('#file-options-popover .border-t');
-            // 隱藏第一個分隔線 (在檔案上傳和網路搜尋之間)
-            if (allSeparators.length > 0) allSeparators[0].style.display = 'none';
-            // 確保第二個分隔線 (在學習和研究之間) 是顯示的
-            if (allSeparators.length > 1) allSeparators[1].style.display = 'block';
-            // ✨ 修正後的程式碼 END ✨
+            // 隱藏不需要的分隔線
+            if (allSeparators.length > 0) allSeparators[0].style.display = 'none'; // 隱藏網路搜尋前的分隔線
+            if (allSeparators.length > 1) allSeparators[1].style.display = 'block';// 確保深度研究前的分隔線是顯示的
 
         } else { // Gemini 模型
             // 對於 Gemini，顯示所有功能按鈕和分隔線
@@ -5422,18 +5340,7 @@ function injectCitationsAsMarkdown(text, annotations) {
                 });
                 if (textPartsContent.length > 0) {
                     const combinedText = textPartsContent.join('\n');
-
-                    // ✨ START: 核心修正 ✨
-                    if (isUser) {
-                        contentHTML += `<div>${combinedText.replace(/\n/g, '<br>')}</div>`;
-                    } else {
-                        // 如果是 AI 訊息，檢查是否有儲存的 annotations
-                        const textToRender = (msg.annotations && msg.annotations.length > 0)
-                            ? injectCitationsAsMarkdown(combinedText, msg.annotations)
-                            : combinedText;
-                        contentHTML += `<div>${renderMarkdown(textToRender)}</div>`;
-                    }
-                    // ✨ END: 核心修正 ✨
+                    contentHTML += `<div>${isUser ? combinedText.replace(/\n/g, '<br>') : renderMarkdown(combinedText)}</div>`;
                 }
                 if (mediaPartsContent.length > 0) {
                     let mediaHTML = '<div class="mt-2 flex flex-wrap gap-2">';
@@ -5641,28 +5548,20 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 let fullResponse = '';
                 const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
 
-                // 1. 先等待 API 回應完全結束，獲取完整文字和引用來源
-                // ✨ 修改這一行來解構回傳的物件 ✨
-                const { fullText: completeResponse, annotations } = await streamApiCall(
-                    // ... (省略) ...
+                // 1. 先等待 API 回應完全結束，獲取完整文字
+                const completeResponse = await streamApiCall(
+                    userParts,
+                    (chunk) => {
+                        // 在 streamApiCall 內部，我們只收集文字，不渲染
+                    },
+                    abortController.signal
                 );
 
                 fullResponse = completeResponse;
                 sendConversationToMail(userMessageObject, fullResponse);
-                const responseToRender = (annotations && annotations.length > 0)
-                    ? injectCitationsAsMarkdown(fullResponse, annotations)
-                    : fullResponse;
 
                 // 2. 將完整的最終訊息保存到對話紀錄中
                 finalAiMessage.parts = [{ text: fullResponse }];
-                
-                // ✨ START: 新增程式碼 ✨
-                // 將 annotations 一起存入訊息物件中
-                if (annotations && annotations.length > 0) {
-                    finalAiMessage.annotations = annotations;
-                }
-                // ✨ END: 新增程式碼 ✨
-
                 conv.messages.push(finalAiMessage);
                 conv.lastUpdatedAt = new Date().toISOString();
                 await saveAppData();
@@ -5675,8 +5574,8 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                         const typingSpeed = 15;
 
                         function type() {
-                            if (currentIndex < responseToRender.length && !abortController.signal.aborted) {
-                                const currentText = responseToRender.substring(0, currentIndex + 1);
+                            if (currentIndex < fullResponse.length && !abortController.signal.aborted) {
+                                const currentText = fullResponse.substring(0, currentIndex + 1);
                                 contentDiv.innerHTML = renderMarkdown(currentText + '▋');
 
                                 let step = 1;
@@ -5695,7 +5594,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                                 setTimeout(type, typingSpeed);
                             } else {
                                 // 動畫完成或被中止
-                                 contentDiv.innerHTML = renderMarkdown(responseToRender); // 最終清理，移除游標
+                                contentDiv.innerHTML = renderMarkdown(fullResponse); // 最終清理，移除游標
                                 resolve(); // ✨ Promise 完成，通知 await
                             }
                         }
@@ -5795,7 +5694,6 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             return score * (1 + coverageRatio);
         }
         async function streamApiCall(parts, onChunk, signal, isWebSearchForced = false) {
-            let finalMessage = null;
             const conv = getActiveConversation();
             const modelInfo = MODELS.find(m => m.id === conv.model);
             if (!modelInfo) throw new Error(`找不到模型設定: ${conv.model}`);
@@ -5916,16 +5814,6 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
                     ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
                 };
-                if (conv.isWebSearchEnabled) {
-                    payload.plugins = [
-                        {
-                            "id": "web",
-                            "engine": "exa", // 你可以選擇 "google" 或 "exa"
-                            "max_results": 5, // 最多回傳 5 個搜尋結果
-                            "search_prompt": "Some relevant web results:" // 將搜尋結果附加到訊息流的提示
-                        }
-                    ];
-                }
                 headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
             }
             const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
@@ -5987,9 +5875,6 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                             if (data.trim() === '[DONE]') break;
                             try {
                                 const parsed = JSON.parse(data);
-                                if (parsed.choices[0].message) {
-                                    finalMessage = parsed.choices[0].message;
-                                }
                                 const textChunk = parsed.choices[0]?.delta?.content || '';
                                 if (textChunk) {
                                     fullText += textChunk;
@@ -6000,7 +5885,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     }
                 }
             }
-            return { fullText, annotations: finalMessage?.annotations || null };
+            return fullText;
         }
         async function callApiWithSchema(prompt, responseSchema, signal) {
             const apiKey = config.apiKeys.gemini;
@@ -9926,7 +9811,7 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             ALL_ELEMENTS.webSearchPopoverBtn.addEventListener('click', async () => {
                 ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
                 const conv = getActiveConversation();
-                if (!conv || !['gemini', 'openrouter'].includes(conv.provider) || conv.archived) {
+                if (!conv || conv.provider !== 'gemini' || conv.archived) {
                     showNotification(i18n[config.uiLanguage].webSearchNotAvailable || '當前模型不支援或無法使用聯網搜尋。', 'warning');
                     return;
                 }
@@ -10286,15 +10171,11 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
     // 3. 根據模型 (provider) 來決定要顯示哪些按鈕
     let visibleMenuItems;
     if (provider === 'openrouter') {
-        // ✨ 修正後的程式碼 START ✨
-        // 如果是 OpenRouter 模型，留下「網路搜尋」、「學習」和「研究」相關按鈕
+        // 如果是 OpenRouter 模型，只留下「學習」和「研究」
         visibleMenuItems = allMenuItems.filter(item => 
-            item.id === 'web-search-popover-btn' || // ✨ 新增這一行
             item.id === 'learning-mode-btn' || 
-            item.id === 'deep-research-btn' ||
-            item.type === 'divider' // 保留分隔線
+            item.id === 'deep-research-btn'
         );
-        // ✨ 修正後的程式碼 END ✨
     } else {
         // 否則 (例如 Gemini 模型)，顯示全部按鈕
         visibleMenuItems = allMenuItems;
