@@ -5792,29 +5792,71 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 if (systemInstruction) {
                     payload.systemInstruction = systemInstruction;
                 }
-                if (conv.isWebSearchEnabled || isWebSearchForced) { // ✨ 修改點
+                if (conv.isWebSearchEnabled || isWebSearchForced) {
                     payload.tools = [{"googleSearch": {}}];
                 }
                 headers = { 'Content-Type': 'application/json' };
-            } else {
+            } else { // 這個 else 區塊處理 OpenRouter 模型，包含了檔案上傳邏輯
                 url = 'https://openrouter.ai/api/v1/chat/completions';
-                const messages = [];
+                headers = {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                };
+
+                // 1. 準備歷史訊息，並將其格式轉換為 OpenRouter 的格式
+                const messages = historyForApi.map(msg => ({
+                    role: msg.role === 'model' ? 'assistant' : 'user',
+                    // 將 Gemini 的 'parts' 陣列轉換為 OpenRouter 的單一 'content' 字串
+                    content: msg.parts.map(part => part.text || '').join('\n')
+                }));
+
+                // 如果有系統指令 (例如 Astras 指令)，將其加到訊息陣列的最前面
                 if (systemInstruction) {
-                    messages.push({ role: 'system', content: systemInstruction.parts.map(p => p.text).join('\n') });
+                    messages.unshift({
+                        role: 'system',
+                        content: systemInstruction.parts.map(p => p.text).join('\n')
+                    });
                 }
-                messages.push(...[...historyForApi, currentMessageForApi].map(m => ({
-                    role: m.role === 'model' ? 'assistant' : m.role,
-                    content: m.parts.filter(p => p.text).map(p => p.text).join('\n')
-                })));
+
+                // 2. 建立本次使用者訊息的 'content' 陣列 (包含文字和檔案)
+                const userMessageContent = [];
+
+                // 從傳入的 'parts' 參數中找到文字部分
+                const textPart = parts.find(p => p.text);
+                if (textPart && textPart.text) {
+                    userMessageContent.push({
+                        type: 'text',
+                        text: textPart.text
+                    });
+                }
+
+                // 從全域變數 'uploadedFiles' 陣列中讀取檔案資訊
+                // 你的程式碼已經將檔案轉為 Base64 並存在這裡了
+                uploadedFiles.forEach(file => {
+                    userMessageContent.push({
+                        type: 'file',
+                        file: {
+                            filename: file.name,
+                            file_data: file.base64 // file.base64 就是 FileReader 產生的 Data URL
+                        }
+                    });
+                });
+
+                // 3. 將包含文字和檔案的 'content' 陣列組合成一條完整的使用者訊息
+                messages.push({
+                    role: 'user',
+                    content: userMessageContent
+                });
+
+                // 4. 建構最終要發送給 OpenRouter 的 payload
                 payload = {
                     model: modelId,
-                    messages,
-                    stream: true,
+                    messages: messages,
+                    stream: true, // 確保啟用串流式回覆
                     ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
                     ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
                     ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
                 };
-                headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
             }
             const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
             if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'API 請求失敗'); }
