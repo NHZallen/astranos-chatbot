@@ -14,6 +14,25 @@
     body {
     touch-action: manipulation;
 }
+    .prose a code {
+    background-color: var(--active-bg) !important;
+    color: var(--button-primary-bg) !important;
+    font-weight: bold;
+    font-size: 0.75em !important;
+    padding: 2px 5px !important;
+    border-radius: 4px !important;
+    border: 1px solid var(--border-color) !important;
+    vertical-align: super;
+    text-decoration: none !important;
+    transition: all 0.2s ease-in-out;
+}
+
+.prose a:hover code {
+    background-color: var(--button-primary-bg) !important;
+    color: var(--button-primary-text) !important;
+    border-color: var(--button-primary-bg) !important;
+    transform: scale(1.1);
+}
     #history-sidebar.visible ~ #scroll-to-bottom-btn {
     opacity: 0;
     pointer-events: none;
@@ -4376,10 +4395,28 @@ function injectCitationsAsMarkdown(text, annotations) {
                         ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>`
                         : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
                     let contentHTML = '';
+
+                    // ✨ START: 新增与修改的部分 ✨
+                    // 1. 先将所有文字部分组合起来
+                    const textParts = msg.parts.filter(p => p.text).map(p => p.text).join('\n');
+                    
+                    // 2. 如果有文字内容，就进行处理
+                    if (textParts) {
+                        if (isUser) {
+                            // 如果是使用者，直接替换换行符
+                            contentHTML += `<div>${textParts.replace(/\n/g, '<br>')}</div>`;
+                        } else {
+                            // 如果是 AI，检查是否有 annotations 并注入
+                            const textToRender = (msg.annotations && msg.annotations.length > 0)
+                                ? injectCitationsAsMarkdown(textParts, msg.annotations)
+                                : textParts;
+                            contentHTML += `<div>${renderMarkdown(textToRender)}</div>`;
+                        }
+                    }
+
+                    // 3. 单独处理非文字部分 (如图片)
                     msg.parts.forEach(part => {
-                        if (part.text) {
-                             contentHTML += `<div>${isUser ? part.text.replace(/\n/g, '<br>') : renderMarkdown(part.text)}</div>`;
-                        } else if (part.inlineData) {
+                        if (part.inlineData) {
                             const src = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
                              if (part.inlineData.mimeType.startsWith('image/')) {
                                 contentHTML += `<img src="${src}" class="mt-2 max-w-xs max-h-48 rounded-lg object-cover border border-[var(--border-color)]">`;
