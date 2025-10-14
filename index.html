@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.7.6</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.7.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -17,14 +17,6 @@
     #history-sidebar.visible ~ #scroll-to-bottom-btn {
     opacity: 0;
     pointer-events: none;
-}
-    .prose sup a {
-    text-decoration: none;
-    font-size: 0.8em;
-    vertical-align: super;
-}
-.prose sup a:hover {
-    text-decoration: underline;
 }
     #selection-mode-btn.active,
 #open-search-btn.active {
@@ -4130,64 +4122,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const clean = DOMPurify.sanitize(dirty);
             return clean;
         };
-        /**
- * 處理 AI 回覆的文字和註解，生成包含引用連結和註腳的 HTML。
- * @param {string} text AI 回覆的純文字。
- * @param {Array} annotations 從 OpenRouter API 收到的註解陣列。
- * @returns {string} 處理過的、包含 HTML 標籤的完整內容。
- */
-function processAnnotationsAndRender(text, annotations) {
-    if (!annotations || annotations.length === 0) {
-        return renderMarkdown(text); // 如果沒有註解，直接回傳原始渲染結果
-    }
-
-    // 1. 根據開始位置排序註解，確保處理順序正確
-    const sortedAnnotations = annotations
-        .filter(a => a.type === 'url_citation' && a.url_citation)
-        .sort((a, b) => a.url_citation.start_index - b.url_citation.start_index);
-
-    let htmlOutput = '';
-    let lastIndex = 0;
-    const citations = [];
-
-    // 2. 遍歷註解，切割文字並插入引用標記
-    sortedAnnotations.forEach(annotation => {
-        const cite = annotation.url_citation;
-        if (cite.start_index >= lastIndex) {
-            // 添加註解前的普通文字
-            htmlOutput += renderMarkdown(text.substring(lastIndex, cite.start_index));
-
-            // 儲存引用資訊，並添加上標引用標記
-            citations.push({ url: cite.url, title: cite.title });
-            const citationIndex = citations.length;
-            
-            // 讓引用標記本身也成為一個可點擊的連結
-            htmlOutput += ` <a href="#citation-${citationIndex}" class="text-blue-500 font-bold"><sup>[${citationIndex}]</sup></a>`;
-            
-            lastIndex = cite.end_index;
-        }
-    });
-
-    // 3. 添加最後一段普通文字
-    if (lastIndex < text.length) {
-        htmlOutput += renderMarkdown(text.substring(lastIndex));
-    }
-
-    // 4. 建立註腳列表
-    if (citations.length > 0) {
-        htmlOutput += '<hr class="my-4 border-[var(--border-color)]">';
-        htmlOutput += '<h4 class="font-semibold text-sm mb-2">參考資料:</h4>';
-        htmlOutput += '<ol class="list-decimal list-inside text-sm space-y-1">';
-        citations.forEach((cite, index) => {
-            const citationIndex = index + 1;
-            // 讓每個註腳都有一個 id，以便上面的連結可以跳轉過來
-            htmlOutput += `<li id="citation-${citationIndex}"><a href="${cite.url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline break-all">${cite.title || cite.url}</a></li>`;
-        });
-        htmlOutput += '</ol>';
-    }
-
-    return htmlOutput;
-}
         const saveConfig = async () => { if (currentUser) await setItem(getConfigKey(), JSON.stringify(config)); };
         const loadConfig = async () => {
             if (!currentUser) return;
@@ -4797,13 +4731,12 @@ function processAnnotationsAndRender(text, annotations) {
         const allSeparators = document.querySelectorAll('#file-options-popover .border-t');
 
         if (provider === 'openrouter') {
-    // 對於 OpenRouter，隱藏「檔案上傳」相關功能，但保留「網路搜尋」
-    [cameraBtn, uploadImageBtn, uploadFileBtn].forEach(btn => btn.style.display = 'none');
-    
-    // 明確顯示 OpenRouter 支援的功能：「網路搜尋」、「學習模式」和「深度研究」
-    webSearchPopoverBtn.style.display = 'flex'; // <-- 確保網路搜尋按鈕顯示
-    learningModeBtn.style.display = 'flex';
-    deepResearchBtn.style.display = 'flex';
+            // 對於 OpenRouter，隱藏與「檔案上傳」和「網路搜尋」相關的功能
+            [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn].forEach(btn => btn.style.display = 'none');
+            
+            // 明確顯示 OpenRouter 支援的功能：「學習模式」和「深度研究」
+            learningModeBtn.style.display = 'flex';
+            deepResearchBtn.style.display = 'flex';
 
             // 隱藏不需要的分隔線
             if (allSeparators.length > 0) allSeparators[0].style.display = 'none'; // 隱藏網路搜尋前的分隔線
@@ -5464,14 +5397,14 @@ function processAnnotationsAndRender(text, annotations) {
             }
             return messageDiv;
         };
-/**
+         /**
  * ✨ 全新重構：打字機效果渲染函數 (v2)
  *    - 使用 setInterval 達到勻速輸出
  *    - 隱藏 Markdown 特殊字元，避免渲染過程中的視覺干擾
-* @param {HTMLElement} targetElement 要顯示文字的目標 DOM 元素
- * @param {function(function(string): void): Promise<any>} streamApiCallFn 啟動 API 呼叫的函數
+ * @param {HTMLElement} targetElement 要顯示文字的目標 DOM 元素
+ * @param {function(function(string): void): Promise<void>} streamApiCallFn 啟動 API 呼叫的函數
  * @param {AbortSignal} signal 用於中止操作的 AbortSignal
- * @returns {Promise<string>} 返回完整的 AI 回應純文字
+ * @returns {Promise<string>} 返回完整的 AI 回應字串
  */
 function typewriterStream(targetElement, streamApiCallFn, signal) {
     return new Promise((resolve, reject) => {
@@ -5479,57 +5412,64 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
         let textQueue = '';
         let isStreaming = true;
         
-        // 我們可以稍微加快打字速度，因為渲染的開銷不大
-        const typingSpeed = 20; 
+        // ✨ [新增] 定義在打字過程中需要隱藏的 Markdown 特殊字元
+        const MARKDOWN_CHARS_TO_HIDE = new Set(['*', '_', '#', '`', '[', ']', '(', ')', '|', '-', '=', '~']);
+        
+        // ✨ [新增] 控制打字速度 (毫秒)，數值越小越快
+        const typingSpeed = 25; 
 
-        // 清空目標元素，但不加游標，因為游標會在 Markdown 渲染時動態添加
         targetElement.innerHTML = '';
+        targetElement.classList.add('typing-cursor');
 
         const intervalId = setInterval(() => {
             if (signal.aborted) {
                 clearInterval(intervalId);
-                // 中止時，也進行一次最終的完整渲染 (不帶游標)
-                targetElement.innerHTML = renderMarkdown(fullText);
+                targetElement.classList.remove('typing-cursor');
+                // 雖然被中止，但仍然解析當前已收到的內容
                 resolve(fullText); 
                 return;
             }
 
-            // 如果佇列中有文字，或者串流已結束但佇列還沒清空
             if (textQueue.length > 0) {
-                // 為了流暢性，一次可以處理多個字元
-                const chunk = textQueue.substring(0, Math.min(textQueue.length, 5));
-                textQueue = textQueue.substring(chunk.length);
-                fullText += chunk;
+                const char = textQueue.charAt(0);
+                textQueue = textQueue.substring(1);
+                
+                fullText += char;
 
-                // ✨✨✨ 核心修改：即時渲染 Markdown ✨✨✨
-                // 在當前已收到的文字後面加上一個模擬的打字游標
-                const textWithCursor = fullText + '▋';
-                // 每次都完整地重新渲染，這樣表格、程式碼塊等就會被即時建立和更新
-                targetElement.innerHTML = renderMarkdown(textWithCursor);
+                // ✨ [核心修改] 只有當字元不是特殊 Markdown 字元時，才創建 DOM 元素來顯示它
+                if (!MARKDOWN_CHARS_TO_HIDE.has(char)) {
+                    const span = document.createElement('span');
+                    span.className = 'fade-in-char';
+
+                    if (char === '\n') {
+                        targetElement.appendChild(document.createElement('br'));
+                    } else {
+                        span.textContent = char;
+                        targetElement.appendChild(span);
+                    }
+                }
                 
                 // 保持捲動到底部
                 const chatContainer = ALL_ELEMENTS.chatContainer;
-                // 稍微放寬判斷條件，確保在內容快速增加時也能觸發
-                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 100;
+                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
                 if (isNearBottom) {
                     chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
                 }
             } else if (!isStreaming) {
                 // 資料流結束且佇列已空
                 clearInterval(intervalId);
-                // 進行最後一次不帶游標的完整渲染
-                targetElement.innerHTML = renderMarkdown(fullText);
+                targetElement.classList.remove('typing-cursor');
                 resolve(fullText); // 成功完成，返回完整字串
             }
         }, typingSpeed);
 
-        // 啟動 API 呼叫
+        // 啟動 API 呼叫，並在結束時更新 isStreaming 狀態
         streamApiCallFn((chunk) => {
             textQueue += chunk;
         }).catch(error => {
             clearInterval(intervalId);
-            targetElement.innerHTML = renderMarkdown(fullText); // 顯示錯誤前已收到的內容
-            reject(error);
+            targetElement.classList.remove('typing-cursor');
+            reject(error); // 如果 API 呼叫出錯，則拒絕 Promise
         }).finally(() => {
             isStreaming = false;
         });
@@ -5605,53 +5545,75 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             const contentDiv = loadingMessageDiv.querySelector('.message-content');
             
             try {
-    const finalAiMessage = { role: 'model', parts: [], createdAt: new Date().toISOString() };
-    let fullResponseText = '';
-    let finalAnnotations = [];
+                let fullResponse = '';
+                const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
 
-    // 1. ✨ 使用我們重構的 typewriterStream 函式來實現打字機效果
-    //    這個函式會在內部呼叫 streamApiCall
-    fullResponseText = await typewriterStream(
-        contentDiv, // 打字機效果要顯示在哪個 DOM 元素上
-        async (onChunk) => { // 這裡定義了如何啟動 API 呼叫
-            const { fullText, annotations } = await streamApiCall(
-                userParts,
-                onChunk, // 將 streamApiCall 的文字片段直接傳給打字機
-                abortController.signal
-            );
-            // 當 streamApiCall 完成後，我們儲存它的最終結果
-            finalAnnotations = annotations;
-            return fullText; // typewriterStream 需要這個回傳值
-        },
-        abortController.signal // 傳入中止信號
-    );
-    
-    // 2. ✨ 當打字機效果完成後，使用我們的新函式來處理引用
-    const finalHtml = processAnnotationsAndRender(fullResponseText, finalAnnotations);
+                // 1. 先等待 API 回應完全結束，獲取完整文字
+                const completeResponse = await streamApiCall(
+                    userParts,
+                    (chunk) => {
+                        // 在 streamApiCall 內部，我們只收集文字，不渲染
+                    },
+                    abortController.signal
+                );
 
-    // 3. ✨ 將包含引用的最終 HTML 內容，替換掉剛剛打字機顯示的內容
-    contentDiv.innerHTML = finalHtml;
-    
-    // 將對話發送到後台記錄
-    sendConversationToMail(userMessageObject, fullResponseText);
+                fullResponse = completeResponse;
+                sendConversationToMail(userMessageObject, fullResponse);
 
-    // 4. 將完整的最終訊息（僅純文字）保存到對話紀錄中
-    finalAiMessage.parts = [{ text: fullResponseText }];
-    conv.messages.push(finalAiMessage);
-    conv.lastUpdatedAt = new Date().toISOString();
-    await saveAppData();
-    
-    // 5. 執行後續任務 (例如產生追問建議)
-    if (!abortController.signal.aborted) {
-        if (config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
-            await generateFollowUpPrompts(userMessage, fullResponseText);
-        }
-        if (config.memoryEnabled1 && config.enableAutoMemory) {
-            await extractPersonalMemory(userMessage, fullResponseText);
-        }
-    }
+                // 2. 將完整的最終訊息保存到對話紀錄中
+                finalAiMessage.parts = [{ text: fullResponse }];
+                conv.messages.push(finalAiMessage);
+                conv.lastUpdatedAt = new Date().toISOString();
+                await saveAppData();
+                
+                // 3. ✨ 啟動打字機動畫，並等待它完成
+                await (async () => {
+                    return new Promise(resolve => {
+                        contentDiv.innerHTML = ''; // 清空等待樣式
+                        let currentIndex = 0;
+                        const typingSpeed = 15;
 
-} catch (error) {
+                        function type() {
+                            if (currentIndex < fullResponse.length && !abortController.signal.aborted) {
+                                const currentText = fullResponse.substring(0, currentIndex + 1);
+                                contentDiv.innerHTML = renderMarkdown(currentText + '▋');
+
+                                let step = 1;
+                                if (currentText.includes('```')) {
+                                    step = 5;
+                                }
+                                
+                                currentIndex += step;
+
+                                const chatContainer = ALL_ELEMENTS.chatContainer;
+                                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
+                                if (isNearBottom) {
+                                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+                                }
+
+                                setTimeout(type, typingSpeed);
+                            } else {
+                                // 動畫完成或被中止
+                                contentDiv.innerHTML = renderMarkdown(fullResponse); // 最終清理，移除游標
+                                resolve(); // ✨ Promise 完成，通知 await
+                            }
+                        }
+                        
+                        type(); // 啟動
+                    });
+                })();
+
+                // 4. ✨ 只有在打字機動畫結束後，才執行後續任務
+                if (!abortController.signal.aborted) {
+                    if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
+                        await generateFollowUpPrompts(userMessage, fullResponse);
+                    }
+                    if (config.memoryEnabled1 && config.enableAutoMemory) {
+                        await extractPersonalMemory(userMessage, fullResponse);
+                    }
+                }
+
+            } catch (error) {
                 if (error.name !== 'AbortError') {
                     const errorMessage = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
                     contentDiv.innerHTML = renderMarkdown(errorMessage);
@@ -5733,7 +5695,6 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
         }
         async function streamApiCall(parts, onChunk, signal, isWebSearchForced = false) {
             const conv = getActiveConversation();
-            let annotations = [];
             const modelInfo = MODELS.find(m => m.id === conv.model);
             if (!modelInfo) throw new Error(`找不到模型設定: ${conv.model}`);
             const { provider, id: modelId } = modelInfo;
@@ -5853,17 +5814,6 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
                     ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
                 };
-                if (conv.isWebSearchEnabled) {
-        payload.plugins = [
-            {
-                "id": "web",
-                "engine": "exa",
-                "max_results": 5,
-                "search_prompt": "Some relevant web results:"
-            }
-        ];
-        // 提示：OpenRouter 可能會根據你選擇的模型自動調整 max_results。
-    }
                 headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
             }
             const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
@@ -5916,32 +5866,26 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                             break;
                         }
                     }
-                } else { // OpenRouter 區塊
-    const lines = buffer.split('\n');
-    buffer = lines.pop();
-    for (const line of lines) {
-        if (line.startsWith('data: ')) {
-            const data = line.substring(6);
-            if (data.trim() === '[DONE]') break;
-            try {
-                const parsed = JSON.parse(data);
-                // 捕捉文字片段
-                const textChunk = parsed.choices[0]?.delta?.content || '';
-                if (textChunk) {
-                    fullText += textChunk;
-                    onChunk(textChunk);
+                } else {
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.substring(6);
+                            if (data.trim() === '[DONE]') break;
+                            try {
+                                const parsed = JSON.parse(data);
+                                const textChunk = parsed.choices[0]?.delta?.content || '';
+                                if (textChunk) {
+                                    fullText += textChunk;
+                                    onChunk(textChunk);
+                                }
+                            } catch (e) { /* Ignore */ }
+                        }
+                    }
                 }
-                // 【✨✨ 新增部分：捕捉註解 ✨✨】
-                const annotationChunk = parsed.choices[0]?.delta?.annotations;
-                if (annotationChunk && Array.isArray(annotationChunk)) {
-                    annotations.push(...annotationChunk);
-                }
-            } catch (e) { /* Ignore */ }
-        }
-    }
-}
             }
-            return { fullText, annotations };
+            return fullText;
         }
         async function callApiWithSchema(prompt, responseSchema, signal) {
             const apiKey = config.apiKeys.gemini;
@@ -9865,16 +9809,16 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
                 ALL_ELEMENTS.imageVideoInput.click();
             });
             ALL_ELEMENTS.webSearchPopoverBtn.addEventListener('click', async () => {
-    ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
-    const conv = getActiveConversation();
-    if (!conv || (conv.provider !== 'gemini' && conv.provider !== 'openrouter') || conv.archived) {
-        showNotification(i18n[config.uiLanguage].webSearchNotAvailable || '當前模型不支援或無法使用聯網搜尋。', 'warning');
-        return;
-    }
-    conv.isWebSearchEnabled = !conv.isWebSearchEnabled;
-    renderInputIndicators();
-    await saveAppData();
-});
+                ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
+                const conv = getActiveConversation();
+                if (!conv || conv.provider !== 'gemini' || conv.archived) {
+                    showNotification(i18n[config.uiLanguage].webSearchNotAvailable || '當前模型不支援或無法使用聯網搜尋。', 'warning');
+                    return;
+                }
+                conv.isWebSearchEnabled = !conv.isWebSearchEnabled;
+                renderInputIndicators();
+                await saveAppData();
+            });
             ALL_ELEMENTS.learningModeBtn.addEventListener('click', toggleLearningMode);
             ALL_ELEMENTS.deepResearchBtn.addEventListener('click', toggleDeepResearchMode);
             ALL_ELEMENTS.uploadImageBtn.addEventListener('click', () => {
@@ -10225,14 +10169,14 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
     ];
 
     // 3. 根據模型 (provider) 來決定要顯示哪些按鈕
+    let visibleMenuItems;
     if (provider === 'openrouter') {
-    // 如果是 OpenRouter 模型，留下「網路搜尋」、「學習」和「研究」
-    visibleMenuItems = allMenuItems.filter(item => 
-        item.id === 'web-search-popover-btn' || // <-- 新增這一行
-        item.id === 'learning-mode-btn' || 
-        item.id === 'deep-research-btn'
-    );
-} else {
+        // 如果是 OpenRouter 模型，只留下「學習」和「研究」
+        visibleMenuItems = allMenuItems.filter(item => 
+            item.id === 'learning-mode-btn' || 
+            item.id === 'deep-research-btn'
+        );
+    } else {
         // 否則 (例如 Gemini 模型)，顯示全部按鈕
         visibleMenuItems = allMenuItems;
     }
