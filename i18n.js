@@ -67,8 +67,9 @@ window.i18n = {
         // Model Switcher
         moreModels: '更多模型',
         back: '返回',
-
-
+        categoryGeneral: '通用模型',
+        categoryThinking: '思考模型',
+        categoryCoding: '編程模型',
 
 
         // Settings Modal
@@ -563,7 +564,9 @@ window.i18n = {
         // Model Switcher
         moreModels: 'More Models',
         back: 'Back',
-
+        categoryGeneral: 'General Models',
+        categoryThinking: 'Thinking Models',
+        categoryCoding: 'Coding Models',
 
 
 
@@ -1055,7 +1058,9 @@ window.i18n = {
         // Model Switcher
         moreModels: 'Plus de modèles',
         back: 'Retour',
-
+        categoryGeneral: 'Modèles Généraux',
+        categoryThinking: 'Modèles de Réflexion',
+        categoryCoding: 'Modèles de Codage',
 
 
 
