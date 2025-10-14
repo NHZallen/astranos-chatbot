@@ -4721,35 +4721,34 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         
         const updateFunctionButtonsState = () => {
-            const { cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn } = ALL_ELEMENTS;
-            const separator = document.querySelector('#file-options-popover .border-t');
-            const conv = getActiveConversation();
-            if (!conv) return;
-            const modelInfo = MODELS.find(m => m.id === conv.model);
-            const provider = modelInfo?.provider;
-            const allButtons = [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn];
-        const allSeparators = document.querySelectorAll('#file-options-popover .border-t');
+    const { cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn } = ALL_ELEMENTS;
+    const conv = getActiveConversation();
+    if (!conv) return;
 
-        if (provider === 'openrouter') {
-            cameraBtn.style.display = 'none';
-    uploadImageBtn.style.display = 'none';
-    uploadFileBtn.style.display = 'none';
-    webSearchPopoverBtn.style.display = 'none';
-    
-    // 2. 強制顯示我們需要的「學習」和「研究」按鈕
-    learningModeBtn.style.display = 'flex';
-    deepResearchBtn.style.display = 'flex';
+    const modelInfo = MODELS.find(m => m.id === conv.model);
+    const provider = modelInfo?.provider;
 
-    // 3. 處理分隔線：隱藏第一條，顯示第二條
-    if (allSeparators.length > 0) allSeparators[0].style.display = 'none';
-    if (allSeparators.length > 1) allSeparators[1].style.display = 'block';
+    const allButtons = [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn];
+    const allSeparators = document.querySelectorAll('#file-options-popover .border-t');
 
-} else { // Gemini 模型
-    // 對於 Gemini 等其他模型，恢復顯示所有功能
-    allButtons.forEach(btn => btn.style.display = 'flex');
-    allSeparators.forEach(sep => sep.style.display = 'block');
-}
-        };
+    if (provider === 'openrouter') {
+        // 對於 OpenRouter，隱藏檔案、照片、相機和網路搜尋功能
+        [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn].forEach(btn => btn.style.display = 'none');
+        
+        // 明確顯示 OpenRouter 支援的功能：「學習」和「研究」
+        learningModeBtn.style.display = 'flex';
+        deepResearchBtn.style.display = 'flex';
+
+        // 隱藏第一條分隔線，但顯示第二條，讓「學習」和「研究」分開
+        if (allSeparators.length > 0) allSeparators[0].style.display = 'none';
+        if (allSeparators.length > 1) allSeparators[1].style.display = 'block';
+
+    } else { // 對於 Gemini 等其他模型
+        // 顯示所有功能按鈕和分隔線
+        allButtons.forEach(btn => btn.style.display = 'flex');
+        allSeparators.forEach(sep => sep.style.display = 'block');
+    }
+};
 
         const toggleLearningMode = async () => {
             if (config.isDeepResearchMode) {
@@ -10172,28 +10171,29 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
 
     // 3. 根據模型 (provider) 來決定要顯示哪些按鈕
     let visibleMenuItems;
-if (provider === 'openrouter') {
-    // 當模型是 OpenRouter 時，我們只顯示「學習」和「研究」
-    visibleMenuItems = allMenuItems.filter(item => 
-        item.id === 'learning-mode-btn' || 
-        item.id === 'deep-research-btn'
-    );
-} else {
-    // 對於其他模型（如 Gemini），保持顯示所有項目
-    visibleMenuItems = allMenuItems;
-}
+    if (provider === 'openrouter') {
+        // 如果是 OpenRouter 模型，只留下「學習」和「研究」，以及它們之間的分隔線
+        visibleMenuItems = allMenuItems.filter(item => 
+            item.id === 'learning-mode-btn' || 
+            item.id === 'deep-research-btn' ||
+            // 為了美觀，可以在兩者之間保留一個分隔線
+            (item.type === 'divider' && allMenuItems.findIndex(i => i.id === 'deep-research-btn') > allMenuItems.indexOf(item))
+        );
+    } else {
+        // 否則 (例如 Gemini 模型)，顯示全部按鈕
+        visibleMenuItems = allMenuItems;
+    }
 
     let itemsHTML = '';
     visibleMenuItems.forEach((item, index) => {
         if (item.type === 'divider') {
-            // 只有當這個分隔線前後都有按鈕時才顯示它
             if (index > 0 && index < visibleMenuItems.length - 1) {
-                 // 在CSS中透過border-bottom實現，這裡不需要添加HTML
+                // 在CSS中透過border-bottom實現，這裡不需要添加HTML
             }
         } else {
             itemsHTML += `
                 <div class="menu-item" data-trigger-id="${item.id}">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${item.svg}</svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${item.svg}</svg>
                     <span data-lang-key="${item.textKey}">${i18n[config.uiLanguage][item.textKey] || item.textKey}</span>
                 </div>
             `;
@@ -10208,7 +10208,6 @@ if (provider === 'openrouter') {
     wrapper.appendChild(overlay);
     wrapper.appendChild(menu);
 
-    // 後續的顯示動畫、關閉邏輯都和原本一樣
     requestAnimationFrame(() => {
         overlay.classList.add('visible');
         menu.classList.add('visible');
