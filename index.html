@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.7.5</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.7.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -2798,6 +2798,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             <div>
                                 <label for="openrouter-api-key-input-all" class="block text-sm font-medium mb-1" data-lang-key="openRouterApiKey">OpenRouter API 金鑰</label>
                                 <p class="text-xs text-[var(--text-secondary)] mb-2" data-lang-key="openRouterApiDescAll">輸入您的單一 OpenRouter 金鑰以啟用所有相關模型。</p>
+                                <p class="text-xs text-yellow-600 mb-2">請注意：為 OpenRouter 模型啟用聯網搜尋功能，每 1000 次請求將額外產生約 4 美元的費用。</p>
                                 <input type="password" id="openrouter-api-key-input-all" class="w-full p-2 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)]" placeholder="sk-or-..." data-lang-key-placeholder="openRouterApiPlaceholder">
                             </div>
                         </div>
@@ -4731,8 +4732,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const allSeparators = document.querySelectorAll('#file-options-popover .border-t');
 
         if (provider === 'openrouter') {
-            // 對於 OpenRouter，隱藏與「檔案上傳」和「網路搜尋」相關的功能
-            [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn].forEach(btn => btn.style.display = 'none');
+    // 對於 OpenRouter，只隱藏檔案上傳相關功能，保留 Web 搜尋
+    [cameraBtn, uploadImageBtn, uploadFileBtn].forEach(btn => btn.style.display = 'none');
             
             // 明確顯示 OpenRouter 支援的功能：「學習模式」和「深度研究」
             learningModeBtn.style.display = 'flex';
@@ -5814,6 +5815,18 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
                     ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
                 };
+                if (conv.isWebSearchEnabled) {
+        payload.plugins = [
+            {
+                "id": "web",
+                "engine": "exa",
+                "max_results": 5,
+                "search_prompt": "Some relevant web results:"
+            }
+        ];
+        // 為了確保 Web 搜尋結果能被模型使用，建議加上 "tool_choice"
+        payload.tool_choice = "auto";
+    }
                 headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
             }
             const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
@@ -9811,7 +9824,7 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             ALL_ELEMENTS.webSearchPopoverBtn.addEventListener('click', async () => {
                 ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
                 const conv = getActiveConversation();
-                if (!conv || conv.provider !== 'gemini' || conv.archived) {
+                if (!conv || conv.archived) {
                     showNotification(i18n[config.uiLanguage].webSearchNotAvailable || '當前模型不支援或無法使用聯網搜尋。', 'warning');
                     return;
                 }
