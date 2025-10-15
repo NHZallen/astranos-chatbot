@@ -2793,12 +2793,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             <div>
                                 <p class="text-sm text-red-500 mb-2" data-lang-key="geminiFollowUpNotice">如需啟用後續追問功能必需填入 gemini api 才可啟用。</p>
                                 <label for="gemini-api-key-input" class="block text-sm font-medium mb-1" data-lang-key="geminiApiKey">Gemini API 金鑰</label>
-                                <input type="text" id="gemini-api-key-input" class="w-full p-2 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)]" placeholder="輸入您的 Google API 金鑰" data-lang-key-placeholder="geminiApiPlaceholder">
+                                <input type="password" id="gemini-api-key-input" class="w-full p-2 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)]" placeholder="輸入您的 Google API 金鑰" data-lang-key-placeholder="geminiApiPlaceholder">
                             </div>
                             <div>
                                 <label for="openrouter-api-key-input-all" class="block text-sm font-medium mb-1" data-lang-key="openRouterApiKey">OpenRouter API 金鑰</label>
                                 <p class="text-xs text-[var(--text-secondary)] mb-2" data-lang-key="openRouterApiDescAll">輸入您的單一 OpenRouter 金鑰以啟用所有相關模型。</p>
-                                <input type="text" id="openrouter-api-key-input-all" class="w-full p-2 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)]" placeholder="sk-or-..." data-lang-key-placeholder="openRouterApiPlaceholder">
+                                <input type="password" id="openrouter-api-key-input-all" class="w-full p-2 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)]" placeholder="sk-or-..." data-lang-key-placeholder="openRouterApiPlaceholder">
                             </div>
                         </div>
                         <h3 class="text-lg font-semibold mb-3 mt-6" data-lang-key="modelListManagement">模型清單管理</h3>
@@ -6204,26 +6204,8 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             }
         };
         const setupSettingsModal = () => {
-            if (config.apiKeys.gemini) {
-    const maskedKey = config.apiKeys.gemini.substring(0, 8) + '...';
-    ALL_ELEMENTS.geminiApiKeyInput.value = maskedKey;
-    // 將遮罩值存儲起來，以便後續比較
-    ALL_ELEMENTS.geminiApiKeyInput.dataset.maskedValue = maskedKey;
-} else {
-    ALL_ELEMENTS.geminiApiKeyInput.value = '';
-    delete ALL_ELEMENTS.geminiApiKeyInput.dataset.maskedValue;
-}
-
-// 處理 OpenRouter API 金鑰的顯示
-if (config.apiKeys.openrouter) {
-    const maskedKey = config.apiKeys.openrouter.substring(0, 8) + '...';
-    ALL_ELEMENTS.openrouterApiKeyInputAll.value = maskedKey;
-    // 將遮罩值存儲起來，以便後續比較
-    ALL_ELEMENTS.openrouterApiKeyInputAll.dataset.maskedValue = maskedKey;
-} else {
-    ALL_ELEMENTS.openrouterApiKeyInputAll.value = '';
-    delete ALL_ELEMENTS.openrouterApiKeyInputAll.dataset.maskedValue;
-}
+            ALL_ELEMENTS.geminiApiKeyInput.value = config.apiKeys.gemini;
+            ALL_ELEMENTS.openrouterApiKeyInputAll.value = config.apiKeys.openrouter;
             ALL_ELEMENTS.followUpToggleSwitch.checked = config.enableFollowUp;
             ALL_ELEMENTS.autoNamingToggleSwitch.checked = config.autoNaming;
             ALL_ELEMENTS.autoWebSearchToggleSwitch.checked = config.enableAutoWebSearch;
@@ -6264,19 +6246,8 @@ if (config.apiKeys.openrouter) {
             });
         };
         const saveSettings = async () => {
-            const geminiInputValue = ALL_ELEMENTS.geminiApiKeyInput.value.trim();
-// 只有當輸入框的值不是我們設定的遮罩值時，才更新金鑰
-if (geminiInputValue !== ALL_ELEMENTS.geminiApiKeyInput.dataset.maskedValue) {
-    config.apiKeys.gemini = geminiInputValue;
-}
-// 如果輸入值和遮罩值相同，則不執行任何操作，保留 config 中原有的完整金鑰
-
-// 處理 OpenRouter API 金鑰的儲存
-const openrouterInputValue = ALL_ELEMENTS.openrouterApiKeyInputAll.value.trim();
-// 只有當輸入框的值不是我們設定的遮罩值時，才更新金鑰
-if (openrouterInputValue !== ALL_ELEMENTS.openrouterApiKeyInputAll.dataset.maskedValue) {
-    config.apiKeys.openrouter = openrouterInputValue;
-}
+            config.apiKeys.gemini = ALL_ELEMENTS.geminiApiKeyInput.value.trim();
+            config.apiKeys.openrouter = ALL_ELEMENTS.openrouterApiKeyInputAll.value.trim();
             config.enableFollowUp = ALL_ELEMENTS.followUpToggleSwitch.checked;
             config.enableAutoWebSearch = ALL_ELEMENTS.autoWebSearchToggleSwitch.checked;
             config.aiBubbleColor = ALL_ELEMENTS.aiBubbleColorDropdown.querySelector('.color-dropdown-btn')?.dataset.color || 'default';
