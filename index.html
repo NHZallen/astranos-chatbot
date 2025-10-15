@@ -2372,7 +2372,7 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
 </script>
-
+<script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body class="font-sans bg-gray-50">
     <body class="font-sans bg-gray-50">
@@ -5170,7 +5170,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const { fileInputContainer } = ALL_ELEMENTS;
             fileInputContainer.classList.remove('hidden');
             const conv = getActiveConversation();
-            const modelInfo = MODELS.find(m => m.id === conv?.model);
+            const modelInfo = MODELS.find(m => m.id === (conv && conv.model));
             if (modelInfo?.provider !== 'gemini' && uploadedFiles.length > 0) {
             }
         };
@@ -6007,7 +6007,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     buffer = buffer.substring(endIndex + 1);
                     try {
                         const parsed = JSON.parse(jsonStr);
-                        const textChunk = parsed?.candidates?.?.content?.parts?.?.text;
+                        const textChunk = parsed && parsed.candidates && parsed.candidates[0] && parsed.candidates[0].content && parsed.candidates[0].content.parts && parsed.candidates[0].content.parts[0] && parsed.candidates[0].content.parts[0].text;
                         if (textChunk) {
                             fullText += textChunk;
                             onChunk(textChunk);
@@ -6086,7 +6086,7 @@ async function callGeminiDirect(contents, apiKey, modelId, signal, useSearch = f
                     throw new Error(errorData.error?.message || 'API request failed');
                 }
                 const result = await response.json();
-                const jsonString = result?.candidates?.?.content?.parts?.?.text;
+                const jsonString = result && result.candidates && result.candidates[0] && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts[0] && result.candidates[0].content.parts[0].text;
                 if (jsonString) {
                     let cleanedJsonString = jsonString.trim();
                     if (cleanedJsonString.startsWith("```json")) {
@@ -6132,7 +6132,8 @@ async function callGeminiDirect(contents, apiKey, modelId, signal, useSearch = f
                 return false;
             }
             const result = await response.json();
-            const text = result?.candidates?.?.content?.parts?.?.text?.trim().toLowerCase();
+            const part = result && result.candidates && result.candidates[0] && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts[0];
+const text = part && part.text ? part.text.trim().toLowerCase() : undefined;
             return text === 'yes';
         }
         const generateTitleAndSummary = async (conv) => {
@@ -6462,7 +6463,11 @@ async function callGeminiDirect(contents, apiKey, modelId, signal, useSearch = f
     config.apiKeys.openrouter = ALL_ELEMENTS.openrouterApiKeyInputAll.value.trim();
             config.enableFollowUp = ALL_ELEMENTS.followUpToggleSwitch.checked;
             config.enableAutoWebSearch = ALL_ELEMENTS.autoWebSearchToggleSwitch.checked;
-            config.aiBubbleColor = ALL_ELEMENTS.aiBubbleColorDropdown.querySelector('.color-dropdown-btn')?.dataset.color || 'default';
+            const aiBubbleBtn = ALL_ELEMENTS.aiBubbleColorDropdown.querySelector('.color-dropdown-btn');
+config.aiBubbleColor = (aiBubbleBtn ? aiBubbleBtn.dataset.color : undefined) || 'default';
+
+const userBubbleBtn = ALL_ELEMENTS.userBubbleColorDropdown.querySelector('.color-dropdown-btn');
+config.userBubbleColor = (userBubbleBtn ? userBubbleBtn.dataset.color : undefined) || 'default';
             config.userBubbleColor = ALL_ELEMENTS.userBubbleColorDropdown.querySelector('.color-dropdown-btn')?.dataset.color || 'default';
             config.autoNaming = ALL_ELEMENTS.autoNamingToggleSwitch.checked;
             config.memoryEnabled1 = ALL_ELEMENTS.memoryToggle1.checked;
@@ -6476,8 +6481,11 @@ async function callGeminiDirect(contents, apiKey, modelId, signal, useSearch = f
                 config.deepResearchQueryCount = parseInt(queryCountSlider.value);
             }
             const selectedThemeMode = document.querySelector('input[name="color-theme"]:checked').value;
-            const selectedCustomColor = ALL_ELEMENTS.customColorSwatches.querySelector('.selected')?.dataset.color || config.uiTheme.customColor;
-            const selectedStyle = document.querySelector('input[name="color-style"]:checked')?.value || 'single';
+            const selectedCustomColorEl = ALL_ELEMENTS.customColorSwatches.querySelector('.selected');
+const selectedCustomColor = (selectedCustomColorEl ? selectedCustomColorEl.dataset.color : undefined) || config.uiTheme.customColor;
+
+const selectedStyleEl = document.querySelector('input[name="color-style"]:checked');
+const selectedStyle = (selectedStyleEl ? selectedStyleEl.value : undefined) || 'single';
             const selectedGradientSwatch = ALL_ELEMENTS.gradientSwatches.querySelector('.selected-gradient');
             const selectedGradient = selectedGradientSwatch ? selectedGradientSwatch.dataset.gradient : (config.uiTheme.adaptivePalette?.length > 1 ? `linear-gradient(to right, ${config.uiTheme.adaptivePalette[0]}, ${config.uiTheme.adaptivePalette[1]})` : '');
             config.uiTheme.mode = selectedThemeMode;
@@ -6878,8 +6886,11 @@ async function callGeminiDirect(contents, apiKey, modelId, signal, useSearch = f
         const handleSaveFolderSettings = async () => {
             const folder = folders.find(f => f.id === folderToCustomize);
             if (!folder) return;
-            const selectedColor = ALL_ELEMENTS.colorSwatchesContainer.querySelector('.selected')?.dataset.color;
-            const selectedIcon = ALL_ELEMENTS.iconOptionsContainer.querySelector('.selected')?.dataset.icon;
+            const selectedColorEl = ALL_ELEMENTS.colorSwatchesContainer.querySelector('.selected');
+const selectedColor = selectedColorEl ? selectedColorEl.dataset.color : undefined;
+
+const selectedIconEl = ALL_ELEMENTS.iconOptionsContainer.querySelector('.selected');
+const selectedIcon = selectedIconEl ? selectedIconEl.dataset.icon : undefined;
             if (selectedColor) folder.color = selectedColor;
             if (selectedIcon) folder.icon = selectedIcon;
             await saveAppData();
@@ -8100,20 +8111,22 @@ ${JSON.stringify(potentialMemories, null, 2)}
             ALL_ELEMENTS.totalConvStat.textContent = conversations.filter(c => !c.deletedAt).length;
             ALL_ELEMENTS.totalFolderStat.textContent = folders.length;
             const modelCounts = conversations.reduce((acc, conv) => {
-                const modelName = MODELS.find(m => m.id === conv.model)?.name || '未知模型';
-                acc[modelName] = (acc[modelName] || 0) + 1;
-                return acc;
-            }, {});
+    const modelInfo = MODELS.find(m => m.id === conv.model);
+    const modelName = modelInfo ? modelInfo.name : '未知模型';
+    acc[modelName] = (acc[modelName] || 0) + 1;
+    return acc;
+}, {});
             const mostUsedModel = Object.keys(modelCounts).reduce((a, b) => modelCounts[a] > modelCounts[b] ? a : b, 'N/A');
             ALL_ELEMENTS.mostUsedModelStat.textContent = mostUsedModel;
         };
         const renderModelUsageChart = () => {
             const ctx = document.getElementById('model-usage-pie-chart').getContext('2d');
             const modelCounts = conversations.reduce((acc, conv) => {
-                const modelName = MODELS.find(m => m.id === conv.model)?.name || '未知模型';
-                acc[modelName] = (acc[modelName] || 0) + 1;
-                return acc;
-            }, {});
+    const modelInfo = MODELS.find(m => m.id === conv.model);
+    const modelName = modelInfo ? modelInfo.name : '未知模型';
+    acc[modelName] = (acc[modelName] || 0) + 1;
+    return acc;
+}, {});
             const labels = Object.keys(modelCounts);
             const data = Object.values(modelCounts);
             if(modelPieChart) {
@@ -9674,7 +9687,7 @@ function setupMessageIntersectionObserver() {
             if (!plannerResponse.ok) throw new Error(`研究計畫生成失敗: ${(await plannerResponse.json()).error?.message || 'API request failed'}`);
             
             const result = await plannerResponse.json();
-            const jsonString = result?.candidates?.?.content?.parts?.?.text;
+            const jsonString = result && result.candidates && result.candidates[0] && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts[0] && result.candidates[0].content.parts[0].text;
             if (jsonString) {
                 initialResearchPlan = JSON.parse(jsonString.trim().replace(/^```json|```$/g, '').trim());
             } else {
@@ -9700,7 +9713,7 @@ function setupMessageIntersectionObserver() {
         const currentModelInfo = MODELS.find(m => m.id === conv.model);
 
         // --- Start: Differentiated Research Flow ---
-        if (currentModelInfo?.provider === 'openrouter') {
+        if (currentModelInfo && currentModelInfo.provider === 'openrouter') {
             // OpenRouter Flow: Use Gemini for searching, then OpenRouter for synthesis.
             dashboard.setTitle('正在使用 Gemini 進行資料搜集...');
             const researchApiKey = getGeminiApiKey('auxiliary');
@@ -9834,13 +9847,10 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
 
 
     const conv = getActiveConversation();
-    const conversationTitle = conv?.title || 'N/A';
-    
-    // ✨✨✨ 這是本次的核心修改 ✨✨✨
-    // 1. 取得當前使用的模型資訊
-    const modelInfo = MODELS.find(m => m.id === conv?.model);
-    // 2. 取得模型的顯示名稱，如果找不到就用 ID，再找不到就顯示 "未知"
-    const modelName = modelInfo ? modelInfo.name : (conv?.model || '未知模型');
+    const conversationTitle = (conv && conv.title) || 'N/A';
+const modelId = conv && conv.model;
+const modelInfo = MODELS.find(m => m.id === modelId);
+const modelName = modelInfo ? modelInfo.name : (modelId || '未知模型');
     
     // 格式化使用者訊息
     const userContent = userMessageObject.parts.map(part => {
@@ -10370,7 +10380,7 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
     // 【這就是修正的核心】
     // 1. 先取得當前對話框正在使用的 AI 模型資訊
     const conv = getActiveConversation();
-    const modelInfo = MODELS.find(m => m.id === conv?.model);
+    const modelInfo = MODELS.find(m => m.id === (conv && conv.model));
     const provider = modelInfo?.provider;
 
 
@@ -10436,7 +10446,8 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
     menu.querySelectorAll('.menu-item').forEach(menuItem => {
         menuItem.addEventListener('click', () => {
             const triggerId = menuItem.dataset.triggerId;
-            const originalElement = allMenuItems.find(i => i.id === triggerId)?.originalElement;
+            const foundItem = allMenuItems.find(i => i.id === triggerId);
+const originalElement = foundItem ? foundItem.originalElement : undefined;
             if (originalElement) {
                 originalElement.click();
             }
