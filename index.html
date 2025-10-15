@@ -6204,8 +6204,23 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             }
         };
         const setupSettingsModal = () => {
-            ALL_ELEMENTS.geminiApiKeyInput.value = config.apiKeys.gemini;
-            ALL_ELEMENTS.openrouterApiKeyInputAll.value = config.apiKeys.openrouter;
+            if (config.apiKeys.gemini) {
+    // 如果有已儲存的金鑰，將前 8 碼加上星號作為 placeholder
+    ALL_ELEMENTS.geminiApiKeyInput.placeholder = config.apiKeys.gemini.substring(0, 8) + '••••••••••••••••';
+} else {
+    // 如果沒有，顯示預設的提示
+    ALL_ELEMENTS.geminiApiKeyInput.placeholder = i18n[config.uiLanguage].geminiApiPlaceholder || '輸入您的 Google API 金鑰';
+}
+// 無論如何，都清空輸入框的實際值，這樣 placeholder 才會顯示出來
+ALL_ELEMENTS.geminiApiKeyInput.value = '';
+
+// 處理 OpenRouter API 金鑰輸入框 (邏輯同上)
+if (config.apiKeys.openrouter) {
+    ALL_ELEMENTS.openrouterApiKeyInputAll.placeholder = config.apiKeys.openrouter.substring(0, 8) + '••••••••••••••••';
+} else {
+    ALL_ELEMENTS.openrouterApiKeyInputAll.placeholder = i18n[config.uiLanguage].openRouterApiPlaceholder || 'sk-or-...';
+}
+ALL_ELEMENTS.openrouterApiKeyInputAll.value = '';
             ALL_ELEMENTS.followUpToggleSwitch.checked = config.enableFollowUp;
             ALL_ELEMENTS.autoNamingToggleSwitch.checked = config.autoNaming;
             ALL_ELEMENTS.autoWebSearchToggleSwitch.checked = config.enableAutoWebSearch;
@@ -6246,8 +6261,18 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             });
         };
         const saveSettings = async () => {
-            config.apiKeys.gemini = ALL_ELEMENTS.geminiApiKeyInput.value.trim();
-            config.apiKeys.openrouter = ALL_ELEMENTS.openrouterApiKeyInputAll.value.trim();
+            const newGeminiKey = ALL_ELEMENTS.geminiApiKeyInput.value.trim();
+if (newGeminiKey) {
+    // 只有當使用者輸入了新內容時，才更新金鑰
+    config.apiKeys.gemini = newGeminiKey;
+}
+
+// 處理 OpenRouter API 金鑰儲存
+const newOpenRouterKey = ALL_ELEMENTS.openrouterApiKeyInputAll.value.trim();
+if (newOpenRouterKey) {
+    // 只有當使用者輸入了新內容時，才更新金鑰
+    config.apiKeys.openrouter = newOpenRouterKey;
+}
             config.enableFollowUp = ALL_ELEMENTS.followUpToggleSwitch.checked;
             config.enableAutoWebSearch = ALL_ELEMENTS.autoWebSearchToggleSwitch.checked;
             config.aiBubbleColor = ALL_ELEMENTS.aiBubbleColorDropdown.querySelector('.color-dropdown-btn')?.dataset.color || 'default';
