@@ -4750,22 +4750,22 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             document.querySelectorAll('#file-options-popover .border-t').forEach(sep => sep.style.display = 'block');
             
             if (provider === 'openrouter') {
-                // 檢查當前 OpenRouter 模型是否支援圖片輸入
-                const supportsVision = OPENROUTER_VISION_MODELS.includes(modelInfo?.id);
+    const supportsVision = OPENROUTER_VISION_MODELS.includes(modelInfo?.id);
 
-                // 無論如何，OpenRouter 模型都先隱藏檔案上傳和網路搜尋
-                [webSearchPopoverBtn].forEach(btn => btn.style.display = 'none'); // ✨ 只隱藏網路搜尋
-uploadFileBtn.style.display = 'flex'; // ✨ 確保檔案上傳按鈕是顯示的
-                
-                // 根據是否支援圖片，決定是否顯示相機和圖片按鈕
-                [cameraBtn, uploadImageBtn].forEach(btn => btn.style.display = supportsVision ? 'flex' : 'none');
+    // 對於 OpenRouter，我們總是顯示檔案按鈕，但隱藏網路搜尋
+    uploadFileBtn.style.display = 'flex';
+    webSearchPopoverBtn.style.display = 'none';
 
-                // 根據按鈕的顯示狀態，決定是否隱藏分隔線
-                const firstSeparator = document.querySelector('#file-options-popover .border-t');
-                if (firstSeparator) {
-                    firstSeparator.style.display = (supportsVision) ? 'block' : 'none';
-                }
-            }
+    // 只有支援視覺的模型才顯示相機和圖片按鈕
+    [cameraBtn, uploadImageBtn].forEach(btn => btn.style.display = supportsVision ? 'flex' : 'none');
+
+    // 只要有任何一個檔案/圖片按鈕可見，就顯示分隔線
+    const firstSeparator = document.querySelector('#file-options-popover .border-t');
+    if (firstSeparator) {
+        // 因為檔案按鈕現在總是顯示，所以分隔線也總是顯示
+        firstSeparator.style.display = 'block';
+    }
+}
         };
 
         const toggleLearningMode = async () => {
@@ -5526,7 +5526,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
         inlineData: {
             mimeType: file.type,
             data: file.base64.split(',')[1],
-            name: file.name
+            name: file.name // <-- ✨ 新增這一行
         }
     });
 });
@@ -5837,58 +5837,64 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 allMessages.forEach(m => {
     const role = m.role === 'model' ? 'assistant' : m.role;
     const currentModelSupportsVision = OPENROUTER_VISION_MODELS.includes(modelId);
+    const hasFiles = m.parts.some(p => p.inlineData);
 
-    // content 現在永遠是一個陣列，用來存放文字、圖片或檔案
-    const content = [];
-    let hasContent = false; // 標記此訊息是否有實質內容
-
-    m.parts.forEach(part => {
-        if (part.text) {
-            content.push({ type: 'text', text: part.text });
-            hasContent = true;
-        } else if (part.inlineData) {
-            // 如果是圖片，且當前模型支援圖片輸入
-            if (part.inlineData.mimeType.startsWith('image/') && currentModelSupportsVision) {
-                const dataUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-                content.push({ type: 'image_url', image_url: { url: dataUrl } });
-                hasContent = true;
+    // 檢查訊息是否包含任何檔案
+    if (hasFiles) {
+        const content = m.parts.map(part => {
+            if (part.text) {
+                return { type: 'text', text: part.text };
             } 
-            // ✨ 如果是 "非圖片" 的檔案，就使用新的檔案格式
-            else if (!part.inlineData.mimeType.startsWith('image/')) {
+            if (part.inlineData) {
+                // 重建完整的 Base64 Data URL
                 const dataUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-                content.push({
-                    type: 'file',
-                    file: {
-                        // 使用我們在第一步儲存的檔名，如果找不到則提供一個備用名稱
-                        filename: part.inlineData.name || `uploaded_file.${part.inlineData.mimeType.split('/')[1] || 'bin'}`,
-                        file_data: dataUrl
-                    }
-                });
-                hasContent = true;
+                
+                // 判斷：如果是圖片且模型支援，使用 image_url 格式
+                if (part.inlineData.mimeType.startsWith('image/') && currentModelSupportsVision) {
+                    return { type: 'image_url', image_url: { url: dataUrl } };
+                } 
+                // 否則，使用通用的 file 格式 (適用於 PDF, TXT 等)
+                else {
+                    return {
+                        type: 'file',
+                        file: {
+                            filename: part.inlineData.name || 'uploaded_file',
+                            file_data: dataUrl,
+                        },
+                    };
+                }
             }
-            // (如果是圖片但模型不支援，就忽略它)
-        }
-    });
-    
-    // 只有在訊息有實質內容時才加入
-    if(hasContent) {
+            return null;
+        }).filter(Boolean); // 過濾掉空的部分
+        
         messages.push({ role, content });
+
+    } else {
+        // 如果沒有檔案，維持原本的純文字處理邏輯
+        const content = m.parts
+            .filter(p => p.text)
+            .map(p => p.text)
+            .join('\n');
+        
+        if (content) {
+            messages.push({ role, content });
+        }
     }
 });
 
-payload = {
+                payload = {
     model: modelId,
     messages,
     stream: true,
-    // ✨ 根據官方文件，加入 plugins 設定來啟用檔案解析
-    plugins: [
-        {
-          id: 'file-parser'
-        }
-    ],
     ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
     ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
     ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
+    // 新增 plugins 屬性以啟用檔案解析
+    plugins: [
+      {
+        id: 'file-parser'
+      }
+    ],
 };
                 headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
             }
@@ -10249,7 +10255,7 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
                         // OpenRouter 模型總是顯示學習和研究
                         if (item.id === 'learning-mode-btn' || item.id === 'deep-research-btn') return true;
                         // OpenRouter 模型隱藏檔案上傳和網路搜尋
-                        if (item.id === 'web-search-popover-btn') return false;
+                        if (item.id === 'upload-file-btn' || item.id === 'web-search-popover-btn') return false;
                         // 只有支援的模型才顯示相機和圖片
                         if (item.id === 'camera-btn' || item.id === 'upload-image-btn') return supportsVision;
                         // 分隔線邏輯稍後處理
