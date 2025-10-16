@@ -4736,18 +4736,21 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const allSeparators = document.querySelectorAll('#file-options-popover .border-t');
 
         if (provider === 'openrouter') {
-            // 對於 OpenRouter，隱藏與「檔案上傳」和「網路搜尋」相關的功能
-            [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn].forEach(btn => btn.style.display = 'none');
-            
-            // 明確顯示 OpenRouter 支援的功能：「學習模式」和「深度研究」
-            learningModeBtn.style.display = 'flex';
-            deepResearchBtn.style.display = 'flex';
+    // ✨ 修正：明確顯示相機和圖片按鈕
+    cameraBtn.style.display = 'flex';
+    uploadImageBtn.style.display = 'flex';
+    learningModeBtn.style.display = 'flex';
+    deepResearchBtn.style.display = 'flex';
 
-            // 隱藏不需要的分隔線
-            if (allSeparators.length > 0) allSeparators[0].style.display = 'none'; // 隱藏網路搜尋前的分隔線
-            if (allSeparators.length > 1) allSeparators[1].style.display = 'block';// 確保深度研究前的分隔線是顯示的
+    // 保持隱藏 OpenRouter 不支援的功能
+    uploadFileBtn.style.display = 'none';
+    webSearchPopoverBtn.style.display = 'none';
 
-        } else { // Gemini 模型
+    // 根據顯示的按鈕，調整分隔線的可見性
+    if (allSeparators.length > 0) allSeparators[0].style.display = 'block'; // 圖片和搜尋之間的分隔線
+    if (allSeparators.length > 1) allSeparators[1].style.display = 'block'; // 學習和研究之間的分隔線
+
+} else { // Gemini 模型
             // 對於 Gemini，顯示所有功能按鈕和分隔線
             allButtons.forEach(btn => btn.style.display = 'flex');
             allSeparators.forEach(sep => sep.style.display = 'block');
@@ -5807,10 +5810,43 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 if (systemInstruction) {
                     messages.push({ role: 'system', content: systemInstruction.parts.map(p => p.text).join('\n') });
                 }
-                messages.push(...[...historyForApi, currentMessageForApi].map(m => ({
-                    role: m.role === 'model' ? 'assistant' : m.role,
-                    content: m.parts.filter(p => p.text).map(p => p.text).join('\n')
-                })));
+                messages.push(...[...historyForApi, currentMessageForApi].map(m => {
+    const hasImage = m.parts.some(p => p.inlineData && p.inlineData.mimeType.startsWith('image/'));
+    const role = m.role === 'model' ? 'assistant' : 'user';
+
+    // 如果訊息中沒有圖片，就使用原本的純文字格式
+    if (!hasImage) {
+        return {
+            role: role,
+            content: m.parts.filter(p => p.text).map(p => p.text).join('\n')
+        };
+    }
+
+    // 如果訊息中有圖片，就建立一個包含文字和圖片的陣列
+    const contentArray = [];
+    m.parts.forEach(part => {
+        if (part.text) {
+            contentArray.push({
+                type: 'text',
+                text: part.text
+            });
+        } else if (part.inlineData && part.inlineData.mimeType.startsWith('image/')) {
+            // 根據官方指示，重新組合 OpenRouter 需要的 Base64 格式
+            const dataUri = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+            contentArray.push({
+                type: 'image_url',
+                image_url: {
+                    url: dataUri
+                }
+            });
+        }
+    });
+
+    return {
+        role: role,
+        content: contentArray
+    };
+}));
                 payload = {
                     model: modelId,
                     messages,
@@ -10175,16 +10211,19 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
 
     // 3. 根據模型 (provider) 來決定要顯示哪些按鈕
     let visibleMenuItems;
-    if (provider === 'openrouter') {
-        // 如果是 OpenRouter 模型，只留下「學習」和「研究」
-        visibleMenuItems = allMenuItems.filter(item => 
-            item.id === 'learning-mode-btn' || 
-            item.id === 'deep-research-btn'
-        );
-    } else {
-        // 否則 (例如 Gemini 模型)，顯示全部按鈕
-        visibleMenuItems = allMenuItems;
-    }
+if (provider === 'openrouter') {
+    // ✨ 修正：在原本的基礎上，額外加入相機和圖片按鈕
+    visibleMenuItems = allMenuItems.filter(item =>
+        item.id === 'camera-btn' ||             // <-- 新增
+        item.id === 'upload-image-btn' ||         // <-- 新增
+        item.id === 'learning-mode-btn' ||
+        item.id === 'deep-research-btn' ||
+        item.type === 'divider' // 保留分隔線以維持結構
+    );
+} else {
+    // 否則 (例如 Gemini 模型)，顯示全部按鈕
+    visibleMenuItems = allMenuItems;
+}
 
     let itemsHTML = '';
     visibleMenuItems.forEach((item, index) => {
