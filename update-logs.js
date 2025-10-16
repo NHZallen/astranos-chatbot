@@ -1,5 +1,15 @@
 const updateLogs = [
         {
+    version: "15.7.6",
+    date: "2025-10-16",
+    content: [
+        "<strong>【多模態支援】Astra 正式支援 OpenRouter 視覺模型！</strong>您的 AI 夥伴現在擁有了「眼睛」。當您選用支援視覺功能的模型時，即可上傳圖片，讓 AI 理解圖像內容，實現真正的圖文對話。",
+        "<strong>【模型庫擴充】新增兩款通義千問 (Qwen) 視覺模型：</strong>為了配合新的視覺能力，我們引入了 <strong>`qwen3-vl-235b-instruct` (付費)</strong> 和 <strong>`qwen2.5-vl-72b-instruct:free` (免費)</strong>，為您提供更多元的多模態選擇。",
+        "<strong>【智慧介面優化】動態功能按鈕：</strong>輸入框旁的「+」按鈕變得更聰明了！現在「相機」與「影像」選項只會在您選擇了支援視覺功能的模型時才會出現，讓介面始終保持簡潔直觀。",
+        "<strong>【後台更新與修正】</strong>更新了應用程式版本號至 15.7.6，並在語言檔案 (`i18n.js`) 中加入了新模型的描述文字，以提供更完整的資訊。"
+    ]
+},
+        {
     version: "15.7.5",
     date: "2025-10-14",
     content: [
