@@ -4750,21 +4750,18 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             document.querySelectorAll('#file-options-popover .border-t').forEach(sep => sep.style.display = 'block');
             
             if (provider === 'openrouter') {
-                // 檢查當前 OpenRouter 模型是否支援圖片輸入
-                const supportsVision = OPENROUTER_VISION_MODELS.includes(modelInfo?.id);
+    // 對所有 OpenRouter 模型開放檔案、相機和圖片上傳功能
+    [cameraBtn, uploadImageBtn, uploadFileBtn].forEach(btn => btn.style.display = 'flex');
 
-                // 無論如何，OpenRouter 模型都先隱藏檔案上傳和網路搜尋
-                [uploadFileBtn, webSearchPopoverBtn].forEach(btn => btn.style.display = 'none');
-                
-                // 根據是否支援圖片，決定是否顯示相機和圖片按鈕
-                [cameraBtn, uploadImageBtn].forEach(btn => btn.style.display = supportsVision ? 'flex' : 'none');
+    // 繼續隱藏 OpenRouter 不支援的網路搜尋功能
+    webSearchPopoverBtn.style.display = 'none';
 
-                // 根據按鈕的顯示狀態，決定是否隱藏分隔線
-                const firstSeparator = document.querySelector('#file-options-popover .border-t');
-                if (firstSeparator) {
-                    firstSeparator.style.display = (supportsVision) ? 'block' : 'none';
-                }
-            }
+    // 確保分隔線總是可見
+    const firstSeparator = document.querySelector('#file-options-popover .border-t');
+    if (firstSeparator) {
+        firstSeparator.style.display = 'block';
+    }
+}
         };
 
         const toggleLearningMode = async () => {
@@ -5521,13 +5518,14 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 userParts.push({ text: userMessage });
             }
             uploadedFiles.forEach(file => {
-                userParts.push({
-                    inlineData: {
-                        mimeType: file.type,
-                        data: file.base64.split(',')[1]
-                    }
-                });
-            });
+    userParts.push({
+        inlineData: {
+            mimeType: file.type,
+            data: file.base64.split(',')[1],
+            name: file.name // <-- 新增這一行來記錄檔名
+        }
+    });
+});
             const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
             addMessageToUI(userMessageObject, conv.messages.length, true);
             conv.lastUpdatedAt = new Date().toISOString();
@@ -5825,53 +5823,70 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 url = 'https://openrouter.ai/api/v1/chat/completions';
                 
                 const messages = [];
-                if (systemInstruction) {
-                    messages.push({ role: 'system', content: systemInstruction.parts.map(p => p.text).join('\n') });
+if (systemInstruction) {
+    messages.push({ role: 'system', content: systemInstruction.parts.map(p => p.text).join('\n') });
+}
+
+// 重新處理對話歷史，使其符合 OpenRouter 的檔案上傳格式
+const allMessages = [...historyForApi, currentMessageForApi];
+
+allMessages.forEach(m => {
+    const role = m.role === 'model' ? 'assistant' : m.role;
+    
+    const contentParts = [];
+    let hasText = false;
+    let hasFiles = false;
+
+    m.parts.forEach(part => {
+        if (part.text && part.text.trim() !== '') {
+            contentParts.push({
+                type: 'text',
+                text: part.text
+            });
+            hasText = true;
+        } else if (part.inlineData) {
+            // 將我們的檔案格式轉換為 OpenRouter 要求的文件格式
+            contentParts.push({
+                type: 'file',
+                file: {
+                    filename: part.inlineData.name || 'uploaded_file', // 使用我們在第一步加入的檔名
+                    file_data: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}` // 重組完整的 Base64 Data URL
                 }
+            });
+            hasFiles = true;
+        }
+    });
 
-                // 將我們的對話歷史轉換為 OpenRouter API 接受的格式
-                const allMessages = [...historyForApi, currentMessageForApi];
+    // 根據訊息內容決定最終格式
+    if (hasText && hasFiles) {
+        // 混合文字和檔案，傳送陣列
+        messages.push({ role: role, content: contentParts });
+    } else if (hasText && !hasFiles) {
+        // 只有文字，傳送單一字串以節省 token
+        messages.push({ role: role, content: contentParts.map(c => c.text).join('\n') });
+    } else if (!hasText && hasFiles) {
+        // 只有檔案，傳送陣列
+        messages.push({ role: role, content: contentParts });
+    }
+    // 如果訊息為空，則忽略
+});
 
-                allMessages.forEach(m => {
-                    const role = m.role === 'model' ? 'assistant' : m.role;
-                    const currentModelSupportsVision = OPENROUTER_VISION_MODELS.includes(modelId);
-                    const hasImage = m.parts.some(p => p.inlineData);
-
-                    // 如果是支援圖片的模型，並且訊息中確實有圖片
-                    if (currentModelSupportsVision && hasImage) {
-                        const content = m.parts.map(part => {
-                            if (part.text) {
-                                return { type: 'text', text: part.text };
-                            } else if (part.inlineData) {
-                                // 這是核心！將我們的資料格式轉換成 OpenRouter 需要的格式
-                                const dataUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-                                return { type: 'image_url', image_url: { url: dataUrl } };
-                            }
-                            return null;
-                        }).filter(Boolean); // 過濾掉空的部分
-                        
-                        messages.push({ role, content });
-                    } else {
-                        // 如果不支援圖片，或這條訊息沒有圖片，就只傳送文字
-                        const content = m.parts
-                            .filter(p => p.text)
-                            .map(p => p.text)
-                            .join('\n');
-                        
-                        if (content) { // 避免傳送空的訊息
-                            messages.push({ role, content });
-                        }
-                    }
-                });
-
-                payload = {
-                    model: modelId,
-                    messages, // 使用我們剛剛建立的、格式正確的 messages 陣列
-                    stream: true,
-                    ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
-                    ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
-                    ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
-                };
+payload = {
+    model: modelId,
+    messages: messages,
+    stream: true,
+    // 新增 plugins 參數來啟用並設定檔案解析引擎
+    plugins: [
+        {
+            id: 'file-parser',
+            pdf: {
+                engine: 'pdf-text', // 免費引擎，適合文字為主的PDF。可改為 'mistral-ocr' 處理掃描件（付費）
+            },
+        },
+    ],
+    ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
+    ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
+    ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
                 headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
             }
             const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
@@ -10225,19 +10240,12 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
                 ];
 
                 let visibleMenuItems = allMenuItems;
-                if (provider === 'openrouter') {
-                    const supportsVision = OPENROUTER_VISION_MODELS.includes(modelInfo?.id);
-                    visibleMenuItems = allMenuItems.filter(item => {
-                        // OpenRouter 模型總是顯示學習和研究
-                        if (item.id === 'learning-mode-btn' || item.id === 'deep-research-btn') return true;
-                        // OpenRouter 模型隱藏檔案上傳和網路搜尋
-                        if (item.id === 'upload-file-btn' || item.id === 'web-search-popover-btn') return false;
-                        // 只有支援的模型才顯示相機和圖片
-                        if (item.id === 'camera-btn' || item.id === 'upload-image-btn') return supportsVision;
-                        // 分隔線邏輯稍後處理
-                        return item.type === 'divider';
-                    });
-                }
+if (provider === 'openrouter') {
+    // 只過濾掉 OpenRouter 不支援的「網路搜尋」功能，其餘檔案相關功能全部顯示
+    visibleMenuItems = allMenuItems.filter(item => {
+        return item.id !== 'web-search-popover-btn';
+    });
+}
 
                 let itemsHTML = '';
                 visibleMenuItems.forEach((item, index) => {
