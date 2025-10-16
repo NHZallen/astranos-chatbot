@@ -5602,7 +5602,6 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             const userMessage = ALL_ELEMENTS.messageInput.value.trim();
             if (!userMessage && uploadedFiles.length === 0) return;
             
-            // ✨ 如果是深度研究模式，則呼叫專用函數
             if (config.isDeepResearchMode) {
                 handleDeepResearch(userMessage);
                 return;
@@ -5668,28 +5667,28 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 let fullResponse = '';
                 const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
 
-                // 1. 先等待 API 回應完全結束，獲取完整文字
+                // 1. 等待 API 回應，同時獲取 fullText 和 annotations
                 const { fullText, annotations } = await streamApiCall(
-    userParts,
-    (chunk) => { /* ... */ },
-    abortController.signal
-);
-fullResponse = fullText;
+                    userParts,
+                    (chunk) => {
+                        // 這個 onChunk 在新架構下可以留空，主要邏輯由 typewriterStream 處理
+                    },
+                    abortController.signal
+                );
 
-                fullResponse = completeResponse;
+                fullResponse = fullText;
                 sendConversationToMail(userMessageObject, fullResponse);
 
-                // 2. 將完整的最終訊息保存到對話紀錄中
+                // 2. 將完整的訊息（包括 annotations）保存到對話紀錄中
                 finalAiMessage.parts = [{ text: fullResponse }];
-// 如果有 annotations，就把它加到訊息物件上
-if (annotations && annotations.length > 0) {
-    finalAiMessage.annotations = annotations;
-}
-conv.messages.push(finalAiMessage);
+                if (annotations && annotations.length > 0) {
+                    finalAiMessage.annotations = annotations;
+                }
+                conv.messages.push(finalAiMessage);
                 conv.lastUpdatedAt = new Date().toISOString();
                 await saveAppData();
                 
-                // 3. ✨ 啟動打字機動畫，並等待它完成
+                // 3. 啟動打字機動畫，並等待它完成
                 await (async () => {
                     return new Promise(resolve => {
                         contentDiv.innerHTML = ''; // 清空等待樣式
@@ -5718,7 +5717,7 @@ conv.messages.push(finalAiMessage);
                             } else {
                                 // 動畫完成或被中止
                                 contentDiv.innerHTML = renderMarkdown(fullResponse); // 最終清理，移除游標
-                                resolve(); // ✨ Promise 完成，通知 await
+                                resolve(); // Promise 完成，通知 await
                             }
                         }
                         
@@ -5726,7 +5725,7 @@ conv.messages.push(finalAiMessage);
                     });
                 })();
 
-                // 4. ✨ 只有在打字機動畫結束後，才執行後續任務
+                // 4. 只有在打字機動畫結束後，才執行後續任務
                 if (!abortController.signal.aborted) {
                     if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
                         await generateFollowUpPrompts(userMessage, fullResponse);
@@ -5745,7 +5744,6 @@ conv.messages.push(finalAiMessage);
                     await saveAppData();
                 }
             } finally {
-                // ... finally 區塊的程式碼保持不變 ...
                 abortController = null;
                 updateSubmitButtonState(false);
                 sendConfirmed = false;
