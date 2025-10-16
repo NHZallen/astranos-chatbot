@@ -463,6 +463,8 @@ window.i18n = {
         model_qwen3_235b_desc_tier_paid: '不提供',
         model_deepseek_r1t2_chimera_desc_tier_free: '費用-免費 (20次/分鐘、50次/天)',
         model_deepseek_r1t2_chimera_desc_tier_paid: '不提供',
+        model_meta_llama_llama_3_3_70b_instruct_desc_tier_free: '費用-免費 (20次/分鐘、50次/天)',
+        model_meta_llama_llama_3_3_70b_instruct_desc_tier_paid: '不提供',
 
 
         // OpenAI Paid
@@ -492,8 +494,17 @@ window.i18n = {
         // Anthropic Paid
         model_claude_sonnet_4_5_desc_tier_free: '不提供',
         model_claude_sonnet_4_5_desc_tier_paid: '百萬輸入/3$、百萬輸出/15$',
+        model_claude_haiku_4_5_desc_tier_free: '不提供',
+        model_claude_haiku_4_5_desc_tier_paid: '百萬輸入/1$、百萬輸出/5$',
         model_claude_sonnet_4_desc_tier_free: '不提供',
         model_claude_sonnet_4_desc_tier_paid: '百萬輸入/3$、百萬輸出/15$',
+
+
+        // Perplexity Paid
+        model_perplexity_sonar_deep_research_desc_tier_free: '不提供',
+        model_perplexity_sonar_deep_research_desc_tier_paid: '百萬輸入/2$、百萬輸出/8$',
+        model_perplexity_sonar_desc_tier_free: '不提供',
+        model_perplexity_sonar_desc_tier_paid: '百萬輸入/1$、百萬輸出/1$',
 
 
         // Deepseek Paid
@@ -1002,6 +1013,8 @@ window.i18n = {
         model_qwen3_235b_desc_tier_paid: 'Not available',
         model_deepseek_r1t2_chimera_desc_tier_free: 'Cost - Free (20 req/min, 50 req/day)',
         model_deepseek_r1t2_chimera_desc_tier_paid: 'Not available',
+        model_meta_llama_llama_3_3_70b_instruct_desc_tier_free: 'Cost - Free (20 req/min, 50 req/day)',
+        model_meta_llama_llama_3_3_70b_instruct_desc_tier_paid: 'Not available',
 
 
         model_gpt_5_pro_desc_tier_free: 'Not available',
@@ -1030,8 +1043,16 @@ window.i18n = {
 
         model_claude_sonnet_4_5_desc_tier_free: 'Not available',
         model_claude_sonnet_4_5_desc_tier_paid: '$3/M input, $15/M output',
+        model_claude_haiku_4_5_desc_tier_free: 'Not available',
+        model_claude_haiku_4_5_desc_tier_paid: '$1/M input, $5/M output',
         model_claude_sonnet_4_desc_tier_free: 'Not available',
         model_claude_sonnet_4_desc_tier_paid: '$3/M input, $15/M output',
+
+        
+        model_perplexity_sonar_deep_research_desc_tier_free: 'Not available',
+        model_perplexity_sonar_deep_research_desc_tier_paid: '$2/M input, $8/M output',
+        model_perplexity_sonar_desc_tier_free: 'Not available',
+        model_perplexity_sonar_desc_tier_paid: '$1/M input, $1/M output',
 
 
         model_deepseek_v3_1_terminus_desc_tier_free: 'Not available',
@@ -1540,6 +1561,8 @@ window.i18n = {
         model_qwen3_235b_desc_tier_paid: 'Non disponible',
         model_deepseek_r1t2_chimera_desc_tier_free: 'Coût - Gratuit (20 req/min, 50 req/jour)',
         model_deepseek_r1t2_chimera_desc_tier_paid: 'Non disponible',
+        model_meta_llama_llama_3_3_70b_instruct_desc_tier_free: 'Coût - Gratuit (20 req/min, 50 req/jour)',
+        model_meta_llama_llama_3_3_70b_instruct_desc_tier_paid: 'Non disponible',
 
 
         model_gpt_5_pro_desc_tier_free: 'Non disponible',
@@ -1568,26 +1591,34 @@ window.i18n = {
 
         model_claude_sonnet_4_5_desc_tier_free: 'Non disponible',
         model_claude_sonnet_4_5_desc_tier_paid: '3 $/M entrée, 15 $/M sortie',
+        model_claude_haiku_4_5_desc_tier_free: 'Non disponible',
+        model_claude_haiku_4_5_desc_tier_paid: '1 $/M entrée, 5 $/M sortie',
         model_claude_sonnet_4_desc_tier_free: 'Non disponible',
         model_claude_sonnet_4_desc_tier_paid: '3 $/M entrée, 15 $/M sortie',
+
+        
+        model_perplexity_sonar_deep_research_desc_tier_free: 'Non disponible',
+        model_perplexity_sonar_deep_research_desc_tier_paid: '2 $/M entrée, 8 $/M sortie',
+        model_perplexity_sonar_desc_tier_free: 'Non disponible',
+        model_perplexity_sonar_desc_tier_paid: '1 $/M entrée, 1 $/M sortie',
 
 
         model_deepseek_v3_1_terminus_desc_tier_free: 'Non disponible',
         model_deepseek_v3_1_terminus_desc_tier_paid: '0,23 $/M entrée, 0,90 $/M sortie',
-
-
+        
         model_grok_4_fast_desc_tier_free: 'Non disponible',
         model_grok_4_fast_desc_tier_paid: '0,20 $/M entrée, 0,50 $/M sortie',
         model_grok_code_fast_1_desc_tier_free: 'Non disponible',
         model_grok_code_fast_1_desc_tier_paid: '0,20 $/M entrée, 1,50 $/M sortie',
-
-
+        
         model_qwen3_coder_desc_tier_free: 'Non disponible',
         model_qwen3_coder_desc_tier_paid: '0,22 $/M entrée, 0,95 $/M sortie',
 
 
         model_kimi_k2_0905_desc_tier_free: 'Non disponible',
         model_kimi_k2_0905_desc_tier_paid: '0,39 $/M entrée, 1,90 $/M sortie',
+
+
 
 
 
