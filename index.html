@@ -10252,19 +10252,27 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
                 ];
 
                 let visibleMenuItems = allMenuItems;
-                if (provider === 'openrouter') {
-                    const supportsVision = OPENROUTER_VISION_MODELS.includes(modelInfo?.id);
-                    visibleMenuItems = allMenuItems.filter(item => {
-                        // OpenRouter 模型總是顯示學習和研究
-                        if (item.id === 'learning-mode-btn' || item.id === 'deep-research-btn') return true;
-                        // OpenRouter 模型隱藏檔案上傳和網路搜尋
-                        if (item.id === 'upload-file-btn' || item.id === 'web-search-popover-btn') return false;
-                        // 只有支援的模型才顯示相機和圖片
-                        if (item.id === 'camera-btn' || item.id === 'upload-image-btn') return supportsVision;
-                        // 分隔線邏輯稍後處理
-                        return item.type === 'divider';
-                    });
-                }
+if (provider === 'openrouter') {
+    const supportsVision = OPENROUTER_VISION_MODELS.includes(modelInfo?.id);
+    visibleMenuItems = allMenuItems.filter(item => {
+        // 對於 OpenRouter 模型：
+
+        // 1. 總是顯示學習和研究按鈕
+        if (item.id === 'learning-mode-btn' || item.id === 'deep-research-btn') return true;
+        
+        // 2. ✨ 總是顯示檔案上傳按鈕 ✨
+        if (item.id === 'upload-file-btn') return true;
+
+        // 3. 總是隱藏網路搜尋按鈕
+        if (item.id === 'web-search-popover-btn') return false;
+
+        // 4. 只有支援視覺的模型才顯示相機和圖片按鈕
+        if (item.id === 'camera-btn' || item.id === 'upload-image-btn') return supportsVision;
+        
+        // 5. 其他項目 (如分隔線) 預設顯示
+        return item.type === 'divider';
+    });
+}
 
                 let itemsHTML = '';
                 visibleMenuItems.forEach((item, index) => {
