@@ -5875,20 +5875,20 @@ payload = {
     model: modelId,
     messages: messages,
     stream: true,
-    // 新增 plugins 參數來啟用並設定檔案解析引擎
     plugins: [
         {
             id: 'file-parser',
             pdf: {
-                engine: 'pdf-text', // 免費引擎，適合文字為主的PDF。可改為 'mistral-ocr' 處理掃描件（付費）
+                engine: 'pdf-text',
             },
         },
     ],
     ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
     ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
     ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
-                headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
-            }
+}; // <-- 就是這裡！補上這個右大括號和分號
+
+headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
             const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
             if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'API 請求失敗'); }
             const reader = response.body.getReader();
