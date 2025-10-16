@@ -5370,8 +5370,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         }
     });
 };
-         /**
-         * 處理 AI 回應中的 annotations，將其轉換為引用標籤和來源列表
+        /**
+         * ✨ 全新版本：處理 AI 回應中的 annotations，將文字中的, 等轉換為超連結
          * @param {string} content - AI 回應的原始文字內容
          * @param {Array} annotations - 包含來源資訊的陣列
          * @returns {{processedContent: string, citationsHTML: string}} - 處理後的內容和來源列表 HTML
@@ -5381,39 +5381,42 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 return { processedContent: content, citationsHTML: '' };
             }
 
-            let processedContent = content;
-            const citations = [];
+            // 1. 建立一個不重複的來源列表，並給每個來源一個編號
+            const uniqueCitations = [];
+            const citationMap = new Map(); // 用來快速查找 URL 是否已存在
 
-            // 複製並從後往前排序 annotations，這樣修改字串時才不會影響前面的索引
-            const sortedAnnotations = [...annotations].sort((a, b) => b.url_citation.start_index - a.url_citation.start_index);
-
-            sortedAnnotations.forEach(annotation => {
-                const { url, title, start_index, end_index } = annotation.url_citation;
-                
-                // 檢查這個來源是否已經處理過
-                let citationIndex = citations.findIndex(c => c.url === url);
-                if (citationIndex === -1) {
-                    citations.push({ url, title });
-                    citationIndex = citations.length - 1;
+            annotations.forEach(annotation => {
+                const { url, title } = annotation.url_citation;
+                if (!citationMap.has(url)) {
+                    citationMap.set(url, uniqueCitations.length + 1);
+                    uniqueCitations.push({ url, title, number: uniqueCitations.length + 1 });
                 }
-                const citationNumber = citationIndex + 1;
-
-                // 建立引用標籤的 HTML
-                const citationMarker = ` <sup class="citation-marker"><a href="${url}" target="_blank" title="${title}">[${citationNumber}]</a></sup> `;
-
-                // 取代原始文字中的對應部分
-                processedContent = 
-                    processedContent.slice(0, start_index) + 
-                    citationMarker + 
-                    processedContent.slice(end_index);
             });
 
-            // 建立來源列表的 HTML
-            let citationsHTML = '<div class="citation-list"><h4>來源：</h4><ol>';
-            citations.forEach((citation, index) => {
-                citationsHTML += `<li><a href="${citation.url}" target="_blank">${citation.title}</a></li>`;
+            // 2. 使用正規表示式取代文字中的 [數字]
+            let processedContent = content.replace(/\[(\d+)\]/g, (match, numberStr) => {
+                const number = parseInt(numberStr, 10);
+                // 在我們的來源列表中尋找對應編號的來源
+                const citation = uniqueCitations.find(c => c.number === number);
+                
+                if (citation) {
+                    // 如果找到，就替換成帶有連結的 sup 標籤
+                    return ` <sup class="citation-marker"><a href="${citation.url}" target="_blank" title="${citation.title}">[${citation.number}]</a></sup> `;
+                }
+                
+                // 如果沒找到對應的來源 (例如 AI 自己亂加的數字)，就保留原始文字
+                return match;
             });
-            citationsHTML += '</ol></div>';
+            
+            // 3. 建立來源列表的 HTML
+            let citationsHTML = '';
+            if (uniqueCitations.length > 0) {
+                citationsHTML = '<div class="citation-list"><h4>來源：</h4><ol>';
+                uniqueCitations.forEach(citation => {
+                    citationsHTML += `<li><a href="${citation.url}" target="_blank">${citation.title}</a></li>`;
+                });
+                citationsHTML += '</ol></div>';
+            }
 
             return { processedContent, citationsHTML };
         }
@@ -5456,12 +5459,15 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     if (isUser) {
         contentHTML += `<div>${combinedText.replace(/\n/g, '<br>')}</div>`;
     } else {
-        // ✨ 核心修改：呼叫我們的新函式來處理 annotations
-        const { processedContent, citationsHTML } = processAnnotations(combinedText, msg.annotations);
-        // 將處理過的內容拿去渲染 Markdown，並在後面附上來源列表
-        contentHTML += `<div>${renderMarkdown(processedContent)}</div>` + citationsHTML;
-    }
-}
+            // ✨ 核心修改：呼叫我們的新函式來處理 annotations
+            // 只有在非打字機狀態下（即正常渲染歷史訊息時）才加入 citationsHTML
+            if (isLoadingMessage) {
+                 contentHTML += `<div>${renderMarkdown(combinedText)}</div>`;
+            } else {
+                const { processedContent, citationsHTML } = processAnnotations(combinedText, msg.annotations);
+                contentHTML += `<div>${renderMarkdown(processedContent)}</div>` + citationsHTML;
+            }
+        }
                 if (mediaPartsContent.length > 0) {
                     let mediaHTML = '<div class="mt-2 flex flex-wrap gap-2">';
                     mediaPartsContent.forEach(media => {
@@ -5667,7 +5673,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 let fullResponse = '';
                 const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
 
-                // 1. 等待 API 回應，同時獲取 fullText 和 annotations
+                // ✨ 已修正：正確解構回傳的物件
                 const { fullText, annotations } = await streamApiCall(
                     userParts,
                     (chunk) => {
@@ -5679,7 +5685,6 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 fullResponse = fullText;
                 sendConversationToMail(userMessageObject, fullResponse);
 
-                // 2. 將完整的訊息（包括 annotations）保存到對話紀錄中
                 finalAiMessage.parts = [{ text: fullResponse }];
                 if (annotations && annotations.length > 0) {
                     finalAiMessage.annotations = annotations;
@@ -5688,17 +5693,19 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 conv.lastUpdatedAt = new Date().toISOString();
                 await saveAppData();
                 
-                // 3. 啟動打字機動畫，並等待它完成
+                // 打字機效果... (後面不變)
                 await (async () => {
                     return new Promise(resolve => {
-                        contentDiv.innerHTML = ''; // 清空等待樣式
+                        contentDiv.innerHTML = ''; 
                         let currentIndex = 0;
                         const typingSpeed = 15;
 
                         function type() {
                             if (currentIndex < fullResponse.length && !abortController.signal.aborted) {
                                 const currentText = fullResponse.substring(0, currentIndex + 1);
-                                contentDiv.innerHTML = renderMarkdown(currentText + '▋');
+                                // ✨ 在打字機效果中就直接處理 annotations，讓連結即時出現
+                                const { processedContent } = processAnnotations(currentText, annotations);
+                                contentDiv.innerHTML = renderMarkdown(processedContent + '▋');
 
                                 let step = 1;
                                 if (currentText.includes('```')) {
@@ -5715,17 +5722,16 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 
                                 setTimeout(type, typingSpeed);
                             } else {
-                                // 動畫完成或被中止
-                                contentDiv.innerHTML = renderMarkdown(fullResponse); // 最終清理，移除游標
-                                resolve(); // Promise 完成，通知 await
+                                // 動畫完成後，再渲染一次包含來源列表的最終版本
+                                const { processedContent, citationsHTML } = processAnnotations(fullResponse, annotations);
+                                contentDiv.innerHTML = renderMarkdown(processedContent) + citationsHTML;
+                                resolve();
                             }
                         }
-                        
-                        type(); // 啟動
+                        type();
                     });
                 })();
 
-                // 4. 只有在打字機動畫結束後，才執行後續任務
                 if (!abortController.signal.aborted) {
                     if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
                         await generateFollowUpPrompts(userMessage, fullResponse);
@@ -5744,6 +5750,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     await saveAppData();
                 }
             } finally {
+                // ... finally 區塊的程式碼保持不變 ...
                 abortController = null;
                 updateSubmitButtonState(false);
                 sendConfirmed = false;
