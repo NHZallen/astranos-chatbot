@@ -14,13 +14,6 @@
     body {
     touch-action: manipulation;
 }
-    #model-showcase-table tbody tr:nth-child(even) {
-            background-color: #f9fafb; /* 讓偶數行有淡淡的底色 */
-        }
-
-        #model-showcase-table tbody tr:hover {
-            background-color: #f3f4f6; /* 滑鼠移上去時變色 */
-        }
     #history-sidebar.visible ~ #scroll-to-bottom-btn {
     opacity: 0;
     pointer-events: none;
@@ -2399,32 +2392,26 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     </div>
                 </section>
                 <section class="py-20 lg:py-24 bg-gray-50">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="text-center mb-12">
-                    <h2 class="text-3xl lg:text-4xl font-bold text-gray-900" data-lang-key="exploreModels">探索我們的 AI 模型</h2>
-                    <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto" data-lang-key="exploreModelsDesc">
-                        我們提供一系列為不同任務量身打造的頂尖模型，無論是創意寫作、程式設計還是商業分析，總有一款適合您。
-                    </p>
-                </div>
-                
-                <!-- 模型展示表格 -->
-                <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table id="model-showcase-table" class="w-full text-sm text-left text-gray-700">
-                            <thead class="text-xs text-gray-800 uppercase bg-gray-100">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3">模型名稱</th>
-                                    <th scope="col" class="px-6 py-3">簡介與費用</th>
-                                </tr>
-                            </thead>
-                            <tbody id="model-showcase-table-body">
-                                <!-- 模型資料將會由 JavaScript 動態填入這裡 -->
-                            </tbody>
-                        </table>
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div class="text-center">
+                            <h2 class="text-3xl lg:text-4xl font-bold text-gray-900" data-lang-key="exploreModels">探索我們的 AI 模型</h2>
+                            <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto" data-lang-key="exploreModelsDesc">
+                                我們提供一系列為不同任務量身打造的頂尖模型，無論是創意寫作、程式設計還是商業分析，總有一款適合您。
+                            </p>
+                        </div>
+                        <div class="mt-16 max-w-5xl mx-auto">
+                            <div class="demo-model-selector grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 lg:gap-4">
+                            </div>
+                            <div class="mt-8 bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+                                <div class="p-4 border-b border-gray-200">
+                                    <h3 id="demo-chat-title" class="text-lg font-semibold text-gray-800 text-center" data-lang-key="demoChatTitle">Astra-ProMax 對話範例</h3>
+                                </div>
+                                <div id="demo-chat-window" class="p-6 h-96 overflow-y-auto space-y-6 bg-gray-100">
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
-        </section>
+                </section>
             </main>
             <footer class="bg-white border-t border-gray-200">
                 <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 text-center text-sm text-gray-500">
@@ -10429,55 +10416,5 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
         lastTouchEnd = now;
     }, false);
 </script>
-       <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // 1. 等待頁面所有元素都載入完成後才執行
-
-        // 2. 找到我們要填入資料的表格主體
-        const tableBody = document.getElementById('model-showcase-table-body');
-        
-        // 3. 檢查頁面上是否有 MODELS 和 i18n 這兩個必要的資料物件
-        if (tableBody && typeof MODELS !== 'undefined' && typeof i18n !== 'undefined') {
-            
-            // 4. 取得當前的語言設定，以便顯示正確的翻譯
-            const currentLang = window.config?.uiLanguage || 'zh-TW';
-            const translations = i18n[currentLang] || i18n['zh-TW'];
-
-            // 5. 遍歷（一個一個讀取）MODELS 陣列中的每一個模型物件
-            MODELS.forEach(model => {
-                
-                // 6. 根據模型的 descriptionKey 找到對應的翻譯文字
-                const descKey = model.descriptionKey;
-                const freeTierDesc = translations[descKey + '_tier_free'] || '';
-                const paidTierDesc = translations[descKey + '_tier_paid'] || '';
-                
-                // 7. 組合簡介與費用說明
-                let descriptionHTML = '';
-                if (freeTierDesc && freeTierDesc !== '不提供') {
-                    descriptionHTML += `<p class="mb-1"><strong>免費方案：</strong> ${freeTierDesc}</p>`;
-                }
-                if (paidTierDesc && paidTierDesc !== '不提供') {
-                    descriptionHTML += `<p><strong>付費方案：</strong> ${paidTierDesc}</p>`;
-                }
-                if (descriptionHTML === '') {
-                     descriptionHTML = '<p>詳細資訊請參考官方說明。</p>';
-                }
-
-                // 8. 建立一個新的表格行 (table row)
-                const row = document.createElement('tr');
-                row.className = 'border-b'; // 加上底線樣式
-
-                // 9. 填入這一個模型的所有資訊
-                row.innerHTML = `
-                    <td class="px-6 py-4 font-semibold text-gray-900 whitespace-nowrap">${model.name}</td>
-                    <td class="px-6 py-4">${descriptionHTML}</td>
-                `;
-
-                // 10. 將建立好的這一行，加到表格主體中
-                tableBody.appendChild(row);
-            });
-        }
-    });
-    </script>
 </body>
 </html>
