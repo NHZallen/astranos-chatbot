@@ -14,6 +14,54 @@
     body {
     touch-action: manipulation;
 }
+    .citation-marker {
+    font-size: 0.7em;
+    vertical-align: super;
+    line-height: 1;
+}
+.citation-marker a {
+    padding: 2px 4px;
+    background-color: var(--hover-bg);
+    color: var(--button-primary-bg);
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: bold;
+}
+.citation-marker a:hover {
+    background-color: var(--active-bg);
+}
+
+.citation-list {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.8rem;
+}
+.citation-list h4 {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-secondary);
+}
+.citation-list ol {
+    padding-left: 1.25rem;
+    list-style-type: decimal;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.citation-list li a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;  
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.citation-list li a:hover {
+    color: var(--text-primary);
+    text-decoration: underline;
+}
     #history-sidebar.visible ~ #scroll-to-bottom-btn {
     opacity: 0;
     pointer-events: none;
@@ -5322,6 +5370,53 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         }
     });
 };
+         /**
+         * 處理 AI 回應中的 annotations，將其轉換為引用標籤和來源列表
+         * @param {string} content - AI 回應的原始文字內容
+         * @param {Array} annotations - 包含來源資訊的陣列
+         * @returns {{processedContent: string, citationsHTML: string}} - 處理後的內容和來源列表 HTML
+         */
+        function processAnnotations(content, annotations) {
+            if (!annotations || annotations.length === 0) {
+                return { processedContent: content, citationsHTML: '' };
+            }
+
+            let processedContent = content;
+            const citations = [];
+
+            // 複製並從後往前排序 annotations，這樣修改字串時才不會影響前面的索引
+            const sortedAnnotations = [...annotations].sort((a, b) => b.url_citation.start_index - a.url_citation.start_index);
+
+            sortedAnnotations.forEach(annotation => {
+                const { url, title, start_index, end_index } = annotation.url_citation;
+                
+                // 檢查這個來源是否已經處理過
+                let citationIndex = citations.findIndex(c => c.url === url);
+                if (citationIndex === -1) {
+                    citations.push({ url, title });
+                    citationIndex = citations.length - 1;
+                }
+                const citationNumber = citationIndex + 1;
+
+                // 建立引用標籤的 HTML
+                const citationMarker = ` <sup class="citation-marker"><a href="${url}" target="_blank" title="${title}">[${citationNumber}]</a></sup> `;
+
+                // 取代原始文字中的對應部分
+                processedContent = 
+                    processedContent.slice(0, start_index) + 
+                    citationMarker + 
+                    processedContent.slice(end_index);
+            });
+
+            // 建立來源列表的 HTML
+            let citationsHTML = '<div class="citation-list"><h4>來源：</h4><ol>';
+            citations.forEach((citation, index) => {
+                citationsHTML += `<li><a href="${citation.url}" target="_blank">${citation.title}</a></li>`;
+            });
+            citationsHTML += '</ol></div>';
+
+            return { processedContent, citationsHTML };
+        }
         const addMessageToUI = (msg, index, shouldSave = true, shouldScroll = true) => {
             const conv = getActiveConversation();
             if (shouldSave) {
@@ -5357,9 +5452,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     }
                 });
                 if (textPartsContent.length > 0) {
-                    const combinedText = textPartsContent.join('\n');
-                    contentHTML += `<div>${isUser ? combinedText.replace(/\n/g, '<br>') : renderMarkdown(combinedText)}</div>`;
-                }
+    const combinedText = textPartsContent.join('\n');
+    if (isUser) {
+        contentHTML += `<div>${combinedText.replace(/\n/g, '<br>')}</div>`;
+    } else {
+        // ✨ 核心修改：呼叫我們的新函式來處理 annotations
+        const { processedContent, citationsHTML } = processAnnotations(combinedText, msg.annotations);
+        // 將處理過的內容拿去渲染 Markdown，並在後面附上來源列表
+        contentHTML += `<div>${renderMarkdown(processedContent)}</div>` + citationsHTML;
+    }
+}
                 if (mediaPartsContent.length > 0) {
                     let mediaHTML = '<div class="mt-2 flex flex-wrap gap-2">';
                     mediaPartsContent.forEach(media => {
@@ -5567,20 +5669,23 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
 
                 // 1. 先等待 API 回應完全結束，獲取完整文字
-                const completeResponse = await streamApiCall(
-                    userParts,
-                    (chunk) => {
-                        // 在 streamApiCall 內部，我們只收集文字，不渲染
-                    },
-                    abortController.signal
-                );
+                const { fullText, annotations } = await streamApiCall(
+    userParts,
+    (chunk) => { /* ... */ },
+    abortController.signal
+);
+fullResponse = fullText;
 
                 fullResponse = completeResponse;
                 sendConversationToMail(userMessageObject, fullResponse);
 
                 // 2. 將完整的最終訊息保存到對話紀錄中
                 finalAiMessage.parts = [{ text: fullResponse }];
-                conv.messages.push(finalAiMessage);
+// 如果有 annotations，就把它加到訊息物件上
+if (annotations && annotations.length > 0) {
+    finalAiMessage.annotations = annotations;
+}
+conv.messages.push(finalAiMessage);
                 conv.lastUpdatedAt = new Date().toISOString();
                 await saveAppData();
                 
@@ -5829,7 +5934,6 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     messages.push({ role: 'system', content: systemInstruction.parts.map(p => p.text).join('\n') });
                 }
 
-                // 將我們的對話歷史轉換為 OpenRouter API 接受的格式
                 const allMessages = [...historyForApi, currentMessageForApi];
 
                 allMessages.forEach(m => {
@@ -5837,28 +5941,25 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     const currentModelSupportsVision = OPENROUTER_VISION_MODELS.includes(modelId);
                     const hasImage = m.parts.some(p => p.inlineData);
 
-                    // 如果是支援圖片的模型，並且訊息中確實有圖片
                     if (currentModelSupportsVision && hasImage) {
                         const content = m.parts.map(part => {
                             if (part.text) {
                                 return { type: 'text', text: part.text };
                             } else if (part.inlineData) {
-                                // 這是核心！將我們的資料格式轉換成 OpenRouter 需要的格式
                                 const dataUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
                                 return { type: 'image_url', image_url: { url: dataUrl } };
                             }
                             return null;
-                        }).filter(Boolean); // 過濾掉空的部分
+                        }).filter(Boolean);
                         
                         messages.push({ role, content });
                     } else {
-                        // 如果不支援圖片，或這條訊息沒有圖片，就只傳送文字
                         const content = m.parts
                             .filter(p => p.text)
                             .map(p => p.text)
                             .join('\n');
                         
-                        if (content) { // 避免傳送空的訊息
+                        if (content) {
                             messages.push({ role, content });
                         }
                     }
@@ -5866,7 +5967,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 
                 payload = {
                     model: modelId,
-                    messages, // 使用我們剛剛建立的、格式正確的 messages 陣列
+                    messages,
                     stream: true,
                     ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
                     ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
@@ -5874,57 +5975,58 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 };
                 headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
             }
+            
             const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
             if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'API 請求失敗'); }
+            
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
             let fullText = '';
+            // ✨ 新增這一行來儲存 annotations
+            let annotations = [];
+
             while (true) {
                 const { value, done } = await reader.read();
                 if (done) break;
                 buffer += decoder.decode(value, { stream: true });
-                if (provider === 'gemini') {
-                    while (true) {
-                        const firstBrace = buffer.indexOf('{');
-                        if (firstBrace === -1) {
-                            break;
-                        }
 
+                // 處理 JSON 區塊的邏輯不變，但在解析後增加對 annotations 的檢查
+                if (provider === 'gemini') {
+                     while (true) {
+                        const firstBrace = buffer.indexOf('{');
+                        if (firstBrace === -1) break;
                         let braceCount = 0;
                         let endIndex = -1;
                         for (let i = firstBrace; i < buffer.length; i++) {
-                            if (buffer[i] === '{') {
-                                braceCount++;
-                            } else if (buffer[i] === '}') {
-                                braceCount--;
-                            }
+                            if (buffer[i] === '{') braceCount++;
+                            else if (buffer[i] === '}') braceCount--;
                             if (braceCount === 0) {
                                 endIndex = i;
                                 break;
                             }
                         }
-
                         if (endIndex !== -1) {
                             const jsonStr = buffer.substring(firstBrace, endIndex + 1);
                             buffer = buffer.substring(endIndex + 1);
-
                             try {
                                 const parsed = JSON.parse(jsonStr);
                                 const textChunk = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
-
                                 if (textChunk) {
                                     fullText += textChunk;
                                     onChunk(textChunk);
                                 }
-                            } catch (e) {
-                                console.warn("解析 Gemini 串流中的 JSON 區塊時出錯:", e, "區塊內容:", jsonStr);
-                            }
+                                // ✨ 新增：檢查 Gemini 回應中的 annotations
+                                const geminiAnnotations = parsed?.candidates?.[0]?.content?.annotations;
+                                if (geminiAnnotations) {
+                                    annotations.push(...geminiAnnotations);
+                                }
+                            } catch (e) { console.warn("解析 Gemini 串流 JSON 出錯:", e, "內容:", jsonStr); }
                         } else {
                             break;
                         }
                     }
-                } else {
+                } else { // OpenRouter
                     const lines = buffer.split('\n');
                     buffer = lines.pop();
                     for (const line of lines) {
@@ -5938,12 +6040,20 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                                     fullText += textChunk;
                                     onChunk(textChunk);
                                 }
-                            } catch (e) { /* Ignore */ }
+                                // ✨ 新增：檢查 OpenRouter 回應中的 annotations
+                                // 根據官方文件，它可能在 choice 的 message 裡
+                                const openrouterAnnotations = parsed.choices[0]?.message?.annotations;
+                                if (openrouterAnnotations) {
+                                    annotations.push(...openrouterAnnotations);
+                                }
+                            } catch (e) { /* 忽略解析錯誤 */ }
                         }
                     }
                 }
             }
-            return fullText;
+
+            // ✨ 修改函式的回傳值，現在回傳一個物件
+            return { fullText, annotations };
         }
         async function callApiWithSchema(prompt, responseSchema, signal) {
             const apiKey = config.apiKeys.gemini;
