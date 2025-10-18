@@ -1,5 +1,16 @@
 const updateLogs = [
         {
+    "version": "15.7.7",
+    "date": "2025-10-18",
+    "content": [
+        "<strong>【模型庫擴充】新增三款 Qwen3 系列模型，性能全面進化！</strong> 我們很高興地宣布，現在您可以透過 OpenRouter 使用三款全新的 Qwen 模型，它們各自擁有獨特的專長。",
+        "<strong>【視覺能力再升級】引入 Qwen3 VL 8B Instruct：</strong> 這款輕量級視覺模型擁有令人驚豔的圖像識別能力，在同級模型中表現突出，<strong>超越了 Gemini 2.5 Flash Lite 與 GPT-5 Nano</strong>，為您帶來更精準、細膩的視覺理解體驗。",
+        "<strong>【性能大躍進】推出兩款 2507 版高效能模型：</strong> <strong>`Qwen3 235B (2507)`</strong> 和專為深度思考優化的 <strong>`Qwen3 235B Thinking (2507)`</strong> 憑藉其<strong>性能大幅提升</strong>的架構，為您處理複雜任務提供更強大的支援。",
+        "<strong>【後台更新與修正】</strong>我們已將上述新模型無縫整合至模型選擇器，並在系統中正確標記了 `Qwen3 VL 8B Instruct` 的視覺能力，確保您的使用體驗流暢無礙。版本號已更新至 15.7.7。",
+        "我們將持續努力為 Astra 引入更多頂尖的 AI 模型並優化您的使用體驗。感謝您的支持，請立即體驗全新模型帶來的強大功能！<br><br>Astra 開發團隊 敬上"
+    ]
+},
+        {
     version: "15.7.6",
     date: "2025-10-16",
     content: [
