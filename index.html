@@ -6243,7 +6243,14 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 ALL_ELEMENTS.messageInput.placeholder = i18n[config.uiLanguage].viewingArchived || '正在檢視封存的對話，無法傳送訊息。';
                 return;
             }
-            let hasApiKey = ALL_ELEMENTS.apiKeyWarningBadge.classList.contains('hidden');
+            const modelInfo = MODELS.find(m => m.id === conv.model);
+            const provider = modelInfo?.provider;
+            let hasApiKey = false;
+            if (provider === 'gemini') {
+                hasApiKey = !!config.apiKeys.gemini;
+            } else if (provider === 'openrouter') {
+                hasApiKey = !!config.apiKeys.openrouter;
+            }
             ALL_ELEMENTS.messageInput.disabled = !hasApiKey;
             ALL_ELEMENTS.messageInput.placeholder = hasApiKey ? i18n[config.uiLanguage].enterMessagePlaceholder : i18n[config.uiLanguage].enterApiKeyPlaceholder;
             if (!hasApiKey || !hasContent) {
