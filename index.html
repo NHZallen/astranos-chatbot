@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.7.7</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.7.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -4197,17 +4197,26 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 try {
                     const data = JSON.parse(saved);
                     folders = (data.folders || []).map(f => ({...getDefaultFolder(), ...f}));
-                    conversations = (data.conversations || []).map(c => ({
-                        archived: false, summary: '', folderId: null, isWebSearchEnabled: false, astrasId: null, pinned: false, deletedAt: null, ...c,
-                        unsentMessage: c.unsentMessage || '',
-                        genConfig: c.genConfig || getDefaultGenConfig(),
-                        lastUpdatedAt: c.lastUpdatedAt || (c.messages && c.messages.length > 0 ? c.messages[c.messages.length - 1].createdAt : c.createdAt),
-                        messages: (c.messages || []).map(m => ({
-                            ...m,
-                            createdAt: m.createdAt || c.createdAt,
-                            parts: m.parts || [{ text: m.content }]
-                        }))
-                    }));
+                    const allModelIds = new Set(MODELS.map(m => m.id));
+conversations = (data.conversations || []).map(c => {
+    const newConv = {
+        archived: false, summary: '', folderId: null, isWebSearchEnabled: false, astrasId: null, pinned: false, deletedAt: null, ...c,
+        unsentMessage: c.unsentMessage || '',
+        genConfig: c.genConfig || getDefaultGenConfig(),
+        lastUpdatedAt: c.lastUpdatedAt || (c.messages && c.messages.length > 0 ? c.messages[c.messages.length - 1].createdAt : c.createdAt),
+        messages: (c.messages || []).map(m => ({
+            ...m,
+            createdAt: m.createdAt || c.createdAt,
+            parts: m.parts || [{ text: m.content }]
+        }))
+    };
+    // 檢查模型ID是否有效，如果無效就重設為預設模型
+    if (!allModelIds.has(newConv.model)) {
+        console.warn(`偵測到無效模型ID "${newConv.model}"，將其重設為預設模型。`);
+        newConv.model = config.defaultModel;
+    }
+    return newConv;
+});
                     astras = (data.astras || []).map(a => ({ avatarUrl: null, officialId: null, ...a }));
                     personalMemories = data.personalMemories || [];
                 } catch (e) {
@@ -7367,6 +7376,14 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
         };
         const renderModelManagementUI = () => {
     const container = ALL_ELEMENTS.modelManagementList;
+    const openStates = {};
+container.querySelectorAll('.collapsible-section').forEach(section => {
+    const summary = section.querySelector('summary');
+    if (summary) {
+        const key = summary.textContent.trim();
+        openStates[key] = section.open;
+    }
+});
     container.innerHTML = '';
 
     // --- 步驟 1: 準備並分類所有模型 ---
@@ -7476,6 +7493,15 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
         }
         container.appendChild(providerSection);
     }
+        container.querySelectorAll('.collapsible-section').forEach(section => {
+    const summary = section.querySelector('summary');
+    if (summary) {
+        const key = summary.textContent.trim();
+        if (openStates[key]) {
+            section.open = true;
+        }
+    }
+});
     
     // --- 步驟 3: 綁定事件 ---
     container.querySelectorAll('.toggle-visibility-btn').forEach(btn => {
