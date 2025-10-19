@@ -4197,26 +4197,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 try {
                     const data = JSON.parse(saved);
                     folders = (data.folders || []).map(f => ({...getDefaultFolder(), ...f}));
-                    const allModelIds = new Set(MODELS.map(m => m.id));
-conversations = (data.conversations || []).map(c => {
-    const newConv = {
-        archived: false, summary: '', folderId: null, isWebSearchEnabled: false, astrasId: null, pinned: false, deletedAt: null, ...c,
-        unsentMessage: c.unsentMessage || '',
-        genConfig: c.genConfig || getDefaultGenConfig(),
-        lastUpdatedAt: c.lastUpdatedAt || (c.messages && c.messages.length > 0 ? c.messages[c.messages.length - 1].createdAt : c.createdAt),
-        messages: (c.messages || []).map(m => ({
-            ...m,
-            createdAt: m.createdAt || c.createdAt,
-            parts: m.parts || [{ text: m.content }]
-        }))
-    };
-    // 檢查模型ID是否有效，如果無效就重設為預設模型
-    if (!allModelIds.has(newConv.model)) {
-        console.warn(`偵測到無效模型ID "${newConv.model}"，將其重設為預設模型。`);
-        newConv.model = config.defaultModel;
-    }
-    return newConv;
-});
+                    conversations = (data.conversations || []).map(c => ({
+                        archived: false, summary: '', folderId: null, isWebSearchEnabled: false, astrasId: null, pinned: false, deletedAt: null, ...c,
+                        unsentMessage: c.unsentMessage || '',
+                        genConfig: c.genConfig || getDefaultGenConfig(),
+                        lastUpdatedAt: c.lastUpdatedAt || (c.messages && c.messages.length > 0 ? c.messages[c.messages.length - 1].createdAt : c.createdAt),
+                        messages: (c.messages || []).map(m => ({
+                            ...m,
+                            createdAt: m.createdAt || c.createdAt,
+                            parts: m.parts || [{ text: m.content }]
+                        }))
+                    }));
                     astras = (data.astras || []).map(a => ({ avatarUrl: null, officialId: null, ...a }));
                     personalMemories = data.personalMemories || [];
                 } catch (e) {
@@ -6234,34 +6225,36 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
         };
         const updateInputState = () => {
             const hasContent = ALL_ELEMENTS.messageInput.value.trim() !== '' || uploadedFiles.length > 0;
-            const { submitButton, submitButtonIcon } = ALL_ELEMENTS;
+            const { submitButton, submitButtonIcon, messageInput } = ALL_ELEMENTS;
             if (abortController) {
                 submitButton.disabled = false;
                 submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>`;
                 return;
             }
             const conv = getActiveConversation();
-            if (!conv) {
+            if (!conv || conv.archived) {
+                messageInput.disabled = true;
                 submitButton.disabled = true;
+                messageInput.placeholder = conv?.archived ? i18n[config.uiLanguage].viewingArchived : i18n[config.uiLanguage].enterMessagePlaceholder;
                 submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
-                return;
-            }
-            if (conv.archived) {
-                ALL_ELEMENTS.messageInput.disabled = true;
-                submitButton.disabled = true;
-                ALL_ELEMENTS.messageInput.placeholder = i18n[config.uiLanguage].viewingArchived || '正在檢視封存的對話，無法傳送訊息。';
                 return;
             }
             const modelInfo = MODELS.find(m => m.id === conv.model);
             const provider = modelInfo?.provider;
-            let hasApiKey = false;
+            let hasApiKey = false; // 先預設為 false (沒有金鑰)
             if (provider === 'gemini') {
+                // 如果是 Gemini 模型，檢查 Gemini 的金鑰
                 hasApiKey = !!config.apiKeys.gemini;
             } else if (provider === 'openrouter') {
                 hasApiKey = !!config.apiKeys.openrouter;
             }
-            ALL_ELEMENTS.messageInput.disabled = !hasApiKey;
-            ALL_ELEMENTS.messageInput.placeholder = hasApiKey ? i18n[config.uiLanguage].enterMessagePlaceholder : i18n[config.uiLanguage].enterApiKeyPlaceholder;
+            messageInput.disabled = !hasApiKey; // 如果 hasApiKey 是 false，則 disabled 會是 true (禁用)
+            
+            if (hasApiKey) {
+                messageInput.placeholder = i18n[config.uiLanguage].enterMessagePlaceholder;
+            } else {
+                messageInput.placeholder = i18n[config.uiLanguage].enterApiKeyPlaceholder;
+            }
             if (!hasApiKey || !hasContent) {
                 submitButton.disabled = true;
                 submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
@@ -7376,14 +7369,6 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
         };
         const renderModelManagementUI = () => {
     const container = ALL_ELEMENTS.modelManagementList;
-    const openStates = {};
-container.querySelectorAll('.collapsible-section').forEach(section => {
-    const summary = section.querySelector('summary');
-    if (summary) {
-        const key = summary.textContent.trim();
-        openStates[key] = section.open;
-    }
-});
     container.innerHTML = '';
 
     // --- 步驟 1: 準備並分類所有模型 ---
@@ -7493,15 +7478,6 @@ container.querySelectorAll('.collapsible-section').forEach(section => {
         }
         container.appendChild(providerSection);
     }
-        container.querySelectorAll('.collapsible-section').forEach(section => {
-    const summary = section.querySelector('summary');
-    if (summary) {
-        const key = summary.textContent.trim();
-        if (openStates[key]) {
-            section.open = true;
-        }
-    }
-});
     
     // --- 步驟 3: 綁定事件 ---
     container.querySelectorAll('.toggle-visibility-btn').forEach(btn => {
