@@ -5181,6 +5181,15 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     };
 
     const providers = [...new Set(visibleModels.map(m => m.provider))];
+    const providerOrder = ['openrouter', 'gemini'];
+providers.sort((a, b) => {
+    const indexA = providerOrder.indexOf(a);
+    const indexB = providerOrder.indexOf(b);
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+    if (indexA !== -1) return -1;
+    if (indexB !== -1) return 1;
+    return a.localeCompare(b);
+});
     providerView.innerHTML = providers.map(provider => `
         <div class="model-option-btn-container provider-btn" data-provider="${provider}">
             <h4 class="font-semibold capitalize">${provider}</h4>
@@ -5218,6 +5227,15 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             .filter(m => m.provider === selectedProvider && m.tier.includes(selectedTier))
                             .map(m => m.company)
                         )];
+                        const companyOrder = ['openai', 'anthropic', 'x-ai', 'qwen', 'deepseek', 'moonshotai', 'perplexity'];
+companies.sort((a, b) => {
+    const indexA = companyOrder.indexOf(a);
+    const indexB = companyOrder.indexOf(b);
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB; // 如果兩個都在排序列表中，按列表順序排
+    if (indexA !== -1) return -1; // 只有 a 在列表，a 優先
+    if (indexB !== -1) return 1; // 只有 b 在列表，b 優先
+    return a.localeCompare(b); // 如果都不在列表，按字母順序排
+});
                         companyView.innerHTML = createBackButtonHTML('back', 1);
                         companyView.innerHTML += companies.map(company => `
                             <div class="model-option-btn-container company-btn" data-provider="${selectedProvider}" data-tier="${selectedTier}" data-company="${company}">
