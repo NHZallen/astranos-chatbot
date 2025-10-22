@@ -59,6 +59,9 @@ window.i18n = {
         // Model Switcher
         moreModels: '更多模型',
         back: '返回',
+        freeModels: '免費模型',
+        paidModels: '付費模型',
+        betaModels: '測試版', // <-- 新增
         categoryGeneral: '通用模型',
         categoryThinking: '思考模型',
         categoryCoding: '編程模型',
@@ -387,6 +390,9 @@ window.i18n = {
         model_deepseek_r1t2_chimera_desc_tier_paid: '不提供',
         model_meta_llama_llama_3_3_70b_instruct_desc_tier_free: '費用-免費 (20次/分鐘、50次/天)',
         model_meta_llama_llama_3_3_70b_instruct_desc_tier_paid: '不提供',
+        // --- START: Andromeda Alpha Description ---
+        model_andromeda_alpha_desc_tier_beta: '$0/M input tokens $0/M output tokens',
+        // --- END: Andromeda Alpha Description ---
         // OpenAI Paid
         model_gpt_5_pro_desc_tier_free: '不提供',
         model_gpt_5_pro_desc_tier_paid: '百萬輸入/15$、百萬輸出/120$',
@@ -530,6 +536,9 @@ window.i18n = {
         // Model Switcher
         moreModels: 'More Models',
         back: 'Back',
+        freeModels: 'Free Models',
+        paidModels: 'Paid Models',
+        betaModels: 'Beta', // <-- 新增
         categoryGeneral: 'General Models',
         categoryThinking: 'Thinking Models',
         categoryCoding: 'Coding Models',
@@ -857,6 +866,7 @@ window.i18n = {
         model_deepseek_r1t2_chimera_desc_tier_paid: 'Not available',
         model_meta_llama_llama_3_3_70b_instruct_desc_tier_free: 'Cost - Free (20 req/min, 50 req/day)',
         model_meta_llama_llama_3_3_70b_instruct_desc_tier_paid: 'Not available',
+        model_andromeda_alpha_desc_tier_beta: '$0/M input tokens $0/M output tokens', // <-- 新增
         model_gpt_5_pro_desc_tier_free: 'Not available',
         model_gpt_5_pro_desc_tier_paid: '$15/M input, $120/M output',
         model_gpt_5_desc_tier_free: 'Not available',
@@ -993,6 +1003,9 @@ window.i18n = {
         // Model Switcher
         moreModels: 'Plus de modèles',
         back: 'Retour',
+        freeModels: 'Modèles Gratuits',
+        paidModels: 'Modèles Payants',
+        betaModels: 'Bêta', // <-- 新增
         categoryGeneral: 'Modèles Généraux',
         categoryThinking: 'Modèles de Réflexion',
         categoryCoding: 'Modèles de Codage',
@@ -1320,6 +1333,7 @@ window.i18n = {
         model_deepseek_r1t2_chimera_desc_tier_paid: 'Non disponible',
         model_meta_llama_llama_3_3_70b_instruct_desc_tier_free: 'Coût - Gratuit (20 req/min, 50 req/jour)',
         model_meta_llama_llama_3_3_70b_instruct_desc_tier_paid: 'Non disponible',
+        model_andromeda_alpha_desc_tier_beta: '$0/M input tokens $0/M output tokens', // <-- 新增
         model_gpt_5_pro_desc_tier_free: 'Non disponible',
         model_gpt_5_pro_desc_tier_paid: '15 $/M entrée, 120 $/M sortie',
         model_gpt_5_desc_tier_free: 'Non disponible',
@@ -1373,27 +1387,27 @@ window.i18n = {
         model_kimi_k2_0905_desc_tier_free: 'Non disponible',
         model_kimi_k2_0905_desc_tier_paid: '0,39 $/M entrée, 1,90 $/M sortie',
         // Official Astras
-        astras_official_writer_01_name: 'Blogueur de Voyage',
-        astras_official_writer_01_desc: 'Ceci est un Astras conçu pour les plateformes de médias sociaux, capable de rédiger des introductions élégantes et engageantes pour les attractions touristiques et les hôtels. Il utilise un langage raffiné pour transmettre une sensation haut de gamme, en incorporant le contexte historique de la ville et des hashtags populaires pour attirer le public cible et augmenter la visibilité du contenu.',
-        astras_official_editor_02_name: 'Éditeur de Médias Sociaux',
-        astras_official_editor_02_desc: 'L\'Éditeur de Médias Sociaux est un assistant intelligent axé sur la gestion de comptes de médias sociaux. Il fonctionne sur des principes d\'authenticité et de cohérence, plutôt que de complaisance ou d\'invention, pour aider à examiner les stratégies, découvrir des idées créatives, gérer les réponses du public et maintenir un équilibre entre la stratégie, le contenu et l\'interaction, rendant la gestion des médias sociaux plus organisée et évolutive.',
-        astras_official_editor_03_name: 'Œil de la Photographie',
-        astras_official_editor_03_desc: 'Œil de la Photographie est un assistant intelligent spécialisé dans la photographie, capable de fournir des conseils pratiques sur la composition, les thèmes, les environnements de prise de vue et les réglages de l’équipement. Que vous utilisiez un smartphone ou un appareil photo, il offre des recommandations claires, professionnelles et accessibles, adaptées à chaque situation, pour vous aider à capturer des images plus narratives et esthétiques.',
-        astras_official_editor_04_name: 'VP de Notion',
-        astras_official_editor_04_desc: 'VP de Notion est un assistant intelligent axé sur l\'organisation de l\'information et la conception de mises en page. Il peut proposer diverses méthodes d\'organisation appropriées en fonction des données et des besoins fournis par l\'utilisateur, tout en tenant compte de la lisibilité et de l\'expérience utilisateur sur les interfaces mobiles et de bureau. Il aide non seulement à structurer le contenu, mais fournit également des suggestions de mise en page claires, rendant l\'affichage des informations plus organisé, intuitif et évolutif.',
-        astras_official_editor_05_name: 'Le Séquenceur',
-        astras_official_editor_05_desc: 'Le Séquenceur est un assistant intelligent axé à la fois sur la conceptualisation vidéo et l\'exécution pratique du montage. Il peut fournir une conception complète de l\'histoire, des idées de storyboard, une planification du rythme et des conseils opérationnels spécifiques de post-production pour différents matériaux et exigences. Sa tâche n\'est pas seulement d\'offrir une inspiration abstraite, mais d\'aider les utilisateurs à transformer leurs idées en plans de montage exécutables, atteignant le meilleur équilibre entre narration, rythme et aspects visuels de la vidéo.',
-        astras_official_editor_06_name: 'Plan Directeur Français',
-        astras_official_editor_06_desc: 'Plan Directeur Français est un assistant d\'apprentissage intelligent conçu pour les locateurs natifs de chinois. Il fournit des méthodes d\'apprentissage systématiques, des phrases d\'exemple, des conseils de prononciation et des compléments culturels adaptés aux caractéristiques linguistiques et aux difficultés courantes des apprenants chinois, aidant les utilisateurs à construire progressivement un plan directeur de la langue française du niveau de base au niveau avancé.',
-        astras_official_editor_07_name: 'Sens de l\'Anglais',
-        astras_official_editor_07_desc: 'Sens de l\'Anglais est un assistant d\'apprentissage intelligent conçu pour les locuteurs natifs du chinois. Il aborde leurs traits linguistiques spécifiques et leurs difficultés d\'apprentissage en fournissant des méthodes d\'apprentissage systématiques, des exemples de phrases, des conseils de prononciation et des aperçus culturels. Il aide les utilisateurs à construire une structure d\'apprentissage complète, comblant le fossé entre les compétences linguistiques fondamentales et l\'application pratique.',
-        astras_official_editor_08_name: 'Plan Directeur Espagnol',
-        astras_official_editor_08_desc: 'Plan Directeur Espagnol est un assistant d\'apprentissage intelligent conçu pour les locuteurs natifs du chinois, axé sur les difficultés typiques en espagnol (conjugaison des verbes, accord en genre/nombre, temps/aspect, pronoms/ordre des mots, prononciation/accentuation, différences culturelles/pragmatiques). Il fournit des méthodes d\'apprentissage systématiques, des exemples de phrases, des conseils de prononciation, des dialogues situationnels et des compléments culturels pour aider les apprenants à construire une structure complète du niveau de base au niveau avancé, leur permettant d\'utiliser l\'espagnol de manière naturelle et confiante dans des scénarios réels (couvrant les variantes espagnoles et latino-américaines).',
-        astras_official_editor_09_name: 'Voyage Intérieur',
-        astras_official_editor_09_desc: 'Voyage Intérieur est un partenaire qui comprend à la fois la psychologie et le cœur humain. Il ne moralise ni ne complaît, mais avec un ton sincère et stable, vous accompagne pour clarifier émotions et pensées, rendant peu à peu compréhensibles les sentiments complexes.',
-        astras_official_editor_10_name: 'Guide Conscient',
-        astras_official_editor_10_desc: 'Guide Conscient est un mentor pour une profonde réflexion intérieure. Il n\'offre pas de réconfort ni ne se précipite pour changer ; au lieu de cela, il vous aide à voir les structures sous-jacentes à vos émotions et comportements, laissant la compréhension être le début de la transformation.',
-        astras_official_editor_11_name: 'Logique de l\'Ombre',
-        astras_official_editor_11_desc: 'Un Astras de mystère interactif mettant en scène un détective lycéen. Le joueur n\'est pas une machine à résoudre des crimes mais un jeune observateur entraîné dans les événements par le destin. L\'histoire commence par un rassemblement apparemment ordinaire - un voyage scolaire, une croisière, une invitation à une galerie - et à mesure que des détails inhabituels apparaissent, les événements et la nature humaine s\'entremêlent en une toile complexe.',
+        astras_official_writer_01_name: 'Travel Blogger',
+        astras_official_writer_01_desc: 'This is an Astras designed for social media platforms, capable of writing elegant and engaging introductions for tourist attractions and hotels. It uses refined language to convey a high-end feel, incorporating the city\'s historical background and popular hashtags to attract the target audience and increase content visibility.',
+        astras_official_editor_02_name: 'Social Media Editor',
+        astras_official_editor_02_desc: 'The Social Media Editor is an intelligent assistant focused on social media account management. It operates on principles of authenticity and consistency, rather than pandering or fabricating, to help review strategies, discover creative ideas, manage audience responses, and maintain a balance between strategy, content, and interaction, making social media management more organized and scalable.',
+        astras_official_editor_03_name: 'Eye of Photography',
+        astras_official_editor_03_desc: 'Eye of Photography is an intelligent assistant focused on photography, capable of providing practical advice on composition, themes, shooting environments, and equipment settings. Whether you are using a smartphone or a camera, it offers clear, professional, and accessible guidance tailored to the situation, helping you capture images with stronger storytelling and aesthetic appeal.',
+        astras_official_editor_04_name: 'Notion VP',
+        astras_official_editor_04_desc: 'Notion VP is an intelligent assistant focused on information organization and layout design. It can propose various suitable organization methods based on user-provided data and needs, while considering readability and user experience on both mobile and desktop interfaces. It not only helps structure content but also provides clear layout suggestions, making information display more organized, intuitive, and scalable.',
+        astras_official_editor_05_name: 'The Sequencer',
+        astras_official_editor_05_desc: 'The Sequencer is an intelligent assistant focused on both video conceptualization and practical editing execution. It can provide complete story design, storyboard ideas, rhythm planning, and specific post-production operational advice for different materials and requirements. Its task is not just to offer abstract inspiration but to help users transform ideas into executable editing plans, achieving the best balance in narrative, rhythm, and visual aspects of the video.',
+        astras_official_editor_06_name: 'French Blueprint',
+        astras_official_editor_06_desc: 'French Blueprint is an intelligent learning assistant designed for native Chinese speakers. It provides systematic learning methods, example sentences, pronunciation tips, and cultural supplements tailored to the linguistic characteristics and common difficulties of Chinese learners, helping users gradually build a French language blueprint from basic to advanced levels.',
+        astras_official_editor_07_name: 'English Sense',
+        astras_official_editor_07_desc: 'English Sense is an intelligent learning assistant designed for native Chinese speakers. It addresses their specific linguistic traits and learning pain points by providing systematic learning methods, example sentences, pronunciation tips, and cultural insights. It helps users build a complete learning structure, bridging the gap between foundational language skills and practical application.',
+        astras_official_editor_08_name: 'Spanish Blueprint',
+        astras_official_editor_08_desc: 'Spanish Blueprint is an intelligent learning assistant designed for native Chinese speakers, focusing on typical difficulties in Spanish (verb conjugation, gender/number agreement, tense/aspect, pronouns/word order, pronunciation/stress, cultural/pragmatic differences). It provides systematic learning methods, example sentences, pronunciation tips, situational dialogues, and cultural supplements to help learners build a complete structure from basic to advanced levels, enabling them to use Spanish naturally and confidently in real scenarios (covering both Spanish and Latin American variants).',
+        astras_official_editor_09_name: 'Inner Journey',
+        astras_official_editor_09_desc: 'Inner Journey is a partner who understands both psychology and the human heart. It doesn\'t lecture or pander but, with a sincere and steady tone, accompanies you in clarifying emotions and thoughts, gradually making complex feelings understandable.',
+        astras_official_editor_10_name: 'Mindful Guide',
+        astras_official_editor_10_desc: 'Mindful Guide is a mentor for deep inner reflection. It doesn\'t offer comfort or rush for change; instead, it helps you see the underlying structures behind your emotions and behaviors, letting understanding be the start of transformation.',
+        astras_official_editor_11_name: 'Shadow Logic',
+        astras_official_editor_11_desc: 'An interactive mystery Astras featuring a high school detective. The player isn\'t a crime-solving machine but a young observer drawn into events by fate. The story begins with a seemingly ordinary gathering—a school trip, a cruise, a gallery invitation—and as unusual details emerge, events and human nature intertwine into a complex web.',
     }
 };
