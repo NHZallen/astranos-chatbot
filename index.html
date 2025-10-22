@@ -3856,7 +3856,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     { id: 'anthropic/claude-sonnet-4.5', name: 'Claude 4.5 Sonnet', provider: 'openrouter', descriptionKey: 'model_claude_sonnet_4_5_desc' },
     { id: 'anthropic/claude-haiku-4.5', name: 'Claude 4.5 Haiku', provider: 'openrouter', descriptionKey: 'model_claude_haiku_4_5_desc' },
     { id: 'anthropic/claude-sonnet-4', name: 'Claude 4 Sonnet', provider: 'openrouter', descriptionKey: 'model_claude_sonnet_4_desc' },
-    { id: 'openrouter/andromeda-alpha', name: 'Andromeda Alpha', provider: 'openrouter', descriptionKey: 'model_andromeda_alpha_desc', tier: ['beta'] },
 
     // OpenRouter Paid Models (Perplexity)
     { id: 'perplexity/sonar-deep-research', name: 'Perplexity Sonar Deep Research', provider: 'openrouter', descriptionKey: 'model_perplexity_sonar_deep_research_desc' },
@@ -3888,7 +3887,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             'anthropic/claude-sonnet-4.5', 'anthropic/claude-haiku-4.5', 'anthropic/claude-sonnet-4',
             'perplexity/sonar',
             'x-ai/grok-4-fast',
-            'openrouter/andromeda-alpha',
             'qwen/qwen3-vl-235b-a22b-instruct',
             'qwen/qwen3-vl-8b-instruct',
             'qwen/qwen2.5-vl-72b-instruct:free'
@@ -5098,26 +5096,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
     const processedModels = MODELS.map(model => {
         const provider = model.provider;
-        let tier = []; // Default to empty array
+        let tier = [];
         let company = null;
         let category = model.category || null;
 
-        // Start of modification
-        if (model.tier) { // Check for an explicit tier property first
-            tier = model.tier;
-        } else if (provider === 'gemini') {
-            tier = ['free', 'paid'];
-        } else if (provider === 'openrouter') {
-            tier = model.id.includes(':free') ? ['free'] : ['paid'];
-        }
-        // End of modification
-
         if (provider === 'gemini') {
+            tier = ['free', 'paid'];
             company = 'google';
         } else if (provider === 'openrouter') {
+            tier = model.id.includes(':free') ? ['free'] : ['paid'];
             company = model.id.split('/')[0];
         }
-        
         return { ...model, tier, company, category };
     });
 
@@ -5202,24 +5191,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         btn.addEventListener('click', () => {
             const provider = btn.dataset.provider;
             tierView.innerHTML = createBackButtonHTML('back', 0);
-            const tiers = ['free', 'paid', 'beta'];
-            tierView.innerHTML += tiers.map(tier => {
-            let tierText;
-            if (tier === 'free') {
-                tierText = translations.freeModels || '免費模型';
-            } else if (tier === 'paid') {
-                tierText = translations.paidModels || '付費模型';
-            } else if (tier === 'beta') {
-                tierText = translations.betaModels || '測試版'; // 新增的判斷
-            } else {
-                tierText = tier;
-            }
-            return `
+            const tiers = ['free', 'paid'];
+            tierView.innerHTML += tiers.map(tier => `
                 <div class="model-option-btn-container tier-btn" data-provider="${provider}" data-tier="${tier}">
-                    <h4 class="font-semibold capitalize">${tierText}</h4>
+                    <h4 class="font-semibold capitalize">${tier === 'free' ? (translations.freeModels || '免費模型') : (translations.paidModels || '付費模型')}</h4>
                 </div>
-            `;
-        }).join('');
+            `).join('');
 
             tierView.querySelectorAll('.tier-btn').forEach(tierBtn => {
                 tierBtn.addEventListener('click', () => {
