@@ -717,7 +717,6 @@ button:not(.btn-primary):active:not(:disabled) {
     width: 200%;
     /* 核心動畫：當 transform 改變時，產生滑動效果 */
     transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-    height: 100%;
 }
 
 /* 當切換到「其他模型」時，整個容器向左滑動 50% (即一個視圖的寬度) */
@@ -733,6 +732,11 @@ button:not(.btn-primary):active:not(:disabled) {
     /* 將原本在父容器的內邊距移到這裡 */
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;
+    
+    /* ▼▼▼ 新增的程式碼 ▼▼▼ */
+    max-height: 100%; /* 確保視圖不會超過父容器的高度 */
+    overflow-y: auto;  /* 如果內容超出，讓這個視圖自己滾動 */
+    /* ▲▲▲ 新增的程式碼 ▲▲▲ */
 }
 #file-options-popover {
     background-color: rgba(255, 255, 255, 0.2);
@@ -1106,7 +1110,6 @@ button:not(.btn-primary):active:not(:disabled) {
     }
     #model-options-popover {
         max-height: calc(100vh - 150px);
-        overflow-y: auto;
     }
     .message-bubble {
   position: relative;
@@ -5143,13 +5146,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     const adjustPopoverHeight = (targetView) => {
         requestAnimationFrame(() => {
             const newHeight = `${targetView.scrollHeight}px`;
-            popover.style.height = newHeight; // 只設定外層容器的高度
-            // 我們把 viewsContainer.style.height = newHeight; 這一行刪掉了
+            // 同時設定外層和內層容器的高度，讓它們保持一致
+            popover.style.height = newHeight;
+            viewsContainer.style.height = newHeight; 
         });
     };
 
     const navigateToView = (viewIndex) => {
-        popover.scrollTop = 0; // <-- ✨ 就是加上這一行！
         viewsContainer.style.transform = `translateX(-${viewIndex * 20}%)`;
         const targetView = viewsContainer.children[viewIndex];
         adjustPopoverHeight(targetView);
