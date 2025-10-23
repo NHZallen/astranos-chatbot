@@ -2506,24 +2506,17 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
     <!-- 歷史紀錄 區塊 -->
     <div class="sidebar-section" data-section="history" data-open="true">
-    <header class="sidebar-section-header">
-        <div class="title-group">
-            <svg class="section-toggle-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-            <span data-lang-key="history">歷史紀錄</span>
-        </div>
-        <!-- ✨ 新增：模型名稱顯示開關 ✨ -->
-        <div class="actions-group flex items-center gap-2">
-            <span class="text-xs text-[var(--text-secondary)]" data-lang-key="showModel">顯示模型</span>
-            <div class="relative inline-block w-12 h-6 mr-2 align-middle select-none transition duration-200 ease-in" title="顯示模型名稱">
-                <input type="checkbox" id="show-model-name-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
-                <label for="show-model-name-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+        <header class="sidebar-section-header">
+            <div class="title-group">
+                <svg class="section-toggle-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                <span data-lang-key="history">歷史紀錄</span>
             </div>
+        </header>
+        <div class="sidebar-section-content">
+            <div id="history-list" class="space-y-1"></div>
         </div>
-    </header>
-    <div class="sidebar-section-content">
-        <div id="history-list" class="space-y-1"></div>
     </div>
-</div>
+
 </div>
                 <div class="p-2 border-t border-[var(--border-color)]">
                     <div id="batch-action-bar" class="hidden">
@@ -3636,7 +3629,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             addPlanStepBtn: document.getElementById('add-plan-step-btn'),
             confirmPlanBtn: document.getElementById('confirm-plan-btn'),
             cancelPlanBtn: document.getElementById('cancel-plan-btn'),
-            showModelNameToggle: document.getElementById('show-model-name-toggle'),
         };
         function toggleHistorySidebar(show) {
     const { historySidebar, historySidebarOverlay } = ALL_ELEMENTS;
@@ -3969,7 +3961,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             apiKeys: { gemini: '', openrouter: '' },
             defaultModel: MODELS[0].id,
             theme: 'light',
-            showModelNameInSidebar: true,
             modelSettings: [],
             enableFollowUp: true,
             enableAutoWebSearch: false,
@@ -4640,13 +4631,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             item.dataset.id = conv.id;
             const modelInfo = MODELS.find(m => m.id === conv.model);
             const modelCodename = modelInfo ? modelInfo.name.split(' (')[0] : '';
-            const modelNameSuffix = (config.showModelNameInSidebar && modelCodename) ? `<span class="model-suffix">${modelCodename}</span>` : '';
-    const contentWrapper = document.createElement('div');
-    contentWrapper.className = 'flex-1 flex items-center justify-between truncate';
-    contentWrapper.innerHTML = `
-        <div class="flex-1 flex items-center gap-2 truncate">
-            <span class="truncate">${conv.title}${conv.pinned ? ' <span class="pinned-icon">📌</span>' : ''}</span>
-            ${modelNameSuffix}
+            const modelNameSuffix = modelCodename ? `<span class="model-suffix">${modelCodename}</span>` : '';
+            const contentWrapper = document.createElement('div');
+            contentWrapper.className = 'flex-1 flex items-center justify-between truncate';
+            contentWrapper.innerHTML = `
+                <div class="flex-1 flex items-center gap-2 truncate">
+                    <span class="truncate">${conv.title}${conv.pinned ? ' <span class="pinned-icon">📌</span>' : ''}</span>
+                    ${modelNameSuffix}
                  </div>
                 <button class="chat-options-btn flex-shrink-0 w-6 h-6 rounded-md hover:bg-[var(--hover-bg)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>
             `;
@@ -9958,12 +9949,6 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             ALL_ELEMENTS.learningModeBtn.addEventListener('click', toggleLearningMode);
             ALL_ELEMENTS.deepResearchBtn.addEventListener('click', toggleDeepResearchMode);
             ALL_ELEMENTS.uploadImageBtn.addEventListener('click', () => {
-                ALL_ELEMENTS.showModelNameToggle.checked = config.showModelNameInSidebar;
-ALL_ELEMENTS.showModelNameToggle.addEventListener('change', async () => {
-    config.showModelNameInSidebar = ALL_ELEMENTS.showModelNameToggle.checked;
-    await saveConfig();
-    renderAll(); // 重新渲染整個介面來應用變更
-});
                 ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
                 ALL_ELEMENTS.imageVideoInput.removeAttribute('capture');
                 ALL_ELEMENTS.imageVideoInput.click();
