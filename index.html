@@ -5145,10 +5145,22 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     // ✨✨✨ 核心修正 1：修改 adjustPopoverHeight 函式 ✨✨✨
     const adjustPopoverHeight = (targetView) => {
         requestAnimationFrame(() => {
-            const newHeight = `${targetView.scrollHeight}px`;
-            // 同時設定外層和內層容器的高度，讓它們保持一致
-            popover.style.height = newHeight;
-            viewsContainer.style.height = newHeight; 
+            // 從 CSS 中讀取我們設定的最大高度，例如 "calc(100vh - 150px)"
+            const maxHeightStyle = window.getComputedStyle(popover).maxHeight;
+            
+            // 將 CSS 值轉換成數字（像素）
+            // 這裡做一個簡化處理，直接用 vh 計算，在大多數情況下是準確的
+            const maxHeightInPixels = window.innerHeight - 150; 
+            
+            // 取得當前內容實際需要的高度
+            const contentHeight = targetView.scrollHeight;
+            
+            // 比較「需要的高度」和「允許的最大高度」，取較小者
+            const newHeight = Math.min(contentHeight, maxHeightInPixels);
+
+            // 只設定最外層彈窗的高度，內部容器會自動適應
+            popover.style.height = `${newHeight}px`;
+            // 我們不再需要手動設定 viewsContainer 的高度了
         });
     };
 
