@@ -707,6 +707,7 @@ button:not(.btn-primary):active:not(:disabled) {
     /* 隱藏從側面滑入的內容 */
     overflow: hidden;
     /* 動態高度變化時有過渡效果，這是讓高度變化平滑的關鍵 */
+    /* ▼▼▼ 我們在這一行最後加上了 height 的過渡效果 ▼▼▼ */
     transition: opacity 0.15s ease-out, transform 0.15s ease-out, visibility 0.15s, height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -5116,8 +5117,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             <span class="font-semibold text-sm md:text-base text-[var(--text-primary)]">${currentModel.name}</span>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </button>
-        
-        <!-- ▼▼▼ 就是這一行被修改了！我們把 left-0 改成了 left-2 md:left-3 ▼▼▼ -->
         <div id="model-options-popover" class="popover absolute left-2 md:left-3 mt-6 w-72 md:w-80 rounded-lg border border-[var(--border-color)] z-50">
             <div id="model-views-container" style="width: 500%; display: flex; transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1); align-items: flex-start;">
                 <div id="provider-view" class="model-view" style="width: 20%; flex-shrink: 0; padding-top: 0.5rem; padding-bottom: 0.5rem;"></div>
@@ -5138,20 +5137,22 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     const categoryView = document.getElementById('category-view');
     const modelListView = document.getElementById('model-list-view');
 
-    // ✨✨✨ 核心修正 1：修改 adjustPopoverHeight 函式 ✨✨✨
+    // ✨✨✨ 核心修改 1：我們新增了一個專門調整高度的輔助函數 ✨✨✨
     const adjustPopoverHeight = (targetView) => {
         requestAnimationFrame(() => {
+            // 測量目標視圖內容的實際高度
             const newHeight = `${targetView.scrollHeight}px`;
-            // 同時設定外層和內層容器的高度，讓它們保持一致
+            // 將彈窗的高度設定為測量到的高度
             popover.style.height = newHeight;
+            // 同時也設定內部滑動容器的高度，以防萬一
             viewsContainer.style.height = newHeight; 
         });
     };
 
     const navigateToView = (viewIndex) => {
-        popover.scrollTop = 0; // 在切換視圖前，立刻將捲軸重設到頂部
         viewsContainer.style.transform = `translateX(-${viewIndex * 20}%)`;
         const targetView = viewsContainer.children[viewIndex];
+        // ✨✨✨ 核心修改 2：每次導航時，都呼叫這個函數來調整高度 ✨✨✨
         adjustPopoverHeight(targetView);
     };
 
@@ -5201,9 +5202,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         const filteredModels = visibleModels.filter(m => m.provider === selectedProvider && m.tier.includes(selectedTier));
                         modelListView.innerHTML = createBackButtonHTML('back', 1);
                         modelListView.innerHTML += filteredModels.map(model => {
-                            const baseKey = model.descriptionKey;
-                            const tierKey = `${baseKey}_tier_${selectedTier}`;
-                            const descriptionText = translations[tierKey] || '';
+                            const descriptionText = translations[model.descriptionKey] || model.descriptionKey;
                             return createModelOptionHTML(model, descriptionText);
                         }).join('');
                         navigateToView(4);
@@ -5252,9 +5251,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                             
                                             modelListView.innerHTML = createBackButtonHTML('back', 3);
                                             modelListView.innerHTML += finalModels.map(model => {
-                                                const baseKey = model.descriptionKey;
-                                                const tierKey = `${baseKey}_tier_${finalTier}`;
-                                                const descriptionText = translations[tierKey] || '';
+                                                const descriptionText = translations[model.descriptionKey] || model.descriptionKey;
                                                 return createModelOptionHTML(model, descriptionText);
                                             }).join('');
                                             navigateToView(4);
@@ -5264,9 +5261,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                 } else {
                                     modelListView.innerHTML = createBackButtonHTML('back', 2);
                                     modelListView.innerHTML += companyModels.map(model => {
-                                        const baseKey = model.descriptionKey;
-                                        const tierKey = `${baseKey}_tier_${finalTier}`;
-                                        const descriptionText = translations[tierKey] || '';
+                                        const descriptionText = translations[model.descriptionKey] || model.descriptionKey;
                                         return createModelOptionHTML(model, descriptionText);
                                     }).join('');
                                     navigateToView(4);
@@ -5314,7 +5309,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         if (isVisible) {
             navigateToView(0);
         } else {
-            // ✨✨✨ 核心修正 2：關閉時，同時重置內外兩個容器的高度 ✨✨✨
+            // ✨✨✨ 核心修改 3：關閉彈窗時，重置高度，以便下次打開時動畫正常 ✨✨✨
             popover.style.height = ''; 
             viewsContainer.style.height = '';
         }
