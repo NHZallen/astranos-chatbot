@@ -837,8 +837,8 @@ button:not(.btn-primary):active:not(:disabled) {
         --active-bg: #e5e7eb;
         --modal-bg: #ffffff;
         --shadow-color: rgba(0, 0, 0, 0.1);
-        --ai-bubble-bg: var(--sidebar-bg);
-        --user-bubble-bg: #3b82f6;
+        --ai-bubble-bg: transparent;
+        --user-bubble-bg: transparent;
         --button-primary-bg: #3b82f6;
         --button-primary-hover-bg: #2563eb;
         --button-primary-text: #ffffff;
@@ -855,8 +855,8 @@ button:not(.btn-primary):active:not(:disabled) {
         --active-bg: #4b5563;
         --modal-bg: #1f2937;
         --shadow-color: rgba(0, 0, 0, 0.4);
-        --ai-bubble-bg: var(--sidebar-bg);
-        --user-bubble-bg: #2563eb;
+        --ai-bubble-bg: transparent;
+        --user-bubble-bg: transparent;
     }
     body { background-color: var(--chat-bg); color: var(--text-primary); }
     .scroll-area {
@@ -6343,8 +6343,26 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             renderPersonalMemoryList();
             updateThemeButtons();
             renderModelManagementUI();
-            renderAiBubbleColorDropdown();
-            renderUserBubbleColorDropdown();
+            const aiBubbleColorTitle = document.querySelector('h3[data-lang-key="aiBubbleColor"]');
+            const aiBubbleColorDropdown = ALL_ELEMENTS.aiBubbleColorDropdown;
+            const userBubbleColorTitle = document.querySelector('h3[data-lang-key="userBubbleColor"]');
+            const userBubbleColorDropdown = ALL_ELEMENTS.userBubbleColorDropdown;
+
+            if (config.customWallpaper) {
+                // 如果有自訂桌布，顯示選項並渲染
+                aiBubbleColorTitle.style.display = 'block';
+                aiBubbleColorDropdown.style.display = 'block';
+                userBubbleColorTitle.style.display = 'block';
+                userBubbleColorDropdown.style.display = 'block';
+                renderAiBubbleColorDropdown();
+                renderUserBubbleColorDropdown();
+            } else {
+                // 如果沒有自訂桌布，隱藏選項
+                aiBubbleColorTitle.style.display = 'none';
+                aiBubbleColorDropdown.style.display = 'none';
+                userBubbleColorTitle.style.display = 'none';
+                userBubbleColorDropdown.style.display = 'none';
+            }
             renderUiColorOptions();
             renderTrash();
             const slider = document.getElementById('deep-research-query-count-slider');
