@@ -296,12 +296,6 @@ body.custom-wallpaper-active #history-sidebar h3 {
 #settings-btn span {
     display: none; /* 隱藏原本的 "設定" 文字 */
 }
-    body.splash-screen-active {
-    overflow: hidden;
-    position: fixed; /* 針對 iOS 裝置的加強鎖定 */
-    width: 100%;
-    height: 100%;
-}
     #file-options-popover button {
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -2267,52 +2261,6 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
-#video-splash-screen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: #000;
-    z-index: 9999;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    transition: opacity 0.5s ease-out;
-}
-
-#video-splash-screen.hidden {
-    opacity: 0;
-    pointer-events: none;
-}
-
-.splash-video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-/* --- ✨ 這是切換的關鍵！ --- */
-
-/* 預設狀態 (手機優先)：顯示手機影片，隱藏電腦影片 */
-#splash-video-desktop {
-    display: none;
-}
-#splash-video-mobile {
-    display: block;
-}
-
-/* 當螢幕寬度大於等於 768px 時 (通常是平板或電腦) */
-@media (min-width: 768px) {
-    /* 顯示電腦版影片 */
-    #splash-video-desktop {
-        display: block;
-    }
-    /* 隱藏手機版影片 */
-    #splash-video-mobile {
-        display: none;
-    }
-}
 
 /* --- ✨ 這是切換的關鍵！ END --- */
 
@@ -2336,20 +2284,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 </head>
 <body class="font-sans bg-gray-50">
     <body class="font-sans bg-gray-50">
-    <div id="video-splash-screen">
-        <!-- 電腦版影片 -->
-        <video id="splash-video-desktop" class="splash-video" autoplay muted playsinline>
-            <source src="splash_desktop.mp4" type="video/mp4">
-        </video>
-        <!-- 手機版影片 -->
-        <video id="splash-video-mobile" class="splash-video" autoplay muted playsinline>
-            <source src="splash_mobile.mp4" type="video/mp4">
-        </video>
-        
-        <!-- ✨ 把按鈕程式碼貼在這裡 ✨ -->
-        <button id="skip-video-btn" style="position: absolute; bottom: 30px; right: 30px; z-index: 10000; background-color: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.5); padding: 8px 16px; border-radius: 9999px; cursor: pointer; font-size: 14px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.4)'" onmouseout="this.style.backgroundColor='rgba(255, 255, 255, 0.2)'">跳過</button>
-        
-    </div>
     <div id="wallpaper-container"></div>
     <div id="auth-container">
         <div class="min-h-screen flex flex-col">
@@ -3327,46 +3261,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     <script src="./update-logs.js"></script>
      <script>
     document.addEventListener('DOMContentLoaded', () => {
-        document.body.classList.add('splash-screen-active');
-        const videoSplashScreen = document.getElementById('video-splash-screen');
-        // 現在我們要同時選取兩個影片
-        const splashVideoDesktop = document.getElementById('splash-video-desktop');
-        const splashVideoMobile = document.getElementById('splash-video-mobile');
-        const authContainerForSplash = document.getElementById('auth-container');
-
-        // ✨ 步驟 2.1: 取得我們剛剛新增的按鈕
-        const skipBtn = document.getElementById('skip-video-btn');
-
-        // 建立一個共用的函式來處理影片結束後的邏輯
-        const handleVideoEnd = () => {
-    document.body.classList.remove('splash-screen-active'); // ✨ 新增這一行來解鎖滾動
-    videoSplashScreen.classList.add('hidden');
-    authContainerForSplash.classList.add('visible');
-
-    videoSplashScreen.addEventListener('transitionend', () => {
-        videoSplashScreen.remove();
-    }, { once: true });
-};
-
-        // ✨ 步驟 2.2: 監聽按鈕的點擊事件，並執行跳過影片的動作
-        if (skipBtn) {
-            skipBtn.addEventListener('click', handleVideoEnd);
-        }
-
-        // 建立一個共用的函式來處理影片播放錯誤
-        const handleVideoError = (e) => {
-        console.error("影片播放錯誤:", e.target.id, "直接顯示主頁。");
-        videoSplashScreen.remove();
-        authContainerForSplash.classList.add('visible');
-    };
-
-    // 分別為兩個影片都加上 'ended' 和 'error' 的事件監聽
-    // 瀏覽器只會播放其中一個，所以也只會有一個觸發 'ended' 事件
-    splashVideoDesktop.addEventListener('ended', handleVideoEnd);
-    splashVideoMobile.addEventListener('ended', handleVideoEnd);
-
-    splashVideoDesktop.addEventListener('error', handleVideoError);
-    splashVideoMobile.addEventListener('error', handleVideoError);
+        // 直接讓登入/註冊畫面顯示出來
+        document.getElementById('auth-container').classList.add('visible');
+        
             const demoModels = [
   { id: 'proMax', name: 'Astra-Pro Max', title: 'Astra-Pro Max 對話範例', desc: '深度決策，商業研究最佳拍檔' },
   { id: 'proPV', name: 'Astra-Pro PV', title: 'Astra-Pro PV 對話範例', desc: '預覽新技術，多模態高速體驗' },
