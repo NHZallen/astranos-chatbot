@@ -10,6 +10,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlVjOTgjdwCRYIFDPlSJyGothspOJCINgRdBNPCoCoAPgatCKssVNPfISAc" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/mhchem.min.js" integrity="sha384-LiYbuyabPcvZ2wQ2MR2kJyS2N9p/hO3N/15H0/0YxJqT4Lg/ZqD53aQyD+Jz3lM7" crossorigin="anonymous"></script>
     <style>
     body {
     touch-action: manipulation;
@@ -4067,6 +4070,51 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const clean = DOMPurify.sanitize(dirty);
             return clean;
         };
+        /**
+ * 渲染含有數學/化學公式的 Markdown 文本。
+ * @param {string} text - 包含 Markdown 和 KaTeX 公式的原始文本。
+ * @returns {string} - 渲染後的 HTML 字串。
+ */
+function renderMarkdownWithFormulas(text) {
+    // 首先，使用您現有的函式處理基礎 Markdown 和安全性過濾
+    let html = renderMarkdown(text);
+
+    // 使用規則運算式來尋找並替換區塊級公式 ($$ ... $$)
+    // marked.js 通常會把它們包在 <p>...</p> 裡面，所以我們匹配這種模式
+    html = html.replace(/<p>\$\$(.*)\$\$<\/p>/g, (match, formula) => {
+        try {
+            // 將公式文字解碼 (例如 &lt; 會變回 <)
+            const decodedFormula = new DOMParser().parseFromString(formula, "text/html").documentElement.textContent;
+            // 使用 KaTeX 渲染成 HTML 字串 (displayMode: true 代表是區塊)
+            return katex.renderToString(decodedFormula, {
+                displayMode: true,
+                throwOnError: false // 如果公式語法錯誤，不要拋出異常中斷程式
+            });
+        } catch (e) {
+            console.error("KaTeX block rendering error:", e);
+            return `<p style="color: red;">[數學公式渲染錯誤: ${formula}]</p>`; // 出錯時顯示錯誤訊息
+        }
+    });
+
+    // 使用規則運算式尋找並替換行內公式 ($ ... $)
+    html = html.replace(/\$(.*?)\$/g, (match, formula) => {
+        // 避免匹配到已經被處理過的 HTML 標籤
+        if (match.includes('<') || match.includes('>')) return match;
+        try {
+            const decodedFormula = new DOMParser().parseFromString(formula, "text/html").documentElement.textContent;
+            // 使用 KaTeX 渲染 (displayMode: false 代表是行內)
+            return katex.renderToString(decodedFormula, {
+                displayMode: false,
+                throwOnError: false
+            });
+        } catch (e) {
+            console.error("KaTeX inline rendering error:", e);
+            return `<span style="color: red;">[公式錯誤: ${formula}]</span>`;
+        }
+    });
+
+    return html;
+}
         const saveConfig = async () => { if (currentUser) await setItem(getConfigKey(), JSON.stringify(config)); };
         const loadConfig = async () => {
             if (!currentUser) return;
@@ -5325,7 +5373,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 });
                 if (textPartsContent.length > 0) {
                     const combinedText = textPartsContent.join('\n');
-                    contentHTML += `<div>${isUser ? combinedText.replace(/\n/g, '<br>') : renderMarkdown(combinedText)}</div>`;
+                    contentHTML += `<div>${isUser ? combinedText.replace(/\n/g, '<br>') : renderMarkdownWithFormulas(combinedText)}</div>`;
                 }
                 if (mediaPartsContent.length > 0) {
                     let mediaHTML = '<div class="mt-2 flex flex-wrap gap-2">';
@@ -5579,7 +5627,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                                 setTimeout(type, typingSpeed);
                             } else {
                                 // 動畫完成或被中止
-                                contentDiv.innerHTML = renderMarkdown(fullResponse); // 最終清理，移除游標
+                                contentDiv.innerHTML = renderMarkdownWithFormulas(fullResponse); // 最終清理，並渲染公式
                                 resolve(); // ✨ Promise 完成，通知 await
                             }
                         }
@@ -7001,7 +7049,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     const icon = isUser
                         ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>`
                         : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
-                    let contentHTML = msg.parts.map(p => p.text ? (isUser ? p.text.replace(/\n/g, '<br>') : renderMarkdown(p.text)) : '').join('');
+                    let contentHTML = msg.parts.map(p => p.text ? (isUser ? p.text.replace(/\n/g, '<br>') : renderMarkdownWithFormulas(p.text)) : '').join('');
                     const messageBubble = `<div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble"><div class="prose prose-sm max-w-none message-content ${isUser ? 'text-white' : 'text-[var(--text-primary)]'}">${contentHTML}</div></div>`;
                     messageDiv.innerHTML = isUser ? `${messageBubble}${icon}` : `${icon}${messageBubble}`;
                     contentContainer.appendChild(messageDiv);
@@ -8978,7 +9026,7 @@ function setupMessageIntersectionObserver() {
                     const messageDiv = document.createElement('div');
                     messageDiv.className = `flex items-start gap-2 md:gap-4 ${isUser ? 'justify-end user-message' : 'model-message'}`;
                     const icon = isUser ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser.username.charAt(0).toUpperCase()}</div>` : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
-                    let contentHTML = msg.parts.map(p => p.text ? (isUser ? p.text.replace(/\n/g, '<br>') : renderMarkdown(p.text)) : '').join('');
+                    let contentHTML = msg.parts.map(p => p.text ? (isUser ? p.text.replace(/\n/g, '<br>') : renderMarkdownWithFormulas(p.text)) : '').join('');
                     const messageBubble = `<div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble"><div class="prose prose-sm max-w-none message-content ${isUser ? 'text-white' : 'text-[var(--text-primary)]'}">${contentHTML}</div></div>`;
                     messageDiv.innerHTML = isUser ? `${messageBubble}${icon}` : `${icon}${messageBubble}`;
                     contentContainer.appendChild(messageDiv);
@@ -9620,8 +9668,7 @@ ${allContextData.join('\n\n')}`;
 
                     sendConversationToMail(userMessageObject, fullReport);
                     // 打字機效果完成後，用最終的、渲染好的 HTML 更新內容
-                    reportContentDiv.innerHTML = renderMarkdown(fullReport);
-
+                    reportContentDiv.innerHTML = renderMarkdownWithFormulas(fullReport);
                 } catch (streamError) {
                     if (streamError.name !== 'AbortError') {
                         console.error("Stream error during deep research report rendering:", streamError);
