@@ -60,6 +60,7 @@ window.i18n = {
         moreModels: '更多模型',
         back: '返回',
         categoryGeneral: '通用模型',
+        categoryImage: '圖像識別',
         categoryThinking: '思考模型',
         categoryCoding: '編程模型',
         // Settings Modal
@@ -531,6 +532,7 @@ window.i18n = {
         moreModels: 'More Models',
         back: 'Back',
         categoryGeneral: 'General Models',
+        categoryImage: 'Image Recognition',
         categoryThinking: 'Thinking Models',
         categoryCoding: 'Coding Models',
         // Settings Modal
@@ -994,6 +996,7 @@ window.i18n = {
         moreModels: 'Plus de modèles',
         back: 'Retour',
         categoryGeneral: 'Modèles Généraux',
+        categoryImage: 'Reconnaissance d\'Image',
         categoryThinking: 'Modèles de Réflexion',
         categoryCoding: 'Modèles de Codage',
         // Settings Modal
