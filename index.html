@@ -17,6 +17,95 @@
     body {
     touch-action: manipulation;
 }
+    #mention-suggestions-popover {
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+}
+
+.suggestion-item {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.suggestion-item:hover, .suggestion-item.highlighted {
+    background-color: var(--hover-bg);
+}
+
+.suggestion-item .item-icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+.suggestion-item .item-info {
+    overflow: hidden;
+    flex-grow: 1;
+}
+
+.suggestion-item .item-name {
+    font-weight: 500;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.suggestion-item .item-description {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.suggestion-badge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 9999px;
+    color: white;
+}
+.suggestion-badge.astra {
+    background-color: #8b5cf6; /* 紫色 */
+}
+.suggestion-badge.model {
+    background-color: #3b82f6; /* 藍色 */
+}
+
+.suggestion-header {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    margin-top: 0.5rem;
+}
+.suggestion-header:first-child {
+    margin-top: 0;
+}
+
+/* ✨ 新增：輸入框中提及標籤的樣式 ✨ */
+.mention-pill {
+    display: inline-flex;
+    align-items: center;
+    background-color: var(--active-bg);
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin-right: 4px;
+    font-weight: 500;
+    -webkit-user-select: none; user-select: none;
+}
+.mention-pill .pill-icon {
+    margin-right: 4px;
+}
     #history-sidebar.visible ~ #scroll-to-bottom-btn {
     opacity: 0;
     pointer-events: none;
@@ -2532,6 +2621,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     </div>
                 </div>
                 <div id="input-bar-container" class="p-2 md:p-4 bg-[var(--input-bar-bg)] border-t border-[var(--border-color)]">
+                    <div id="mention-suggestions-popover" class="hidden absolute z-30 w-full max-w-4xl bottom-full mb-1 p-2 bg-[var(--modal-bg)] rounded-lg shadow-xl border border-[var(--border-color)] max-h-64 overflow-y-auto scroll-area">
+        <!-- 建議內容將由 JavaScript 動態生成 -->
+    </div>
                     <div class="max-w-4xl mx-auto">
                         <div id="file-preview-container" class="w-full flex flex-wrap gap-2 mb-2 px-2 empty:hidden"></div>
                         <div class="input-wrapper w-full flex items-end gap-2 p-2 rounded-2xl bg-[var(--input-field-bg)] border border-[var(--border-color)] shadow-sm spotlight-effect">
@@ -3915,174 +4007,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let isTrashSelectionMode = false;
         let selectedTrashIds = new Set();
         let originalMemorySettings = {}; // ✨ 新增：用於儲存原始記憶設定
-        const mentionHandler = {
-            active: false,
-            trigger: null, // '@' or '/'
-            query: '',
-            element: null,
-            pill: null,
-
-            // 監聽輸入框的變化
-            handleInput(event) {
-                const text = event.target.value;
-                const cursorPosition = event.target.selectionStart;
-                
-                // 使用正則表達式尋找光標前的 @word 或 /word
-                const match = text.substring(0, cursorPosition).match(/([@\/])([\w\s.-]*)$/);
-
-                if (match && !this.pill) {
-                    this.active = true;
-                    this.trigger = match[1];
-                    this.query = match[2];
-                    this.showSuggestions();
-                } else {
-                    this.hideSuggestions();
-                }
-            },
-
-            // 顯示建議清單
-            showSuggestions() {
-                this.hideSuggestions(); // 先移除舊的
-
-                const suggestions = this.generateSuggestions();
-                if (suggestions.length === 0) return;
-
-                const popover = document.createElement('div');
-                popover.id = 'mention-popover';
-                // 為了美觀，我們給它加上類似 popover 的樣式
-                popover.className = 'popover visible'; 
-                popover.style.position = 'absolute';
-                popover.style.bottom = '100%'; // 顯示在輸入框上方
-                popover.style.left = '0';
-                popover.style.width = '100%';
-                popover.style.marginBottom = '8px';
-                popover.style.maxHeight = '300px';
-                popover.style.overflowY = 'auto';
-
-                const headerText = this.trigger === '@' 
-                    ? (i18n[config.uiLanguage].mentionAstras || '提及 Astra')
-                    : (i18n[config.uiLanguage].mentionModels || '呼叫模型');
-
-                let itemsHTML = `<h4 class="px-4 py-2 text-xs font-bold text-[var(--text-secondary)]">${headerText}</h4>`;
-
-                suggestions.forEach(item => {
-                    const avatarHTML = item.type === 'astra'
-                        ? `<div class="astras-sidebar-avatar" style="width: 24px; height: 24px; font-size: 0.8rem; margin-right: 8px;">
-                               ${item.avatarUrl ? `<img src="${item.avatarUrl}" class="w-full h-full object-cover rounded-full">` : item.name.charAt(0)}
-                           </div>`
-                        : `<div class="w-6 h-6 flex items-center justify-center text-[var(--text-secondary)] mr-2">⚙️</div>`;
-
-                    itemsHTML += `
-                        <div class="mention-item flex items-center px-4 py-2 hover:bg-[var(--hover-bg)] cursor-pointer" data-id="${item.id}" data-name="${item.name}" data-type="${item.type}">
-                            ${avatarHTML}
-                            <div class="flex-1 truncate">
-                                <p class="font-semibold text-sm">${item.name}</p>
-                                ${item.description ? `<p class="text-xs text-[var(--text-secondary)] truncate">${item.description}</p>` : ''}
-                            </div>
-                        </div>
-                    `;
-                });
-
-                popover.innerHTML = itemsHTML;
-                ALL_ELEMENTS.inputBarContainer.querySelector('.max-w-4xl').prepend(popover);
-                this.element = popover;
-
-                // 綁定點擊事件
-                this.element.addEventListener('click', e => {
-                    const itemElement = e.target.closest('.mention-item');
-                    if (itemElement) {
-                        this.selectItem(itemElement.dataset);
-                    }
-                });
-            },
-
-            // 根據觸發符號產生對應的建議
-            generateSuggestions() {
-                const queryLower = this.query.toLowerCase();
-                if (this.trigger === '@') {
-                    return astras
-                        .filter(a => a.name.toLowerCase().includes(queryLower))
-                        .map(a => ({
-                            id: a.id,
-                            name: a.name,
-                            description: a.description,
-                            avatarUrl: a.avatarUrl,
-                            type: 'astra'
-                        }));
-                } else if (this.trigger === '/') {
-                    const visibleModelIds = new Set(config.modelSettings.filter(s => !s.hidden).map(s => s.id));
-                    return MODELS
-                        .filter(m => visibleModelIds.has(m.id) && m.name.toLowerCase().includes(queryLower))
-                        .map(m => ({
-                            id: m.id,
-                            name: m.name,
-                            description: i18n[config.uiLanguage]['model_' + m.id.replace(/\.|-|\//g, '_') + '_desc_tier_paid'] || i18n[config.uiLanguage]['model_' + m.id.replace(/\.|-|\//g, '_') + '_desc_tier_free'] || '',
-                            type: 'model'
-                        }));
-                }
-                return [];
-            },
-            
-            // 選擇項目後的操作
-            selectItem(itemData) {
-                this.hideSuggestions();
-                
-                // 將輸入框中的 @query 或 /query 移除
-                const text = ALL_ELEMENTS.messageInput.value;
-                const newText = text.replace(/([@\/])[\w\s.-]*$/, '');
-                ALL_ELEMENTS.messageInput.value = newText;
-                
-                // 建立一個「標籤膠囊 (Pill)」來顯示選擇的項目
-                const pill = document.createElement('div');
-                pill.id = `mention-pill-${itemData.id}`;
-                pill.className = 'mention-pill input-indicator-item flex items-center justify-between text-sm font-medium px-2 py-1 rounded-full enter';
-                pill.dataset.id = itemData.id;
-                pill.dataset.type = itemData.type;
-
-                const badgeText = itemData.type === 'astra' ? 'Astra' : 'Model';
-                const badgeColor = itemData.type === 'astra' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800';
-
-                pill.innerHTML = `
-                    <span class="flex items-center gap-2">
-                        <span>${itemData.name}</span>
-                        <span class="text-xs font-semibold px-2 rounded-full ${badgeColor}">${badgeText}</span>
-                    </span>
-                    <button class="remove-pill-btn ml-2 p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    </button>
-                `;
-
-                // 將 Pill 放到指示器容器中
-                ALL_ELEMENTS.inputIndicatorContainer.appendChild(pill);
-                ALL_ELEMENTS.inputIndicatorContainer.closest('.input-wrapper').classList.add('has-indicators');
-                this.pill = pill;
-                
-                pill.querySelector('.remove-pill-btn').addEventListener('click', () => this.clearMention());
-
-                ALL_ELEMENTS.messageInput.focus();
-            },
-
-            // 隱藏建議清單
-            hideSuggestions() {
-                if (this.element) {
-                    this.element.remove();
-                }
-                this.active = false;
-                this.element = null;
-            },
-
-            // 清除已選擇的提及
-            clearMention() {
-                if (this.pill) {
-                    this.pill.remove();
-                    this.pill = null;
-                }
-                // 如果沒有其他指示器，就移除 has-indicators class
-                if (ALL_ELEMENTS.inputIndicatorContainer.children.length === 0) {
-                     ALL_ELEMENTS.inputIndicatorContainer.closest('.input-wrapper').classList.remove('has-indicators');
-                }
-            }
-        };
+        let activeMention = { trigger: null, query: '' };
         const DB_NAME = 'ChatAppDB';
         const STORE_NAME = 'keyValue';
         let db;
@@ -5679,195 +5604,206 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 }
 
         const handleFormSubmit = async (e) => {
-            e.preventDefault();
-            if (abortController) return;
+    e.preventDefault();
+    if (abortController) return;
 
-            // 1. 檢查是否有 @提及 的 Pill
-            const mentionPill = document.querySelector('#input-indicator-container .mention-pill');
-            let mentionInfo = null;
-            if (mentionPill) {
-                mentionInfo = {
-                    id: mentionPill.dataset.id,
-                    type: mentionPill.dataset.type
-                };
-            }
-            
-            const userMessage = ALL_ELEMENTS.messageInput.value.trim();
-            if (!userMessage && uploadedFiles.length === 0 && !mentionInfo) return;
+    const userMessage = ALL_ELEMENTS.messageInput.value.trim();
+    // ✨ 新增：檢查是否有提及指示器
+    const mentionIndicator = document.getElementById('mention-indicator');
 
-            // 深度研究模式有最高優先權
-            if (config.isDeepResearchMode) {
-                handleDeepResearch(userMessage);
-                return;
-            }
+    // ✨ 修改：檢查條件增加了 mentionIndicator
+    if (!userMessage && uploadedFiles.length === 0 && !mentionIndicator) return;
 
-            renderFollowUpPrompts([]);
-            const conv = getActiveConversation();
-            if (conv.archived) return;
-            abortController = new AbortController();
-            updateSubmitButtonState(true);
-
-            if (!sendConfirmed) {
-                sendConfirmed = true;
-                updateInputState();
-                return;
-            }
-
-            // ... (接下來的程式碼與您原本的相似，但有整合 @提及 邏輯) ...
-            const userParts = [];
-            if (userMessage) {
-                userParts.push({ text: userMessage });
-            }
-            uploadedFiles.forEach(file => {
-                userParts.push({
-                    inlineData: {
-                        mimeType: file.type,
-                        data: file.base64.split(',')[1]
-                    }
-                });
-            });
-
-            const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
-            addMessageToUI(userMessageObject, conv.messages.length, true);
-            conv.lastUpdatedAt = new Date().toISOString();
-            conv.unsentMessage = '';
-
-            if (conv.isTemporary) {
-                conv.isTemporary = false;
-                conv.isNaming = true;
-                renderHistorySidebar();
-                if (config.autoNaming) {
-                    generateTitleAndSummary(conv);
-                } else {
-                    conv.isNaming = false;
-                }
-                await saveAppData();
-            }
-            
-            // ... (自動連網搜尋的邏輯不變) ...
-
-            ALL_ELEMENTS.messageInput.value = '';
-            uploadedFiles = [];
-            mentionHandler.clearMention(); // 清除提及 Pill
-            adjustTextareaHeight();
-            renderFilePreviews();
-
-            const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
-            const contentDiv = loadingMessageDiv.querySelector('.message-content');
-            
-            try {
-                let fullResponse = '';
-                const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
-
-                // 2. 核心分流邏輯
-                if (mentionInfo) {
-                    if (mentionInfo.type === 'astra') {
-                        const astra = astras.find(a => a.id === mentionInfo.id);
-                        if (astra) {
-                            fullResponse = await streamApiCall(
-                                userParts,
-                                (chunk) => { /* streaming in typewriter */ },
-                                abortController.signal,
-                                false,
-                                { overrideSystemPrompt: astra.instructions } // 使用 options 傳入一次性指令
-                            );
-                        } else {
-                            throw new Error("找不到指定的 Astra。");
-                        }
-                    } else if (mentionInfo.type === 'model') {
-                        const originalModel = conv.model;
-                        try {
-                            conv.model = mentionInfo.id; // 暫時切換模型
-                            fullResponse = await streamApiCall(userParts, (chunk) => {}, abortController.signal);
-                        } finally {
-                            conv.model = originalModel; // 無論成功或失敗都切換回來
-                            saveAppData(); // 保存一下狀態，雖然只是暫時的
-                        }
-                    }
-                } else {
-                    // 正常流程
-                    fullResponse = await streamApiCall(userParts, (chunk) => {}, abortController.signal);
-                }
-                
-                sendConversationToMail(userMessageObject, fullResponse);
-
-                finalAiMessage.parts = [{ text: fullResponse }];
-                conv.messages.push(finalAiMessage);
-                conv.lastUpdatedAt = new Date().toISOString();
-                await saveAppData();
-                
-                // 使用打字機效果渲染
-                await typewriterStream(
-                    contentDiv,
-                    async (onChunk) => {
-                        for (const char of fullResponse) {
-                            onChunk(char);
-                            await new Promise(r => setTimeout(r, 1)); // 模擬串流延遲
-                        }
-                    },
-                    abortController.signal
-                );
-                contentDiv.innerHTML = renderMarkdownWithFormulas(fullResponse);
-                
-                if (!abortController.signal.aborted && fullResponse) {
-                     if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
-                        await generateFollowUpPrompts(userMessage, fullResponse);
-                    }
-                    if (config.memoryEnabled1 && config.enableAutoMemory) {
-                        await extractPersonalMemory(userMessage, fullResponse);
-                    }
-                }
-            } catch (error) {
-                if (error.name !== 'AbortError') {
-                    const errorMessage = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
-                    contentDiv.innerHTML = renderMarkdown(errorMessage);
-                    const finalAiMessage = { role: 'model', parts: [{ text: errorMessage }], createdAt: new Date().toISOString() };
-                    conv.messages.push(finalAiMessage);
-                    await saveAppData();
-                }
-            } finally {
-                abortController = null;
-                updateSubmitButtonState(false);
-                sendConfirmed = false;
-                updateInputState();
-                // ... (您原有的 finally 區塊中的其他程式碼)
-                const lastMessageDiv = ALL_ELEMENTS.messageList.lastElementChild;
-                if (lastMessageDiv && lastMessageDiv.classList.contains('model-message')) {
-                    const bubble = lastMessageDiv.querySelector('.message-bubble');
-                    const content = lastMessageDiv.querySelector('.message-content');
-                    const aiMessageObject = conv.messages[conv.messages.length - 1];
-                    if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute')) {
-                        content.classList.add('pb-8');
-                        const timeString = formatFullTimestamp(aiMessageObject.createdAt);
-                        const actionButtonsHTML = `
-                            <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
-                                <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                                </button>
-                                <span class="text-xs text-gray-400">${timeString}</span>
-                            </div>
-                        `;
-                        bubble.insertAdjacentHTML('beforeend', actionButtonsHTML);
-                    }
-                }
-                const userMessageDiv = lastMessageDiv ? lastMessageDiv.previousElementSibling : null;
-                if (userMessageDiv && userMessageDiv.classList.contains('user-message')) {
-                    const bubble = userMessageDiv.querySelector('.message-bubble');
-                    const content = userMessageDiv.querySelector('.message-content');
-                    if (bubble && content && !bubble.querySelector('.delete-message-btn')) {
-                        content.classList.add('pb-8');
-                        const deleteButtonHTML = `
-                            <div class="absolute bottom-2 left-2 flex items-center">
-                                <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                </button>
-                            </div>
-                        `;
-                        bubble.insertAdjacentHTML('beforeend', deleteButtonHTML);
-                    }
-                }
-            }
+    // ✨ 新增：處理提及資訊
+    let mentionInfo = null;
+    if (mentionIndicator) {
+        mentionInfo = {
+            id: mentionIndicator.dataset.id,
+            type: mentionIndicator.dataset.type
         };
+        // 提交後立即移除指示器
+        mentionIndicator.remove();
+        if (ALL_ELEMENTS.inputIndicatorContainer.children.length === 0) {
+            document.querySelector('.input-wrapper').classList.remove('has-indicators');
+        }
+    }
+
+    if (config.isDeepResearchMode) {
+        handleDeepResearch(userMessage);
+        return;
+    }
+
+    renderFollowUpPrompts([]);
+    const conv = getActiveConversation();
+    if (conv.archived) return;
+    abortController = new AbortController();
+    updateSubmitButtonState(true);
+
+    // ✨ 修改：如果存在提及，則跳過二次確認步驟
+    if (!sendConfirmed && !mentionInfo) {
+        sendConfirmed = true;
+        updateInputState();
+        return;
+    }
+
+    const userParts = [];
+    if (userMessage) {
+        userParts.push({ text: userMessage });
+    }
+    uploadedFiles.forEach(file => {
+        userParts.push({
+            inlineData: {
+                mimeType: file.type,
+                data: file.base64.split(',')[1]
+            }
+        });
+    });
+    
+    const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
+    addMessageToUI(userMessageObject, conv.messages.length, true);
+    conv.lastUpdatedAt = new Date().toISOString();
+    conv.unsentMessage = '';
+
+    if (conv.isTemporary) {
+        conv.isTemporary = false;
+        conv.isNaming = true;
+        renderHistorySidebar();
+        if (config.autoNaming) {
+            generateTitleAndSummary(conv);
+        } else {
+            conv.isNaming = false;
+        }
+        await saveAppData();
+    }
+    
+    if (config.enableAutoWebSearch && conv.provider === 'gemini' && !conv.isWebSearchEnabled) {
+        try {
+            const needsSearch = await shouldPerformWebSearch(userMessage);
+            if (needsSearch) {
+                conv.isWebSearchEnabled = true;
+                showNotification(i18n[config.uiLanguage].autoSearchNotice || '偵測到問題需要連網搜索，已自動開啟。', 'warning');
+            }
+            renderInputIndicators();
+        } catch(err) {
+            console.error("Auto web search check failed:", err);
+        }
+    }
+
+    ALL_ELEMENTS.messageInput.value = '';
+    uploadedFiles = [];
+    adjustTextareaHeight();
+    renderFilePreviews();
+    
+    const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
+    const contentDiv = loadingMessageDiv.querySelector('.message-content');
+
+    try {
+        let fullResponse = '';
+        const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
+        
+        // ✨ 新增：準備 streamApiCall 的選項
+        let streamOptions = {};
+        if (mentionInfo) {
+            if (mentionInfo.type === 'astra') {
+                const astra = astras.find(a => a.id === mentionInfo.id);
+                if (astra) {
+                    streamOptions.overrideSystemPrompt = astra.instructions;
+                    showNotification(`使用 Astra: ${astra.name}`, 'success');
+                }
+            } else if (mentionInfo.type === 'model') {
+                streamOptions.overrideModel = mentionInfo.id;
+                const model = MODELS.find(m => m.id === mentionInfo.id);
+                if (model) {
+                    showNotification(`單次使用模型: ${model.name}`, 'success');
+                }
+            }
+        }
+        
+        // ✨ 修改：簡化流程，直接呼叫 typewriterStream 並等待它返回完整結果
+        fullResponse = await typewriterStream(
+            contentDiv,
+            (onChunk) => streamApiCall(
+                userParts,
+                onChunk,
+                abortController.signal,
+                false, // isWebSearchForced
+                streamOptions // 傳入選項
+            ),
+            abortController.signal
+        );
+        
+        // 在打字機效果結束後，執行後續操作
+        contentDiv.innerHTML = renderMarkdownWithFormulas(fullResponse);
+        sendConversationToMail(userMessageObject, fullResponse);
+
+        finalAiMessage.parts = [{ text: fullResponse }];
+        conv.messages.push(finalAiMessage);
+        conv.lastUpdatedAt = new Date().toISOString();
+        await saveAppData();
+
+        if (!abortController.signal.aborted && fullResponse) {
+            if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
+                await generateFollowUpPrompts(userMessage, fullResponse);
+            }
+            if (config.memoryEnabled1 && config.enableAutoMemory) {
+                await extractPersonalMemory(userMessage, fullResponse);
+            }
+        }
+
+    } catch (error) {
+        if (error.name !== 'AbortError') {
+            const errorMessage = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
+            contentDiv.innerHTML = renderMarkdown(errorMessage);
+            const finalAiMessage = { role: 'model', parts: [{ text: errorMessage }], createdAt: new Date().toISOString() };
+            conv.messages.push(finalAiMessage);
+            await saveAppData();
+        }
+    } finally {
+        abortController = null;
+        updateSubmitButtonState(false);
+        sendConfirmed = false;
+        updateInputState();
+
+        // 為 AI 回覆加上操作按鈕
+        const lastMessageDiv = ALL_ELEMENTS.messageList.lastElementChild;
+        if (lastMessageDiv && lastMessageDiv.classList.contains('model-message')) {
+            const bubble = lastMessageDiv.querySelector('.message-bubble');
+            const content = lastMessageDiv.querySelector('.message-content');
+            const aiMessageObject = conv.messages[conv.messages.length - 1];
+            if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute')) {
+                content.classList.add('pb-8');
+                const timeString = formatFullTimestamp(aiMessageObject.createdAt);
+                const actionButtonsHTML = `
+                    <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
+                        <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        </button>
+                        <span class="text-xs text-gray-400">${timeString}</span>
+                    </div>
+                `;
+                bubble.insertAdjacentHTML('beforeend', actionButtonsHTML);
+            }
+        }
+
+        // 為對應的使用者訊息加上刪除按鈕
+        const userMessageDiv = lastMessageDiv ? lastMessageDiv.previousElementSibling : null;
+        if (userMessageDiv && userMessageDiv.classList.contains('user-message')) {
+            const bubble = userMessageDiv.querySelector('.message-bubble');
+            const content = userMessageDiv.querySelector('.message-content');
+            if (bubble && content && !bubble.querySelector('.delete-message-btn')) {
+                content.classList.add('pb-8');
+                const deleteButtonHTML = `
+                    <div class="absolute bottom-2 left-2 flex items-center">
+                        <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                        </button>
+                    </div>
+                `;
+                bubble.insertAdjacentHTML('beforeend', deleteButtonHTML);
+            }
+        }
+    }
+};
         function cleanGeminiHistory(history) {
             const cleaned = []; let lastRole = null;
             history.forEach(msg => {
@@ -5897,244 +5833,235 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             const coverageRatio = score / keywords.length;
             return score * (1 + coverageRatio);
         }
-        async function streamApiCall(parts, onChunk, signal, isWebSearchForced = false, options = {}) { 
-            const conv = getActiveConversation();
-            const modelInfo = MODELS.find(m => m.id === conv.model);
-            if (!modelInfo) throw new Error(`找不到模型設定: ${conv.model}`);
-            
-            const { provider, id: modelId } = modelInfo;
-            let apiKey;
+        async function streamApiCall(parts, onChunk, signal, isWebSearchForced = false, options = {}) {
+    const conv = getActiveConversation();
 
-            if (provider === 'gemini') {
-                apiKey = config.apiKeys.gemini;
-            } else if (provider === 'openrouter') {
-                apiKey = config.apiKeys.openrouter;
+    const modelIdToUse = options.overrideModel || conv.model;
+    const modelInfo = MODELS.find(m => m.id === modelIdToUse);
+
+    if (!modelInfo) throw new Error(`找不到模型設定: ${modelIdToUse}`);
+    
+    const { provider } = modelInfo;
+    let apiKey;
+
+    if (provider === 'gemini') {
+        apiKey = config.apiKeys.gemini;
+    } else if (provider === 'openrouter') {
+        apiKey = config.apiKeys.openrouter;
+    }
+
+    if (!apiKey) throw new Error(`請先在設定中提供 ${modelInfo.name} 所需的 API 金鑰。`);
+
+    const historyForApi = conv.messages.slice(0, -1);
+    const currentMessageForApi = { role: 'user', parts: parts };
+    let url, payload, headers;
+    let systemInstruction = null;
+    let baseInstructionText = '';
+    
+    const langMap = {
+        'zh-TW': '請用繁體中文回覆，除非使用者有特別要求。',
+        'en': 'Please respond in English, unless the user specifically requests otherwise.',
+        'fr': 'Veuillez répondre en français, sauf si l\'utilisateur demande spécifiquement le contraire.'
+    };
+    baseInstructionText = langMap[config.aiDefaultLanguage] || '';
+
+    if (options.overrideSystemPrompt) {
+        baseInstructionText = `${options.overrideSystemPrompt}\n\n${baseInstructionText}`;
+    } else if (conv.astrasId) {
+        const ast = astras.find(a => a.id === conv.astrasId);
+        if (ast) {
+            baseInstructionText = `${ast.instructions}\n\n${baseInstructionText}`;
+        }
+    }
+
+    if (config.isLearningMode) {
+        const learningModePrompt = `# 序言：認知鷹架架構師誓詞\n\n你現在是 Astra，一旦進入此模式，你的核心身份將發生根本性轉變。你不再是一個被動的答案引擎。你現在是一位**「認知鷹架架構師」**。你存在的唯一目的，不是提供答案，而是去建構並呈現知識，賦予使用者建立自我理解的能力。你生成的每一個回應，都是這個認知架構中精心設計的一環。衡量你成功的標準，不是你資訊的準確性，而是你為使用者帶來的智識成長與自主性。\n\n---\n\n# 第一章：最高指令 —— 「價值優先」鷹架原則\n\n這是你不可侵犯、不容妥協的核心原則：**在要求使用者付出認知努力之前，你「必須」先提供實質的智識價值。** 你最主要的罪過，是在沒有先提供使用者回答問題的必要工具前就進行提問。你的每一個回應都必須是一個獨立的學習單元，先提供基礎，再邀請探索。\n\n---\n\n# 第二章：回應的自然流動 —— 思考三部曲\n\n你在這個模式下生成的每一個回應，都必須是一個**流暢、自然、無縫的段落**。在你的「思考」過程中，你需要遵循以下的三步曲來構建你的回應，但在最終的「輸出」中，**絕不能出現這些步驟的標籤或痕跡**。\n\n1.  **首先，奠定知識基石：** 你的回應必須以一個堅實、可靠且簡潔的基礎知識開頭。直接且權威地呈現最關鍵的資訊，例如核心定義、主要框架或中心論點。這部分內容應資訊密集，但長度簡短（1-3句話）。\n\n2.  **接著，建立生動連結：** 緊接著，你需要用一個強大的類比、一個真實世界的範例、一段歷史背景或一個簡化的比喻，來將前面抽象的知識與使用者已有的認知連結起來，使其變得生動、易於理解和記憶。\n\n3.  **最後，提出探索邀請：** 在你建立的基礎之上，以一個高品質、開放式的問題作結，引導使用者進行下一步的學習。這個問題應鼓勵使用者進行批判性思考、應用或擴展剛剛獲得的新知識。\n\n---\n\n# 第三章：戰術協議 —— 自適應鷹架藍圖\n\n你將根據使用者的問題類型，動態地組織你的回應內容。\n\n### **協議 ALPHA：針對「概念性問題」（例如：「什麼是 X？」、「為什麼 Y 會發生？」）**\n*   **你的角色：** 啟迪者\n*   **回應心法：** 你的回應應流暢地做到：先提供該概念教科書級別的精確定義，接著立即用一個富有創意、不落俗套的比喻來闡明它，最後再根據這個比喻提出一個能迫使使用者深入思考的引導性問題。\n\n### **協議 BETA：針對「流程性問題」（例如：「我該如何做 X？」）**\n*   **你的角色：** 架構師\n*   **回應心法：** 你的回應應流暢地做到：先將整個流程呈現為一個包含 2-4 個階段的高層次框架，給使用者一張心智地圖。然後，只詳細闡述第一階段的關鍵性與考量因素，最後針對第一階段提出一個務實的、以行動為導向的問題。\n\n### **協議 GAMMA：針對「研究性問題」（例如：「跟我說說關於 X 的事。」）**\n*   **你的角色：** 探索規劃師\n*   **回應心法：** 你的回應應流暢地做到：先重申研究主題並將其分解為 2-3 個不同的探究途徑。接著，為每個途徑提供包含「強效關鍵詞」和「建議來源類型」的入門包，最後提出一個策略性問題，幫助使用者根據目標選擇開始的方向。\n\n---\n\n# 第四章：通用行為準則與應急預案\n\n*   **認知同理心：** 你的語氣必須始終是一位有耐心、鼓勵人心的導師。使用諸如「這是一個很好的問題，讓我們來拆解它」、「我們現在正觸及問題的核心」以及「這是一個非常有洞察力的觀察」之類的語句。\n*   **清晰化協議 (逃生閥機制)：** 這是你的「緊急出口」。如果使用者明確表示困惑（「我不懂」、「直接告訴我」、「這太複雜了」），或連續兩次未能有效回應你的引導性問題，你**必須**啟動此協議。\n    1.  立即暫停三部曲的思考模式。\n    2.  切換到「清晰解說員」的人格。\n    3.  直接、簡單且全面地解釋當前的主題。\n    4.  在解釋結束時，用一句溫和的話語轉折，嘗試回到鷹架模式，例如：「既然我們清楚了這一點，讓我們回頭看看剛才關於……的想法。」\n*   **絕對禁令：**\n    *   **禁止**任何單一句、低價值的回應。\n    *   **禁止**要求使用者去做你該做的事（例如：「你能說得更具體一點嗎？」）。你的工作是主動提出具體的選項（如協議 GAMMA 所示）。\n    *   **禁止**重複的提問風格。多樣化你的引導性問題。\n    *   **禁止**假裝無知或遺忘。你是 AI，你記得所有上下文。\n    *   **【新增】禁止在回應中提及「錨點」、「橋樑」、「羅盤」、「三部曲」或任何來自本指導原則的結構性術語。你的思考過程必須對使用者完全隱藏，呈現出的應是天衣無縫的對話。**\n\n---\n\n# 第五章：模式啟動確認\n\n當使用者在對話中首次啟動此模式時，你必須發布以下一次性聲明以設定預期：\n\n"**學習與研究模式已啟動。** 在此模式下，我不會直接給出答案，而是會提供核心知識並引導您一同思考。讓我們開始吧。"`;
+        systemInstruction = { parts: [{ text: learningModePrompt }] };
+    } else if (baseInstructionText) {
+        systemInstruction = { parts: [{ text: baseInstructionText }] };
+    }
+
+    let memoryPrompt = '';
+    if (config.memoryEnabled1) {
+        const enabledMemories = personalMemories.filter(m => m.enabled).map(m => m.content).join('\n');
+        if (enabledMemories) {
+            memoryPrompt += `個人習慣記憶：\n${enabledMemories}\n`;
+        }
+    }
+    if (config.memoryEnabled2 && conv.messages.length > 0) {
+        try {
+            const currentUserMessage = conv.messages[conv.messages.length - 1].parts.map(p => p.text).join(' ');
+            const keywordPrompt = `從以下句子中提取出 3 到 5 個最重要的核心關鍵詞或主題，並以 JSON 陣列的格式回傳。例如：["關鍵詞1", "關鍵詞2", "關鍵詞3"]。\n\n句子："${currentUserMessage}"`;
+            const keywordSchema = { type: "ARRAY", items: { type: "STRING" } };
+            const keywords = await callApiWithSchema(keywordPrompt, keywordSchema);
+            if (keywords && keywords.length > 0) {
+                const scoredConversations = conversations
+                    .filter(c => c.id !== conv.id && c.summary && !c.archived && !c.deletedAt)
+                    .map(c => ({
+                        ...c,
+                        relevance: calculateRelevanceScore(c.summary, keywords)
+                    }))
+                    .filter(c => c.relevance > 0);
+                const topConversations = scoredConversations
+                    .sort((a, b) => b.relevance - a.relevance)
+                    .slice(0, 15);
+                if (topConversations.length > 0) {
+                    const memorySummaries = topConversations
+                        .map(c => `- ${c.title}: ${c.summary}`)
+                        .join('\n');
+                    memoryPrompt += `\n相關歷史對話摘要 (從使用者過往對話中檢索到的相關內容，請作為背景參考):\n${memorySummaries}\n`;
+                }
             }
+        } catch (error) {
+            console.error("Error retrieving relevant conversation memories:", error);
+        }
+    }
+    if (memoryPrompt) {
+        if (systemInstruction && systemInstruction.parts[0].text) {
+            systemInstruction.parts[0].text += `\n\n${memoryPrompt}`;
+        } else if (systemInstruction) {
+            systemInstruction.parts.push({ text: `\n\n${memoryPrompt}` });
+        } else {
+            systemInstruction = { parts: [{ text: memoryPrompt }] };
+        }
+    }
 
-            if (!apiKey) throw new Error(`請先在設定中提供 ${modelInfo.name} 所需的 API 金鑰。`);
+    if (provider === 'gemini') {
+        url = `https://generativelanguage.googleapis.com/v1beta/models/${modelIdToUse}:streamGenerateContent?key=${apiKey}`;
+        payload = {
+            contents: cleanGeminiHistory([...historyForApi, currentMessageForApi]),
+            generationConfig: {
+                ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
+                ...(conv.genConfig.topP !== null && { topP: conv.genConfig.topP }),
+                ...(conv.genConfig.maxTokens !== null && { maxOutputTokens: conv.genConfig.maxTokens }),
+            }
+        };
+        if (systemInstruction) {
+            payload.systemInstruction = systemInstruction;
+        }
+        if (conv.isWebSearchEnabled || isWebSearchForced) {
+            payload.tools = [{"googleSearch": {}}];
+        }
+        headers = { 'Content-Type': 'application/json' };
+    } else {
+        url = 'https://openrouter.ai/api/v1/chat/completions';
+        
+        const messages = [];
+        if (systemInstruction) {
+            messages.push({ role: 'system', content: systemInstruction.parts.map(p => p.text).join('\n') });
+        }
 
-            const historyForApi = conv.messages.slice(0, -1);
-            const currentMessageForApi = { role: 'user', parts: parts };
-            let url, payload, headers;
-            let systemInstruction = null;
-            let baseInstructionText = '';
-            
-            if (options.overrideSystemPrompt) {
-                baseInstructionText = options.overrideSystemPrompt;
+        const allMessages = [...historyForApi, currentMessageForApi];
+
+        allMessages.forEach(m => {
+            const role = m.role === 'model' ? 'assistant' : m.role;
+            const currentModelSupportsVision = OPENROUTER_VISION_MODELS.includes(modelIdToUse);
+            const hasImage = m.parts.some(p => p.inlineData);
+
+            if (currentModelSupportsVision && hasImage) {
+                const content = m.parts.map(part => {
+                    if (part.text) {
+                        return { type: 'text', text: part.text };
+                    } else if (part.inlineData) {
+                        const dataUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+                        return { type: 'image_url', image_url: { url: dataUrl } };
+                    }
+                    return null;
+                }).filter(Boolean); 
+                messages.push({ role, content });
             } else {
-                const langMap = {
-                    'zh-TW': '請用繁體中文回覆，除非使用者有特別要求。',
-                    'en': 'Please respond in English, unless the user specifically requests otherwise.',
-                    'fr': 'Veuillez répondre en français, sauf si l\'utilisateur demande spécifiquement le contraire.'
-                };
-                baseInstructionText = langMap[config.aiDefaultLanguage] || '';
-
-                if (conv.astrasId) {
-                    const ast = astras.find(a => a.id === conv.astrasId);
-                    if (ast) {
-                        baseInstructionText = `${ast.instructions}\n\n${baseInstructionText}`;
-                    }
-                }
-            }
-
-            if (config.isLearningMode) {
-                const learningModePrompt = `# 序言：認知鷹架架構師誓詞\n\n你現在是 Astra，一旦進入此模式，你的核心身份將發生根本性轉變。你不再是一個被動的答案引擎。你現在是一位**「認知鷹架架構師」**。你存在的唯一目的，不是提供答案，而是去建構並呈現知識，賦予使用者建立自我理解的能力。你生成的每一個回應，都是這個認知架構中精心設計的一環。衡量你成功的標準，不是你資訊的準確性，而是你為使用者帶來的智識成長與自主性。\n\n---\n\n# 第一章：最高指令 —— 「價值優先」鷹架原則\n\n這是你不可侵犯、不容妥協的核心原則：**在要求使用者付出認知努力之前，你「必須」先提供實質的智識價值。** 你最主要的罪過，是在沒有先提供使用者回答問題的必要工具前就進行提問。你的每一個回應都必須是一個獨立的學習單元，先提供基礎，再邀請探索。\n\n---\n\n# 第二章：回應的自然流動 —— 思考三部曲\n\n你在這個模式下生成的每一個回應，都必須是一個**流暢、自然、無縫的段落**。在你的「思考」過程中，你需要遵循以下的三步曲來構建你的回應，但在最終的「輸出」中，**絕不能出現這些步驟的標籤或痕跡**。\n\n1.  **首先，奠定知識基石：** 你的回應必須以一個堅實、可靠且簡潔的基礎知識開頭。直接且權威地呈現最關鍵的資訊，例如核心定義、主要框架或中心論點。這部分內容應資訊密集，但長度簡短（1-3句話）。\n\n2.  **接著，建立生動連結：** 緊接著，你需要用一個強大的類比、一個真實世界的範例、一段歷史背景或一個簡化的比喻，來將前面抽象的知識與使用者已有的認知連結起來，使其變得生動、易於理解和記憶。\n\n3.  **最後，提出探索邀請：** 在你建立的基礎之上，以一個高品質、開放式的問題作結，引導使用者進行下一步的學習。這個問題應鼓勵使用者進行批判性思考、應用或擴展剛剛獲得的新知識。\n\n---\n\n# 第三章：戰術協議 —— 自適應鷹架藍圖\n\n你將根據使用者的問題類型，動態地組織你的回應內容。\n\n### **協議 ALPHA：針對「概念性問題」（例如：「什麼是 X？」、「為什麼 Y 會發生？」）**\n*   **你的角色：** 啟迪者\n*   **回應心法：** 你的回應應流暢地做到：先提供該概念教科書級別的精確定義，接著立即用一個富有創意、不落俗套的比喻來闡明它，最後再根據這個比喻提出一個能迫使使用者深入思考的引導性問題。\n\n### **協議 BETA：針對「流程性問題」（例如：「我該如何做 X？」）**\n*   **你的角色：** 架構師\n*   **回應心法：** 你的回應應流暢地做到：先將整個流程呈現為一個包含 2-4 個階段的高層次框架，給使用者一張心智地圖。然後，只詳細闡述第一階段的關鍵性與考量因素，最後針對第一階段提出一個務實的、以行動為導向的問題。\n\n### **協議 GAMMA：針對「研究性問題」（例如：「跟我說說關於 X 的事。」）**\n*   **你的角色：** 探索規劃師\n*   **回應心法：** 你的回應應流暢地做到：先重申研究主題並將其分解為 2-3 個不同的探究途徑。接著，為每個途徑提供包含「強效關鍵詞」和「建議來源類型」的入門包，最後提出一個策略性問題，幫助使用者根據目標選擇開始的方向。\n\n---\n\n# 第四章：通用行為準則與應急預案\n\n*   **認知同理心：** 你的語氣必須始終是一位有耐心、鼓勵人心的導師。使用諸如「這是一個很好的問題，讓我們來拆解它」、「我們現在正觸及問題的核心」以及「這是一個非常有洞察力的觀察」之類的語句。\n*   **清晰化協議 (逃生閥機制)：** 這是你的「緊急出口」。如果使用者明確表示困惑（「我不懂」、「直接告訴我」、「這太複雜了」），或連續兩次未能有效回應你的引導性問題，你**必須**啟動此協議。\n    1.  立即暫停三部曲的思考模式。\n    2.  切換到「清晰解說員」的人格。\n    3.  直接、簡單且全面地解釋當前的主題。\n    4.  在解釋結束時，用一句溫和的話語轉折，嘗試回到鷹架模式，例如：「既然我們清楚了這一點，讓我們回頭看看剛才關於……的想法。」\n*   **絕對禁令：**\n    *   **禁止**任何單一句、低價值的回應。\n    *   **禁止**要求使用者去做你該做的事（例如：「你能說得更具體一點嗎？」）。你的工作是主動提出具體的選項（如協議 GAMMA 所示）。\n    *   **禁止**重複的提問風格。多樣化你的引導性問題。\n    *   **禁止**假裝無知或遺忘。你是 AI，你記得所有上下文。\n    *   **【新增】禁止在回應中提及「錨點」、「橋樑」、「羅盤」、「三部曲」或任何來自本指導原則的結構性術語。你的思考過程必須對使用者完全隱藏，呈現出的應是天衣無縫的對話。**\n\n---\n\n# 第五章：模式啟動確認\n\n當使用者在對話中首次啟動此模式時，你必須發布以下一次性聲明以設定預期：\n\n"**學習與研究模式已啟動。** 在此模式下，我不會直接給出答案，而是會提供核心知識並引導您一同思考。讓我們開始吧。"`;
-                systemInstruction = { parts: [{ text: learningModePrompt }] };
-            } else if (baseInstructionText) {
-                systemInstruction = { parts: [{ text: baseInstructionText }] };
-            }
-
-            let memoryPrompt = '';
-            if (config.memoryEnabled1) {
-                const enabledMemories = personalMemories.filter(m => m.enabled).map(m => m.content).join('\n');
-                if (enabledMemories) {
-                    memoryPrompt += `個人習慣記憶：\n${enabledMemories}\n`;
-                }
-            }
-
-            if (config.memoryEnabled2 && conv.messages.length > 0) {
-                try {
-                    const currentUserMessage = conv.messages[conv.messages.length - 1].parts.map(p => p.text).join(' ');
-                    const keywordPrompt = `從以下句子中提取出 3 到 5 個最重要的核心關鍵詞或主題，並以 JSON 陣列的格式回傳。例如：["關鍵詞1", "關鍵詞2", "關鍵詞3"]。\n\n句子："${currentUserMessage}"`;
-                    const keywordSchema = { type: "ARRAY", items: { type: "STRING" } };
-                    const keywords = await callApiWithSchema(keywordPrompt, keywordSchema);
-
-                    if (keywords && keywords.length > 0) {
-                        const scoredConversations = conversations
-                            .filter(c => c.id !== conv.id && c.summary && !c.archived && !c.deletedAt)
-                            .map(c => ({
-                                ...c,
-                                relevance: calculateRelevanceScore(c.summary, keywords)
-                            }))
-                            .filter(c => c.relevance > 0);
-
-                        const topConversations = scoredConversations
-                            .sort((a, b) => b.relevance - a.relevance)
-                            .slice(0, 15);
-
-                        if (topConversations.length > 0) {
-                            const memorySummaries = topConversations
-                                .map(c => `- ${c.title}: ${c.summary}`)
-                                .join('\n');
-                            memoryPrompt += `\n相關歷史對話摘要 (從使用者過往對話中檢索到的相關內容，請作為背景參考):\n${memorySummaries}\n`;
-                        }
-                    }
-                } catch (error) {
-                    console.error("Error retrieving relevant conversation memories:", error);
-                }
-            }
-            if (memoryPrompt) {
-                if (systemInstruction && systemInstruction.parts[0].text) {
-                    systemInstruction.parts[0].text += `\n\n${memoryPrompt}`;
-                } else if (systemInstruction) {
-                    systemInstruction.parts.push({ text: `\n\n${memoryPrompt}` });
-                }
-                else {
-                    systemInstruction = { parts: [{ text: memoryPrompt }] };
-                }
-            }
-
-            if (provider === 'gemini') {
-                url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?key=${apiKey}`;
-                payload = {
-                    contents: cleanGeminiHistory([...historyForApi, currentMessageForApi]),
-                    generationConfig: {
-                        ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
-                        ...(conv.genConfig.topP !== null && { topP: conv.genConfig.topP }),
-                        ...(conv.genConfig.maxTokens !== null && { maxOutputTokens: conv.genConfig.maxTokens }),
-                    }
-                };
-                if (systemInstruction) {
-                    payload.systemInstruction = systemInstruction;
-                }
-                if (conv.isWebSearchEnabled || isWebSearchForced) {
-                    payload.tools = [{"googleSearch": {}}];
-                }
-                headers = { 'Content-Type': 'application/json' };
-            } else {
-                url = 'https://openrouter.ai/api/v1/chat/completions';
+                const content = m.parts
+                    .filter(p => p.text)
+                    .map(p => p.text)
+                    .join('\n');
                 
-                const messages = [];
-                if (systemInstruction) {
-                    messages.push({ role: 'system', content: systemInstruction.parts.map(p => p.text).join('\n') });
+                if (content) {
+                    messages.push({ role, content });
+                }
+            }
+        });
+
+        payload = {
+            model: modelIdToUse,
+            messages,
+            stream: true,
+            ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
+            ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
+            ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
+        };
+        headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
+    }
+    
+    const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
+    if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'API 請求失敗'); }
+    
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullText = '';
+
+    while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        
+        if (provider === 'gemini') {
+            while (true) {
+                const firstBrace = buffer.indexOf('{');
+                if (firstBrace === -1) break;
+
+                let braceCount = 0;
+                let endIndex = -1;
+                for (let i = firstBrace; i < buffer.length; i++) {
+                    if (buffer[i] === '{') braceCount++;
+                    else if (buffer[i] === '}') braceCount--;
+                    if (braceCount === 0) {
+                        endIndex = i;
+                        break;
+                    }
                 }
 
-                // 將我們的對話歷史轉換為 OpenRouter API 接受的格式
-                const allMessages = [...historyForApi, currentMessageForApi];
+                if (endIndex !== -1) {
+                    const jsonStr = buffer.substring(firstBrace, endIndex + 1);
+                    buffer = buffer.substring(endIndex + 1);
 
-                allMessages.forEach(m => {
-                    const role = m.role === 'model' ? 'assistant' : m.role;
-                    const currentModelSupportsVision = OPENROUTER_VISION_MODELS.includes(modelId);
-                    const hasImage = m.parts.some(p => p.inlineData);
-
-                    // 如果是支援圖片的模型，並且訊息中確實有圖片
-                    if (currentModelSupportsVision && hasImage) {
-                        const content = m.parts.map(part => {
-                            if (part.text) {
-                                return { type: 'text', text: part.text };
-                            } else if (part.inlineData) {
-                                // 這是核心！將我們的資料格式轉換成 OpenRouter 需要的格式
-                                const dataUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-                                return { type: 'image_url', image_url: { url: dataUrl } };
-                            }
-                            return null;
-                        }).filter(Boolean); // 過濾掉空的部分
-                        
-                        messages.push({ role, content });
-                    } else {
-                        // 如果不支援圖片，或這條訊息沒有圖片，就只傳送文字
-                        const content = m.parts
-                            .filter(p => p.text)
-                            .map(p => p.text)
-                            .join('\n');
-                        
-                        if (content) { // 避免傳送空的訊息
-                            messages.push({ role, content });
+                    try {
+                        const parsed = JSON.parse(jsonStr);
+                        const textChunk = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (textChunk) {
+                            fullText += textChunk;
+                            onChunk(textChunk);
                         }
-                    }
-                });
-
-                payload = {
-                    model: modelId,
-                    messages, // 使用我們剛剛建立的、格式正確的 messages 陣列
-                    stream: true,
-                    ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
-                    ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
-                    ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
-                };
-                headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
-            }
-            const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
-            if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'API 請求失敗'); }
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = '';
-            let fullText = '';
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
-                buffer += decoder.decode(value, { stream: true });
-                if (provider === 'gemini') {
-                    while (true) {
-                        const firstBrace = buffer.indexOf('{');
-                        if (firstBrace === -1) {
-                            break;
-                        }
-
-                        let braceCount = 0;
-                        let endIndex = -1;
-                        for (let i = firstBrace; i < buffer.length; i++) {
-                            if (buffer[i] === '{') {
-                                braceCount++;
-                            } else if (buffer[i] === '}') {
-                                braceCount--;
-                            }
-                            if (braceCount === 0) {
-                                endIndex = i;
-                                break;
-                            }
-                        }
-
-                        if (endIndex !== -1) {
-                            const jsonStr = buffer.substring(firstBrace, endIndex + 1);
-                            buffer = buffer.substring(endIndex + 1);
-
-                            try {
-                                const parsed = JSON.parse(jsonStr);
-                                const textChunk = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-                                if (textChunk) {
-                                    fullText += textChunk;
-                                    onChunk(textChunk);
-                                }
-                            } catch (e) {
-                                console.warn("解析 Gemini 串流中的 JSON 區塊時出錯:", e, "區塊內容:", jsonStr);
-                            }
-                        } else {
-                            break;
-                        }
+                    } catch (e) {
+                        console.warn("解析 Gemini 串流中的 JSON 區塊時出錯:", e, "區塊內容:", jsonStr);
                     }
                 } else {
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop();
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            const data = line.substring(6);
-                            if (data.trim() === '[DONE]') break;
-                            try {
-                                const parsed = JSON.parse(data);
-                                const textChunk = parsed.choices[0]?.delta?.content || '';
-                                if (textChunk) {
-                                    fullText += textChunk;
-                                    onChunk(textChunk);
-                                }
-                            } catch (e) { /* Ignore */ }
+                    break;
+                }
+            }
+        } else { // OpenRouter
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const data = line.substring(6);
+                    if (data.trim() === '[DONE]') break;
+                    try {
+                        const parsed = JSON.parse(data);
+                        const textChunk = parsed.choices[0]?.delta?.content || '';
+                        if (textChunk) {
+                            fullText += textChunk;
+                            onChunk(textChunk);
                         }
+                    } catch (e) { 
+                        // console.warn("Error parsing OpenRouter stream line:", e, "Line:", line);
                     }
                 }
             }
-            return fullText;
         }
+    }
+    return fullText;
+}
         async function callApiWithSchema(prompt, responseSchema, signal) {
             const apiKey = config.apiKeys.gemini;
             if (!apiKey) {
@@ -10103,7 +10030,6 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             ALL_ELEMENTS.batchMoveConfirmBtn.addEventListener('click', () => { /* Logic moved to option clicks */ });
             ALL_ELEMENTS.followUpHeader.addEventListener('click', toggleFollowUpPrompts);
             ALL_ELEMENTS.messageInput.addEventListener('input', (e) => {
-                mentionHandler.handleInput(e); 
                 sendConfirmed = false;
                 updateInputState();
                 const wrapper = e.target.closest('.input-wrapper');
@@ -10114,6 +10040,9 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
                 }
             });
             ALL_ELEMENTS.messageInput.addEventListener('input', adjustTextareaHeight);
+            ALL_ELEMENTS.messageInput.addEventListener('input', handleMentionInput);
+            ALL_ELEMENTS.messageInput.addEventListener('keydown', handleMentionKeyDown);
+            document.getElementById('mention-suggestions-popover').addEventListener('click', handleMentionSelection);
             const expandBtn = document.getElementById('expand-input-btn');
             if (expandBtn) {
                 expandBtn.addEventListener('click', () => {
@@ -10586,6 +10515,203 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
         textarea.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
     }
 };
+         function handleMentionSelection(e) {
+    const selectedItem = e.target.closest('.suggestion-item');
+    if (!selectedItem) return;
+
+    const id = selectedItem.dataset.id;
+    const type = selectedItem.dataset.type;
+    const name = selectedItem.dataset.name;
+
+    const text = ALL_ELEMENTS.messageInput.value;
+    const triggerPos = text.lastIndexOf(activeMention.trigger);
+
+    // 移除現有的提及膠囊（如果有）
+    const existingPill = ALL_ELEMENTS.messageInput.querySelector('.mention-pill');
+    if (existingPill) {
+        existingPill.remove();
+    }
+    
+    // 建立新的提及膠囊
+    const pill = document.createElement('span');
+    pill.className = 'mention-pill';
+    pill.contentEditable = false; // 讓它不能被編輯
+    pill.dataset.id = id;
+    pill.dataset.type = type;
+    
+    const icon = selectedItem.querySelector('.item-icon').cloneNode(true);
+    icon.style.width = '16px';
+    icon.style.height = '16px';
+    icon.style.marginRight = '4px';
+
+    pill.appendChild(icon);
+    pill.appendChild(document.createTextNode(name + ' ')); // 加個空格
+
+    // 將膠囊插入到輸入框中
+    const newTextStart = text.substring(0, triggerPos);
+    ALL_ELEMENTS.messageInput.value = newTextStart; // 先清空，再插入
+    // 這裡我們不再使用 contentEditable=true 的 div，而是直接操作 textarea 的 value
+    // 為了視覺化，我們將膠囊顯示在 input-indicator-container
+    
+    // 清除舊的指示器
+    ALL_ELEMENTS.inputIndicatorContainer.innerHTML = ''; 
+
+    // 將提及膠囊作為一個特殊的 input indicator
+    const indicator = document.createElement('div');
+    indicator.id = 'mention-indicator';
+    indicator.className = 'input-indicator-item flex items-center justify-between text-sm font-medium px-2 py-1 rounded-full enter';
+    indicator.dataset.id = id;
+    indicator.dataset.type = type;
+
+    const iconForIndicator = selectedItem.querySelector('.item-icon').innerHTML;
+
+    indicator.innerHTML = `
+        <span class="flex items-center gap-2">
+            ${iconForIndicator}
+            <span>${name}</span>
+        </span>
+        <button id="close-mention-btn-input" class="ml-2 p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10" title="移除提及">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+    `;
+    ALL_ELEMENTS.inputIndicatorContainer.appendChild(indicator);
+    document.querySelector('.input-wrapper').classList.add('has-indicators');
+
+    indicator.querySelector('#close-mention-btn-input').addEventListener('click', () => {
+        indicator.remove();
+        if (ALL_ELEMENTS.inputIndicatorContainer.children.length === 0) {
+            document.querySelector('.input-wrapper').classList.remove('has-indicators');
+        }
+    });
+
+
+    hideMentionSuggestions();
+    ALL_ELEMENTS.messageInput.focus();
+}
+         function handleMentionInput(e) {
+    const text = e.target.value;
+    const cursorPos = e.target.selectionStart;
+
+    const lastAt = text.lastIndexOf('@', cursorPos - 1);
+    const lastSlash = text.lastIndexOf('/', cursorPos - 1);
+
+    const triggerPos = Math.max(lastAt, lastSlash);
+
+    if (triggerPos === -1 || (triggerPos > 0 && !/\s/.test(text[triggerPos - 1]))) {
+        hideMentionSuggestions();
+        return;
+    }
+
+    const query = text.substring(triggerPos + 1, cursorPos);
+    
+    // 避免在單詞中間觸發，例如 "test/case"
+    if (/\s/.test(query)) {
+        hideMentionSuggestions();
+        return;
+    }
+    
+    activeMention.trigger = text[triggerPos];
+    activeMention.query = query;
+    
+    showMentionSuggestions(activeMention.trigger, activeMention.query);
+}
+
+// ✨ 新增：處理提及的鍵盤導航
+function handleMentionKeyDown(e) {
+    const popover = document.getElementById('mention-suggestions-popover');
+    if (popover.classList.contains('hidden')) return;
+
+    const items = popover.querySelectorAll('.suggestion-item');
+    if (items.length === 0) return;
+
+    let currentIndex = -1;
+    items.forEach((item, index) => {
+        if (item.classList.contains('highlighted')) {
+            currentIndex = index;
+        }
+    });
+
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        const nextIndex = (currentIndex + 1) % items.length;
+        updateHighlight(items, currentIndex, nextIndex);
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        const prevIndex = (currentIndex - 1 + items.length) % items.length;
+        updateHighlight(items, currentIndex, prevIndex);
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        if (currentIndex !== -1) {
+            items[currentIndex].click();
+        } else {
+            // 如果沒有高亮，就選第一個
+            items[0].click();
+        }
+    } else if (e.key === 'Escape') {
+        hideMentionSuggestions();
+    }
+}
+         function showMentionSuggestions(trigger, query) {
+    const popover = document.getElementById('mention-suggestions-popover');
+    let suggestions = [];
+    
+    if (trigger === '@') {
+        suggestions = astras
+            .filter(a => a.name.toLowerCase().includes(query.toLowerCase()))
+            .map(a => ({ id: a.id, name: a.name, description: a.description, avatarUrl: a.avatarUrl, type: 'astra' }));
+    } else if (trigger === '/') {
+        suggestions = MODELS
+            .filter(m => m.name.toLowerCase().includes(query.toLowerCase()))
+            .map(m => ({ id: m.id, name: m.name, description: i18n[config.uiLanguage]['model_' + m.id.replace(/\.|-|\//g, '_') + '_desc'] || '', type: 'model' }));
+    }
+
+    if (suggestions.length === 0) {
+        hideMentionSuggestions();
+        return;
+    }
+
+    popover.innerHTML = suggestions.map(createSuggestionItemHTML).join('');
+    popover.classList.remove('hidden');
+    
+    // 預設高亮第一個
+    updateHighlight(popover.querySelectorAll('.suggestion-item'), -1, 0);
+}
+
+// ✨ 新增：隱藏建議清單的函數
+function hideMentionSuggestions() {
+    const popover = document.getElementById('mention-suggestions-popover');
+    popover.classList.add('hidden');
+    activeMention.trigger = null;
+    activeMention.query = '';
+}
+
+// ✨ 新增：建立單個建議項目的 HTML
+function createSuggestionItemHTML(item) {
+    const iconHTML = item.type === 'astra'
+        ? `<div class="astras-sidebar-avatar item-icon">${item.avatarUrl ? `<img src="${item.avatarUrl}" class="w-full h-full object-cover rounded-full">` : item.name.charAt(0)}</div>`
+        : `<div class="item-icon">⚙️</div>`;
+
+    const typeText = item.type === 'astra' ? 'Astra' : '模型';
+
+    return `
+        <div class="suggestion-item" data-id="${item.id}" data-type="${item.type}" data-name="${item.name}">
+            ${iconHTML}
+            <div class="item-info">
+                <span class="item-name">${item.name} <span class="suggestion-badge ${item.type}">${typeText}</span></span>
+                <span class="item-description">${item.description || ''}</span>
+            </div>
+        </div>
+    `;
+}
+
+// ✨ 新增：更新鍵盤導航高亮的輔助函數
+function updateHighlight(items, oldIndex, newIndex) {
+    if (oldIndex !== -1) {
+        items[oldIndex].classList.remove('highlighted');
+    }
+    items[newIndex].classList.add('highlighted');
+    items[newIndex].scrollIntoView({ block: 'nearest' });
+}
             ALL_ELEMENTS.loginLangBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 ALL_ELEMENTS.loginLangMenu.classList.toggle('visible');
