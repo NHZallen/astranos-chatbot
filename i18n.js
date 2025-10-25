@@ -18,8 +18,6 @@ window.i18n = {
         copyright: 'ASTRA版權所有',
         currentLanguageName: '繁體中文',
         // Main App UI
-        mentionAstras: '提及 Astra',
-        mentionModels: '呼叫模型',
         newChat: '新對話',
         batchSelect: '批次選取',
         cancelBatchSelect: '取消選取',
@@ -494,8 +492,6 @@ window.i18n = {
         copyright: 'Copyright © ASTRA',
         currentLanguageName: 'English',
         // Main App UI
-        mentionAstras: 'Mention Astra',
-        mentionModels: 'Call Model',
         newChat: 'New Chat',
         batchSelect: 'Batch Select',
         cancelBatchSelect: 'Cancel Select',
@@ -962,8 +958,6 @@ window.i18n = {
         copyright: 'Copyright © ASTRA',
         currentLanguageName: 'Français',
         // Main App UI
-        mentionAstras: 'Mentionner l\'Astra',
-        mentionModels: 'Appeler le Modèle',
         newChat: 'Nouveau Chat',
         batchSelect: 'Sélection Multiple',
         cancelBatchSelect: 'Annuler la Sélection',
