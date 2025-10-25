@@ -2451,6 +2451,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 <svg class="section-toggle-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 <span data-lang-key="history">歷史紀錄</span>
             </div>
+            <div class="actions-group">
+    <div class="relative flex items-center" title="顯示/隱藏模型名稱" data-lang-key-title="toggleModelVisibility">
+        <input type="checkbox" id="model-visibility-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full opacity-0 appearance-none cursor-pointer"/>
+        <label for="model-visibility-toggle" class="toggle-label block overflow-hidden h-6 w-10 rounded-full bg-gray-300 cursor-pointer"></label>
+    </div>
+</div>
         </header>
         <div class="sidebar-section-content">
             <div id="history-list" class="space-y-1"></div>
@@ -3864,6 +3870,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             apiKeys: { gemini: '', openrouter: '' },
             defaultModel: MODELS[0].id,
             theme: 'light',
+            showModelInHistory: true,
             modelSettings: [],
             enableFollowUp: true,
             enableAutoWebSearch: false,
@@ -4577,9 +4584,12 @@ function renderMarkdownWithFormulas(text) {
             const item = document.createElement('div');
             item.className = `sidebar-item w-full text-left p-3 rounded-lg flex items-center justify-between cursor-pointer ${conv.id === activeConversationId && !isSelectionMode ? 'active' : ''}`;
             item.dataset.id = conv.id;
-            const modelInfo = MODELS.find(m => m.id === conv.model);
-            const modelCodename = modelInfo ? modelInfo.name.split(' (')[0] : '';
-            const modelNameSuffix = modelCodename ? `<span class="model-suffix">${modelCodename}</span>` : '';
+            let modelNameSuffix = ''; // 先宣告一個空字串
+if (config.showModelInHistory) { // 用 if 判斷是否要顯示
+    const modelInfo = MODELS.find(m => m.id === conv.model);
+    const modelCodename = modelInfo ? modelInfo.name.split(' (')[0] : '';
+    modelNameSuffix = modelCodename ? `<span class="model-suffix">${modelCodename}</span>` : '';
+}
             const contentWrapper = document.createElement('div');
             contentWrapper.className = 'flex-1 flex items-center justify-between truncate';
             contentWrapper.innerHTML = `
@@ -10341,6 +10351,16 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             // ✨ END: 新增的附件上彈視窗函式與按鈕邏輯
             setupHistorySidebarInteractions(); // 啟用側邊欄的點擊跳轉功能
     setupHistorySidebarTriggers();   // 啟用側邊欄的滑動和懸停觸發功能
+        const modelVisibilityToggle = document.getElementById('model-visibility-toggle');
+if (modelVisibilityToggle) {
+    modelVisibilityToggle.checked = config.showModelInHistory;
+    modelVisibilityToggle.addEventListener('change', async () => {
+        config.showModelInHistory = modelVisibilityToggle.checked;
+        await saveConfig();
+        renderHistorySidebar(); // 重新渲染歷史紀錄
+        renderFolders(); // 資料夾內的對話也需要重新渲染
+    });
+}
         }
         const handleDeleteMessagePair = async (index) => {
             const confirmed = await showCustomDialog({
