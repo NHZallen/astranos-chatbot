@@ -1,5 +1,15 @@
 const updateLogs = [
         {
+    "version": "15.7.10",
+    "date": "2025-11-07",
+    "content": [
+        "<strong>【模型庫更新】更精煉、更強大！</strong>",
+        "為了提供您更專注高效的 AI 體驗，本次更新內容如下：",
+        "<ul><li><strong>【新增】</strong> 引入來自 Moonshot AI 的 <strong>Kimi K2 Thinking</strong> 模型，專為深度分析與複雜推理打造。</li><li><strong>【精簡】</strong> 為聚焦核心高效模型，我們移除了 <code>Deepseek V3.1 Chat</code>、<code>Qwen3 235B</code> 及 <code>Llama 3.3 70B Instruct</code>。</li></ul>",
+        "我們致力於提供最優質的模型選項，感謝您的支持，歡迎體驗更強大的 Astra！<br><br>Astra 開發團隊 敬上"
+    ]
+},
+        {
     "version": "15.7.9",
     "date": "2025-10-29",
     "content": [
