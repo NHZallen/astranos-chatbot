@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>進階 AI 聊天機器人 Astra-nos-15.7.11</title>
+    <title>進階 AI 聊天機器人 Astra-nos-15.7.12</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -9778,10 +9778,6 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
 }
         async function initChatApp() {
             injectDeepResearchStyles(); // ✨ 注入樣式
-            await loadConfig();
-            await loadAppData();
-            applyCustomWallpaper();
-            applyUiTheme();
             setTheme(config.theme);
             ALL_ELEMENTS.usernameDisplay.textContent = currentUser.username;
             document.querySelector('.user-avatar').textContent = currentUser.username.charAt(0).toUpperCase();
@@ -10386,27 +10382,35 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
         const savedUser = await getItem(userKey);
 
         if (savedUser) {
-            // 成功獲取到使用者資料，模擬一個成功的登入流程
+            // 成功獲取到使用者資料
             currentUser = JSON.parse(savedUser);
 
-            // 直接顯示應用程式，跳過登入畫面
-            ALL_ELEMENTS.authContainer.style.display = 'none'; // 直接隱藏，不做淡出效果
+            // --- 核心修正 START ---
+            // 1. **首先**，等待所有設定和資料載入完成
+            await loadConfig();
+            await loadAppData();
+
+            // 2. **然後**，應用主題和桌布設定 (這會修正按鈕顏色問題)
+            applyCustomWallpaper();
+            applyUiTheme();
+            // --- 核心修正 END ---
+
+            // 3. 顯示主應用介面
+            ALL_ELEMENTS.authContainer.style.display = 'none';
             ALL_ELEMENTS.appContainer.classList.remove('hidden');
             ALL_ELEMENTS.appContainer.classList.add('visible');
 
-            // 初始化主聊天應用
+            // 4. 最後，呼叫 initChatApp，此時它知道所有資料都已準備就緒
             initChatApp();
-            return; // 結束函式，不再執行後續的登入頁面邏輯
+            return;
         }
     }
 
-    // 如果沒有找到上次登入的使用者，或找不到使用者資料，則正常顯示登入頁面
+    // 如果沒有找到上次登入的使用者，則正常顯示登入頁面
     if (lastUsername) {
-        ALL_ELEMENTS.usernameInput.value = lastUsername; // 仍然預填名稱
+        ALL_ELEMENTS.usernameInput.value = lastUsername;
     }
-    // 讓登入畫面顯示出來
     document.getElementById('auth-container').classList.add('visible');
-
 })();
             const FOLDER_ICONS = ['📁', '📂', '🗂️', '📚', '📝', '🗃️', '📘', '📙', '📗', '📕'];
             const adjustTextareaHeight = () => {
