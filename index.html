@@ -10373,11 +10373,41 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             ALL_ELEMENTS.importBtnAuth.addEventListener('click', handleImportOnAuth);
             ALL_ELEMENTS.confirmImportBtnAuth.addEventListener('click', processAuthImport);
             ALL_ELEMENTS.cancelImportBtnAuth.addEventListener('click', () => toggleModal(ALL_ELEMENTS.importDataModalAuth, false));
-            (async function prefillLastUser() {
-                const last = await getItem('chat_lastUser');
-                if (last) ALL_ELEMENTS.usernameInput.value = last;
-                applyLanguage('zh-TW');
-            })();
+            (async function initializeApp() {
+    // 先設定預設語言，確保登入頁面顯示正確
+    applyLanguage('zh-TW');
+
+    // 嘗試從資料庫中獲取上次登入的使用者名稱
+    const lastUsername = await getItem('chat_lastUser');
+
+    if (lastUsername) {
+        // 如果找到了上次登入的使用者，就嘗試自動登入
+        const userKey = getUserKey(lastUsername);
+        const savedUser = await getItem(userKey);
+
+        if (savedUser) {
+            // 成功獲取到使用者資料，模擬一個成功的登入流程
+            currentUser = JSON.parse(savedUser);
+
+            // 直接顯示應用程式，跳過登入畫面
+            ALL_ELEMENTS.authContainer.style.display = 'none'; // 直接隱藏，不做淡出效果
+            ALL_ELEMENTS.appContainer.classList.remove('hidden');
+            ALL_ELEMENTS.appContainer.classList.add('visible');
+
+            // 初始化主聊天應用
+            initChatApp();
+            return; // 結束函式，不再執行後續的登入頁面邏輯
+        }
+    }
+
+    // 如果沒有找到上次登入的使用者，或找不到使用者資料，則正常顯示登入頁面
+    if (lastUsername) {
+        ALL_ELEMENTS.usernameInput.value = lastUsername; // 仍然預填名稱
+    }
+    // 讓登入畫面顯示出來
+    document.getElementById('auth-container').classList.add('visible');
+
+})();
             const FOLDER_ICONS = ['📁', '📂', '🗂️', '📚', '📝', '🗃️', '📘', '📙', '📗', '📕'];
             const adjustTextareaHeight = () => {
     const textarea = ALL_ELEMENTS.messageInput;
