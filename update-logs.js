@@ -1,5 +1,15 @@
 const updateLogs = [
         {
+    "version": "15.7.11",
+    "date": "2025-11-07",
+    "content": [
+        "<strong>【模型庫更新】搶先體驗！全新測試版模型登場！</strong>",
+        "為了讓您能第一時間接觸到最前沿的 AI 技術，本次更新我們特別引入了一款高效能的免費測試版模型：",
+        "<ul><li><strong>【新增】</strong> 正式加入來自 OpenRouter 的 <strong>Polaris Alpha (free)</strong> 模型。您現在可以在模型選擇器的「測試版模型」分類中找到並開始使用它，體驗其在通用任務上的卓越表現！</li></ul>",
+        "我們致力於不斷擴充 Astra 的模型庫，為您提供最多元、最強大的選擇。感謝您的支持，歡迎立即體驗！<br><br>Astra 開發團隊 敬上"
+    ]
+},
+        {
     "version": "15.7.10",
     "date": "2025-11-07",
     "content": [
