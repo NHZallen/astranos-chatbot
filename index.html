@@ -2278,25 +2278,17 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     opacity: 1;
 }
 @media (min-width: 1024px) {
-    /* 1. 在電腦版上，我們不再需要黑色遮罩，直接隱藏它 */
+    #app-container > main {
+        transition: margin-left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+    }
+    body.sidebar-is-open-desktop #app-container > main {
+        margin-left: 18rem; /* 288px */
+    }
     #sidebar-overlay {
         display: none !important;
     }
-
-    /* 2. 讓側邊欄的 transform (滑動) 效果永久失效，使其固定在左側 */
-    #sidebar {
-        transform: translateX(0) !important;
-    }
-
-    /* 3. 為聊天室主體(main)的 margin-left 增加平滑過渡效果，讓擠壓動畫更流暢 */
-    main.flex-1 {
-        transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    /* 4. 這是關鍵！當 #app-container 元素擁有 .sidebar-is-open 這個 class 時，
-       我們就把聊天室主體(main)向右推一個側邊欄的寬度 */
-    #app-container.sidebar-is-open main.flex-1 {
-        margin-left: 288px; /* 側邊欄寬度 w-72 等於 18rem，也就是 288px */
+    #sidebar-overlay.visible {
+        left: 0;
     }
 }
 
@@ -3330,7 +3322,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         });
         const ALL_ELEMENTS = {
-            appContainer: document.getElementById('app-container'),
             authContainer: document.getElementById('auth-container'),
             appContainer: document.getElementById('app-container'),
             authForm: document.getElementById('auth-form'),
@@ -7615,22 +7606,26 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
     showNotification(i18n[config.uiLanguage].modelOrderUpdated || '模型順序已更新');
 };
         function toggleSidebar(show) {
-    const { sidebar, sidebarOverlay, appContainer } = ALL_ELEMENTS; 
-    const isDesktop = window.innerWidth >= 1024;
-    sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
-
-    if (isDesktop) {
-        appContainer.classList.toggle('sidebar-is-open', sidebarOpen);
-    } else {
-        if (sidebarOpen) {
-            sidebar.style.transform = 'translateX(0)';
-            sidebarOverlay.classList.add('visible');
-        } else {
-            sidebar.style.transform = 'translateX(-100%)';
-            sidebarOverlay.classList.remove('visible');
+            const { sidebar, sidebarOverlay } = ALL_ELEMENTS;
+            sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
+            const isDesktop = window.innerWidth >= 1024;
+            if (isDesktop) {
+                document.body.classList.toggle('sidebar-is-open-desktop', sidebarOpen);
+                if (sidebarOpen) {
+                    sidebar.style.transform = 'translateX(0)';
+                } else {
+                    sidebar.style.transform = 'translateX(-100%)';
+                }
+            } else {
+                if (sidebarOpen) {
+                    sidebar.style.transform = 'translateX(0)';
+                    sidebarOverlay.classList.add('visible');
+                } else {
+                    sidebar.style.transform = 'translateX(-100%)';
+                    sidebarOverlay.classList.remove('visible');
+                }
+            }
         }
-    }
-}
         function closeAllPopovers() {
             document.querySelectorAll('.popover.visible').forEach(popover => {
                 popover.classList.remove('visible');
