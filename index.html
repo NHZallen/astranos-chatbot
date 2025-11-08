@@ -977,10 +977,40 @@ button:not(.btn-primary):active:not(:disabled) {
         transform: translateX(0);
     }
     @media (min-width: 1024px) {
-        #sidebar-overlay.visible {
-            left: 288px;
-        }
+    /* --- 新增開始 --- */
+
+    /* 1. 讓 #app-container 準備好接收 sidebar-open 這個 class */
+    #app-container > .relative.flex {
+        transition: padding-left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
     }
+
+    /* 2. 電腦版的側邊欄基礎樣式：不再是 fixed 定位 */
+    #sidebar {
+        position: static; /* 改為靜態定位，讓它回到正常的文檔流中 */
+        transform: translateX(0) !important; /* 移除 transform 效果 */
+        transition: margin-left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1); /* 動畫效果改為控制 margin-left */
+        margin-left: -288px; /* 預設將自己藏到左邊 (288px 是 w-72 的寬度) */
+    }
+
+    /* 3. 當側邊欄展開時的樣式 */
+    #app-container.sidebar-open #sidebar {
+        margin-left: 0; /* 展開時，margin-left 歸零，回到正常位置 */
+    }
+    
+    /* 4. 當側邊欄展開時，推擠主聊天室 */
+    #app-container.sidebar-open main {
+        /* 這一步不是必要的，但可以增加穩定性 */
+        /* 如果未來主聊天室有 margin-left, 這裡會確保它被正確推擠 */
+    }
+
+    /* 5. 在電腦版上，永遠隱藏黑色遮罩 */
+    #sidebar-overlay {
+        display: none !important;
+    }
+
+    /* --- 新增結束 --- */
+}
+
     .theme-button-group {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -2277,43 +2307,7 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     visibility: visible;
     opacity: 1;
 }
-@media (min-width: 1024px) {
-    /* 1. 讓主聊天室的寬度和邊距變化有平滑的動畫效果 */
-    main.flex-1 {
-        transition: margin-left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1),
-                    width 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-    }
 
-    /* 2. 當側邊欄打開時 (app-container 有 .sidebar-is-open class)，
-       把主聊天室往右推，推的距離等於側邊欄的寬度 (w-72 -> 288px) */
-    #app-container.sidebar-is-open main.flex-1 {
-        margin-left: 288px;
-        width: calc(100% - 288px); /* 重新計算寬度以避免排版錯亂 */
-    }
-    
-    /* 3. 在電腦版上，徹底隱藏黑色的遮罩層 */
-    #sidebar-overlay {
-        display: none !important;
-    }
-
-    /* 4. 修正頂部 header 的寬度和位置 */
-    #app-container.sidebar-is-open main.flex-1 > header {
-        width: calc(100% - 288px);
-    }
-
-    /* 5. 修正底部輸入框容器的寬度和位置 */
-     #app-container.sidebar-is-open #input-bar-container,
-     #app-container.sidebar-is-open #follow-up-container {
-        width: calc(100% - 288px);
-        left: 288px;
-     }
-
-     /* 6. 修正「滾動到底部」按鈕的位置 */
-     #app-container.sidebar-is-open #scroll-to-bottom-btn {
-        /* 重新計算 left，讓它在移動後的主內容區域中置中 */
-        left: calc(288px + (100% - 288px) / 2);
-     }
-}
 
 </style>
 <script>
@@ -7629,42 +7623,24 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
     showNotification(i18n[config.uiLanguage].modelOrderUpdated || '模型順序已更新');
 };
         function toggleSidebar(show) {
-            // 從我們預先定義好的元素清單中，取得需要的元素
-            const { sidebar, sidebarOverlay, appContainer } = ALL_ELEMENTS;
-            // 判斷當前是否為電腦版螢幕寬度
-            const isDesktop = window.innerWidth >= 1024;
+    const { sidebar, sidebarOverlay, appContainer } = ALL_ELEMENTS;
+    sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
 
-            // 更新側邊欄的開關狀態
-            sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
-            
-            if (sidebarOpen) {
-                // 如果要打開側邊欄
-                sidebar.style.transform = 'translateX(0)';
-                
-                // 【核心修改1】在主容器上加上我們在 CSS 中定義的 class
-                if (isDesktop) {
-                    appContainer.classList.add('sidebar-is-open');
-                }
-
-                // 在手機版上，我們依然顯示黑色遮罩
-                if (!isDesktop) {
-                    sidebarOverlay.classList.add('visible');
-                }
-            } else {
-                // 如果要關閉側邊欄
-                sidebar.style.transform = 'translateX(-100%)';
-
-                // 【核心修改2】從主容器上移除 class，讓聊天室歸位
-                if (isDesktop) {
-                    appContainer.classList.remove('sidebar-is-open');
-                }
-                
-                // 在手機版上，隱藏黑色遮罩
-                if (!isDesktop) {
-                    sidebarOverlay.classList.remove('visible');
-                }
-            }
+    // 判斷是否為電腦版螢幕
+    if (window.innerWidth >= 1024) {
+        // --- 電腦版邏輯：切換 class 來推擠 ---
+        appContainer.classList.toggle('sidebar-open', sidebarOpen);
+    } else {
+        // --- 手機版邏輯：維持原本的覆蓋效果 ---
+        if (sidebarOpen) {
+            sidebar.style.transform = 'translateX(0)';
+            sidebarOverlay.classList.add('visible');
+        } else {
+            sidebar.style.transform = 'translateX(-100%)';
+            sidebarOverlay.classList.remove('visible');
         }
+    }
+}
         function closeAllPopovers() {
             document.querySelectorAll('.popover.visible').forEach(popover => {
                 popover.classList.remove('visible');
