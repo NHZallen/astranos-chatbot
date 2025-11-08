@@ -2315,11 +2315,45 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     opacity: 1;
 }
 #follow-up-container {
-    border: 1px solid var(--border-color);
-    border-radius: 0.75rem;
-    margin-bottom: 1rem;
+    position: absolute; /* 這是讓它能自由定位的關鍵！ */
+    z-index: 10;        /* 確保它顯示在訊息泡泡的上方 */
+    left: 0;
+    right: 0;
+    padding: 0 1rem;    /* 左右留出一些邊距 */
+    
+    /* 移除舊的佈局屬性，因為它不再佔據固定空間 */
+    border: none;
+    margin-bottom: 0;
+    background-color: transparent;
+    
+    /* 為了流暢的顯示/隱藏動畫 */
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* 當它被 hidden class 隱藏時的樣式 */
+#follow-up-container.hidden {
+    opacity: 0;
+    transform: translateY(10px);
+    pointer-events: none; /* 隱藏時不可點擊 */
+}
+
+/* 這是內部真正裝內容的容器，我們給它加上背景和圓角 */
+#follow-up-content-wrapper {
+    background-color: rgba(255, 255, 255, 0.65); /* 半透明背景 */
+    backdrop-filter: blur(16px);                  /* 背景模糊效果 (毛玻璃) */
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 1rem;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
     padding: 0.75rem;
-    background-color: var(--sidebar-bg);
+}
+
+/* 深色模式下的樣式 */
+.dark #follow-up-content-wrapper {
+    background-color: rgba(30, 30, 30, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 /* 手機版樣式：啟用左右滑動 */
@@ -6292,6 +6326,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             followUpPromptsList.appendChild(btn);
         });
         showPromptsBtn.classList.remove('hidden'); // 有內容時，顯示觸發按鈕
+        updateFollowUpPosition(); // ✨ 新增這行，讓它預先計算好位置
     } else {
         showPromptsBtn.classList.add('hidden'); // 沒內容時，隱藏觸發按鈕
         followUpContainer.classList.add('hidden'); // 同時確保容器是隱藏的
@@ -9879,6 +9914,23 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
         console.error('寄送對話紀錄到 Google Apps Script 時發生網路錯誤:', error);
     }
 }
+        function updateFollowUpPosition() {
+    const { followUpContainer, messageList } = ALL_ELEMENTS;
+    
+    // 1. 找到最後一則 "AI模型" 的訊息
+    const lastModelMessage = messageList.querySelector('.model-message:last-child');
+    
+    if (lastModelMessage) {
+        // 2. 計算位置
+        //    - lastModelMessage.offsetTop: AI訊息頂部相對於聊天容器的距離
+        //    - followUpContainer.offsetHeight: 後續追問區塊自身的高度
+        //    - 16: 我們想要的間距 (單位是像素)
+        const newTopPosition = lastModelMessage.offsetTop - followUpContainer.offsetHeight - 16;
+        
+        // 3. 應用位置
+        followUpContainer.style.top = `${newTopPosition}px`;
+    }
+}
         async function initChatApp() {
             if (window.innerWidth >= 1024) {
         sidebarOpen = true;
@@ -10445,9 +10497,15 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             setupHistorySidebarInteractions(); // 啟用側邊欄的點擊跳轉功能
     setupHistorySidebarTriggers();   // 啟用側邊欄的滑動和懸停觸發功能
             ALL_ELEMENTS.showPromptsBtn.addEventListener('click', () => {
-            ALL_ELEMENTS.followUpContainer.classList.toggle('hidden');
-            ALL_ELEMENTS.showPromptsBtn.classList.toggle('active');
-        });
+    const container = ALL_ELEMENTS.followUpContainer;
+    const isActive = container.classList.toggle('hidden');
+    ALL_ELEMENTS.showPromptsBtn.classList.toggle('active', !isActive);
+    
+    // 如果是要顯示，就先更新位置再顯示
+    if (!isActive) {
+        updateFollowUpPosition();
+    }
+});
         const followUpContainer = document.getElementById('follow-up-container');
         if (followUpContainer) {
             const stopPropagation = (e) => e.stopPropagation();
@@ -10456,6 +10514,7 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             followUpContainer.addEventListener('touchend', stopPropagation);
         }
 
+        window.addEventListener('resize', updateFollowUpPosition);
         }
         const handleDeleteMessagePair = async (index) => {
             const confirmed = await showCustomDialog({
