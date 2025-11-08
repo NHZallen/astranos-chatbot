@@ -21,6 +21,9 @@
     opacity: 0;
     pointer-events: none;
 }
+    #show-prompts-btn.active {
+    color: #fbbf24; /* 這是一個漂亮的黃色 */
+}
     #selection-mode-btn.active,
 #open-search-btn.active {
     color: var(--button-primary-bg);
@@ -2322,23 +2325,35 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
 /* 手機版樣式：啟用左右滑動 */
 @media (max-width: 768px) {
     #follow-up-prompts-list {
-        display: flex;       /* 讓內部按鈕橫向排列 */
-        overflow-x: auto;    /* 當內容超出時，顯示水平滾動條 */
-        white-space: nowrap; /* 防止按鈕換行 */
-        padding-bottom: 8px; /* 留出滾動條空間，避免遮擋 */
-        margin-bottom: -8px; /* 把多出來的空間減掉 */
-        -ms-overflow-style: none;  /* IE and Edge 隱藏滾動條 */
-        scrollbar-width: none;  /* Firefox 隱藏滾動條 */
+        display: flex;
+        overflow-x: auto;
+        /* 這是實現滑動吸附效果的關鍵 */
+        scroll-snap-type: x mandatory;
+        /* 為了讓卡片左右留出空間，看起來更舒服 */
+        scroll-padding: 0 1rem;
+        padding: 0.5rem 0; /* 微調上下 padding */
+        -ms-overflow-style: none;
+        scrollbar-width: none;
     }
 
-    /* 隱藏 Chrome/Safari 的滾動條 */
     #follow-up-prompts-list::-webkit-scrollbar {
         display: none;
     }
 
-    /* 讓按鈕不要被壓縮 */
     .follow-up-prompt-btn {
-        flex-shrink: 0;
+        /* 讓每個按鈕幾乎佔滿整個寬度 */
+        flex: 0 0 100%;
+        width: 100%;
+        /* 讓按鈕在容器中置中吸附 */
+        scroll-snap-align: center;
+        /* 讓文字可以正常換行顯示 */
+        white-space: normal;
+        word-break: break-word;
+        text-overflow: unset;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 5rem; /* 給按鈕一個最小高度，避免太扁 */
     }
 }
 
@@ -2573,9 +2588,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     <div id="follow-up-content-wrapper" class="max-w-4xl mx-auto spotlight-effect">
                         <div id="follow-up-header" class="flex items-center justify-between cursor-pointer">
     <h4 class="text-sm font-semibold text-[var(--text-secondary)]" data-lang-key="followUp">後續追問</h4>
-    <button id="close-prompts-btn" class="p-1 rounded-full hover:bg-[var(--active-bg)]">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-    </button>
 </div>
                         <div id="follow-up-prompts-list" class="flex flex-wrap gap-2 transition-all duration-300 overflow-hidden">
                         </div>
@@ -3602,7 +3614,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             confirmPlanBtn: document.getElementById('confirm-plan-btn'),
             cancelPlanBtn: document.getElementById('cancel-plan-btn'),
             showPromptsBtn: document.getElementById('show-prompts-btn'), // 新增這行
-        closePromptsBtn: document.getElementById('close-prompts-btn'), // 新增這行
         };
         function toggleHistorySidebar(show) {
     const { historySidebar, historySidebarOverlay } = ALL_ELEMENTS;
@@ -10432,10 +10443,6 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
         });
 
 
-        ALL_ELEMENTS.closePromptsBtn.addEventListener('click', () => {
-            ALL_ELEMENTS.followUpContainer.classList.add('hidden');
-            ALL_ELEMENTS.showPromptsBtn.classList.remove('active');
-        });
         }
         const handleDeleteMessagePair = async (index) => {
             const confirmed = await showCustomDialog({
