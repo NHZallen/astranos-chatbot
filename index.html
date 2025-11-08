@@ -2278,47 +2278,32 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     opacity: 1;
 }
 @media (min-width: 1024px) {
-    
-    /* 1. 隱藏電腦版上的黑色遮罩 */
+    /* 預設狀態下，主聊天室充滿整個空間，並有平滑的動畫效果 */
+    #app-container > .flex > main {
+        transition: margin-left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        margin-left: 0;
+    }
+
+    /* 預設狀態下，側邊欄本身不佔用寬度，內容被隱藏 */
+    #sidebar {
+        width: 0;
+        overflow: hidden;
+        transform: translateX(0) !important; /* 取代舊的 transform 方式 */
+    }
+
+    /* 當 <body> 擁有 .sidebar-open 這個 class 時 (代表側邊欄要打開) */
+    body.sidebar-open #sidebar {
+        width: 18rem; /* 展開為 w-72 的寬度 (72 * 4px = 288px = 18rem) */
+    }
+
+    body.sidebar-open main {
+        /* 這行是舊方法，我們不再需要它，但保留以防萬一 */
+        /* margin-left: 18rem; */ 
+    }
+
+    /* 在電腦版上，我們完全不需要黑色遮罩 */
     #sidebar-overlay {
         display: none !important;
-    }
-
-    /* 2. 改變側邊欄的定位方式 */
-    #sidebar {
-        position: static; /* 從 fixed 改為 static，讓它成為正常文件流的一部分 */
-        transform: none !important; /* 移除舊的 transform 動畫，我們將用 margin 來控制 */
-        transition: min-width 0.3s cubic-bezier(0.4, 0.0, 0.2, 1), margin-left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1); /* 設定新的動畫效果 */
-        
-        /* 預設是展開狀態，佔據它自己的寬度 */
-        min-width: 18rem; /* 288px */
-        width: 18rem; /* 288px */
-        margin-left: 0;
-    }
-
-    /* 3. 定義側邊欄「關閉」時的狀態 */
-    #app-container:not(.sidebar-open) #sidebar {
-        min-width: 0;
-        width: 0;
-        /* 使用負 margin 讓它向左滑出，而不是直接消失 */
-        margin-left: -18rem; /* -288px */
-    }
-
-    /* 4. 讓主內容區 (聊天室) 適應側邊欄的寬度 */
-    main {
-        transition: margin-left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1); /* 讓 margin 變化有動畫 */
-        margin-left: 0; /* 預設 margin 是 0 */
-        width: 100%;
-    }
-
-    /* 5. 當側邊欄關閉時，聊天室不需要左邊距 */
-    #app-container:not(.sidebar-open) main {
-        margin-left: 0;
-    }
-    
-    /* 6. 移除電腦版上用於滑動開啟側邊欄的觸發區域 */
-    #sidebar-open-handle {
-        display: none;
     }
 }
 
@@ -2433,7 +2418,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         <div class="relative flex h-full w-full bg-[var(--chat-bg)]">
             <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 opacity-0"></div>
             <div id="sidebar-open-handle" class="fixed top-0 left-0 h-full z-20" style="width: 20px; touch-action: pan-y;"></div>
-            <aside id="sidebar" class="sidebar w-72 lg:w-72 flex-shrink-0 flex flex-col fixed h-full z-40 transform -translate-x-full">
+            <aside id="sidebar" class="sidebar flex-shrink-0 flex flex-col h-full lg:relative lg:w-72 transition-all duration-300 ease-in-out">
                 <div class="p-2 flex items-center gap-2">
     <button id="open-search-btn" class="flex-1 flex items-center gap-3 text-left px-4 py-2 rounded-full bg-[var(--hover-bg)] text-[var(--text-secondary)] hover:bg-[var(--active-bg)] hover:text-[var(--text-primary)] transition-colors duration-200 ease-in-out">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
@@ -7636,24 +7621,29 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
     showNotification(i18n[config.uiLanguage].modelOrderUpdated || '模型順序已更新');
 };
         function toggleSidebar(show) {
-            const { appContainer, sidebar, sidebarOverlay } = ALL_ELEMENTS;
-            sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
+    const { sidebar, sidebarOverlay } = ALL_ELEMENTS;
+    sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
 
-            // 判斷當前是否為電腦版寬度
-            if (window.innerWidth >= 1024) {
-                // 電腦版：切換父容器的 class
-                appContainer.classList.toggle('sidebar-open', sidebarOpen);
-            } else {
-                // 手機版：維持原本的 transform 和遮罩邏輯
-                if (sidebarOpen) {
-                    sidebar.style.transform = 'translateX(0)';
-                    sidebarOverlay.classList.add('visible');
-                } else {
-                    sidebar.style.transform = 'translateX(-100%)';
-                    sidebarOverlay.classList.remove('visible');
-                }
-            }
+
+    // 判斷當前是否為電腦版螢幕寬度
+    if (window.innerWidth >= 1024) {
+        // 電腦版邏輯：切換 body 上的 class
+        if (sidebarOpen) {
+            document.body.classList.add('sidebar-open');
+        } else {
+            document.body.classList.remove('sidebar-open');
         }
+    } else {
+        // 手機版邏輯：維持原本的浮動效果
+        if (sidebarOpen) {
+            sidebar.style.transform = 'translateX(0)';
+            sidebarOverlay.classList.add('visible');
+        } else {
+            sidebar.style.transform = 'translateX(-100%)';
+            sidebarOverlay.classList.remove('visible');
+        }
+    }
+}
         function closeAllPopovers() {
             document.querySelectorAll('.popover.visible').forEach(popover => {
                 popover.classList.remove('visible');
@@ -9829,13 +9819,6 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
     }
 }
         async function initChatApp() {
-            if (window.innerWidth >= 1024) {
-                sidebarOpen = true; // 在電腦上預設為開啟
-                ALL_ELEMENTS.appContainer.classList.add('sidebar-open');
-            } else {
-                sidebarOpen = false; // 在手機上預設為關閉
-                ALL_ELEMENTS.appContainer.classList.remove('sidebar-open');
-            }
             injectDeepResearchStyles(); // ✨ 注入樣式
             setTheme(config.theme);
             ALL_ELEMENTS.usernameDisplay.textContent = currentUser.username;
