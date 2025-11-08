@@ -2327,9 +2327,11 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     #follow-up-prompts-list {
         display: flex;
         overflow-x: auto;
-        white-space: nowrap; /* 讓按鈕不換行，橫向排列 */
-        padding-bottom: 8px;
-        margin-bottom: -8px;
+        /* 這是實現滑動吸附效果的關鍵 */
+        scroll-snap-type: x mandatory;
+        /* 為了讓卡片左右留出空間，看起來更舒服 */
+        scroll-padding: 0 1rem;
+        padding: 0.5rem 0; /* 微調上下 padding */
         -ms-overflow-style: none;
         scrollbar-width: none;
     }
@@ -2339,7 +2341,19 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     }
 
     .follow-up-prompt-btn {
-        flex-shrink: 0; /* 防止按鈕被壓縮 */
+        /* 讓每個按鈕幾乎佔滿整個寬度 */
+        flex: 0 0 100%;
+        width: 100%;
+        /* 讓按鈕在容器中置中吸附 */
+        scroll-snap-align: center;
+        /* 讓文字可以正常換行顯示 */
+        white-space: normal;
+        word-break: break-word;
+        text-overflow: unset;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 5rem; /* 給按鈕一個最小高度，避免太扁 */
     }
 }
 
@@ -2575,7 +2589,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         <div id="follow-up-header" class="flex items-center justify-between cursor-pointer">
     <h4 class="text-sm font-semibold text-[var(--text-secondary)]" data-lang-key="followUp">後續追問</h4>
 </div>
-                        <div id="follow-up-prompts-list">
+                        <div id="follow-up-prompts-list" class="flex flex-wrap gap-2 transition-all duration-300 overflow-hidden">
                         </div>
                     </div>
                 </div>
@@ -6275,6 +6289,10 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
         showPromptsBtn.classList.add('hidden'); // 沒內容時，隱藏觸發按鈕
         followUpContainer.classList.add('hidden'); // 同時確保容器是隱藏的
     }
+};
+        const toggleFollowUpPrompts = () => {
+    isFollowUpExpanded = !isFollowUpExpanded;
+    ALL_ELEMENTS.followUpPromptsList.classList.toggle('collapsed', !isFollowUpExpanded);
 };
         const updateFollowUpUI = () => {
             if (config.enableFollowUp) {
