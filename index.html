@@ -534,6 +534,42 @@ button:not(.btn-primary):active:not(:disabled) {
         border-right: 1px solid var(--border-color);
         transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
     }
+    @media (min-width: 1024px) {
+    /* 讓主聊天室區域有平滑的邊距變化動畫 */
+    main.flex-1 {
+        transition: margin-left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+    }
+
+    /* 重新定義電腦版側邊欄的行為 */
+    #sidebar {
+        /* 移除 transform 動畫，改用 margin-left */
+        transition: margin-left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        
+        /* 關鍵！將側邊欄的定位方式改為相對定位，讓它成為佈局的一部分 */
+        position: relative; 
+        
+        /* 移除原本用來隱藏的 transform 屬性 */
+        transform: translateX(0) !important; 
+        
+        /* 預設狀態下，將側邊欄向左推出畫面外 */
+        margin-left: -288px; /* 寬度為 288px (w-72) */
+    }
+
+    /* 當側邊欄有 'open' class 時，將它拉回畫面內 */
+    #sidebar.open {
+        margin-left: 0;
+    }
+    
+    /* 當側邊欄有 'open' class 時，讓主聊天室向右推移，寬度剛好是側邊欄的寬度 */
+    #sidebar.open ~ main.flex-1 {
+        margin-left: 288px; /* 寬度為 288px (w-72) */
+    }
+
+    /* 在電腦版上，我們不再需要黑色遮罩了，直接隱藏它 */
+    #sidebar-overlay {
+        display: none !important;
+    }
+}
     .scroll-area::-webkit-scrollbar { width: 8px; }
     .scroll-area::-webkit-scrollbar-track { background: transparent; }
     .scroll-area::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
@@ -2277,20 +2313,7 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     visibility: visible;
     opacity: 1;
 }
-@media (min-width: 1024px) {
-    #app-container > main {
-        transition: margin-left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-    }
-    body.sidebar-is-open-desktop #app-container > main {
-        margin-left: 18rem; /* 288px */
-    }
-    #sidebar-overlay {
-        display: none !important;
-    }
-    #sidebar-overlay.visible {
-        left: 0;
-    }
-}
+
 
 </style>
 <script>
@@ -7606,26 +7629,26 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
     showNotification(i18n[config.uiLanguage].modelOrderUpdated || '模型順序已更新');
 };
         function toggleSidebar(show) {
-            const { sidebar, sidebarOverlay } = ALL_ELEMENTS;
-            sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
-            const isDesktop = window.innerWidth >= 1024;
-            if (isDesktop) {
-                document.body.classList.toggle('sidebar-is-open-desktop', sidebarOpen);
-                if (sidebarOpen) {
-                    sidebar.style.transform = 'translateX(0)';
-                } else {
-                    sidebar.style.transform = 'translateX(-100%)';
-                }
-            } else {
-                if (sidebarOpen) {
-                    sidebar.style.transform = 'translateX(0)';
-                    sidebarOverlay.classList.add('visible');
-                } else {
-                    sidebar.style.transform = 'translateX(-100%)';
-                    sidebarOverlay.classList.remove('visible');
-                }
-            }
+    const { sidebar, sidebarOverlay } = ALL_ELEMENTS;
+    sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
+
+
+    // 在電腦螢幕上，我們使用 class 來控制
+    if (window.innerWidth >= 1024) {
+        sidebar.classList.toggle('open', sidebarOpen);
+        // 電腦版不需要操作遮罩層，因為 CSS 已經把它隱藏了
+    } 
+    // 在手機螢幕上，我們維持原本的覆蓋效果
+    else {
+        if (sidebarOpen) {
+            sidebar.style.transform = 'translateX(0)';
+            sidebarOverlay.classList.add('visible');
+        } else {
+            sidebar.style.transform = 'translateX(-100%)';
+            sidebarOverlay.classList.remove('visible');
         }
+    }
+}
         function closeAllPopovers() {
             document.querySelectorAll('.popover.visible').forEach(popover => {
                 popover.classList.remove('visible');
