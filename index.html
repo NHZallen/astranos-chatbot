@@ -17,57 +17,6 @@
     body {
     touch-action: manipulation;
 }
-    /* 1. 控制釘選按鈕的圖示顯示 */
-#pin-history-sidebar-btn .pinned-icon { display: none; }
-#pin-history-sidebar-btn .unpinned-icon { display: block; }
-#pin-history-sidebar-btn.active .pinned-icon { display: block; }
-#pin-history-sidebar-btn.active .unpinned-icon { display: none; }
-
-/* 2. 釘選按鈕啟用時的樣式 */
-#pin-history-sidebar-btn.active {
-    background-color: var(--active-bg);
-    color: var(--button-primary-bg);
-}
-
-/* 3. 當右側邊欄被釘選時，讓主聊天室增加右邊內距 (padding) 來 "騰出空間" */
-main.flex-1.history-squeezed {
-    padding-right: 288px; /* 側邊欄寬度 (w-72) */
-    transition: padding-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-main.flex-1 {
-    /* 增加一個 transition 讓 padding-right 的變化有動畫效果 */
-    transition: padding-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* 4. 當右側邊欄被釘選時，隱藏它的黑色遮罩 */
-body.history-sidebar-pinned #history-sidebar-overlay {
-    display: none !important;
-}
-
-/* 5. 當右側邊欄被釘選時，強制它顯示在正確的位置 */
-body.history-sidebar-pinned #history-sidebar {
-    transform: translateX(0) !important; /* 強制移入畫面 */
-}
-
-/* 6. 【核心修正】強制 main 內部的絕對/固定定位元素也一起被擠壓 */
-main.flex-1.history-squeezed #input-bar-container,
-main.flex-1.history-squeezed #follow-up-container,
-main.flex-1.history-squeezed #scroll-to-bottom-btn {
-    /* 讓這些元素的右邊界也向左移動 288px */
-    right: 288px; 
-    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* 7. 【核心修正】為這些元素添加 transition 屬性，確保動畫流暢 */
-#input-bar-container,
-#follow-up-container,
-#scroll-to-bottom-btn {
-    /* left 屬性是為了滾動按鈕的居中，right 則是為了這次的擠壓 */
-    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
-                bottom 0.3s ease, 
-                left 0.3s ease; 
-}
-
     #history-sidebar.visible ~ #scroll-to-bottom-btn {
     opacity: 0;
     pointer-events: none;
@@ -2593,24 +2542,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 <div id="history-sidebar" class="absolute top-0 right-0 h-full bg-[var(--sidebar-bg)] shadow-lg z-20 w-72 md:w-80 border-l border-[var(--border-color)] flex flex-col">
     <header class="p-4 border-b border-[var(--border-color)]">
         <h3 class="font-semibold text-lg" data-lang-key="messageDirectory">訊息目錄</h3>
-        <button id="pin-history-sidebar-btn" class="absolute top-3 right-3 p-2 rounded-full hover:bg-[var(--hover-bg)] text-[var(--text-secondary)]" title="釘選目錄">
-    <!-- 未釘選狀態的圖釘 (新) -->
-    <svg class="unpinned-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="12" y1="17" x2="12" y2="22"></line>
-        <path d="M16.7 12.3c.5.5.8 1.2.8 2s-.3 1.5-.8 2c-.5.5-1.2.8-2 .8H9.3c-.8 0-1.5-.3-2-.8-.5-.5-.8-1.2-.8-2s.3-1.5.8-2L12 8l4.7 4.3Z"></path>
-        <path d="m11.3 2.8-5.8 5.8c-.4.4-.6 1-.6 1.7v.3c0 1.1.9 2 2 2h1.4"></path>
-        <path d="m18.5 2-4.9 4.9"></path>
-    </g>
-    </svg>
-    <!-- 釘選狀態的圖釘 (新) -->
-    <svg class="pinned-icon hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="12" y1="17" x2="12" y2="22"></line>
-        <path d="M16.7 12.3c.5.5.8 1.2.8 2s-.3 1.5-.8 2c-.5.5-1.2.8-2 .8H9.3c-.8 0-1.5-.3-2-.8-.5-.5-.8-1.2-.8-2s.3-1.5.8-2L12 8l4.7 4.3Z"></path>
-        <path d="m11.3 2.8-5.8 5.8c-.4.4-.6 1-.6 1.7v.3c0 1.1.9 2 2 2h1.4"></path>
-        <path d="m18.5 2-4.9 4.9"></path>
-    </g>
-    </svg>
-</button>
     </header>
     <div id="history-sidebar-list" class="flex-1 overflow-y-auto scroll-area p-2 space-y-1">
         <!-- 歷史訊息項目將會被 JavaScript 動態加到這裡 -->
@@ -3637,7 +3568,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         function toggleHistorySidebar(show) {
     const { historySidebar, historySidebarOverlay } = ALL_ELEMENTS;
-    if (isHistorySidebarPinned) return; // ✨ 新增：如果已被釘選，則不執行任何操作
     
     if (show) {
         requestAnimationFrame(() => {
@@ -4014,7 +3944,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let timeDistChart = null;
         let cropperInstance = null;
         let messageObserver = null;
-        let isHistorySidebarPinned = false;
         let currentStoreCategory = '全部';
         let editingAstraForAvatarId = null;
         let isAutoScrolling = false;
@@ -8993,39 +8922,6 @@ ${JSON.stringify(potentialMemories, null, 2)}
     /**
  * 套用或移除釘選狀態的 CSS 效果
  */
-function applyHistorySidebarPinState() {
-    const { historySidebar, historySidebarOverlay } = ALL_ELEMENTS;
-    const mainContent = document.querySelector('main.flex-1');
-    const pinBtn = document.getElementById('pin-history-sidebar-btn');
-
-
-    document.body.classList.toggle('history-sidebar-pinned', isHistorySidebarPinned);
-    mainContent.classList.toggle('history-squeezed', isHistorySidebarPinned);
-    pinBtn.classList.toggle('active', isHistorySidebarPinned);
-
-
-    if (isHistorySidebarPinned) {
-        historySidebar.classList.add('visible');
-        pinBtn.title = "取消釘選目錄";
-        // 釘選時，強制顯示側邊欄並隱藏遮罩
-        historySidebar.classList.add('visible');
-        historySidebarOverlay.classList.remove('visible');
-        historySidebarOverlay.classList.add('hidden');
-    } else {
-        pinBtn.title = "釘選目錄";
-        // 取消釘選時，恢復正常行為
-        historySidebar.classList.remove('visible');
-    }
-}
-
-
-/**
- * 切換右側邊欄的釘選狀態
- */
-function toggleHistorySidebarPin() {
-    isHistorySidebarPinned = !isHistorySidebarPinned;
-    applyHistorySidebarPinState();
-}
         /**
  * @description 設定 Intersection Observer 來監聽聊天視窗中的訊息，並高亮右側對應的目錄項目
  */
@@ -10491,7 +10387,6 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             // ✨ END: 新增的附件上彈視窗函式與按鈕邏輯
             setupHistorySidebarInteractions(); // 啟用側邊欄的點擊跳轉功能
     setupHistorySidebarTriggers();   // 啟用側邊欄的滑動和懸停觸發功能
-            document.getElementById('pin-history-sidebar-btn').addEventListener('click', toggleHistorySidebarPin);
         }
         const handleDeleteMessagePair = async (index) => {
             const confirmed = await showCustomDialog({
