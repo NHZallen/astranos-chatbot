@@ -2277,7 +2277,43 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     visibility: visible;
     opacity: 1;
 }
+@media (min-width: 1024px) {
+    /* 1. 讓主聊天室的寬度和邊距變化有平滑的動畫效果 */
+    main.flex-1 {
+        transition: margin-left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1),
+                    width 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+    }
 
+    /* 2. 當側邊欄打開時 (app-container 有 .sidebar-is-open class)，
+       把主聊天室往右推，推的距離等於側邊欄的寬度 (w-72 -> 288px) */
+    #app-container.sidebar-is-open main.flex-1 {
+        margin-left: 288px;
+        width: calc(100% - 288px); /* 重新計算寬度以避免排版錯亂 */
+    }
+    
+    /* 3. 在電腦版上，徹底隱藏黑色的遮罩層 */
+    #sidebar-overlay {
+        display: none !important;
+    }
+
+    /* 4. 修正頂部 header 的寬度和位置 */
+    #app-container.sidebar-is-open main.flex-1 > header {
+        width: calc(100% - 288px);
+    }
+
+    /* 5. 修正底部輸入框容器的寬度和位置 */
+     #app-container.sidebar-is-open #input-bar-container,
+     #app-container.sidebar-is-open #follow-up-container {
+        width: calc(100% - 288px);
+        left: 288px;
+     }
+
+     /* 6. 修正「滾動到底部」按鈕的位置 */
+     #app-container.sidebar-is-open #scroll-to-bottom-btn {
+        /* 重新計算 left，讓它在移動後的主內容區域中置中 */
+        left: calc(288px + (100% - 288px) / 2);
+     }
+}
 
 </style>
 <script>
@@ -7593,14 +7629,40 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
     showNotification(i18n[config.uiLanguage].modelOrderUpdated || '模型順序已更新');
 };
         function toggleSidebar(show) {
-            const { sidebar, sidebarOverlay } = ALL_ELEMENTS;
+            // 從我們預先定義好的元素清單中，取得需要的元素
+            const { sidebar, sidebarOverlay, appContainer } = ALL_ELEMENTS;
+            // 判斷當前是否為電腦版螢幕寬度
+            const isDesktop = window.innerWidth >= 1024;
+
+            // 更新側邊欄的開關狀態
             sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
+            
             if (sidebarOpen) {
+                // 如果要打開側邊欄
                 sidebar.style.transform = 'translateX(0)';
-                sidebarOverlay.classList.add('visible');
+                
+                // 【核心修改1】在主容器上加上我們在 CSS 中定義的 class
+                if (isDesktop) {
+                    appContainer.classList.add('sidebar-is-open');
+                }
+
+                // 在手機版上，我們依然顯示黑色遮罩
+                if (!isDesktop) {
+                    sidebarOverlay.classList.add('visible');
+                }
             } else {
+                // 如果要關閉側邊欄
                 sidebar.style.transform = 'translateX(-100%)';
-                sidebarOverlay.classList.remove('visible');
+
+                // 【核心修改2】從主容器上移除 class，讓聊天室歸位
+                if (isDesktop) {
+                    appContainer.classList.remove('sidebar-is-open');
+                }
+                
+                // 在手機版上，隱藏黑色遮罩
+                if (!isDesktop) {
+                    sidebarOverlay.classList.remove('visible');
+                }
             }
         }
         function closeAllPopovers() {
