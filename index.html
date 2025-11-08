@@ -2278,31 +2278,47 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     opacity: 1;
 }
 @media (min-width: 1024px) {
-    /* 1. 讓主聊天室的邊距變化有平滑的動畫效果 */
-    main.flex-1 {
-        transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    /* 2. 當側邊欄展開時，把主聊天室往右推 288px (w-72 的寬度) */
-    #main-flex-container.sidebar-open-desktop main.flex-1 {
-        margin-left: 288px;
-    }
-
-    /* 3. 在電腦版上，讓側邊欄的定位方式改變，才能推動其他元素 */
-    #sidebar {
-        position: fixed; /* 保持 fixed 讓它固定在左邊 */
-        transform: translateX(0); /* 預設就是顯示的 */
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
     
-    /* 4. 當側邊欄關閉時，把它移出畫面外 */
-    #main-flex-container:not(.sidebar-open-desktop) #sidebar {
-        transform: translateX(-100%);
-    }
-
-    /* 5. 在電腦版上，我們不需要黑色遮罩，直接隱藏它 */
+    /* 1. 隱藏電腦版上的黑色遮罩 */
     #sidebar-overlay {
         display: none !important;
+    }
+
+    /* 2. 改變側邊欄的定位方式 */
+    #sidebar {
+        position: static; /* 從 fixed 改為 static，讓它成為正常文件流的一部分 */
+        transform: none !important; /* 移除舊的 transform 動畫，我們將用 margin 來控制 */
+        transition: min-width 0.3s cubic-bezier(0.4, 0.0, 0.2, 1), margin-left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1); /* 設定新的動畫效果 */
+        
+        /* 預設是展開狀態，佔據它自己的寬度 */
+        min-width: 18rem; /* 288px */
+        width: 18rem; /* 288px */
+        margin-left: 0;
+    }
+
+    /* 3. 定義側邊欄「關閉」時的狀態 */
+    #app-container:not(.sidebar-open) #sidebar {
+        min-width: 0;
+        width: 0;
+        /* 使用負 margin 讓它向左滑出，而不是直接消失 */
+        margin-left: -18rem; /* -288px */
+    }
+
+    /* 4. 讓主內容區 (聊天室) 適應側邊欄的寬度 */
+    main {
+        transition: margin-left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1); /* 讓 margin 變化有動畫 */
+        margin-left: 0; /* 預設 margin 是 0 */
+        width: 100%;
+    }
+
+    /* 5. 當側邊欄關閉時，聊天室不需要左邊距 */
+    #app-container:not(.sidebar-open) main {
+        margin-left: 0;
+    }
+    
+    /* 6. 移除電腦版上用於滑動開啟側邊欄的觸發區域 */
+    #sidebar-open-handle {
+        display: none;
     }
 }
 
@@ -2414,7 +2430,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         </div>
     </div>
     <div id="app-container" class="hidden fixed inset-0">
-        <div id="main-flex-container" class="relative flex h-full w-full bg-[var(--chat-bg)]">
+        <div class="relative flex h-full w-full bg-[var(--chat-bg)]">
             <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 opacity-0"></div>
             <div id="sidebar-open-handle" class="fixed top-0 left-0 h-full z-20" style="width: 20px; touch-action: pan-y;"></div>
             <aside id="sidebar" class="sidebar w-72 lg:w-72 flex-shrink-0 flex flex-col fixed h-full z-40 transform -translate-x-full">
@@ -4255,31 +4271,24 @@ function renderMarkdownWithFormulas(text) {
             };
         };
         const startNewChat = () => {
-    const oldTempChatCount = conversations.length;
-    conversations = conversations.filter(c => !c.isTemporary || c.messages.length > 0);
-    if (conversations.length < oldTempChatCount) {
-         saveAppData();
-    }
-    uploadedFiles = [];
-    const newConv = createBaseConversation('新對話');
-    conversations.unshift(newConv);
-    activeConversationId = newConv.id;
-    renderAll();
-    ALL_ELEMENTS.messageInput.value = '';
-    
-    // --- ✨ 這裡是修正後的核心邏輯 ✨ ---
-    // 只有在手機尺寸下才關閉側邊欄
-    if (window.innerWidth < 1024) {
-        toggleSidebar(false);
-    }
-    // (原本多餘的那一行已經被刪除了)
-    // --- ✨ 修正結束 ✨ ---
-
-    sendConfirmed = false;
-    updateInputState();
-    updateApiKeyWarningBadge();
-    renderFollowUpPrompts([]);
-};
+            const oldTempChatCount = conversations.length;
+            conversations = conversations.filter(c => !c.isTemporary || c.messages.length > 0);
+            if (conversations.length < oldTempChatCount) {
+                 saveAppData();
+            }
+            uploadedFiles = [];
+            const newConv = createBaseConversation('新對話');
+            conversations.unshift(newConv);
+            activeConversationId = newConv.id;
+            renderAll();
+            ALL_ELEMENTS.messageInput.value = '';
+            setTimeout(adjustTextareaHeight, 0);
+            toggleSidebar(false);
+            sendConfirmed = false;
+            updateInputState();
+            updateApiKeyWarningBadge();
+            renderFollowUpPrompts([]);
+        };
         const loadChat = (id) => {
             if (messageObserver) {
         messageObserver.disconnect();
@@ -4514,9 +4523,7 @@ function renderMarkdownWithFormulas(text) {
                         cancelPress();
                         if (isSelectionMode) return;
                         setAstrasForConversation(ast.id);
-                        if (window.innerWidth < 1024) {
-    toggleSidebar(false);
-}
+                        toggleSidebar(false);
                     }
                 };
                 item.addEventListener('touchstart', startPress, { passive: true });
@@ -4672,8 +4679,7 @@ function renderMarkdownWithFormulas(text) {
                         }
                     } else {
                         loadChat(conv.id);
-                        if (window.innerWidth < 1024) {
-    toggleSidebar(false);
+                        toggleSidebar(false);
                     }
                 }
             };
@@ -7630,36 +7636,24 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
     showNotification(i18n[config.uiLanguage].modelOrderUpdated || '模型順序已更新');
 };
         function toggleSidebar(show) {
-    const { sidebar, sidebarOverlay } = ALL_ELEMENTS;
-    const mainContainer = document.getElementById('main-flex-container'); // 取得我們剛剛新增ID的容器
+            const { appContainer, sidebar, sidebarOverlay } = ALL_ELEMENTS;
+            sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
 
-    // 判斷側邊欄應該是打開還是關閉
-    sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
-
-    // 根據螢幕寬度決定行為模式
-    if (window.innerWidth >= 1024) {
-        // --- 電腦版邏輯 ---
-        if (sidebarOpen) {
-            // 如果要打開，就為容器加上 class 來觸發推擠效果
-            mainContainer.classList.add('sidebar-open-desktop');
-        } else {
-            // 如果要關閉，就移除 class
-            mainContainer.classList.remove('sidebar-open-desktop');
+            // 判斷當前是否為電腦版寬度
+            if (window.innerWidth >= 1024) {
+                // 電腦版：切換父容器的 class
+                appContainer.classList.toggle('sidebar-open', sidebarOpen);
+            } else {
+                // 手機版：維持原本的 transform 和遮罩邏輯
+                if (sidebarOpen) {
+                    sidebar.style.transform = 'translateX(0)';
+                    sidebarOverlay.classList.add('visible');
+                } else {
+                    sidebar.style.transform = 'translateX(-100%)';
+                    sidebarOverlay.classList.remove('visible');
+                }
+            }
         }
-        // 在電腦版上，我們永遠不顯示黑色遮罩
-        sidebarOverlay.classList.remove('visible');
-
-    } else {
-        // --- 手機版邏輯 (維持原本的覆蓋效果) ---
-        if (sidebarOpen) {
-            sidebar.style.transform = 'translateX(0)';
-            sidebarOverlay.classList.add('visible');
-        } else {
-            sidebar.style.transform = 'translateX(-100%)';
-            sidebarOverlay.classList.remove('visible');
-        }
-    }
-}
         function closeAllPopovers() {
             document.querySelectorAll('.popover.visible').forEach(popover => {
                 popover.classList.remove('visible');
@@ -9835,6 +9829,13 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
     }
 }
         async function initChatApp() {
+            if (window.innerWidth >= 1024) {
+                sidebarOpen = true; // 在電腦上預設為開啟
+                ALL_ELEMENTS.appContainer.classList.add('sidebar-open');
+            } else {
+                sidebarOpen = false; // 在手機上預設為關閉
+                ALL_ELEMENTS.appContainer.classList.remove('sidebar-open');
+            }
             injectDeepResearchStyles(); // ✨ 注入樣式
             setTheme(config.theme);
             ALL_ELEMENTS.usernameDisplay.textContent = currentUser.username;
