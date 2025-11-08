@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#111111" media="(prefers-color-scheme: dark)">
     <title>AstraChat-15.8.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -6701,20 +6703,38 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             }
         };
         const setTheme = async (theme) => {
-            if (document.body.classList.contains('custom-wallpaper-active')) {
-                return;
-            }
-            document.documentElement.classList.toggle('dark', theme === 'dark');
-            config.theme = theme;
-            setAiBubbleColor();
-            setUserBubbleColor();
-            await saveConfig();
-            updateThemeButtons();
-            if (!ALL_ELEMENTS.settingsModal.classList.contains('hidden')) {
-                renderAiBubbleColorDropdown();
-                renderUserBubbleColorDropdown();
-            }
-        };
+    if (document.body.classList.contains('custom-wallpaper-active')) {
+        return;
+    }
+
+
+    // ✨ 1. 根據傳入的 theme 決定顏色
+    const themeColor = theme === 'dark' ? '#111111' : '#ffffff';
+
+
+    // ✨ 2. 找到 theme-color 的 meta 標籤並更新它的顏色
+    // 我們需要同時更新淺色和深色模式的標籤，或者只用一個並動態修改
+    let darkThemeMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: dark)"]');
+    if (darkThemeMeta) {
+        darkThemeMeta.setAttribute('content', themeColor);
+    }
+    let lightThemeMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: light)"]');
+     if (lightThemeMeta) {
+        lightThemeMeta.setAttribute('content', themeColor);
+    }
+
+
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    config.theme = theme;
+    setAiBubbleColor();
+    setUserBubbleColor();
+    await saveConfig();
+    updateThemeButtons();
+    if (!ALL_ELEMENTS.settingsModal.classList.contains('hidden')) {
+        renderAiBubbleColorDropdown();
+        renderUserBubbleColorDropdown();
+    }
+};
         const updateThemeButtons = () => {
             ALL_ELEMENTS.themeDarkBtn.classList.remove('active');
             ALL_ELEMENTS.themeLightBtn.classList.remove('active');
