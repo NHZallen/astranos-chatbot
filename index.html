@@ -534,42 +534,6 @@ button:not(.btn-primary):active:not(:disabled) {
         border-right: 1px solid var(--border-color);
         transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
     }
-    @media (min-width: 1024px) {
-    /* 讓主聊天室區域有平滑的邊距變化動畫 */
-    main.flex-1 {
-        transition: margin-left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-    }
-
-    /* 重新定義電腦版側邊欄的行為 */
-    #sidebar {
-        /* 移除 transform 動畫，改用 margin-left */
-        transition: margin-left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-        
-        /* 關鍵！將側邊欄的定位方式改為相對定位，讓它成為佈局的一部分 */
-        position: relative; 
-        
-        /* 移除原本用來隱藏的 transform 屬性 */
-        transform: translateX(0) !important; 
-        
-        /* 預設狀態下，將側邊欄向左推出畫面外 */
-        margin-left: -288px; /* 寬度為 288px (w-72) */
-    }
-
-    /* 當側邊欄有 'open' class 時，將它拉回畫面內 */
-    #sidebar.open {
-        margin-left: 0;
-    }
-    
-    /* 當側邊欄有 'open' class 時，讓主聊天室向右推移，寬度剛好是側邊欄的寬度 */
-    #sidebar.open ~ main.flex-1 {
-        margin-left: 288px; /* 寬度為 288px (w-72) */
-    }
-
-    /* 在電腦版上，我們不再需要黑色遮罩了，直接隱藏它 */
-    #sidebar-overlay {
-        display: none !important;
-    }
-}
     .scroll-area::-webkit-scrollbar { width: 8px; }
     .scroll-area::-webkit-scrollbar-track { background: transparent; }
     .scroll-area::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
@@ -2313,7 +2277,34 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     visibility: visible;
     opacity: 1;
 }
+@media (min-width: 1024px) {
+    /* 1. 讓主聊天室的邊距變化有平滑的動畫效果 */
+    main.flex-1 {
+        transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
 
+    /* 2. 當側邊欄展開時，把主聊天室往右推 288px (w-72 的寬度) */
+    #main-flex-container.sidebar-open-desktop main.flex-1 {
+        margin-left: 288px;
+    }
+
+    /* 3. 在電腦版上，讓側邊欄的定位方式改變，才能推動其他元素 */
+    #sidebar {
+        position: fixed; /* 保持 fixed 讓它固定在左邊 */
+        transform: translateX(0); /* 預設就是顯示的 */
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    /* 4. 當側邊欄關閉時，把它移出畫面外 */
+    #main-flex-container:not(.sidebar-open-desktop) #sidebar {
+        transform: translateX(-100%);
+    }
+
+    /* 5. 在電腦版上，我們不需要黑色遮罩，直接隱藏它 */
+    #sidebar-overlay {
+        display: none !important;
+    }
+}
 
 </style>
 <script>
@@ -2423,7 +2414,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         </div>
     </div>
     <div id="app-container" class="hidden fixed inset-0">
-        <div class="relative flex h-full w-full bg-[var(--chat-bg)]">
+        <div id="main-flex-container" class="relative flex h-full w-full bg-[var(--chat-bg)]">
             <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 opacity-0"></div>
             <div id="sidebar-open-handle" class="fixed top-0 left-0 h-full z-20" style="width: 20px; touch-action: pan-y;"></div>
             <aside id="sidebar" class="sidebar w-72 lg:w-72 flex-shrink-0 flex flex-col fixed h-full z-40 transform -translate-x-full">
@@ -7630,16 +7621,26 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 };
         function toggleSidebar(show) {
     const { sidebar, sidebarOverlay } = ALL_ELEMENTS;
+    const mainContainer = document.getElementById('main-flex-container'); // 取得我們剛剛新增ID的容器
+
+    // 判斷側邊欄應該是打開還是關閉
     sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
 
-
-    // 在電腦螢幕上，我們使用 class 來控制
+    // 根據螢幕寬度決定行為模式
     if (window.innerWidth >= 1024) {
-        sidebar.classList.toggle('open', sidebarOpen);
-        // 電腦版不需要操作遮罩層，因為 CSS 已經把它隱藏了
-    } 
-    // 在手機螢幕上，我們維持原本的覆蓋效果
-    else {
+        // --- 電腦版邏輯 ---
+        if (sidebarOpen) {
+            // 如果要打開，就為容器加上 class 來觸發推擠效果
+            mainContainer.classList.add('sidebar-open-desktop');
+        } else {
+            // 如果要關閉，就移除 class
+            mainContainer.classList.remove('sidebar-open-desktop');
+        }
+        // 在電腦版上，我們永遠不顯示黑色遮罩
+        sidebarOverlay.classList.remove('visible');
+
+    } else {
+        // --- 手機版邏輯 (維持原本的覆蓋效果) ---
         if (sidebarOpen) {
             sidebar.style.transform = 'translateX(0)';
             sidebarOverlay.classList.add('visible');
