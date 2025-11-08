@@ -977,45 +977,6 @@ button:not(.btn-primary):active:not(:disabled) {
         transform: translateX(0);
     }
     @media (min-width: 1024px) {
-    /* 讓主聊天室的 margin-left 變化有平滑的動畫效果 */
-    main.flex-1 {
-        transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-
-    /* 當 body 有 sidebar-is-open class 時 (電腦版側邊欄打開時) */
-    body.sidebar-is-open main.flex-1 {
-        /* 讓主聊天室向右推移，寬度等於側邊欄寬度 (w-72 等於 18rem) */
-        margin-left: 18rem;
-    }
-
-
-    /* 讓側邊欄本身在電腦版上不再使用 transform 來隱藏 */
-    #sidebar {
-        transform: translateX(0) !important;
-    }
-
-
-    /* 當 body 沒有 sidebar-is-open class 時 (電腦版側邊欄關閉時) */
-    body:not(.sidebar-is-open) #sidebar {
-        /* 透過改變 margin 來將側邊欄藏到左邊畫面外 */
-        margin-left: -18rem;
-    }
-
-
-    /* 在電腦版上，我們不需要黑色遮罩，直接隱藏它 */
-    #sidebar-overlay.visible {
-        opacity: 0;
-        visibility: hidden;
-    }
-
-
-    /* 在電腦版上，手機滑動觸發的把手也不需要了 */
-    #sidebar-open-handle {
-        display: none;
-    }
-}
-    @media (min-width: 1024px) {
         #sidebar-overlay.visible {
             left: 288px;
         }
@@ -2316,7 +2277,28 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     visibility: visible;
     opacity: 1;
 }
+@media (min-width: 1024px) {
+    /* 1. 在電腦版上，我們不再需要黑色遮罩，直接隱藏它 */
+    #sidebar-overlay {
+        display: none !important;
+    }
 
+    /* 2. 讓側邊欄的 transform (滑動) 效果永久失效，使其固定在左側 */
+    #sidebar {
+        transform: translateX(0) !important;
+    }
+
+    /* 3. 為聊天室主體(main)的 margin-left 增加平滑過渡效果，讓擠壓動畫更流暢 */
+    main.flex-1 {
+        transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* 4. 這是關鍵！當 #app-container 元素擁有 .sidebar-is-open 這個 class 時，
+       我們就把聊天室主體(main)向右推一個側邊欄的寬度 */
+    #app-container.sidebar-is-open main.flex-1 {
+        margin-left: 288px; /* 側邊欄寬度 w-72 等於 18rem，也就是 288px */
+    }
+}
 
 </style>
 <script>
@@ -3348,6 +3330,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         });
         const ALL_ELEMENTS = {
+            appContainer: document.getElementById('app-container'),
             authContainer: document.getElementById('auth-container'),
             appContainer: document.getElementById('app-container'),
             authForm: document.getElementById('auth-form'),
@@ -7632,19 +7615,20 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
     showNotification(i18n[config.uiLanguage].modelOrderUpdated || '模型順序已更新');
 };
         function toggleSidebar(show) {
-    const { sidebar, sidebarOverlay } = ALL_ELEMENTS;
+    const { sidebar, sidebarOverlay, appContainer } = ALL_ELEMENTS; 
+    const isDesktop = window.innerWidth >= 1024;
     sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
 
-
-    // 在 body 元素上切換一個 class，而不是直接改 style
-    document.body.classList.toggle('sidebar-is-open', sidebarOpen);
-
-
-    // 手機版的遮罩層邏輯保持不變
-    if (sidebarOpen) {
-        sidebarOverlay.classList.add('visible');
+    if (isDesktop) {
+        appContainer.classList.toggle('sidebar-is-open', sidebarOpen);
     } else {
-        sidebarOverlay.classList.remove('visible');
+        if (sidebarOpen) {
+            sidebar.style.transform = 'translateX(0)';
+            sidebarOverlay.classList.add('visible');
+        } else {
+            sidebar.style.transform = 'translateX(-100%)';
+            sidebarOverlay.classList.remove('visible');
+        }
     }
 }
         function closeAllPopovers() {
