@@ -977,6 +977,70 @@ button:not(.btn-primary):active:not(:disabled) {
         transform: translateX(0);
     }
     @media (min-width: 1024px) {
+    /* 1. 隱藏主內容區的漢堡按鈕，因為控制權轉移到側邊欄了 */
+    main.flex-1 #menu-toggle-btn {
+        display: none;
+    }
+
+    /* 2. 重新定義側邊欄的基礎樣式 (展開狀態) */
+    #sidebar {
+        width: 288px; /* w-72 */
+        transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateX(0) !important; /* 確保它總是在畫面內 */
+        position: fixed; /* 固定在左側 */
+        height: 100vh;
+        z-index: 40;
+    }
+
+    /* 3. 定義主內容區的樣式 (它需要為展開的側邊欄留出空間) */
+    main.flex-1 {
+        margin-left: 288px; /* 預設為展開側邊欄的寬度 */
+        transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* 4. 定義側邊欄收合時的樣式 */
+    #sidebar.sidebar-collapsed {
+        width: 80px; /* 收合後的寬度 */
+    }
+
+    /* 5. 當側邊欄收合時，主內容區的左邊距也要跟著縮小 */
+    #sidebar.sidebar-collapsed + main.flex-1 {
+        margin-left: 80px;
+    }
+
+    /* 6. 控制側邊欄內的文字和標題的顯示/隱藏 */
+    .sidebar-text, #sidebar-header-title {
+        opacity: 1;
+        transition: opacity 0.2s ease-in-out;
+        white-space: nowrap; /* 防止文字換行 */
+        overflow: hidden; /* 隱藏溢出的文字 */
+    }
+    #sidebar.sidebar-collapsed .sidebar-text,
+    #sidebar.sidebar-collapsed #sidebar-header-title {
+        opacity: 0;
+        pointer-events: none; /* 讓透明的文字無法被點擊 */
+    }
+
+    /* 7. 控制收合/展開按鈕的圖示切換 */
+    #sidebar.sidebar-collapsed #sidebar-toggle-btn .hamburger-icon {
+        display: block;
+    }
+    #sidebar.sidebar-collapsed #sidebar-toggle-btn .retract-icon {
+        display: none;
+    }
+    #sidebar:not(.sidebar-collapsed) #sidebar-toggle-btn .hamburger-icon {
+        display: none;
+    }
+    #sidebar:not(.sidebar-collapsed) #sidebar-toggle-btn .retract-icon {
+        display: block;
+    }
+    
+    /* 8. 收合時，按鈕內的圖示需要居中 */
+    #sidebar.sidebar-collapsed button.w-full {
+        justify-content: center;
+    }
+}
+    @media (min-width: 1024px) {
         #sidebar-overlay.visible {
             left: 288px;
         }
@@ -2424,18 +2488,34 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 opacity-0"></div>
             <div id="sidebar-open-handle" class="fixed top-0 left-0 h-full z-20" style="width: 20px; touch-action: pan-y;"></div>
             <aside id="sidebar" class="sidebar w-72 lg:w-72 flex-shrink-0 flex flex-col fixed h-full z-40 transform -translate-x-full">
-                <div class="p-2 flex items-center gap-2">
-    <button id="open-search-btn" class="flex-1 flex items-center gap-3 text-left px-4 py-2 rounded-full bg-[var(--hover-bg)] text-[var(--text-secondary)] hover:bg-[var(--active-bg)] hover:text-[var(--text-primary)] transition-colors duration-200 ease-in-out">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
-        <span class="text-sm" data-lang-key="search">搜尋</span>
+                <header id="sidebar-header" class="p-2 flex items-center justify-between">
+    <!-- 展開時顯示的 ASTRA 標題 -->
+    <span id="sidebar-header-title" class="text-xl font-bold ml-3 sidebar-text">ASTRA</span>
+    <!-- 這個按鈕現在負責展開/收合 -->
+    <button id="sidebar-toggle-btn" class="p-2 rounded-md hover:bg-[var(--hover-bg)]">
+        <!-- 漢堡按鈕 (收合時顯示) -->
+        <svg class="hamburger-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        <!-- 收合圖示 (展開時顯示) -->
+        <svg class="retract-icon hidden" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
     </button>
-    <button id="selection-mode-btn" class="sidebar-item p-2 rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0" data-lang-key-title="batchSelect" title="批次選取">
+</header>
+<nav class="flex-grow p-2 space-y-2">
+    <!-- 新對話按鈕 (已修改) -->
+    <button id="new-chat-btn" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--hover-bg)]">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"></path></svg>
+        <span class="sidebar-text" data-lang-key="newChat">新對話</span>
+    </button>
+    <!-- 搜尋按鈕 (已修改) -->
+    <button id="open-search-btn" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--hover-bg)]">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <span class="sidebar-text" data-lang-key="search">搜尋</span>
+    </button>
+    <!-- 批次選取按鈕 (已修改) -->
+    <button id="selection-mode-btn" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--hover-bg)]">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"></path><path d="m3 7 2 2 4-4"></path><path d="M13 6h8"></path><path d="M13 12h8"></path><path d="M13 18h8"></path></svg>
+        <span class="sidebar-text" data-lang-key="batchSelect">批次選取</span>
     </button>
-    <button id="new-chat-btn" class="sidebar-item p-2 rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0" data-lang-key-title="newChat" title="新對話">
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"></path></svg>
-</button>
-</div>
+</nav>
                 <div class="flex-1 overflow-y-auto px-2 scroll-area">
     
     <!-- Astras 區塊 -->
@@ -7627,28 +7707,24 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
     showNotification(i18n[config.uiLanguage].modelOrderUpdated || '模型順序已更新');
 };
         function toggleSidebar(show) {
-            const { sidebar, sidebarOverlay } = ALL_ELEMENTS;
-            sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
+    const { sidebar, sidebarOverlay } = ALL_ELEMENTS;
+    sidebarOpen = typeof show === 'boolean' ? show : !sidebarOpen;
 
-            // 判斷當前是否為電腦版螢幕
-            if (window.innerWidth >= 1024) {
-                // 電腦版：切換擠壓效果
-                if (sidebarOpen) {
-                    sidebar.classList.remove('sidebar-collapsed');
-                } else {
-                    sidebar.classList.add('sidebar-collapsed');
-                }
-            } else {
-                // 手機版：維持原本的覆蓋效果
-                if (sidebarOpen) {
-                    sidebar.style.transform = 'translateX(0)';
-                    sidebarOverlay.classList.add('visible');
-                } else {
-                    sidebar.style.transform = 'translateX(-100%)';
-                    sidebarOverlay.classList.remove('visible');
-                }
-            }
+    // 判斷當前是否為電腦版螢幕
+    if (window.innerWidth >= 1024) {
+        // 電腦版：切換 .sidebar-collapsed class
+        sidebar.classList.toggle('sidebar-collapsed', !sidebarOpen);
+    } else {
+        // 手機版：維持原本的覆蓋效果
+        if (sidebarOpen) {
+            sidebar.style.transform = 'translateX(0)';
+            sidebarOverlay.classList.add('visible');
+        } else {
+            sidebar.style.transform = 'translateX(-100%)';
+            sidebarOverlay.classList.remove('visible');
         }
+    }
+}
         function closeAllPopovers() {
             document.querySelectorAll('.popover.visible').forEach(popover => {
                 popover.classList.remove('visible');
@@ -10387,6 +10463,13 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             // ✨ END: 新增的附件上彈視窗函式與按鈕邏輯
             setupHistorySidebarInteractions(); // 啟用側邊欄的點擊跳轉功能
     setupHistorySidebarTriggers();   // 啟用側邊欄的滑動和懸停觸發功能
+        const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+if (sidebarToggleBtn) {
+    sidebarToggleBtn.addEventListener('click', () => {
+        // 直接呼叫我們修改過的 toggleSidebar 函式
+        toggleSidebar();
+    });
+}
         }
         const handleDeleteMessagePair = async (index) => {
             const confirmed = await showCustomDialog({
