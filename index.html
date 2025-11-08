@@ -2315,22 +2315,30 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     opacity: 1;
 }
 #follow-up-container {
-    /* 讓它和訊息泡泡之間有點間距 */
-    margin-top: 1rem; 
-    /* 為了流暢的顯示/隱藏動畫 */
-    transition: all 0.4s ease-in-out;
-    max-height: 1000px; /* 動畫需要一個具體的最大高度 */
-    overflow: hidden;
-}
-
-/* 當它被隱藏時，高度變為0 */
-#follow-up-container.hidden {
-    max-height: 0;
-    margin-top: 0;
+    position: fixed; /* 關鍵！讓它固定在螢幕上 */
+    top: 4.5rem;       /* 從頂部下來一點距離，避開 header */
+    left: 0;
+    right: 0;
+    z-index: 20;       /* 確保它在最上層 */
+    max-width: 48rem;  /* 和聊天內容一樣的最大寬度 */
+    margin: 0 auto;    /* 水平置中 */
+    padding: 0 1rem;   /* 左右留出邊距 */
+    
+    /* 動畫效果 */
+    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+    transform: translateY(-20px);
     opacity: 0;
+    pointer-events: none; /* 隱藏時不可點擊 */
 }
 
-/* 內部容器的樣式保持不變，保留漂亮的毛玻璃效果 */
+/* 顯示時的樣式 */
+#follow-up-container:not(.hidden) {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* 內部容器的毛玻璃效果 */
 #follow-up-content-wrapper {
     background-color: rgba(255, 255, 255, 0.65);
     backdrop-filter: blur(16px);
@@ -2346,62 +2354,38 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-/* 這是內部真正裝內容的容器，我們給它加上背景和圓角 */
-#follow-up-content-wrapper {
-    background-color: rgba(255, 255, 255, 0.65); /* 半透明背景 */
-    backdrop-filter: blur(16px);                  /* 背景模糊效果 (毛玻璃) */
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    border-radius: 1rem;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
-    padding: 0.75rem;
-}
-
-/* 深色模式下的樣式 */
-.dark #follow-up-content-wrapper {
-    background-color: rgba(30, 30, 30, 0.65);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-/* 手機版樣式：啟用左右滑動 */
+/* 手機版的滑動樣式 */
 @media (max-width: 768px) {
+    #follow-up-container {
+         top: 4rem; /* 手機版頂部距離可以近一點 */
+    }
     #follow-up-prompts-list {
         display: flex;
         overflow-x: auto;
-        /* 這是實現滑動吸附效果的關鍵 */
         scroll-snap-type: x mandatory;
-        /* ✨ 這是最重要的修正！強制不換行，讓元素排成一列 */
         flex-wrap: nowrap; 
         touch-action: pan-x;
-        /* 移除上下 padding，交給子元素處理 */
         padding: 0;
         margin: 0;
         -ms-overflow-style: none;
         scrollbar-width: none;
     }
-
     #follow-up-prompts-list::-webkit-scrollbar {
         display: none;
     }
-
     .follow-up-prompt-btn {
-        /* 讓每個按鈕幾乎佔滿整個寬度 */
         flex: 0 0 100%;
         width: 100%;
-        /* 讓按鈕在容器中從頭開始吸附 */
         scroll-snap-align: start; 
-        /* 讓文字可以正常換行顯示 */
         white-space: normal;
         word-break: break-word;
         text-overflow: unset;
         display: flex;
         align-items: center;
         justify-content: center;
-        /* 增加上下內距，讓按鈕更高更好看 */
         padding: 1.5rem 1rem;
-        /* 移除圓角，看起來更像卡片 */
         border-radius: 0.5rem;
-        min-height: 0; /* 重置最小高度 */
+        min-height: 0;
     }
 }
 
@@ -2631,18 +2615,19 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 </button>
     </div>
 </header>
-                <div id="chat-container" class="flex-1 p-4 md:p-6 overflow-y-auto scroll-area">
-                    <div id="follow-up-container" class="p-2 md:p-4 bg-[var(--input-bar-bg)] border-t border-[var(--border-color)] hidden">
-                    <div id="follow-up-content-wrapper" class="max-w-4xl mx-auto spotlight-effect">
-                        <div id="follow-up-header" class="flex items-center justify-between cursor-pointer">
-    <h4 class="text-sm font-semibold text-[var(--text-secondary)]" data-lang-key="followUp">後續追問</h4>
-</div>
-                        <div id="follow-up-prompts-list" class="flex flex-wrap gap-2 transition-all duration-300 overflow-hidden">
-                        </div>
-                    </div>
+                <div id="follow-up-container" class="p-2 md:p-4 bg-[var(--input-bar-bg)] border-t border-[var(--border-color)] hidden">
+            <div id="follow-up-content-wrapper" class="max-w-4xl mx-auto spotlight-effect">
+                <div id="follow-up-header" class="flex items-center justify-between cursor-pointer">
+                    <h4 class="text-sm font-semibold text-[var(--text-secondary)]" data-lang-key="followUp">後續追問</h4>
                 </div>
-                    <div id="message-list" class="space-y-8 max-w-4xl mx-auto"></div>
+                <div id="follow-up-prompts-list" class="flex flex-wrap gap-2 transition-all duration-300 overflow-hidden">
                 </div>
+            </div>
+        </div>
+
+        <div id="chat-container" class="flex-1 p-4 md:p-6 overflow-y-auto scroll-area">
+            <div id="message-list" class="space-y-8 max-w-4xl mx-auto"></div>
+        </div>
                 <div id="history-sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-10 opacity-0 hidden"></div>
                 <div id="history-sidebar" class="absolute top-0 right-0 h-full bg-[var(--sidebar-bg)] shadow-lg z-20 w-72 md:w-80 border-l border-[var(--border-color)] flex flex-col">
     <header class="p-4 border-b border-[var(--border-color)]">
@@ -6311,7 +6296,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             }
         };
         const renderFollowUpPrompts = (prompts) => {
-    const { followUpContainer, followUpPromptsList, showPromptsBtn, messageList } = ALL_ELEMENTS;
+    const { followUpContainer, followUpPromptsList, showPromptsBtn } = ALL_ELEMENTS;
     followUpPromptsList.innerHTML = '';
 
 
@@ -6339,14 +6324,6 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             followUpPromptsList.appendChild(btn);
         });
         
-        // ✨ 這是新的核心邏輯：搬家！
-        const lastModelMessage = messageList.querySelector('.model-message:last-child');
-        if (lastModelMessage) {
-            // 將 follow-up-container 元素移動到最後一則 AI 訊息的後面
-            lastModelMessage.after(followUpContainer);
-        }
-
-
         showPromptsBtn.classList.remove('hidden'); // 顯示右上角的燈泡按鈕
     }
 };
@@ -10499,15 +10476,8 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
     setupHistorySidebarTriggers();   // 啟用側邊欄的滑動和懸停觸發功能
             ALL_ELEMENTS.showPromptsBtn.addEventListener('click', () => {
     const container = ALL_ELEMENTS.followUpContainer;
-    const isNowHidden = container.classList.toggle('hidden');
+    const isNowHidden = !container.classList.toggle('hidden');
     ALL_ELEMENTS.showPromptsBtn.classList.toggle('active', !isNowHidden);
-    
-    // 如果是展開，就平滑地滾動到視野中
-    if (!isNowHidden) {
-        setTimeout(() => {
-            container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }, 50); // 延遲一點點，等待動畫開始
-    }
 });
         const followUpContainer = document.getElementById('follow-up-container');
         if (followUpContainer) {
