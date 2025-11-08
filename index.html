@@ -3,8 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-    <meta name="theme-color" content="#111111" media="(prefers-color-scheme: dark)">
     <title>AstraChat-15.8.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -16,6 +14,50 @@
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlVjOTgjdwCRYIFDPlSJyGothspOJCINgRdBNPCoCoAPgatCKssVNPfISAc" crossorigin="anonymous"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/mhchem.min.js" integrity="sha384-LiYbuyabPcvZ2wQ2MR2kJyS2N9p/hO3N/15H0/0YxJqT4Lg/ZqD53aQyD+Jz3lM7" crossorigin="anonymous"></script>
     <style>
+    /* --- 處理 iOS 安全區域 (Safe Area) 的程式碼 --- */
+body {
+    /* 確保 body 填滿整個螢幕，包含安全區域 */
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+}
+
+#app-container, #store-container {
+    /* 確保主容器也填滿 */
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+}
+
+/* 1. 幫「側邊欄」加上下邊距 */
+#sidebar {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* 2. 幫「聊天室主畫面的頂部標題列」加上邊距 */
+main > header {
+    padding-top: env(safe-area-inset-top);
+}
+
+/* 3. 幫「聊天室主畫面的底部輸入框區域」加上邊距 */
+#input-bar-container {
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* 4. 幫「登入畫面的頂部標題列」加上邊距 */
+#auth-container > div > header {
+        padding-top: env(safe-area-inset-top);
+}
+
+/* 5. 幫「商店畫面的頂部標題列」加上邊距 */
+#store-container > header {
+    padding-top: env(safe-area-inset-top);
+}
+
+/* 6. 幫「彈出式選單」加上底部邊距（例如手機版的附加檔案選單） */
+#attachment-menu, #mobile-context-menu {
+    padding-bottom: env(safe-area-inset-bottom);
+}
+/* --- 安全區域程式碼結束 --- */
     body {
     touch-action: manipulation;
 }
@@ -6703,38 +6745,20 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             }
         };
         const setTheme = async (theme) => {
-    if (document.body.classList.contains('custom-wallpaper-active')) {
-        return;
-    }
-
-
-    // ✨ 1. 根據傳入的 theme 決定顏色
-    const themeColor = theme === 'dark' ? '#111111' : '#ffffff';
-
-
-    // ✨ 2. 找到 theme-color 的 meta 標籤並更新它的顏色
-    // 我們需要同時更新淺色和深色模式的標籤，或者只用一個並動態修改
-    let darkThemeMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: dark)"]');
-    if (darkThemeMeta) {
-        darkThemeMeta.setAttribute('content', themeColor);
-    }
-    let lightThemeMeta = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: light)"]');
-     if (lightThemeMeta) {
-        lightThemeMeta.setAttribute('content', themeColor);
-    }
-
-
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-    config.theme = theme;
-    setAiBubbleColor();
-    setUserBubbleColor();
-    await saveConfig();
-    updateThemeButtons();
-    if (!ALL_ELEMENTS.settingsModal.classList.contains('hidden')) {
-        renderAiBubbleColorDropdown();
-        renderUserBubbleColorDropdown();
-    }
-};
+            if (document.body.classList.contains('custom-wallpaper-active')) {
+                return;
+            }
+            document.documentElement.classList.toggle('dark', theme === 'dark');
+            config.theme = theme;
+            setAiBubbleColor();
+            setUserBubbleColor();
+            await saveConfig();
+            updateThemeButtons();
+            if (!ALL_ELEMENTS.settingsModal.classList.contains('hidden')) {
+                renderAiBubbleColorDropdown();
+                renderUserBubbleColorDropdown();
+            }
+        };
         const updateThemeButtons = () => {
             ALL_ELEMENTS.themeDarkBtn.classList.remove('active');
             ALL_ELEMENTS.themeLightBtn.classList.remove('active');
