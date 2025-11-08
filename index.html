@@ -1974,7 +1974,7 @@ body.custom-wallpaper-active .store-category-btn.active {
         75% { transform: scale(0.95, 1.05) translateX(-50%); }
     }
     #scroll-to-bottom-btn {
-        position: fixed;
+        position: absolute;
         left: 50%;
         z-index: 20;
         width: 40px;
@@ -8910,52 +8910,56 @@ ${JSON.stringify(potentialMemories, null, 2)}
             });
         };
         const setupScrollToBottomButton = () => {
-            const { scrollToBottomBtn, chatContainer } = ALL_ELEMENTS;
-            scrollToBottomBtn.addEventListener('click', () => {
-                isAutoScrolling = true;
-                scrollToBottomBtn.classList.remove('visible');
-                scrollToBottomBtn.classList.add('jelly-animate');
-                scrollToBottomBtn.addEventListener('animationend', () => {
-                    scrollToBottomBtn.classList.remove('jelly-animate');
-                }, { once: true });
-                chatContainer.scrollTo({
-                    top: chatContainer.scrollHeight,
-                    behavior: 'smooth'
-                });
-                const scrollEndTimer = setTimeout(() => {
-                    isAutoScrolling = false;
-                }, 1000);
-                const interruptHandler = () => {
-                    clearTimeout(scrollEndTimer);
-                    isAutoScrolling = false;
-                    chatContainer.removeEventListener('wheel', interruptHandler);
-                    chatContainer.removeEventListener('touchstart', interruptHandler);
-                };
-                chatContainer.addEventListener('wheel', interruptHandler, { once: true });
-                chatContainer.addEventListener('touchstart', interruptHandler, { once: true });
-            });
-            const handleScroll = () => {
-                if (isAutoScrolling) return;
-                const isAtBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight < 100;
-                if (isAtBottom) {
-                    scrollToBottomBtn.classList.remove('visible');
-                } else {
-                    scrollToBottomBtn.classList.add('visible');
-                }
-            };
-            chatContainer.addEventListener('scroll', throttle(handleScroll, 100));
-            const updateButtonPosition = () => {
-                const { inputBarContainer, followUpContainer, scrollToBottomBtn } = ALL_ELEMENTS;
-                const inputBarHeight = inputBarContainer.offsetHeight;
-                const followUpHeight = followUpContainer.classList.contains('hidden') ? 0 : followUpContainer.offsetHeight;
-                const totalBottomOffset = inputBarHeight + followUpHeight + 16;
-                scrollToBottomBtn.style.bottom = `${totalBottomOffset}px`;
-            };
-            const resizeObserver = new ResizeObserver(updateButtonPosition);
-            resizeObserver.observe(ALL_ELEMENTS.inputBarContainer);
-            resizeObserver.observe(ALL_ELEMENTS.followUpContainer);
-            updateButtonPosition();
+    const { scrollToBottomBtn, chatContainer } = ALL_ELEMENTS;
+    scrollToBottomBtn.addEventListener('click', () => {
+        isAutoScrolling = true;
+        scrollToBottomBtn.classList.remove('visible');
+        scrollToBottomBtn.classList.add('jelly-animate');
+        scrollToBottomBtn.addEventListener('animationend', () => {
+            scrollToBottomBtn.classList.remove('jelly-animate');
+        }, { once: true });
+        chatContainer.scrollTo({
+            top: chatContainer.scrollHeight,
+            behavior: 'smooth'
+        });
+        const scrollEndTimer = setTimeout(() => {
+            isAutoScrolling = false;
+        }, 1000);
+        const interruptHandler = () => {
+            clearTimeout(scrollEndTimer);
+            isAutoScrolling = false;
+            chatContainer.removeEventListener('wheel', interruptHandler);
+            chatContainer.removeEventListener('touchstart', interruptHandler);
         };
+        chatContainer.addEventListener('wheel', interruptHandler, { once: true });
+        chatContainer.addEventListener('touchstart', interruptHandler, { once: true });
+    });
+    const handleScroll = () => {
+        if (isAutoScrolling) return;
+        const isAtBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight < 100;
+        if (isAtBottom) {
+            scrollToBottomBtn.classList.remove('visible');
+        } else {
+            scrollToBottomBtn.classList.add('visible');
+        }
+    };
+    chatContainer.addEventListener('scroll', throttle(handleScroll, 100));
+
+    // ✨ 這是核心修正 ✨
+    const updateButtonPosition = () => {
+        const { inputBarContainer, scrollToBottomBtn } = ALL_ELEMENTS;
+        const inputBarHeight = inputBarContainer.offsetHeight;
+        // 我們不再需要計算 followUpContainer 的高度了
+        const totalBottomOffset = inputBarHeight + 16; // 簡化計算
+        scrollToBottomBtn.style.bottom = `${totalBottomOffset}px`;
+    };
+
+    const resizeObserver = new ResizeObserver(updateButtonPosition);
+    resizeObserver.observe(ALL_ELEMENTS.inputBarContainer);
+    // ✨ 我們也不再需要觀察 followUpContainer 的高度變化了
+    // resizeObserver.observe(ALL_ELEMENTS.followUpContainer); 
+    updateButtonPosition();
+};
         const showUpdateHistory = () => {
             const container = ALL_ELEMENTS.updateInfoContent;
             container.innerHTML = '';
