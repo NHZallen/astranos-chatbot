@@ -17,19 +17,37 @@
     body {
     touch-action: manipulation;
 }
-    #pin-history-sidebar-btn.active {
+    /* 1. 控制釘選按鈕的圖示顯示 */
+#pin-history-sidebar-btn .pinned-icon { display: none; }
+#pin-history-sidebar-btn .unpinned-icon { display: block; }
+#pin-history-sidebar-btn.active .pinned-icon { display: block; }
+#pin-history-sidebar-btn.active .unpinned-icon { display: none; }
+
+/* 2. 釘選按鈕啟用時的樣式 */
+#pin-history-sidebar-btn.active {
     background-color: var(--active-bg);
     color: var(--button-primary-bg);
 }
 
-/* 2. 當右側邊欄被釘選時，讓主聊天室被向左擠壓 */
+/* 3. 【核心修正】當右側邊欄被釘選時，讓主聊天室增加右邊內距 (padding) 來 "騰出空間" */
 main.flex-1.history-squeezed {
-    margin-right: 288px; /* w-72 的寬度，您可以根據您的側邊欄寬度調整 */
+    padding-right: 288px; /* 側邊欄寬度 (w-72) */
+    transition: padding-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+main.flex-1 {
+    /* 增加一個 transition 讓 padding-right 的變化有動畫效果 */
+    transition: padding-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 3. 當右側邊欄被釘選時，隱藏它的黑色遮罩 */
+
+/* 4. 當右側邊欄被釘選時，隱藏它的黑色遮罩 */
 body.history-sidebar-pinned #history-sidebar-overlay {
     display: none !important;
+}
+
+/* 5. 【核心修正】當右側邊欄被釘選時，強制它顯示在正確的位置 */
+body.history-sidebar-pinned #history-sidebar {
+    transform: translateX(0) !important; /* 強制移入畫面 */
 }
     #history-sidebar.visible ~ #scroll-to-bottom-btn {
     opacity: 0;
@@ -2557,8 +2575,19 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     <header class="p-4 border-b border-[var(--border-color)]">
         <h3 class="font-semibold text-lg" data-lang-key="messageDirectory">訊息目錄</h3>
         <button id="pin-history-sidebar-btn" class="absolute top-3 right-3 p-2 rounded-full hover:bg-[var(--hover-bg)] text-[var(--text-secondary)]" title="釘選目錄">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.05 5A5 5 0 0 1 19 8.95M15.05 1A9 9 0 0 1 23 8.94m-1 7.98v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.18M9 18V5.06"/></svg>
-    </button>
+    <!-- 未釘選狀態的圖釘 -->
+    <svg class="unpinned-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 17v5"></path>
+        <path d="M5 17h14v-1a7 7 0 0 0-7-7 7 7 0 0 0-7 7v1"></path>
+        <path d="M12 10V2L15 5l-3 3-3-3 3-3v8"></path>
+    </svg>
+    <!-- 釘選狀態的圖釘 (預設隱藏) -->
+    <svg class="pinned-icon hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 17v5"></path>
+        <path d="M5 17h14v-1a7 7 0 0 0-7-7 7 7 0 0 0-7 7v1"></path>
+        <path d="M12 10V2L15 5l-3 3-3-3 3-3v8"></path>
+    </svg>
+</button>
     </header>
     <div id="history-sidebar-list" class="flex-1 overflow-y-auto scroll-area p-2 space-y-1">
         <!-- 歷史訊息項目將會被 JavaScript 動態加到這裡 -->
@@ -8953,6 +8982,7 @@ function applyHistorySidebarPinState() {
 
 
     if (isHistorySidebarPinned) {
+        historySidebar.classList.add('visible');
         pinBtn.title = "取消釘選目錄";
         // 釘選時，強制顯示側邊欄並隱藏遮罩
         historySidebar.classList.add('visible');
