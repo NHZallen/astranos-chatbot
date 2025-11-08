@@ -4255,26 +4255,31 @@ function renderMarkdownWithFormulas(text) {
             };
         };
         const startNewChat = () => {
-            const oldTempChatCount = conversations.length;
-            conversations = conversations.filter(c => !c.isTemporary || c.messages.length > 0);
-            if (conversations.length < oldTempChatCount) {
-                 saveAppData();
-            }
-            uploadedFiles = [];
-            const newConv = createBaseConversation('新對話');
-            conversations.unshift(newConv);
-            activeConversationId = newConv.id;
-            renderAll();
-            ALL_ELEMENTS.messageInput.value = '';
-            if (window.innerWidth < 1024) {
-    toggleSidebar(false);
-}
-            toggleSidebar(false);
-            sendConfirmed = false;
-            updateInputState();
-            updateApiKeyWarningBadge();
-            renderFollowUpPrompts([]);
-        };
+    const oldTempChatCount = conversations.length;
+    conversations = conversations.filter(c => !c.isTemporary || c.messages.length > 0);
+    if (conversations.length < oldTempChatCount) {
+         saveAppData();
+    }
+    uploadedFiles = [];
+    const newConv = createBaseConversation('新對話');
+    conversations.unshift(newConv);
+    activeConversationId = newConv.id;
+    renderAll();
+    ALL_ELEMENTS.messageInput.value = '';
+    
+    // --- ✨ 這裡是修正後的核心邏輯 ✨ ---
+    // 只有在手機尺寸下才關閉側邊欄
+    if (window.innerWidth < 1024) {
+        toggleSidebar(false);
+    }
+    // (原本多餘的那一行已經被刪除了)
+    // --- ✨ 修正結束 ✨ ---
+
+    sendConfirmed = false;
+    updateInputState();
+    updateApiKeyWarningBadge();
+    renderFollowUpPrompts([]);
+};
         const loadChat = (id) => {
             if (messageObserver) {
         messageObserver.disconnect();
