@@ -2463,50 +2463,6 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
         min-height: 0;
     }
 }
-        /* 1. 將輸入框改成橢圓形 */
-.input-wrapper {
-    border-radius: 9999px; /* 一個很大的數值可以確保任何長度的輸入框都是完美的橢圓（膠囊形狀）*/
-}
-
-/* 2. 刪除淺色和深色模式下輸入欄周圍的底色和邊框 */
-/* 我們透過覆蓋變數的方式，讓指定的背景變為透明 */
-:root {
-    --input-bar-bg: transparent;
-    --input-field-bg: transparent;
-}
-.dark {
-    --input-bar-bg: transparent;
-    --input-field-bg: transparent;
-}
-/* 因為背景移除了，原本的邊框和陰影會很奇怪，所以一併移除 */
-#input-bar-container {
-    border-top-color: transparent;
-}
-.input-wrapper {
-    border-color: transparent;
-    box-shadow: none;
-}
-
-/* 3. 定義輸入框置中時的樣式 */
-/* 為了讓絕對定位生效，確保 main 元素是相對定位 */
-main.relative {
-    position: relative;
-}
-
-/* 當 main 元素有 .chat-is-empty 這個 class 時，套用以下樣式 */
-main.chat-is-empty #input-bar-container {
-    position: absolute;   /* 使用絕對定位，讓它脫離原本在底下的位置 */
-    bottom: 50%;          /* 先把它定位到從下往上 50% 的地方 */
-    left: 0;
-    right: 0;
-    transform: translateY(50%); /* 再把它往下移動自身高度的 50%，達到完美垂直置中 */
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); /* 讓位置變化時有平滑的動畫效果 */
-}
-
-/* 確保送出訊息後，輸入框能平滑地回到原位 */
-#input-bar-container {
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
 
 </style>
 <script>
@@ -4476,20 +4432,9 @@ function renderMarkdownWithFormulas(text) {
             setTimeout(adjustTextareaHeight, 0);
             toggleSidebar(false);
             sendConfirmed = false;
-            const mainElement = document.querySelector('main.relative');
-        const convForCheck = getActiveConversation();
-        if (mainElement && convForCheck) {
-            if (convForCheck.messages.length === 0) {
-                mainElement.classList.add('chat-is-empty');
-            } else {
-                mainElement.classList.remove('chat-is-empty');
-            }
-        }
             updateInputState();
             updateApiKeyWarningBadge();
             renderFollowUpPrompts([]);
-            const mainElement = document.querySelector('main.relative');
-        if (mainElement) mainElement.classList.add('chat-is-empty');
         };
         const loadChat = (id) => {
             if (messageObserver) {
@@ -5758,10 +5703,6 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 
         const handleFormSubmit = async (e) => {
             e.preventDefault();
-            const mainElement = document.querySelector('main.relative');
-    if (mainElement) {
-        mainElement.classList.remove('chat-is-empty');
-    }
             if (abortController) return;
             const userMessage = ALL_ELEMENTS.messageInput.value.trim();
             if (!userMessage && uploadedFiles.length === 0) return;
