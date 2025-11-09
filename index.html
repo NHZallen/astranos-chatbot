@@ -2476,40 +2476,6 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
         min-height: 0;
     }
 }
-        #sending-indicator-overlay {
-    position: fixed;
-    /* 覆蓋整個畫面 */
-    inset: 0;
-    /* 確保在所有元件的最頂層 */
-    z-index: 9999;
-    /* 讓滑鼠可以點擊下方的元件 */
-    pointer-events: none;
-    /* 預設為完全透明 */
-    opacity: 0;
-    /* 讓淡入淡出有動畫效果 */
-    transition: opacity 0.5s ease-in-out;
-    /* 初始的陰影狀態，完全透明 */
-    box-shadow: inset 0 0 0 0px rgba(48, 213, 200, 0);
-}
-
-/* 當覆蓋層可見時，套用動畫 */
-#sending-indicator-overlay.visible {
-    opacity: 1;
-    animation: breathing-glow 2s ease-in-out infinite;
-}
-
-/* ✨ 新增：定義呼吸光暈的動畫 ✨ */
-@keyframes breathing-glow {
-    0% {
-        box-shadow: inset 0 0 15px 5px rgba(48, 213, 200, 0.5), inset 0 0 30px 10px rgba(48, 213, 200, 0.3);
-    }
-    50% {
-        box-shadow: inset 0 0 30px 10px rgba(48, 213, 200, 0.7), inset 0 0 50px 15px rgba(48, 213, 200, 0.5);
-    }
-    100% {
-        box-shadow: inset 0 0 15px 5px rgba(48, 213, 200, 0.5), inset 0 0 30px 10px rgba(48, 213, 200, 0.3);
-    }
-}
 
 </style>
 <script>
@@ -2519,7 +2485,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 </head>
 <body class="font-sans bg-gray-50">
     <body class="font-sans bg-gray-50">
-        <div id="sending-indicator-overlay"></div>
     <div id="wallpaper-container"></div>
     <div id="auth-container">
         <div class="min-h-screen flex flex-col">
@@ -3045,18 +3010,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             <div class="relative inline-block w-12 h-6 mr-2 align-middle select-none transition duration-200 ease-in">
                                 <input type="checkbox" name="auto-web-search-toggle-switch" id="auto-web-search-toggle-switch" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
                                 <label for="auto-web-search-toggle-switch" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-between mt-4">
-                            <div>
-                                <label for="instant-feedback-toggle-switch" class="flex-1 text-sm font-medium" data-lang-key="enableInstantFeedback">啟用即時傳送反饋</label>
-                                <p class="text-xs text-[var(--text-secondary)] mt-1" data-lang-key="instantFeedbackDesc">
-                                    點擊傳送後立即顯示訊息泡泡與光暈效果，提供流暢的視覺反饋。
-                                </p>
-                            </div>
-                            <div class="relative inline-block w-12 h-6 mr-2 align-middle select-none transition duration-200 ease-in flex-shrink-0">
-                                <input type="checkbox" name="instant-feedback-toggle-switch" id="instant-feedback-toggle-switch" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
-                                <label for="instant-feedback-toggle-switch" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
                             </div>
                         </div>
                     </div>
@@ -3782,7 +3735,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             confirmPlanBtn: document.getElementById('confirm-plan-btn'),
             cancelPlanBtn: document.getElementById('cancel-plan-btn'),
             showPromptsBtn: document.getElementById('show-prompts-btn'), // 新增這行
-            instantFeedbackToggleSwitch: document.getElementById('instant-feedback-toggle-switch'),
         };
         function toggleHistorySidebar(show) {
     const { historySidebar, historySidebarOverlay } = ALL_ELEMENTS;
@@ -4143,7 +4095,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             isLearningMode: false,
             isDeepResearchMode: false, // ✨ 新增狀態
             deepResearchQueryCount: 0, // ✨ 新增這一行，0 代表自動
-            enableInstantFeedback: true,
         };
         let itemToRename = { id: null, type: null };
         let folderToCustomize = null;
@@ -4153,7 +4104,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let selectedConversationIds = new Set();
         let uploadedFiles = [];
         let sidebarOpen = false;
-        let sendConfirmed = false;
         let isFollowUpExpanded = true;
         let editingAstrasId = null;
         let currentSpeechRecognition = null;
@@ -4501,7 +4451,6 @@ function renderMarkdownWithFormulas(text) {
             ALL_ELEMENTS.messageInput.value = '';
             setTimeout(adjustTextareaHeight, 0);
             toggleSidebar(false);
-            sendConfirmed = false;
             updateInputState();
             updateApiKeyWarningBadge();
             renderFollowUpPrompts([]);
@@ -4522,7 +4471,6 @@ function renderMarkdownWithFormulas(text) {
                 ALL_ELEMENTS.messageInput.value = conv ? conv.unsentMessage || '' : '';
                 setTimeout(adjustTextareaHeight, 0);
             }
-            sendConfirmed = false;
             updateInputState();
             updateApiKeyWarningBadge();
             renderFollowUpPrompts([]);
@@ -5701,94 +5649,129 @@ function renderMarkdownWithFormulas(text) {
  * @param {AbortSignal} signal 用於中止操作的 AbortSignal
  * @returns {Promise<string>} 返回完整的 AI 回應字串
  */
+/**
+ * ✨ 全新重構：自適應速度的打字機效果渲染函數 (v3)
+ *    - 自動偵測模型初始輸出速度，並在單次生成中保持該速度
+ *    - 使用 async/await 迴圈代替 setInterval，更穩定且易於控制
+ *    - 在打字過程中隱藏 Markdown 特殊字元，避免渲染過程中的視覺干擾
+ * @param {HTMLElement} targetElement 要顯示文字的目標 DOM 元素
+ * @param {function(function(string): void): Promise<void>} streamApiCallFn 啟動 API 呼叫的函數
+ * @param {AbortSignal} signal 用於中止操作的 AbortSignal
+ * @returns {Promise<string>} 返回完整的 AI 回應字串
+ */
 function typewriterStream(targetElement, streamApiCallFn, signal) {
     return new Promise((resolve, reject) => {
         let fullText = '';
         let textQueue = '';
         let isStreaming = true;
         
-        // ✨ [新增] 定義在打字過程中需要隱藏的 Markdown 特殊字元
+        // --- 自適應速度相關變數 ---
+        let typingInterval = 30; // 初始/備用速度 (ms/字元)，數字越小越快
+        let speedCalculated = false;
+        let startTime = null;
+        let charsCountForSpeedCalc = 0;
+        // ---
+
         const MARKDOWN_CHARS_TO_HIDE = new Set(['*', '_', '#', '`', '[', ']', '(', ')', '|', '-', '=', '~']);
-        
-        // ✨ [新增] 控制打字速度 (毫秒)，數值越小越快
-        const typingSpeed = 25; 
 
         targetElement.innerHTML = '';
         targetElement.classList.add('typing-cursor');
 
-        const intervalId = setInterval(() => {
-            if (signal.aborted) {
-                clearInterval(intervalId);
-                targetElement.classList.remove('typing-cursor');
-                // 雖然被中止，但仍然解析當前已收到的內容
-                resolve(fullText); 
-                return;
-            }
+        // 這是 API 串流回傳資料時會呼叫的函式
+        const onChunkReceived = (chunk) => {
+            textQueue += chunk;
 
-            if (textQueue.length > 0) {
-                const char = textQueue.charAt(0);
-                textQueue = textQueue.substring(1);
+            // 在串流初期計算速度
+            if (!speedCalculated) {
+                if (startTime === null) startTime = Date.now();
+                charsCountForSpeedCalc += chunk.length;
+                const elapsedTime = Date.now() - startTime;
                 
-                fullText += char;
+                // 經過 250ms 或收到超過 20 個字元後，進行一次速度計算
+                if (elapsedTime > 250 && charsCountForSpeedCalc > 20) {
+                    const charsPerSecond = (charsCountForSpeedCalc / elapsedTime) * 1000;
+                    // 將速度限制在一個可讀的範圍內 (每秒 40 ~ 200 字)
+                    const clampedCPS = Math.max(40, Math.min(200, charsPerSecond));
+                    typingInterval = 1000 / clampedCPS; // 計算出每個字元的延遲
+                    speedCalculated = true; // 標記為已計算，後續不再更改速度
+                }
+            }
+        };
 
-                // ✨ [核心修改] 只有當字元不是特殊 Markdown 字元時，才創建 DOM 元素來顯示它
-                if (!MARKDOWN_CHARS_TO_HIDE.has(char)) {
-                    const span = document.createElement('span');
-                    span.className = 'fade-in-char';
+        // 啟動 API 呼叫，並在結束時更新 isStreaming 狀態
+        streamApiCallFn(onChunkReceived)
+            .catch(error => {
+                isStreaming = false; // 即使出錯也要停止迴圈
+                reject(error);
+            })
+            .finally(() => {
+                isStreaming = false;
+            });
 
-                    if (char === '\n') {
-                        targetElement.appendChild(document.createElement('br'));
-                    } else {
-                        span.textContent = char;
-                        targetElement.appendChild(span);
+        // 這是新的打字機主迴圈
+        const typeLoop = async () => {
+            while (isStreaming || textQueue.length > 0) {
+                if (signal.aborted) {
+                    break; // 如果使用者中止，則跳出迴圈
+                }
+
+                if (textQueue.length > 0) {
+                    const char = textQueue.charAt(0);
+                    textQueue = textQueue.substring(1);
+                    fullText += char;
+
+                    if (!MARKDOWN_CHARS_TO_HIDE.has(char)) {
+                        const span = document.createElement('span');
+                        span.className = 'fade-in-char';
+                        if (char === '\n') {
+                            targetElement.appendChild(document.createElement('br'));
+                        } else {
+                            span.textContent = char;
+                            targetElement.appendChild(span);
+                        }
+                    }
+                    
+                    // 保持捲動到底部
+                    const chatContainer = ALL_ELEMENTS.chatContainer;
+                    const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
+                    if (isNearBottom) {
+                        chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
                     }
                 }
                 
-                // 保持捲動到底部
-                const chatContainer = ALL_ELEMENTS.chatContainer;
-                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
-                if (isNearBottom) {
-                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
-                }
-            } else if (!isStreaming) {
-                // 資料流結束且佇列已空
-                clearInterval(intervalId);
-                targetElement.classList.remove('typing-cursor');
-                resolve(fullText); // 成功完成，返回完整字串
+                // 等待動態計算出的延遲時間
+                await new Promise(r => setTimeout(r, typingInterval));
             }
-        }, typingSpeed);
 
-        // 啟動 API 呼叫，並在結束時更新 isStreaming 狀態
-        streamApiCallFn((chunk) => {
-            textQueue += chunk;
-        }).catch(error => {
-            clearInterval(intervalId);
+            // 迴圈結束後，進行清理
             targetElement.classList.remove('typing-cursor');
-            reject(error); // 如果 API 呼叫出錯，則拒絕 Promise
-        }).finally(() => {
-            isStreaming = false;
-        });
+            if (signal.aborted) {
+                console.log("打字機效果被中止。");
+            }
+            resolve(fullText); // 無論如何，都返回目前已收到的完整文字
+        };
+
+        typeLoop(); // 啟動打字機主迴圈
     });
 }
 
         const handleFormSubmit = async (e) => {
             e.preventDefault();
-            if (abortController) return; // 如果正在生成中，不執行任何操作
+            if (abortController) return;
             const userMessage = ALL_ELEMENTS.messageInput.value.trim();
             if (!userMessage && uploadedFiles.length === 0) return;
             
-            // ✨ 檢查是否為研究模式，如果是，則使用舊的流程，不做任何更改
+            // ✨ 如果是深度研究模式，則呼叫專用函數
             if (config.isDeepResearchMode) {
                 handleDeepResearch(userMessage);
                 return;
             }
 
-            const conv = getActiveConversation();
-            if (!conv || conv.archived) return;
-
-            // ✨ 步驟 1: 立即更新使用者介面，創造「已傳送」的感覺
             renderFollowUpPrompts([]);
-            
+            const conv = getActiveConversation();
+            if (conv.archived) return;
+            abortController = new AbortController();
+            updateSubmitButtonState(true);
             const userParts = [];
             if (userMessage) {
                 userParts.push({ text: userMessage });
@@ -5801,15 +5784,10 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     }
                 });
             });
-
             const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
-            
-            // 立即將使用者的訊息泡泡加入畫面
             addMessageToUI(userMessageObject, conv.messages.length, true);
             conv.lastUpdatedAt = new Date().toISOString();
             conv.unsentMessage = '';
-
-            // 如果是新對話，觸發自動命名
             if (conv.isTemporary) {
                 conv.isTemporary = false;
                 conv.isNaming = true;
@@ -5821,59 +5799,51 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 }
                 await saveAppData();
             }
-
-            // 立即清空輸入框和檔案預覽
+            if (config.enableAutoWebSearch && conv.provider === 'gemini' && !conv.isWebSearchEnabled) {
+                try {
+                    const needsSearch = await shouldPerformWebSearch(userMessage);
+                    if (needsSearch) {
+                        conv.isWebSearchEnabled = true;
+                        showNotification(i18n[config.uiLanguage].autoSearchNotice || '偵測到問題需要連網搜索，已自動開啟。', 'warning');
+                    }
+                    renderInputIndicators();
+                } catch(err) {
+                    console.error("Auto web search check failed:", err);
+                }
+            }
             ALL_ELEMENTS.messageInput.value = '';
             uploadedFiles = [];
             adjustTextareaHeight();
             renderFilePreviews();
-            
-            // ✨ 步驟 2: 啟用光暈效果並開始背景處理
-            const glowOverlay = document.getElementById('sending-indicator-overlay');
-            glowOverlay.classList.add('visible'); // 顯示呼吸光暈
-
-            abortController = new AbortController();
-            updateSubmitButtonState(true); // 將傳送按鈕變為「停止」圖示
-
             const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
             const contentDiv = loadingMessageDiv.querySelector('.message-content');
             
             try {
-                // 智慧連網搜尋的判斷 (維持原狀)
-                if (config.enableAutoWebSearch && conv.provider === 'gemini' && !conv.isWebSearchEnabled) {
-                    try {
-                        const needsSearch = await shouldPerformWebSearch(userMessage);
-                        if (needsSearch) {
-                            conv.isWebSearchEnabled = true;
-                            showNotification(i18n[config.uiLanguage].autoSearchNotice || '偵測到問題需要連網搜索，已自動開啟。', 'warning');
-                        }
-                        renderInputIndicators();
-                    } catch(err) {
-                        console.error("Auto web search check failed:", err);
-                    }
-                }
-                
-                // ✨ 步驟 3: 執行真正的 API 呼叫 (此處邏輯與原版幾乎相同)
                 let fullResponse = '';
                 const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
 
+                // 1. 先等待 API 回應完全結束，獲取完整文字
                 const completeResponse = await streamApiCall(
                     userParts,
-                    (chunk) => {},
+                    (chunk) => {
+                        // 在 streamApiCall 內部，我們只收集文字，不渲染
+                    },
                     abortController.signal
                 );
 
                 fullResponse = completeResponse;
                 sendConversationToMail(userMessageObject, fullResponse);
 
+                // 2. 將完整的最終訊息保存到對話紀錄中
                 finalAiMessage.parts = [{ text: fullResponse }];
                 conv.messages.push(finalAiMessage);
                 conv.lastUpdatedAt = new Date().toISOString();
                 await saveAppData();
                 
+                // 3. ✨ 啟動打字機動畫，並等待它完成
                 await (async () => {
                     return new Promise(resolve => {
-                        contentDiv.innerHTML = '';
+                        contentDiv.innerHTML = ''; // 清空等待樣式
                         let currentIndex = 0;
                         const typingSpeed = 15;
 
@@ -5881,7 +5851,12 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                             if (currentIndex < fullResponse.length && !abortController.signal.aborted) {
                                 const currentText = fullResponse.substring(0, currentIndex + 1);
                                 contentDiv.innerHTML = renderMarkdown(currentText + '▋');
-                                let step = currentText.includes('```') ? 5 : 1;
+
+                                let step = 1;
+                                if (currentText.includes('```')) {
+                                    step = 5;
+                                }
+                                
                                 currentIndex += step;
 
                                 const chatContainer = ALL_ELEMENTS.chatContainer;
@@ -5889,16 +5864,20 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                                 if (isNearBottom) {
                                     chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
                                 }
+
                                 setTimeout(type, typingSpeed);
                             } else {
-                                contentDiv.innerHTML = renderMarkdownWithFormulas(fullResponse);
-                                resolve();
+                                // 動畫完成或被中止
+                                contentDiv.innerHTML = renderMarkdownWithFormulas(fullResponse); // 最終清理，並渲染公式
+                                resolve(); // ✨ Promise 完成，通知 await
                             }
                         }
-                        type();
+                        
+                        type(); // 啟動
                     });
                 })();
 
+                // 4. ✨ 只有在打字機動畫結束後，才執行後續任務
                 if (!abortController.signal.aborted) {
                     if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
                         await generateFollowUpPrompts(userMessage, fullResponse);
@@ -5917,14 +5896,10 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     await saveAppData();
                 }
             } finally {
-                // ✨ 步驟 4: 無論成功或失敗，都關閉光暈並還原UI狀態
-                glowOverlay.classList.remove('visible'); // 隱藏呼吸光暈
-
+                // ... finally 區塊的程式碼保持不變 ...
                 abortController = null;
                 updateSubmitButtonState(false);
-                updateInputState(); // 還原傳送按鈕狀態
-                
-                // 補上複製按鈕等UI元素 (維持原狀)
+                updateInputState();
                 const lastMessageDiv = ALL_ELEMENTS.messageList.lastElementChild;
                 if (lastMessageDiv && lastMessageDiv.classList.contains('model-message')) {
                     const bubble = lastMessageDiv.querySelector('.message-bubble');
@@ -6461,14 +6436,15 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             btn.textContent = p;
             btn.style.setProperty('--animation-delay', `${index * 70}ms`);
             btn.onclick = () => {
-                ALL_ELEMENTS.messageInput.value = p;
-                ALL_ELEMENTS.messageInput.focus();
-                sendConfirmed = true;
-                updateInputState();
-                ALL_ELEMENTS.messageInput.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                followUpContainer.classList.add('hidden');
-                showPromptsBtn.classList.remove('active');
-            };
+    ALL_ELEMENTS.messageInput.value = p;
+    ALL_ELEMENTS.messageInput.focus();
+    // sendConfirmed = true; // <-- 刪除此行
+    updateInputState();
+    // 直接觸發提交
+    ALL_ELEMENTS.chatForm.dispatchEvent(new Event('submit', {cancelable: true}));
+    followUpContainer.classList.add('hidden');
+    showPromptsBtn.classList.remove('active');
+};
             followUpPromptsList.appendChild(btn);
         });
         
@@ -6538,14 +6514,12 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             }
             ALL_ELEMENTS.messageInput.disabled = !hasApiKey;
             ALL_ELEMENTS.messageInput.placeholder = hasApiKey ? i18n[config.uiLanguage].enterMessagePlaceholder : i18n[config.uiLanguage].enterApiKeyPlaceholder;
-            
-            // ✨ 核心修改：簡化按鈕狀態 ✨
             if (!hasApiKey || !hasContent) {
                 submitButton.disabled = true;
                 submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
             } else {
                 submitButton.disabled = false;
-                submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
+submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
             }
         };
         const setupSettingsModal = () => {
@@ -6560,7 +6534,6 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             ALL_ELEMENTS.uiLanguageSelect.value = config.uiLanguage;
             ALL_ELEMENTS.aiLanguageSelect.value = config.aiDefaultLanguage;
             ALL_ELEMENTS.enableUpdateNotificationsToggle.checked = config.enableUpdateNotifications;
-            ALL_ELEMENTS.instantFeedbackToggleSwitch.checked = config.enableInstantFeedback;
             renderPersonalMemoryList();
             updateThemeButtons();
             renderModelManagementUI();
@@ -6618,7 +6591,6 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             config.uiLanguage = ALL_ELEMENTS.uiLanguageSelect.value;
             config.aiDefaultLanguage = ALL_ELEMENTS.aiLanguageSelect.value;
             config.enableUpdateNotifications = ALL_ELEMENTS.enableUpdateNotificationsToggle.checked;
-            config.enableInstantFeedback = ALL_ELEMENTS.instantFeedbackToggleSwitch.checked;
             const queryCountSlider = document.getElementById('deep-research-query-count-slider');
             if (queryCountSlider) {
                 config.deepResearchQueryCount = parseInt(queryCountSlider.value);
@@ -10280,18 +10252,14 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
                 }
             });
             ALL_ELEMENTS.submitButton.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (abortController) {
-                    try { abortController.abort(); } catch {}
-                } else if (!ALL_ELEMENTS.submitButton.disabled) {
-                    if (sendConfirmed) {
-                        ALL_ELEMENTS.chatForm.dispatchEvent(new Event('submit', {cancelable: true}));
-                    } else {
-                        sendConfirmed = true;
-                        updateInputState();
-                    }
-                }
-            });
+    e.preventDefault();
+    if (abortController) {
+        try { abortController.abort(); } catch {}
+    } else if (!ALL_ELEMENTS.submitButton.disabled) {
+        // 直接觸發 form 的 submit 事件
+        ALL_ELEMENTS.chatForm.dispatchEvent(new Event('submit', {cancelable: true}));
+    }
+});
             ALL_ELEMENTS.chatForm.addEventListener('submit', handleFormSubmit);
             document.addEventListener('click', (e) => {
                 const targets = [
