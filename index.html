@@ -2463,55 +2463,60 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
         min-height: 0;
     }
 }
-/* ✨ 新增：針對電腦版的輸入欄置中邏輯、輸入框橢圓形、移除底色 */
+        /* === Desktop 專用：預聊置中 + 橢圓輸入框 + 去底色 === */
 @media (min-width: 1024px) {
-  #input-bar-container {
-    position: absolute; /* 讓電腦版輸入欄可絕對定位 */
-    bottom: 0;
-    width: 100%;
-    transition: all 0.3s ease; /* 平滑過渡 */
-  }
-  
-  #input-bar-container.centered {
-    bottom: unset;
-    top: 50%;
+
+  /* 1) 首訊前：把輸入欄置中（不固定定位，仍受左側欄擠壓） */
+  body.pre-chat-desktop main { position: relative; }
+  body.pre-chat-desktop #input-bar-container {
+    position: absolute;
+    inset-inline: 0;         /* 左右貼齊 main 內緣 */
+    top: 50%;                /* 垂直中心 */
     transform: translateY(-50%);
-    z-index: 10; /* 確保在聊天內容上方 */
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+  /* 預聊時，隱藏追問區 & 底部浮動鈕，避免干擾視覺 */
+  body.pre-chat-desktop #follow-up-container { display: none !important; }
+  body.pre-chat-desktop #scroll-to-bottom-btn { display: none !important; }
+
+  /* 2) 一般狀態（非預聊）重置定位，維持原本在底部的行為 */
+  body:not(.pre-chat-desktop) #input-bar-container {
+    position: static;
+    transform: none;
   }
 
-  /* 縮小間隔：減少輸入欄頂部邊距 */
+  /* 3) 輸入框改成橢圓 & 去除周圍底色模塊（淺/深色都生效） */
   #input-bar-container {
-    padding-top: 0.25rem; /* 原 0.5rem（p-2），縮小為 0.25rem */
-    padding-bottom: 0.25rem;
+    background: transparent !important;     /* 去掉容器底色 */
+    border: 0 !important;                   /* 去掉外框線 */
+    padding-top: .5rem !important;          /* 同時縮短和上方內容的距離 */
+  }
+  #input-bar-container .input-wrapper {
+    background: transparent !important;     /* 去掉內層底色 */
+    box-shadow: none !important;            /* 去掉陰影模塊 */
+    border: 1px solid var(--border-color);  /* 保留細框，較清楚 */
+    border-radius: 9999px !important;       /* 橢圓 */
+    padding: .5rem .75rem !important;       /* 內距微調，讓橢圓更自然 */
+  }
+  #message-input {
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 9999px !important;       /* 讓輸入區本身也有圓角 */
   }
 
-  /* 輸入框改為橢圓形：增加邊框半徑 */
-  #input-wrapper {
-    border-radius: 50px; /* 原 rounded-2xl（約 16px），改為 50px 以更圓潤 */
-  }
-
-  /* 刪除深淺色模式輸入欄周圍底色：設為透明 */
-  #input-wrapper {
-    background-color: transparent; /* 移除淺色模式的底色 */
-  }
-
-  .dark #input-wrapper {
-    background-color: transparent; /* 移除深色模式的底色 */
-  }
-
-  body.custom-wallpaper-active #input-wrapper {
-    background-color: transparent; /* 移除自訂桌布模式的底色（原 rgba(255, 255, 255, 0.2)） */
+  /* 4) 縮短招呼語與輸入欄距離、放大招呼語 */
+  /* 你的空聊天室招呼語通常掛在 message-list 裡的置中文字區塊 */
+  #chat-container { padding-bottom: .5rem !important; }      /* 原本 md:p-6 太寬鬆 */
+  #message-list > div.text-center {
+    margin-bottom: .75rem !important;       /* 縮短與輸入欄的間距 */
+    font-size: 1.35rem;                     /* 放大招呼語 */
+    font-weight: 700;                       /* 微加粗 */
+    line-height: 1.3;
   }
 }
 
-/* ✨ 新增：加大招呼語的大小（僅首條歡迎訊息，電腦版） */
-@media (min-width: 1024px) {
-  #chat-container .message-item:first-child .message-content p {
-    font-size: 1.5rem; /* 原約 1rem，加大到 1.5rem */
-    margin-bottom: 0.5rem; /* 微調間隔，以配合縮小的輸入欄間距 */
-  }
-}
-        
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -10236,9 +10241,6 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
                     };
 
                     window.visualViewport.addEventListener('resize', smoothScrollToTarget, { once: true });
-                    if (window.innerWidth >= 1024) {
-  ALL_ELEMENTS.inputBarContainer.classList.remove('centered'); // 發送後移動到底部
-}
                 } else {
                     setTimeout(() => {
                         const inputBarContainer = document.getElementById('input-bar-container');
@@ -10604,9 +10606,6 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             // ✨ END: 新增的附件上彈視窗函式與按鈕邏輯
             setupHistorySidebarInteractions(); // 啟用側邊欄的點擊跳轉功能
     setupHistorySidebarTriggers();   // 啟用側邊欄的滑動和懸停觸發功能
-            if (window.innerWidth >= 1024) {
-  ALL_ELEMENTS.inputBarContainer.classList.add('centered'); // 初次載入時置中
-}
             ALL_ELEMENTS.showPromptsBtn.addEventListener('click', () => {
     const container = ALL_ELEMENTS.followUpContainer;
     
@@ -10766,6 +10765,33 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
         }
         lastTouchEnd = now;
     }, false);
+</script>
+        <script>
+(function () {
+  const isDesktop = () => window.matchMedia('(min-width: 1024px)').matches;
+  const msgList = document.getElementById('message-list');
+
+  function applyPreChatLayout() {
+    if (!msgList) return;
+    const noMessages = msgList.children.length === 0;
+    document.body.classList.toggle('pre-chat-desktop', noMessages && isDesktop());
+  }
+
+  // 監聽訊息列表的新增/刪除（首訊送出或清空對話都會觸發）
+  if (msgList) {
+    const obs = new MutationObserver(applyPreChatLayout);
+    obs.observe(msgList, { childList: true });
+  }
+
+  // 螢幕尺寸變化時也檢查（手機/桌機切換）
+  window.addEventListener('resize', applyPreChatLayout);
+
+  // 首次載入先跑一次
+  document.addEventListener('DOMContentLoaded', applyPreChatLayout);
+
+  // 若你有「新對話」按鈕，可（選擇性）在這裡補掛事件以立即回到置中狀態
+  // document.getElementById('new-chat-btn')?.addEventListener('click', applyPreChatLayout);
+})();
 </script>
 </body>
 </html>
