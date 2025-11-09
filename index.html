@@ -2463,6 +2463,35 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
         min-height: 0;
     }
 }
+        /* === Pre-chat 置中（僅桌面，手機維持原本）=== */
+@media (min-width: 768px) {
+  body.pre-chat #input-bar-container {
+    position: fixed;
+    top: 50%;
+    left: 0;
+    right: 0;
+    transform: translateY(-50%);
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    z-index: 50;
+  }
+  /* 置中時不需要額外底部留白 */
+  body.pre-chat #chat-container { padding-bottom: 0 !important; }
+  /* 置中狀態先把「後續追問」收起來，避免佔位 */
+  body.pre-chat #follow-up-container { display: none !important; }
+}
+
+/* === 移除輸入區周圍的底色模塊（深/淺通吃）=== */
+#input-bar-container {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* === 輸入框做成橢圓（pill）=== */
+#input-bar-container .input-wrapper { border-radius: 9999px !important; }
+#message-input { border-radius: 9999px !important; }
 
 </style>
 <script>
@@ -4418,24 +4447,27 @@ function renderMarkdownWithFormulas(text) {
             };
         };
         const startNewChat = () => {
-            const oldTempChatCount = conversations.length;
-            conversations = conversations.filter(c => !c.isTemporary || c.messages.length > 0);
-            if (conversations.length < oldTempChatCount) {
-                 saveAppData();
-            }
-            uploadedFiles = [];
-            const newConv = createBaseConversation('新對話');
-            conversations.unshift(newConv);
-            activeConversationId = newConv.id;
-            renderAll();
-            ALL_ELEMENTS.messageInput.value = '';
-            setTimeout(adjustTextareaHeight, 0);
-            toggleSidebar(false);
-            sendConfirmed = false;
-            updateInputState();
-            updateApiKeyWarningBadge();
-            renderFollowUpPrompts([]);
-        };
+    const oldTempChatCount = conversations.length;
+    conversations = conversations.filter(c => !c.isTemporary || c.messages.length > 0);
+    if (conversations.length < oldTempChatCount) {
+        saveAppData();
+    }
+    uploadedFiles = [];
+    const newConv = createBaseConversation('新對話');
+    conversations.unshift(newConv);
+    activeConversationId = newConv.id;
+    renderAll();
+    ALL_ELEMENTS.messageInput.value = '';
+    setTimeout(adjustTextareaHeight, 0);
+    toggleSidebar(false);
+    sendConfirmed = false;
+    updateInputState();
+    updateApiKeyWarningBadge();
+    renderFollowUpPrompts([]);
+
+    // ✨ 新增這行：讓新對話時輸入欄置中
+    applyPreChatLayout();
+};
         const loadChat = (id) => {
             if (messageObserver) {
         messageObserver.disconnect();
@@ -4587,6 +4619,13 @@ function renderMarkdownWithFormulas(text) {
         const getActiveConversation = () => {
             return conversations.find(c => c.id === activeConversationId);
         };
+         function applyPreChatLayout() {
+  try {
+    const conv = getActiveConversation();
+    const isPre = !!conv && conv.messages.length === 0;
+    document.body.classList.toggle('pre-chat', isPre);
+  } catch (e) {}
+}
         const renderAll = () => {
             renderHistorySidebar();
             renderFolders();
@@ -4596,6 +4635,7 @@ function renderMarkdownWithFormulas(text) {
             renderBatchActionBar();
             renderFilePreviews();
             updateFollowUpUI();
+            applyPreChatLayout();
             applyLanguage(config.uiLanguage);
         };
         const renderHistorySidebar = () => {
@@ -5737,6 +5777,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             });
             const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
             addMessageToUI(userMessageObject, conv.messages.length, true);
+            applyPreChatLayout();
             conv.lastUpdatedAt = new Date().toISOString();
             conv.unsentMessage = '';
             if (conv.isTemporary) {
