@@ -2463,66 +2463,6 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
         min-height: 0;
     }
 }
-        @media (min-width: 1024px) {
-
-    /* 1. 讓新對話的輸入框可以垂直置中 */
-    /* 我們會用 JavaScript 在需要時，於 <main> 元素加上 'is-new-chat' 這個 class */
-    main.is-new-chat {
-        /* 這是在 flex 佈局下實現垂直置中的關鍵 */
-        justify-content: center;
-    }
-
-    /* 2. 調整招呼語的樣式 */
-    /* 僅針對新對話時的招呼語區塊 */
-    main.is-new-chat #message-list > div.text-center {
-        margin-top: 0;           /* 移除原本與頂部的大間距 */
-        margin-bottom: 2.5rem;   /* 設置一個與下方輸入框的合適間距 (可依喜好調整) */
-    }
-
-    /* 加大招呼語本身的文字 */
-    main.is-new-chat #message-list > div.text-center p {
-        font-size: 2.25rem; /* Tailwind 的 text-4xl */
-        line-height: 2.5rem;/* Tailwind 的 leading-9 */
-        font-weight: 500;   /* 字體稍微加粗 */
-    }
-
-    /* 3. 修改輸入框樣式 */
-    /* 將最外層的包裝背景設為透明，移除邊框與陰影 */
-    #input-bar-container .input-wrapper {
-        background-color: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        /* 在自訂桌布模式下也移除毛玻璃效果 */
-        backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
-    }
-    
-    /* 我們將樣式改到內層的 flex 容器上 */
-    #input-bar-container .input-wrapper > .flex.items-end {
-        border: 1px solid var(--border-color);    /* 在這裡加上邊框 */
-        border-radius: 9999px;                    /* 加上超大圓角，變成橢圓形 */
-        background-color: var(--input-field-bg);  /* 在這裡加上背景色 */
-        padding-left: 1rem;                       /* 調整左邊內距，讓 "+" 按鈕不會太擠 */
-        padding-right: 0.5rem;                    /* 調整右邊內距 */
-    }
-
-    /* 在自訂桌布模式下，也將樣式改到內層容器 */
-    body.custom-wallpaper-active #input-bar-container .input-wrapper > .flex.items-end {
-        background-color: rgba(255, 255, 255, 0.2) !important;
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.3) !important;
-        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-    }
-    
-    /* 當輸入框被點擊時，讓發光效果也作用在新的橢圓形容器上 */
-    #input-bar-container .input-wrapper.pulse-glow > .flex.items-end {
-         animation: pulse-glow 0.7s ease-out;
-    }
-    #input-bar-container .input-wrapper.pulse-glow {
-        animation: none; /* 取消原本外層的發光 */
-    }
-}
 
 </style>
 <script>
@@ -4488,7 +4428,6 @@ function renderMarkdownWithFormulas(text) {
             conversations.unshift(newConv);
             activeConversationId = newConv.id;
             renderAll();
-            document.querySelector('main.flex-1')?.classList.add('is-new-chat');
             ALL_ELEMENTS.messageInput.value = '';
             setTimeout(adjustTextareaHeight, 0);
             toggleSidebar(false);
@@ -4510,11 +4449,6 @@ function renderMarkdownWithFormulas(text) {
                 uploadedFiles = [];
                 renderAll();
                 const conv = getActiveConversation();
-                if (conv && conv.messages.length === 0) {
-    document.querySelector('main.flex-1')?.classList.add('is-new-chat');
-} else {
-    document.querySelector('main.flex-1')?.classList.remove('is-new-chat');
-}
                 ALL_ELEMENTS.messageInput.value = conv ? conv.unsentMessage || '' : '';
                 setTimeout(adjustTextareaHeight, 0);
             }
@@ -5801,7 +5735,6 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     }
                 });
             });
-            document.querySelector('main.flex-1')?.classList.remove('is-new-chat');
             const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
             addMessageToUI(userMessageObject, conv.messages.length, true);
             conv.lastUpdatedAt = new Date().toISOString();
