@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AstraChat-15.8.0</title>
+    <title>AstraChat-15.8.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -816,13 +816,77 @@ button:not(.btn-primary):active:not(:disabled) {
         opacity: 1;
         visibility: visible;
     }
+    #settings-modal .flex-1.p-6.overflow-y-auto {
+    position: relative; /* 這是為了讓子元素可以相對於它定位，非常重要！ */
+    padding: 0; /* 移除舊的內邊距，我們把它移到子元素上 */
+}
+
+/* --- ✨ 修改：設定所有區塊的基礎樣式 --- */
+.settings-section {
+    /* 讓所有區塊都疊在同一個位置 */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+
+    /* 預設都透明且不可點擊 */
+    opacity: 0;
+    pointer-events: none;
+    
+    /* 讓區塊內部可以滾動 */
+    overflow-y: auto; 
+    
+    /* 將原本父容器的內邊距加到這裡，讓每個區塊都有自己的邊距 */
+    padding: 1.5rem; /* 1.5rem 等於 Tailwind CSS 的 p-6 */
+    
+    /* 過渡動畫：從 display 改為 opacity，效果更平滑 */
+    transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+    visibility: hidden;
+
+    /* 保留您原本漂亮的入場動畫 */
+    animation: subtleFadeInUp 0.4s ease-out;
+}
+
+/* --- ✨ 修改：設定作用中區塊的樣式 --- */
+.settings-section.active {
+    /* 不再使用 display: block，而是讓它變得可見且可互動 */
+    opacity: 1;
+    pointer-events: auto;
+    visibility: visible;
+}
+
+/* --- ✨ 新增：針對手機版佈局的特殊處理 --- */
+@media (max-width: 768px) {
+    /* 在手機上，我們恢復原本的佈局方式，而不是疊在一起 */
+    #settings-modal .flex-1.p-6.overflow-y-auto {
+        position: static; /* 恢復靜態定位 */
+        padding: 1.5rem; /* 把內邊距還給父容器 */
+    }
     .settings-section {
-        display: none;
-        animation: subtleFadeInUp 0.4s ease-out;
+        position: static; /* 恢復靜態定位 */
+        height: auto;     /* 高度自動 */
+        opacity: 1;
+        pointer-events: auto;
+        visibility: visible;
+        overflow-y: visible; /* 不需要內部滾動 */
+        padding: 0; /* 移除內邊距 */
+        
+        /* 恢復您原本為手機版設計的樣式 */
+        display: block !important;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 1.5rem;
+        margin-bottom: 1.5rem;
     }
+    .settings-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+    /* 在手機上，我們不需要 .active 來切換可見度，所以把它重置 */
     .settings-section.active {
-        display: block;
+       /* 不需要額外樣式 */
     }
+}
     :root {
         --chat-bg: #ffffff;
         --sidebar-bg: #f7f7f8;
