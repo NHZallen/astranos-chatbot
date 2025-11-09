@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AstraChat-15.8.2</title>
+    <title>AstraChat-15.8.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -2463,50 +2463,6 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
         min-height: 0;
     }
 }
-        /* === Pre-chat 置中（僅桌面，手機維持原本）=== */
-@media (min-width: 768px) {
-  /* 1. 讓歡迎語容器(#chat-container)能被垂直置中 */
-  body.pre-chat #chat-container {
-    flex-grow: 0; 
-    margin-top: auto; 
-    /* ✨ 新增：在歡迎語和輸入框之間加上足夠的間距 ✨ */
-    padding-bottom: 2rem; /* 你可以調整這個數值，例如 1.5rem 或 3rem */
-  }
-
-  /* 2. 移除歡迎語本身巨大的上邊距 */
-  body.pre-chat #message-list > div {
-    margin-top: 0 !important;
-  }
-
-  /* 3. 讓輸入框容器也被垂直置中 */
-  body.pre-chat #input-bar-container {
-    position: static;
-    transform: none;
-    z-index: auto;
-    margin-bottom: auto; 
-    flex-shrink: 0;
-  }
-
-  /* 4. 隱藏在初始畫面不需要的元素 */
-  body.pre-chat #follow-up-container { 
-    display: none !important; 
-  }
-}
-
-/* ✨ 新增：強制主內容區不能超出寬度，解決滾動條問題 ✨ */
-main.flex-1 {
-  overflow-x: hidden;
-}
-/* === 移除輸入區周圍的底色模塊（深/淺通吃）=== */
-#input-bar-container {
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-}
-
-/* === 輸入框做成橢圓（pill）=== */
-#input-bar-container .input-wrapper { border-radius: 9999px !important; }
-#message-input { border-radius: 9999px !important; }
 
 </style>
 <script>
@@ -4462,27 +4418,24 @@ function renderMarkdownWithFormulas(text) {
             };
         };
         const startNewChat = () => {
-    const oldTempChatCount = conversations.length;
-    conversations = conversations.filter(c => !c.isTemporary || c.messages.length > 0);
-    if (conversations.length < oldTempChatCount) {
-        saveAppData();
-    }
-    uploadedFiles = [];
-    const newConv = createBaseConversation('新對話');
-    conversations.unshift(newConv);
-    activeConversationId = newConv.id;
-    renderAll();
-    ALL_ELEMENTS.messageInput.value = '';
-    setTimeout(adjustTextareaHeight, 0);
-    toggleSidebar(false);
-    sendConfirmed = false;
-    updateInputState();
-    updateApiKeyWarningBadge();
-    renderFollowUpPrompts([]);
-
-    // ✨ 新增這行：讓新對話時輸入欄置中
-    applyPreChatLayout();
-};
+            const oldTempChatCount = conversations.length;
+            conversations = conversations.filter(c => !c.isTemporary || c.messages.length > 0);
+            if (conversations.length < oldTempChatCount) {
+                 saveAppData();
+            }
+            uploadedFiles = [];
+            const newConv = createBaseConversation('新對話');
+            conversations.unshift(newConv);
+            activeConversationId = newConv.id;
+            renderAll();
+            ALL_ELEMENTS.messageInput.value = '';
+            setTimeout(adjustTextareaHeight, 0);
+            toggleSidebar(false);
+            sendConfirmed = false;
+            updateInputState();
+            updateApiKeyWarningBadge();
+            renderFollowUpPrompts([]);
+        };
         const loadChat = (id) => {
             if (messageObserver) {
         messageObserver.disconnect();
@@ -4634,13 +4587,6 @@ function renderMarkdownWithFormulas(text) {
         const getActiveConversation = () => {
             return conversations.find(c => c.id === activeConversationId);
         };
-         function applyPreChatLayout() {
-  try {
-    const conv = getActiveConversation();
-    const isPre = !!conv && conv.messages.length === 0;
-    document.body.classList.toggle('pre-chat', isPre);
-  } catch (e) {}
-}
         const renderAll = () => {
             renderHistorySidebar();
             renderFolders();
@@ -4650,7 +4596,6 @@ function renderMarkdownWithFormulas(text) {
             renderBatchActionBar();
             renderFilePreviews();
             updateFollowUpUI();
-            applyPreChatLayout();
             applyLanguage(config.uiLanguage);
         };
         const renderHistorySidebar = () => {
@@ -4948,7 +4893,7 @@ function renderMarkdownWithFormulas(text) {
             messageList.innerHTML = '';
             if (conv.messages.length === 0) {
                 const greeting = `${currentUser.username}, ${i18n[config.uiLanguage].howCanIHelp || '有什麼可以為您服務的嗎？'}`;
-                messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] mt-40"><p class="text-2xl">${greeting}</p></div>`;
+                messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] mt-16"><p class="text-lg">${greeting}</p></div>`;
             } else {
                 conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
             }
@@ -5792,7 +5737,6 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             });
             const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
             addMessageToUI(userMessageObject, conv.messages.length, true);
-            applyPreChatLayout();
             conv.lastUpdatedAt = new Date().toISOString();
             conv.unsentMessage = '';
             if (conv.isTemporary) {
