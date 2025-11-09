@@ -2476,50 +2476,49 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
         min-height: 0;
     }
 }
-        @keyframes breathing-glow {
-  0%, 100% {
-    box-shadow: 0 0 15px 5px rgba(48, 213, 200, 0.4), 
-                inset 0 0 15px 5px rgba(48, 213, 200, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 30px 10px rgba(48, 213, 200, 0.7), 
-                inset 0 0 30px 10px rgba(48, 213, 200, 0.7);
-  }
+        body.is-sending::before {
+    content: '';
+    position: fixed; /* 固定在視窗上 */
+    inset: 0; /* 覆蓋整個螢幕 (top: 0; right: 0; bottom: 0; left: 0;) */
+    z-index: 9999; /* 確保在最上層 */
+    pointer-events: none; /* 讓光暈效果不會擋到滑鼠點擊 */
+    animation: breathing-glow 2.5s ease-in-out infinite;
+    --glow-color: #30D5C8; /* 您指定的顏色 */
 }
 
-/* 我們將這個效果應用在 #app-container 上，讓它覆蓋整個聊天視窗 */
-#app-container.sending-in-progress::after {
-  content: '';
-  position: fixed; /* 固定在視窗上 */
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border-radius: inherit; /* 跟隨 app-container 的圓角（如果有） */
-  pointer-events: none; /* 讓滑鼠可以穿透此圖層，不會擋住操作 */
-  
-  /* 核心動畫設定 */
-  animation: breathing-glow 2.5s ease-in-out infinite;
-  
-  /* 預設為透明，不可見 */
-  opacity: 1; 
-  z-index: 9999; /* 確保在最上層 */
+@keyframes breathing-glow {
+    0% {
+        box-shadow: inset 0 0 10px 5px rgba(var(--glow-color), 0),
+                    inset 0 0 20px 10px rgba(var(--glow-color), 0);
+    }
+    50% {
+        /* 這是光暈最亮的時候，增加了內陰影的擴散範圍和透明度 */
+        box-shadow: inset 0 0 40px 15px rgba(var(--glow-color), 0.5),
+                    inset 0 0 60px 20px rgba(var(--glow-color), 0.3);
+    }
+    100% {
+        box-shadow: inset 0 0 10px 5px rgba(var(--glow-color), 0),
+                    inset 0 0 20px 10px rgba(var(--glow-color), 0);
+    }
 }
 
-/* --- ✨ 新增結束：傳送中的呼吸光暈效果 --- */
 
-/* --- ✨ 新增開始：傳送按鈕的旋轉動畫 --- */
-@keyframes spin-animation {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* ✨ 修改：讓傳送按鈕的動畫更精緻、更有彈性 */
+#submit-btn {
+    transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                background-color 0.2s ease-out, 
+                box-shadow 0.2s ease-out;
 }
 
-#submit-btn-icon.spinning {
-  animation: spin-animation 1s linear infinite;
+#submit-btn:not(:disabled):hover {
+    transform: scale(1.05); /* 滑鼠懸停時稍微放大 */
+    filter: brightness(1.1);
+}
+
+#submit-btn:not(:disabled):active {
+    transform: scale(0.95); /* 點擊時縮小，製造按壓感 */
+    transition-duration: 0.05s;
+    filter: brightness(0.9);
 }
 
 </style>
@@ -5772,190 +5771,202 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             if (abortController) return;
             const userMessage = ALL_ELEMENTS.messageInput.value.trim();
             if (!userMessage && uploadedFiles.length === 0) return;
+            
+            // ✨ 新增：如果是研究模式，則直接呼叫舊的專用函數，並中止後續執行
+            if (config.isDeepResearchMode) {
+                handleDeepResearch(userMessage);
+                return;
+            }
 
-            // ✨ 核心修改 1：如果不是深度研究模式，才執行樂觀更新
-            if (!config.isDeepResearchMode) {
-                renderFollowUpPrompts([]);
-                const conv = getActiveConversation();
-                if (conv.archived) return;
-                
-                // ✨ 核心修改 2：將所有 UI 更新操作移到最前面
-                // 這是實現「樂觀 UI」的關鍵
-                const userParts = [];
-                if (userMessage) {
-                    userParts.push({ text: userMessage });
-                }
-                uploadedFiles.forEach(file => {
-                    userParts.push({
-                        inlineData: {
-                            mimeType: file.type,
-                            data: file.base64.split(',')[1]
-                        }
-                    });
+            renderFollowUpPrompts([]);
+            const conv = getActiveConversation();
+            if (conv.archived) return;
+            
+            // --- ✨ 核心修改：立即反應區塊 START ---
+
+            // 1. 準備好使用者訊息的資料結構
+            const userParts = [];
+            if (userMessage) {
+                userParts.push({ text: userMessage });
+            }
+            uploadedFiles.forEach(file => {
+                userParts.push({
+                    inlineData: {
+                        mimeType: file.type,
+                        data: file.base64.split(',')[1]
+                    }
                 });
-                const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
-                
-                // 立即將使用者訊息新增到畫面上
-                addMessageToUI(userMessageObject, conv.messages.length, true);
-                conv.lastUpdatedAt = new Date().toISOString();
-                conv.unsentMessage = '';
+            });
+            const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
 
-                // 立即清空輸入框和檔案預覽
-                ALL_ELEMENTS.messageInput.value = '';
-                uploadedFiles = [];
-                adjustTextareaHeight();
-                renderFilePreviews();
-                
-                // ✨ 新增：立即啟動呼吸光暈效果
-                document.getElementById('app-container').classList.add('sending-in-progress');
+            // 2. 立即將使用者的訊息泡泡新增到畫面上
+            addMessageToUI(userMessageObject, conv.messages.length, true);
+            conv.lastUpdatedAt = new Date().toISOString();
+            conv.unsentMessage = '';
 
-                // 處理對話標題命名
-                if (conv.isTemporary) {
-                    conv.isTemporary = false;
-                    conv.isNaming = true;
-                    renderHistorySidebar();
-                    if (config.autoNaming) {
-                        generateTitleAndSummary(conv);
-                    } else {
-                        conv.isNaming = false;
-                    }
-                    await saveAppData();
+            // 3. 立即清空輸入框和暫存的檔案
+            ALL_ELEMENTS.messageInput.value = '';
+            uploadedFiles = [];
+            adjustTextareaHeight();
+            renderFilePreviews();
+            
+            // 4. 立即為 body 添加 'is-sending' class，觸發呼吸光暈動畫
+            document.body.classList.add('is-sending');
+
+            // 5. 立即新增一個「等待中」的 AI 訊息泡泡
+            const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
+            const contentDiv = loadingMessageDiv.querySelector('.message-content');
+            
+            // --- 核心修改：立即反應區塊 END ---
+
+            abortController = new AbortController();
+            updateSubmitButtonState(true);
+
+            // 處理新對話的自動命名
+            if (conv.isTemporary) {
+                conv.isTemporary = false;
+                conv.isNaming = true;
+                renderHistorySidebar();
+                if (config.autoNaming) {
+                    generateTitleAndSummary(conv); // 讓它在背景執行
+                } else {
+                    conv.isNaming = false;
                 }
+                await saveAppData();
+            }
 
-                // 檢查是否需要自動連網
-                if (config.enableAutoWebSearch && conv.provider === 'gemini' && !conv.isWebSearchEnabled) {
-                    try {
-                        const needsSearch = await shouldPerformWebSearch(userMessage);
-                        if (needsSearch) {
-                            conv.isWebSearchEnabled = true;
-                            showNotification(i18n[config.uiLanguage].autoSearchNotice || '偵測到問題需要連網搜索，已自動開啟。', 'warning');
-                        }
-                        renderInputIndicators();
-                    } catch(err) {
-                        console.error("Auto web search check failed:", err);
-                    }
-                }
-                
-                // 立即新增 AI 的「正在輸入」泡泡
-                const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
-                const contentDiv = loadingMessageDiv.querySelector('.message-content');
-                
-                // ✨ 核心修改 3：將 API 請求放在 try...catch...finally 中，在背景執行
+            // 處理智慧聯網
+            if (config.enableAutoWebSearch && conv.provider === 'gemini' && !conv.isWebSearchEnabled) {
                 try {
-                    abortController = new AbortController();
-                    updateSubmitButtonState(true); // 更新按鈕為「可中止」狀態
-                    
-                    let fullResponse = '';
-                    const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
+                    const needsSearch = await shouldPerformWebSearch(userMessage);
+                    if (needsSearch) {
+                        conv.isWebSearchEnabled = true;
+                        showNotification(i18n[config.uiLanguage].autoSearchNotice || '偵測到問題需要連網搜索，已自動開啟。', 'warning');
+                    }
+                    renderInputIndicators();
+                } catch(err) {
+                    console.error("Auto web search check failed:", err);
+                }
+            }
+            
+            try {
+                let fullResponse = '';
+                const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
 
-                    // 等待 API 回應結束
-                    fullResponse = await streamApiCall(
-                        userParts,
-                        (chunk) => {
-                            // 這部分保持不變，用於接收串流資料
-                        },
-                        abortController.signal
-                    );
-                    
-                    sendConversationToMail(userMessageObject, fullResponse);
+                // API 請求與打字機效果 (這部分會花費較長時間)
+                const completeResponse = await streamApiCall(
+                    userParts,
+                    (chunk) => {
+                        // 在 streamApiCall 內部，我們只收集文字，不渲染
+                    },
+                    abortController.signal
+                );
 
+                fullResponse = completeResponse;
+                sendConversationToMail(userMessageObject, fullResponse);
 
-                    // 開始渲染打字機效果
-                    await (async () => {
-                        return new Promise(resolve => {
-                            contentDiv.innerHTML = ''; // 清空等待樣式
-                            let currentIndex = 0;
-                            const typingSpeed = 15;
+                finalAiMessage.parts = [{ text: fullResponse }];
+                conv.messages.push(finalAiMessage);
+                conv.lastUpdatedAt = new Date().toISOString();
+                await saveAppData();
+                
+                // 等待打字機動畫完成
+                await (async () => {
+                    return new Promise(resolve => {
+                        contentDiv.innerHTML = ''; // 清空等待樣式
+                        let currentIndex = 0;
+                        const typingSpeed = 15;
 
-                            function type() {
-                                if (currentIndex < fullResponse.length && !abortController.signal.aborted) {
-                                    const currentText = fullResponse.substring(0, currentIndex + 1);
-                                    contentDiv.innerHTML = renderMarkdown(currentText + '▋');
+                        function type() {
+                            if (currentIndex < fullResponse.length && !abortController.signal.aborted) {
+                                const currentText = fullResponse.substring(0, currentIndex + 1);
+                                contentDiv.innerHTML = renderMarkdown(currentText + '▋');
 
-                                    let step = 1;
-                                    if (currentText.includes('```')) step = 5;
-                                    currentIndex += step;
-
-                                    const chatContainer = ALL_ELEMENTS.chatContainer;
-                                    if (chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50) {
-                                        chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
-                                    }
-                                    setTimeout(type, typingSpeed);
-                                } else {
-                                    contentDiv.innerHTML = renderMarkdownWithFormulas(fullResponse);
-                                    resolve();
+                                let step = 1;
+                                if (currentText.includes('```')) {
+                                    step = 5;
                                 }
-                            }
-                            type();
-                        });
-                    })();
-                    
-                    // 將最終的完整訊息保存到對話紀錄
-                    finalAiMessage.parts = [{ text: fullResponse }];
-                    conv.messages.push(finalAiMessage);
-                    conv.lastUpdatedAt = new Date().toISOString();
-                    await saveAppData();
+                                
+                                currentIndex += step;
 
-                    if (!abortController.signal.aborted && config.enableFollowUp && !config.isLearningMode) {
+                                const chatContainer = ALL_ELEMENTS.chatContainer;
+                                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
+                                if (isNearBottom) {
+                                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+                                }
+
+                                setTimeout(type, typingSpeed);
+                            } else {
+                                contentDiv.innerHTML = renderMarkdownWithFormulas(fullResponse);
+                                resolve();
+                            }
+                        }
+                        
+                        type();
+                    });
+                })();
+
+                if (!abortController.signal.aborted) {
+                    if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
                         await generateFollowUpPrompts(userMessage, fullResponse);
                     }
                     if (config.memoryEnabled1 && config.enableAutoMemory) {
                         await extractPersonalMemory(userMessage, fullResponse);
                     }
-                } catch (error) {
-                    if (error.name !== 'AbortError') {
-                        const errorMessage = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
-                        contentDiv.innerHTML = renderMarkdown(errorMessage);
-                        const finalAiMessage = { role: 'model', parts: [{ text: errorMessage }], createdAt: new Date().toISOString() };
-                        conv.messages.push(finalAiMessage);
-                        await saveAppData();
-                    }
-                } finally {
-                    // ✨ 新增：無論成功或失敗，都在最後停止呼吸光暈效果
-                    document.getElementById('app-container').classList.remove('sending-in-progress');
-                    
-                    // 後續的清理工作保持不變
-                    abortController = null;
-                    updateSubmitButtonState(false);
-                    sendConfirmed = false;
-                    updateInputState();
-                    // ... (其餘的 finally 區塊程式碼保持不變)
-                    const lastMessageDiv = ALL_ELEMENTS.messageList.lastElementChild;
-                    if (lastMessageDiv && lastMessageDiv.classList.contains('model-message')) {
-                        const bubble = lastMessageDiv.querySelector('.message-bubble');
-                        const content = lastMessageDiv.querySelector('.message-content');
-                        const aiMessageObject = conv.messages[conv.messages.length - 1];
-                        if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute')) {
-                            content.classList.add('pb-8');
-                            bubble.insertAdjacentHTML('beforeend', `
-                                <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
-                                    <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                                    </button>
-                                    <span class="text-xs text-gray-400">${formatFullTimestamp(aiMessageObject.createdAt)}</span>
-                                </div>
-                            `);
-                        }
-                    }
-                    const userMessageDiv = lastMessageDiv ? lastMessageDiv.previousElementSibling : null;
-                    if (userMessageDiv && userMessageDiv.classList.contains('user-message')) {
-                        const bubble = userMessageDiv.querySelector('.message-bubble');
-                        const content = userMessageDiv.querySelector('.message-content');
-                        if (bubble && content && !bubble.querySelector('.delete-message-btn')) {
-                            content.classList.add('pb-8');
-                            bubble.insertAdjacentHTML('beforeend', `
-                                <div class="absolute bottom-2 left-2 flex items-center">
-                                    <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                    </button>
-                                </div>
-                            `);
-                        }
+                }
+
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    const errorMessage = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
+                    contentDiv.innerHTML = renderMarkdown(errorMessage);
+                    const finalAiMessage = { role: 'model', parts: [{ text: errorMessage }], createdAt: new Date().toISOString() };
+                    conv.messages.push(finalAiMessage);
+                    await saveAppData();
+                }
+            } finally {
+                // ✨ 核心修改：無論成功或失敗，最後都要移除呼吸光暈效果
+                document.body.classList.remove('is-sending');
+                
+                // 後續的清理工作保持不變
+                abortController = null;
+                updateSubmitButtonState(false);
+                sendConfirmed = false;
+                updateInputState();
+                const lastMessageDiv = ALL_ELEMENTS.messageList.lastElementChild;
+                if (lastMessageDiv && lastMessageDiv.classList.contains('model-message')) {
+                    const bubble = lastMessageDiv.querySelector('.message-bubble');
+                    const content = lastMessageDiv.querySelector('.message-content');
+                    const aiMessageObject = conv.messages[conv.messages.length - 1];
+                    if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute')) {
+                        content.classList.add('pb-8');
+                        const timeString = formatFullTimestamp(aiMessageObject.createdAt);
+                        const actionButtonsHTML = `
+                            <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
+                                <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                </button>
+                                <span class="text-xs text-gray-400">${timeString}</span>
+                            </div>
+                        `;
+                        bubble.insertAdjacentHTML('beforeend', actionButtonsHTML);
                     }
                 }
-            } else if (config.isDeepResearchMode) {
-                // 如果是深度研究模式，保持原有邏輯不變
-                handleDeepResearch(userMessage);
+                const userMessageDiv = lastMessageDiv ? lastMessageDiv.previousElementSibling : null;
+                if (userMessageDiv && userMessageDiv.classList.contains('user-message')) {
+                    const bubble = userMessageDiv.querySelector('.message-bubble');
+                    const content = userMessageDiv.querySelector('.message-content');
+                    if (bubble && content && !bubble.querySelector('.delete-message-btn')) {
+                        content.classList.add('pb-8');
+                        const deleteButtonHTML = `
+                            <div class="absolute bottom-2 left-2 flex items-center">
+                                <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                </button>
+                            </div>
+                        `;
+                        bubble.insertAdjacentHTML('beforeend', deleteButtonHTML);
+                    }
+                }
             }
         };
         function cleanGeminiHistory(history) {
@@ -6499,12 +6510,8 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             const { submitButton, submitButtonIcon } = ALL_ELEMENTS;
             if (isGenerating) {
                 submitButton.disabled = false;
-                // ✨ 修改：顯示中止方塊，並加上旋轉動畫 class
                 submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>`;
-                submitButtonIcon.classList.add('spinning'); 
             } else {
-                // ✨ 修改：移除旋轉動畫 class
-                submitButtonIcon.classList.remove('spinning'); 
                 updateInputState();
             }
         };
