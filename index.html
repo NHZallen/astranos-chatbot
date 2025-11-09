@@ -2463,6 +2463,58 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
         min-height: 0;
     }
 }
+        /* --- ✨ 新增：電腦版初始畫面置中樣式 START --- */
+@media (min-width: 1024px) {
+    /* 1. 讓主聊天區塊變成一個彈性容器，為垂直置中做準備 */
+    #app-container.chat-is-empty main {
+        display: flex;
+        flex-direction: column;
+        justify-content: center; /* 垂直置中 */
+    }
+
+    /* 2. 讓訊息列表區塊自動填滿上方空間 */
+    #app-container.chat-is-empty #chat-container {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end; /* 將內容（招呼語）推到底部 */
+        padding-bottom: 2rem; /* 縮小招呼語和輸入框的間隔 */
+    }
+
+    /* 3. 加大招呼語的文字大小 */
+    #app-container.chat-is-empty #message-list p {
+        font-size: 1.5rem; /* Tailwind 的 text-2xl */
+        font-weight: 500;  /* 讓字體稍微粗一點 */
+    }
+    
+    /* 4. 移除輸入欄外層容器的背景和邊框 */
+    #app-container.chat-is-empty #input-bar-container {
+        background-color: transparent;
+        border-top: none;
+        padding: 0; /* 移除內邊距，讓橢圓形輸入框更突出 */
+    }
+
+    /* 5. 讓輸入框本身變成橢圓形，並設定最大寬度 */
+    #app-container.chat-is-empty .input-wrapper {
+        border-radius: 9999px; /* 實現橢圓形/膠囊形狀 */
+        max-width: 48rem; /* Tailwind 的 max-w-4xl，與聊天內容同寬 */
+        margin-left: auto;
+        margin-right: auto;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* 加一點陰影增加立體感 */
+        transition: all 0.3s ease-in-out;
+    }
+    
+    #app-container.chat-is-empty .input-wrapper:hover {
+         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12); /* 滑鼠懸停時陰影加深 */
+         transform: translateY(-2px);
+    }
+    
+    /* 6. 當從置中狀態變回底部時，加入平滑的過渡動畫 */
+    #input-bar-container {
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+}
+/* --- ✨ 新增：電腦版初始畫面置中樣式 END --- */
 
 </style>
 <script>
@@ -4427,6 +4479,7 @@ function renderMarkdownWithFormulas(text) {
             const newConv = createBaseConversation('新對話');
             conversations.unshift(newConv);
             activeConversationId = newConv.id;
+            ALL_ELEMENTS.appContainer.classList.add('chat-is-empty');
             renderAll();
             ALL_ELEMENTS.messageInput.value = '';
             setTimeout(adjustTextareaHeight, 0);
@@ -4879,6 +4932,11 @@ function renderMarkdownWithFormulas(text) {
         const renderChat = () => {
             const conv = getActiveConversation();
             const messageList = ALL_ELEMENTS.messageList;
+            if (conv && conv.messages.length === 0) {
+                ALL_ELEMENTS.appContainer.classList.add('chat-is-empty');
+            } else {
+                ALL_ELEMENTS.appContainer.classList.remove('chat-is-empty');
+            }
             messageList.classList.remove('chat-view-transition');
             if (!conv) {
                 messageList.innerHTML = '';
@@ -5704,6 +5762,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
         const handleFormSubmit = async (e) => {
             e.preventDefault();
             if (abortController) return;
+            ALL_ELEMENTS.appContainer.classList.remove('chat-is-empty');
             const userMessage = ALL_ELEMENTS.messageInput.value.trim();
             if (!userMessage && uploadedFiles.length === 0) return;
             
