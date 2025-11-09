@@ -2463,78 +2463,6 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
         min-height: 0;
     }
 }
-        /* === Desktop only: 預聊置中 + 圓角輸入欄 + 去底色 === */
-@media (min-width: 1024px) {
-  /* 預聊：輸入欄置中 */
-  body.pre-chat-desktop #input-bar-container {
-    position: absolute;
-    top: 50%;
-    left: 50%;                /* 先以整體容器為基準置中 */
-    transform: translate(-50%, -50%);
-    width: min(48rem, calc(100% - 2rem));  /* 最大寬度 + 兩側留白 */
-    z-index: 0;               /* 讓右側歷史欄可覆蓋在上面 */
-    background: transparent !important;
-    border: 0 !important;
-    box-shadow: none !important;
-  }
-
-  /* 左側側欄展開時，把置中點右移（w-72 = 18rem）並縮小可用寬度，達到「被擠壓」效果 */
-  body.pre-chat-desktop #app-container.sidebar-open #input-bar-container {
-    left: calc( (100% - 18rem) / 2 + 18rem );  /* = 50% + 9rem */
-    width: min(48rem, calc(100% - 2rem - 18rem));
-    transform: translate(-50%, -50%);
-  }
-
-  /* 輸入欄內層：橢圓 + 去底色卡片感 */
-  #input-bar-container .input-wrapper {
-    border-radius: 9999px !important;             /* 橢圓形 */
-    background: transparent !important;           /* 去底色 */
-    border: 1px solid var(--border-color) !important;
-    box-shadow: none !important;
-  }
-
-  /* 讓 textarea 本身也有圓角，視覺更一致（若是 textarea#message-input） */
-  #message-input {
-    border-radius: 9999px;
-    background: transparent;
-  }
-
-  /* 招呼語變大、靠近輸入欄（僅預聊時） */
-  body.pre-chat-desktop #message-list > div.text-center {
-    font-size: clamp(1.5rem, 2vw + 1rem, 2rem);
-    line-height: 1.25;
-    margin: 0 auto 0.75rem;   /* 拉近與輸入欄距離 */
-    max-width: 46rem;
-  }
-}
-        /* ==== Overlay 防穿透補丁（桌機/手機皆可）==== */
-#history-sidebar-overlay,
-#attachment-menu-overlay,
-#sidebar-overlay {
-  position: fixed;        /* 確保是全畫面遮罩 */
-  inset: 0;
-  display: none;
-  opacity: 0;
-  pointer-events: none;   /* 關閉互動，避免擋點擊 */
-}
-
-#history-sidebar-overlay.visible,
-#attachment-menu-overlay.visible,
-#sidebar-overlay.visible {
-  display: block;
-  opacity: 1;
-  pointer-events: auto;   /* 只有顯示時才擋點擊 */
-}
-
-/* 覆蓋層級：右側欄開啟時「遮罩 < 側邊欄本體」 */
-#history-sidebar-overlay { z-index: 60; background: rgba(0,0,0,.4); }
-#history-sidebar          { z-index: 61; }
-
-/* 讓輸入列在平時位於遮罩之下、但可順利點擊 */
-#input-bar-container { position: relative; z-index: 1; }
-
-/* 安全起見：設定視窗關閉時不攔截事件（有些瀏覽器對 visibility/opacity 的行為不同步） */
-#settings-modal:not(.visible) { pointer-events: none; }
 
 </style>
 <script>
@@ -4965,10 +4893,7 @@ function renderMarkdownWithFormulas(text) {
             messageList.innerHTML = '';
             if (conv.messages.length === 0) {
                 const greeting = `${currentUser.username}, ${i18n[config.uiLanguage].howCanIHelp || '有什麼可以為您服務的嗎？'}`;
-                messageList.innerHTML = `
-  <div class="text-center text-[var(--text-primary)] mt-20 md:mt-[18vh] lg:mt-[22vh]">
-    <p class="text-2xl md:text-3xl font-semibold">${greeting}</p>
-  </div>`;
+                messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] mt-16"><p class="text-lg">${greeting}</p></div>`;
             } else {
                 conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
             }
@@ -10787,46 +10712,6 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
         }
         lastTouchEnd = now;
     }, false);
-</script>
-        <script>
-  // ==== 預聊置中（桌機）狀態切換 ====
-  (function () {
-    const isDesktop = () => window.matchMedia('(min-width: 1024px)').matches;
-
-    function applyPreChatDesktop() {
-      const msgList = document.getElementById('message-list');
-      if (!msgList) return;
-
-      // 只看「使用者訊息」是否存在；系統的招呼語不算
-      const hasUserMessage = !!msgList.querySelector('.user-message');
-
-      if (isDesktop() && !hasUserMessage) {
-        document.body.classList.add('pre-chat-desktop');
-      } else {
-        document.body.classList.remove('pre-chat-desktop');
-      }
-    }
-
-    // 初始、視窗尺寸改變時都檢查一次
-    document.addEventListener('DOMContentLoaded', applyPreChatDesktop);
-    window.addEventListener('resize', applyPreChatDesktop);
-
-    // 監看訊息清單：一旦有 user-message 進來就自動退出預聊
-    const list = document.getElementById('message-list');
-    if (list) {
-      const mo = new MutationObserver(applyPreChatDesktop);
-      mo.observe(list, { childList: true, subtree: true });
-    }
-
-    // 點「新對話」後，立刻進入預聊模式
-    const newChatBtn = document.getElementById('new-chat-btn');
-    if (newChatBtn) {
-      newChatBtn.addEventListener('click', () => {
-        // 通常你會建立新對話並清空訊息；這裡直接套用一次
-        requestAnimationFrame(applyPreChatDesktop);
-      });
-    }
-  })();
 </script>
 </body>
 </html>
