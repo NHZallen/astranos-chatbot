@@ -2463,34 +2463,49 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
         min-height: 0;
     }
 }
-    main.chat-initial-state {
-    position: relative; /* 讓輸入框可以相對於它來絕對定位 */
+        /* 1. 將輸入框改成橢圓形 */
+.input-wrapper {
+    border-radius: 9999px; /* 一個很大的數值可以確保任何長度的輸入框都是完美的橢圓（膠囊形狀）*/
 }
 
-/* 當聊天室是初始狀態時，我們重新定義輸入框容器的樣式 */
-main.chat-initial-state #input-bar-container {
-    position: absolute;
-    top: 50%;
+/* 2. 刪除淺色和深色模式下輸入欄周圍的底色和邊框 */
+/* 我們透過覆蓋變數的方式，讓指定的背景變為透明 */
+:root {
+    --input-bar-bg: transparent;
+    --input-field-bg: transparent;
+}
+.dark {
+    --input-bar-bg: transparent;
+    --input-field-bg: transparent;
+}
+/* 因為背景移除了，原本的邊框和陰影會很奇怪，所以一併移除 */
+#input-bar-container {
+    border-top-color: transparent;
+}
+.input-wrapper {
+    border-color: transparent;
+    box-shadow: none;
+}
+
+/* 3. 定義輸入框置中時的樣式 */
+/* 為了讓絕對定位生效，確保 main 元素是相對定位 */
+main.relative {
+    position: relative;
+}
+
+/* 當 main 元素有 .chat-is-empty 這個 class 時，套用以下樣式 */
+main.chat-is-empty #input-bar-container {
+    position: absolute;   /* 使用絕對定位，讓它脫離原本在底下的位置 */
+    bottom: 50%;          /* 先把它定位到從下往上 50% 的地方 */
     left: 0;
     right: 0;
-    transform: translateY(-50%); /* 這是垂直置中的關鍵 */
-    width: 100%;
-    background-color: transparent; /* 讓容器背景變透明 */
-    border-top: none; /* 移除頂部邊線 */
-    padding-top: 0;
-    padding-bottom: 0;
+    transform: translateY(50%); /* 再把它往下移動自身高度的 50%，達到完美垂直置中 */
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); /* 讓位置變化時有平滑的動畫效果 */
 }
 
-/* 無論在哪種狀態下，都讓輸入框變成橢圓形 */
-#input-bar-container .input-wrapper {
-    border-radius: 9999px; /* 一個很大的數值可以確保任何長度的方塊都變成橢圓形 */
-    /* 我們可以加個陰影讓它在置中時更突出 */
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-}
-
-/* 當桌布啟用時，置中狀態下的陰影可以調整得更柔和 */
-body.custom-wallpaper-active main.chat-initial-state #input-bar-container .input-wrapper {
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+/* 確保送出訊息後，輸入框能平滑地回到原位 */
+#input-bar-container {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 </style>
@@ -4461,9 +4476,20 @@ function renderMarkdownWithFormulas(text) {
             setTimeout(adjustTextareaHeight, 0);
             toggleSidebar(false);
             sendConfirmed = false;
+            const mainElement = document.querySelector('main.relative');
+        const convForCheck = getActiveConversation();
+        if (mainElement && convForCheck) {
+            if (convForCheck.messages.length === 0) {
+                mainElement.classList.add('chat-is-empty');
+            } else {
+                mainElement.classList.remove('chat-is-empty');
+            }
+        }
             updateInputState();
             updateApiKeyWarningBadge();
             renderFollowUpPrompts([]);
+            const mainElement = document.querySelector('main.relative');
+        if (mainElement) mainElement.classList.add('chat-is-empty');
         };
         const loadChat = (id) => {
             if (messageObserver) {
@@ -4906,34 +4932,33 @@ function renderMarkdownWithFormulas(text) {
             ALL_ELEMENTS.archivedChatsContainer.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', (e) => deleteChat(e.target.dataset.id, e)));
         };
         const renderChat = () => {
-    const conv = getActiveConversation();
-    const messageList = ALL_ELEMENTS.messageList;
-    const mainElement = document.querySelector('main'); // <--- 請新增這一行
-
-    messageList.classList.remove('chat-view-transition');
-
-    if (!conv) {
-        messageList.innerHTML = '';
-        ALL_ELEMENTS.headerTitle.textContent = i18n[config.uiLanguage].newChat;
-        ALL_ELEMENTS.modelSwitcherContainer.innerHTML = '';
-        renderInputIndicators();
-        mainElement.classList.add('chat-initial-state'); // <--- 請新增這一行
-        return;
-    }
-
-    // --- 請修改以下這段邏輯 ---
-    // 判斷對話中是否有訊息，來決定是否要置中輸入框
-    if (conv.messages.length === 0) {
-        mainElement.classList.add('chat-initial-state'); // 沒有訊息，加上置中 class
-    } else {
-        mainElement.classList.remove('chat-initial-state'); // 有訊息，移除置中 class
-    }
-    // --- 修改結束 ---
-
-    ALL_ELEMENTS.headerTitle.textContent = conv.archived ? `(${i18n[config.uiLanguage].archived || '已封存'}) ${conv.title}` : conv.title;
-    renderModelSwitcher();
-    // ... 函式剩下的部分保持不變 ...
-};
+            const conv = getActiveConversation();
+            const messageList = ALL_ELEMENTS.messageList;
+            messageList.classList.remove('chat-view-transition');
+            if (!conv) {
+                messageList.innerHTML = '';
+                ALL_ELEMENTS.headerTitle.textContent = i18n[config.uiLanguage].newChat;
+                ALL_ELEMENTS.modelSwitcherContainer.innerHTML = '';
+                renderInputIndicators();
+                return;
+            }
+            ALL_ELEMENTS.headerTitle.textContent = conv.archived ? `(${i18n[config.uiLanguage].archived || '已封存'}) ${conv.title}` : conv.title;
+            renderModelSwitcher();
+            renderInputIndicators();
+            messageList.innerHTML = '';
+            if (conv.messages.length === 0) {
+                const greeting = `${currentUser.username}, ${i18n[config.uiLanguage].howCanIHelp || '有什麼可以為您服務的嗎？'}`;
+                messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] mt-16"><p class="text-lg">${greeting}</p></div>`;
+            } else {
+                conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
+            }
+            requestAnimationFrame(() => {
+    setupMessageIntersectionObserver();
+});
+            void messageList.offsetWidth;
+            messageList.classList.add('chat-view-transition');
+            updateInputState();
+        };
         
         const updateFunctionButtonsState = () => {
             const { cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn } = ALL_ELEMENTS;
@@ -5733,7 +5758,10 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 
         const handleFormSubmit = async (e) => {
             e.preventDefault();
-            document.querySelector('main').classList.remove('chat-initial-state');
+            const mainElement = document.querySelector('main.relative');
+    if (mainElement) {
+        mainElement.classList.remove('chat-is-empty');
+    }
             if (abortController) return;
             const userMessage = ALL_ELEMENTS.messageInput.value.trim();
             if (!userMessage && uploadedFiles.length === 0) return;
