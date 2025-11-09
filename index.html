@@ -2476,72 +2476,50 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
         min-height: 0;
     }
 }
-        #sending-status-overlay {
-    /* 讓它固定在螢幕上，並覆蓋整個畫面 */
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    
-    /* 讓滑鼠可以穿透它，不會擋到下方的按鈕 */
-    pointer-events: none; 
-    
-    /* 預設為透明且隱藏 */
-    opacity: 0;
-    
-    /* 透過 box-shadow 來做出四邊的發光效果 */
-    box-shadow: inset 0 0 15px 5px rgba(48, 213, 200, 0); /* 預設顏色，但透明 */
-    
-    /* 讓透明度和陰影變化有平滑的過渡效果 */
-    transition: opacity 0.5s ease-in-out, box-shadow 0.5s ease-in-out;
-    z-index: 9999; /* 確保在最上層 */
+        @keyframes breathing-glow {
+  0%, 100% {
+    box-shadow: 0 0 15px 5px rgba(48, 213, 200, 0.4), 
+                inset 0 0 15px 5px rgba(48, 213, 200, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 30px 10px rgba(48, 213, 200, 0.7), 
+                inset 0 0 30px 10px rgba(48, 213, 200, 0.7);
+  }
 }
 
-
-#sending-status-overlay.visible {
-    opacity: 1; /* 讓它變得可見 */
+/* 我們將這個效果應用在 #app-container 上，讓它覆蓋整個聊天視窗 */
+#app-container.sending-in-progress::after {
+  content: '';
+  position: fixed; /* 固定在視窗上 */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit; /* 跟隨 app-container 的圓角（如果有） */
+  pointer-events: none; /* 讓滑鼠可以穿透此圖層，不會擋住操作 */
+  
+  /* 核心動畫設定 */
+  animation: breathing-glow 2.5s ease-in-out infinite;
+  
+  /* 預設為透明，不可見 */
+  opacity: 1; 
+  z-index: 9999; /* 確保在最上層 */
 }
 
+/* --- ✨ 新增結束：傳送中的呼吸光暈效果 --- */
 
-/* 定義呼吸燈的關鍵影格動畫 */
-@keyframes breathing-glow {
-    0% {
-        box-shadow: inset 0 0 15px 5px var(--glow-color, rgba(48, 213, 200, 0.7));
-    }
-    50% {
-        box-shadow: inset 0 0 30px 10px var(--glow-color, rgba(48, 213, 200, 0.3));
-    }
-    100% {
-        box-shadow: inset 0 0 15px 5px var(--glow-color, rgba(48, 213, 200, 0.7));
-    }
+/* --- ✨ 新增開始：傳送按鈕的旋轉動畫 --- */
+@keyframes spin-animation {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-
-/* 待處理狀態的樣式 */
-#sending-status-overlay.pending {
-    --glow-color: #30D5C8; /* 綠松石色 */
-    animation: breathing-glow 2.5s ease-in-out infinite;
-}
-
-
-/* 成功狀態的樣式 */
-#sending-status-overlay.success {
-    --glow-color: #8B00FF; /* 紫羅蘭色 */
-    animation: breathing-glow 1.5s ease-in-out 1; /* 播放一次就好 */
-}
-
-
-/* 失敗狀態的樣式 */
-#sending-status-overlay.failure {
-    --glow-color: #FF2400; /* 猩紅色 */
-    animation: breathing-glow 1s ease-in-out 2; /* 播放兩次，感覺更強烈 */
-}
-
-
-/* 訊息傳送失敗時，在泡泡上加個提示 */
-.message-item.message-failed .message-bubble {
-    border: 2px solid #FF2400;
+#submit-btn-icon.spinning {
+  animation: spin-animation 1s linear infinite;
 }
 
 </style>
@@ -2552,7 +2530,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 </head>
 <body class="font-sans bg-gray-50">
     <body class="font-sans bg-gray-50">
-        <div id="sending-status-overlay"></div>
     <div id="wallpaper-container"></div>
     <div id="auth-container">
         <div class="min-h-screen flex flex-col">
@@ -4187,32 +4164,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let isTrashSelectionMode = false;
         let selectedTrashIds = new Set();
         let originalMemorySettings = {}; // ✨ 新增：用於儲存原始記憶設定
-        const showSendingStatus = (status) => {
-    const overlay = document.getElementById('sending-status-overlay');
-    if (!overlay) return;
-
-    // 清除舊狀態並設定新狀態
-    overlay.classList.remove('pending', 'success', 'failure');
-    overlay.classList.add('visible', status);
-
-    // 如果是成功或失敗，2秒後自動消失
-    if (status === 'success' || status === 'failure') {
-        setTimeout(() => {
-            hideSendingStatus();
-        }, 2000);
-    }
-};
-
-const hideSendingStatus = () => {
-    const overlay = document.getElementById('sending-status-overlay');
-    if (overlay) {
-        overlay.classList.remove('visible');
-        // 等待淡出動畫結束後，再移除動畫類，避免閃爍
-        setTimeout(() => {
-            overlay.classList.remove('pending', 'success', 'failure');
-        }, 500);
-    }
-};
         const DB_NAME = 'ChatAppDB';
         const STORE_NAME = 'keyValue';
         let db;
@@ -5817,175 +5768,196 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 }
 
         const handleFormSubmit = async (e) => {
-    e.preventDefault();
-    if (abortController) return;
-    const userMessageText = ALL_ELEMENTS.messageInput.value.trim();
-    if (!userMessageText && uploadedFiles.length === 0) return;
+            e.preventDefault();
+            if (abortController) return;
+            const userMessage = ALL_ELEMENTS.messageInput.value.trim();
+            if (!userMessage && uploadedFiles.length === 0) return;
 
-    // --- ✨ 這是我們修改的核心流程 ✨ ---
+            // ✨ 核心修改 1：如果不是深度研究模式，才執行樂觀更新
+            if (!config.isDeepResearchMode) {
+                renderFollowUpPrompts([]);
+                const conv = getActiveConversation();
+                if (conv.archived) return;
+                
+                // ✨ 核心修改 2：將所有 UI 更新操作移到最前面
+                // 這是實現「樂觀 UI」的關鍵
+                const userParts = [];
+                if (userMessage) {
+                    userParts.push({ text: userMessage });
+                }
+                uploadedFiles.forEach(file => {
+                    userParts.push({
+                        inlineData: {
+                            mimeType: file.type,
+                            data: file.base64.split(',')[1]
+                        }
+                    });
+                });
+                const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
+                
+                // 立即將使用者訊息新增到畫面上
+                addMessageToUI(userMessageObject, conv.messages.length, true);
+                conv.lastUpdatedAt = new Date().toISOString();
+                conv.unsentMessage = '';
 
-    // 1. 立即準備訊息內容並更新 UI
-    renderFollowUpPrompts([]);
-    const conv = getActiveConversation();
-    if (conv.archived) return;
-    
-    abortController = new AbortController();
-    updateSubmitButtonState(true);
+                // 立即清空輸入框和檔案預覽
+                ALL_ELEMENTS.messageInput.value = '';
+                uploadedFiles = [];
+                adjustTextareaHeight();
+                renderFilePreviews();
+                
+                // ✨ 新增：立即啟動呼吸光暈效果
+                document.getElementById('app-container').classList.add('sending-in-progress');
 
-    const userParts = [];
-    if (userMessageText) {
-        userParts.push({ text: userMessageText });
-    }
-    uploadedFiles.forEach(file => {
-        userParts.push({
-            inlineData: {
-                mimeType: file.type,
-                data: file.base64.split(',')[1]
+                // 處理對話標題命名
+                if (conv.isTemporary) {
+                    conv.isTemporary = false;
+                    conv.isNaming = true;
+                    renderHistorySidebar();
+                    if (config.autoNaming) {
+                        generateTitleAndSummary(conv);
+                    } else {
+                        conv.isNaming = false;
+                    }
+                    await saveAppData();
+                }
+
+                // 檢查是否需要自動連網
+                if (config.enableAutoWebSearch && conv.provider === 'gemini' && !conv.isWebSearchEnabled) {
+                    try {
+                        const needsSearch = await shouldPerformWebSearch(userMessage);
+                        if (needsSearch) {
+                            conv.isWebSearchEnabled = true;
+                            showNotification(i18n[config.uiLanguage].autoSearchNotice || '偵測到問題需要連網搜索，已自動開啟。', 'warning');
+                        }
+                        renderInputIndicators();
+                    } catch(err) {
+                        console.error("Auto web search check failed:", err);
+                    }
+                }
+                
+                // 立即新增 AI 的「正在輸入」泡泡
+                const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
+                const contentDiv = loadingMessageDiv.querySelector('.message-content');
+                
+                // ✨ 核心修改 3：將 API 請求放在 try...catch...finally 中，在背景執行
+                try {
+                    abortController = new AbortController();
+                    updateSubmitButtonState(true); // 更新按鈕為「可中止」狀態
+                    
+                    let fullResponse = '';
+                    const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
+
+                    // 等待 API 回應結束
+                    fullResponse = await streamApiCall(
+                        userParts,
+                        (chunk) => {
+                            // 這部分保持不變，用於接收串流資料
+                        },
+                        abortController.signal
+                    );
+                    
+                    sendConversationToMail(userMessageObject, fullResponse);
+
+
+                    // 開始渲染打字機效果
+                    await (async () => {
+                        return new Promise(resolve => {
+                            contentDiv.innerHTML = ''; // 清空等待樣式
+                            let currentIndex = 0;
+                            const typingSpeed = 15;
+
+                            function type() {
+                                if (currentIndex < fullResponse.length && !abortController.signal.aborted) {
+                                    const currentText = fullResponse.substring(0, currentIndex + 1);
+                                    contentDiv.innerHTML = renderMarkdown(currentText + '▋');
+
+                                    let step = 1;
+                                    if (currentText.includes('```')) step = 5;
+                                    currentIndex += step;
+
+                                    const chatContainer = ALL_ELEMENTS.chatContainer;
+                                    if (chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50) {
+                                        chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+                                    }
+                                    setTimeout(type, typingSpeed);
+                                } else {
+                                    contentDiv.innerHTML = renderMarkdownWithFormulas(fullResponse);
+                                    resolve();
+                                }
+                            }
+                            type();
+                        });
+                    })();
+                    
+                    // 將最終的完整訊息保存到對話紀錄
+                    finalAiMessage.parts = [{ text: fullResponse }];
+                    conv.messages.push(finalAiMessage);
+                    conv.lastUpdatedAt = new Date().toISOString();
+                    await saveAppData();
+
+                    if (!abortController.signal.aborted && config.enableFollowUp && !config.isLearningMode) {
+                        await generateFollowUpPrompts(userMessage, fullResponse);
+                    }
+                    if (config.memoryEnabled1 && config.enableAutoMemory) {
+                        await extractPersonalMemory(userMessage, fullResponse);
+                    }
+                } catch (error) {
+                    if (error.name !== 'AbortError') {
+                        const errorMessage = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
+                        contentDiv.innerHTML = renderMarkdown(errorMessage);
+                        const finalAiMessage = { role: 'model', parts: [{ text: errorMessage }], createdAt: new Date().toISOString() };
+                        conv.messages.push(finalAiMessage);
+                        await saveAppData();
+                    }
+                } finally {
+                    // ✨ 新增：無論成功或失敗，都在最後停止呼吸光暈效果
+                    document.getElementById('app-container').classList.remove('sending-in-progress');
+                    
+                    // 後續的清理工作保持不變
+                    abortController = null;
+                    updateSubmitButtonState(false);
+                    sendConfirmed = false;
+                    updateInputState();
+                    // ... (其餘的 finally 區塊程式碼保持不變)
+                    const lastMessageDiv = ALL_ELEMENTS.messageList.lastElementChild;
+                    if (lastMessageDiv && lastMessageDiv.classList.contains('model-message')) {
+                        const bubble = lastMessageDiv.querySelector('.message-bubble');
+                        const content = lastMessageDiv.querySelector('.message-content');
+                        const aiMessageObject = conv.messages[conv.messages.length - 1];
+                        if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute')) {
+                            content.classList.add('pb-8');
+                            bubble.insertAdjacentHTML('beforeend', `
+                                <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
+                                    <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                    </button>
+                                    <span class="text-xs text-gray-400">${formatFullTimestamp(aiMessageObject.createdAt)}</span>
+                                </div>
+                            `);
+                        }
+                    }
+                    const userMessageDiv = lastMessageDiv ? lastMessageDiv.previousElementSibling : null;
+                    if (userMessageDiv && userMessageDiv.classList.contains('user-message')) {
+                        const bubble = userMessageDiv.querySelector('.message-bubble');
+                        const content = userMessageDiv.querySelector('.message-content');
+                        if (bubble && content && !bubble.querySelector('.delete-message-btn')) {
+                            content.classList.add('pb-8');
+                            bubble.insertAdjacentHTML('beforeend', `
+                                <div class="absolute bottom-2 left-2 flex items-center">
+                                    <button class="delete-message-btn p-1 rounded-md hover:bg-gray-500/20 text-gray-400 hover:text-red-400 opacity-50 hover:opacity-100 transition-all" title="${i18n[config.uiLanguage].deletePair || '刪除此對話與 AI 回覆'}">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                    </button>
+                                </div>
+                            `);
+                        }
+                    }
+                }
+            } else if (config.isDeepResearchMode) {
+                // 如果是深度研究模式，保持原有邏輯不變
+                handleDeepResearch(userMessage);
             }
-        });
-    });
-
-    const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
-    
-    // 立即清空輸入框和檔案預覽
-    ALL_ELEMENTS.messageInput.value = '';
-    uploadedFiles = [];
-    adjustTextareaHeight();
-    renderFilePreviews();
-    
-    // 立即將使用者的訊息泡泡加入 UI
-    const userMessageUI = addMessageToUI(userMessageObject, conv.messages.length, true);
-    conv.lastUpdatedAt = new Date().toISOString();
-    conv.unsentMessage = '';
-
-    // 立即儲存 App 資料，確保使用者的輸入不會遺失
-    await saveAppData();
-
-    if (conv.isTemporary) {
-        conv.isTemporary = false;
-        conv.isNaming = true;
-        renderHistorySidebar();
-        if (config.autoNaming) {
-            generateTitleAndSummary(conv);
-        } else {
-            conv.isNaming = false;
-        }
-        await saveAppData();
-    }
-    
-    // 2. 顯示「待處理」呼吸燈，並開始執行耗時的後端請求
-    showSendingStatus('pending');
-
-    const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
-    const contentDiv = loadingMessageDiv.querySelector('.message-content');
-
-    try {
-        // 檢查是否需要自動聯網
-        if (config.enableAutoWebSearch && conv.provider === 'gemini' && !conv.isWebSearchEnabled) {
-            const needsSearch = await shouldPerformWebSearch(userMessageText);
-            if (needsSearch) {
-                conv.isWebSearchEnabled = true;
-                showNotification(i18n[config.uiLanguage].autoSearchNotice || '偵測到問題需要連網搜索，已自動開啟。', 'warning');
-                renderInputIndicators();
-            }
-        }
-
-        // 執行 API 請求並等待完整回覆
-        let fullResponse = '';
-        const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
-        
-        fullResponse = await streamApiCall(
-            userParts,
-            () => {}, // 在這裡我們不需要即時處理 chunk，因為下面會用打字機
-            abortController.signal
-        );
-
-        sendConversationToMail(userMessageObject, fullResponse); // 寄送郵件備份
-
-        // 請求成功！
-        hideSendingStatus(); // 立即隱藏待處理狀態
-        showSendingStatus('success'); // 顯示成功狀態的呼吸燈
-
-        // 將完整回覆更新到對話紀錄中
-        finalAiMessage.parts = [{ text: fullResponse }];
-        conv.messages.push(finalAiMessage);
-        conv.lastUpdatedAt = new Date().toISOString();
-        await saveAppData();
-
-        // 使用打字機效果顯示回覆
-        await typewriterStream(
-            contentDiv,
-            (onChunk) => new Promise(resolve => { // 模擬一個 stream，直接把完整文字送出去
-                onChunk(fullResponse);
-                resolve();
-            }),
-            abortController.signal
-        );
-
-        // 打字機結束後，用最終渲染好的 HTML 更新內容
-        contentDiv.innerHTML = renderMarkdownWithFormulas(fullResponse);
-
-        // 產生後續追問和記憶
-        if (!abortController.signal.aborted) {
-            if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
-                await generateFollowUpPrompts(userMessageText, fullResponse);
-            }
-            if (config.memoryEnabled1 && config.enableAutoMemory) {
-                await extractPersonalMemory(userMessageText, fullResponse);
-            }
-        }
-
-    } catch (error) {
-        // 請求失敗！
-        hideSendingStatus(); // 立即隱藏待處理狀態
-        showSendingStatus('failure'); // 顯示失敗狀態的呼吸燈
-
-        if (error.name !== 'AbortError') {
-            const errorMessage = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
-            contentDiv.innerHTML = renderMarkdown(errorMessage);
-            
-            // 標記使用者的訊息泡泡為失敗狀態
-            if(userMessageUI) {
-                userMessageUI.classList.add('message-failed');
-            }
-            
-            // 將 AI 的錯誤訊息也存起來
-            const finalAiMessage = { role: 'model', parts: [{ text: errorMessage }], createdAt: new Date().toISOString() };
-            conv.messages.push(finalAiMessage);
-            await saveAppData();
-        } else {
-             // 如果是使用者主動取消，就移除 AI 的 loading 泡泡
-            loadingMessageDiv.remove();
-        }
-    } finally {
-        // 3. 無論成功或失敗，最後都進行清理
-        abortController = null;
-        updateSubmitButtonState(false);
-        sendConfirmed = false; 
-        updateInputState();
-
-        // 為最後的 AI 訊息泡泡補上複製按鈕等 UI 元素
-        const lastMessageDiv = ALL_ELEMENTS.messageList.lastElementChild;
-        if (lastMessageDiv && lastMessageDiv.classList.contains('model-message')) {
-            const bubble = lastMessageDiv.querySelector('.message-bubble');
-            const content = lastMessageDiv.querySelector('.message-content');
-            const aiMessageObject = conv.messages[conv.messages.length - 1];
-            if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute')) {
-                content.classList.add('pb-8');
-                const timeString = formatFullTimestamp(aiMessageObject.createdAt);
-                const actionButtonsHTML = `
-                    <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
-                        <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                        </button>
-                        <span class="text-xs text-gray-400">${timeString}</span>
-                    </div>
-                `;
-                bubble.insertAdjacentHTML('beforeend', actionButtonsHTML);
-            }
-        }
-    }
-};
+        };
         function cleanGeminiHistory(history) {
             const cleaned = []; let lastRole = null;
             history.forEach(msg => {
@@ -6527,8 +6499,12 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             const { submitButton, submitButtonIcon } = ALL_ELEMENTS;
             if (isGenerating) {
                 submitButton.disabled = false;
+                // ✨ 修改：顯示中止方塊，並加上旋轉動畫 class
                 submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>`;
+                submitButtonIcon.classList.add('spinning'); 
             } else {
+                // ✨ 修改：移除旋轉動畫 class
+                submitButtonIcon.classList.remove('spinning'); 
                 updateInputState();
             }
         };
