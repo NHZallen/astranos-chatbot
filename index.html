@@ -540,16 +540,11 @@ button:not(.btn-primary):active:not(:disabled) {
     .scroll-area::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
     .scroll-area::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
     .modal {
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
-    pointer-events: none; /* ✨ 新增這一行，讓視窗在隱藏時無法被點擊 */
-}
-    .modal.visible {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto; /* ✨ 新增這一行，讓視窗在顯示時可以被正常點擊 */
-}
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+    }
+    .modal.visible { opacity: 1; visibility: visible; }
     .modal > div {
         transform: scale(0.95);
         transition: transform 0.2s ease-in-out;
@@ -1602,6 +1597,19 @@ body.custom-wallpaper-active.wallpaper-is-dark #history-sidebar {
     .modal > div, .popover {
         color: #111827;
     }
+    .modal { pointer-events: none; }
+.modal.visible { pointer-events: auto; }
+
+/* 只要不是 .visible，就強制讓內容不可見且不可點（防手機版覆寫） */
+.modal:not(.visible) .settings-section,
+.modal.hidden .settings-section {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* 萬一還有其他子孫元素在搗亂，順手保險一下： */
+.modal:not(.visible) * { pointer-events: none !important; }
     .modal h2, .modal h3, .modal p, .modal label, .modal span,
     .modal input, .modal select, .modal textarea {
         color: #111827;
@@ -2810,7 +2818,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             </div>
         </main>
     </div>
-    <div id="settings-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
+    <div id="settings-modal" class="modal hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
         <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-2xl flex flex-col" style="max-height: 90vh;">
             <div class="p-6 border-b border-[var(--border-color)] flex justify-between items-center">
                 <h2 class="text-2xl font-bold" data-lang-key="settings">設定</h2>
@@ -4212,6 +4220,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 modalElement.addEventListener('transitionend', onTransitionEnd);
             }
         };
+         document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.modal').forEach(m => {
+    if (!m.classList.contains('visible')) {
+      m.classList.add('hidden');   // display:none
+      m.classList.remove('visible');
+    }
+  });
+});
         const showCustomDialog = (options) => {
             return new Promise((resolve) => {
                 const { title, message, input = null, buttons, dialogClass = '' } = options;
