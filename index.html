@@ -2492,6 +2492,30 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
 /* === 輸入框做成橢圓（pill）=== */
 #input-bar-container .input-wrapper { border-radius: 9999px !important; }
 #message-input { border-radius: 9999px !important; }
+        /* === 桌機：側邊欄展開時，讓整個內容（含輸入欄）右移出 18rem 空間 === */
+@media (min-width: 1024px) {
+  /* 預設不留空間 */
+  #app-container > .relative.flex {
+    padding-left: 0; /* 這個選擇器就是你布局的外層容器 */
+  }
+
+  /* 當 JS 切到桌機的 sidebar-open 狀態時，右移 18rem(=288px) */
+  #app-container.sidebar-open > .relative.flex {
+    padding-left: 18rem;
+  }
+
+  /* 讓輸入欄內層容器不要再置中，而是貼齊左側主區域 */
+  #app-container.sidebar-open #input-bar-container > .max-w-4xl {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  /* 輸入欄保持在主內容層下方，避免覆蓋右側歷史側欄（z-20）與左側欄（z-40） */
+  #input-bar-container {
+    position: relative;
+    z-index: 10;
+  }
+}
 
 </style>
 <script>
@@ -4933,7 +4957,9 @@ function renderMarkdownWithFormulas(text) {
             messageList.innerHTML = '';
             if (conv.messages.length === 0) {
                 const greeting = `${currentUser.username}, ${i18n[config.uiLanguage].howCanIHelp || '有什麼可以為您服務的嗎？'}`;
-                messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] mt-16"><p class="text-lg">${greeting}</p></div>`;
+                messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] mt-6 md:mt-4">
+  <p class="text-xl md:text-2xl font-medium">${greeting}</p>
+</div>`;
             } else {
                 conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
             }
