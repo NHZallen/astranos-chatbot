@@ -2463,62 +2463,55 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
         min-height: 0;
     }
 }
-        /* --- ✨ 新增：電腦版初始畫面置中樣式 (最終修正版) START --- */
+/* ✨ 新增：針對電腦版的輸入欄置中邏輯、輸入框橢圓形、移除底色 */
 @media (min-width: 1024px) {
-    /* 1. 確保 main 元素是一個垂直的彈性容器 */
-    #app-container.chat-is-empty main {
-        display: flex;
-        flex-direction: column;
-    }
+  #input-bar-container {
+    position: absolute; /* 讓電腦版輸入欄可絕對定位 */
+    bottom: 0;
+    width: 100%;
+    transition: all 0.3s ease; /* 平滑過渡 */
+  }
+  
+  #input-bar-container.centered {
+    bottom: unset;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10; /* 確保在聊天內容上方 */
+  }
 
-    /* 2. 【核心修正 Part 1】
-       對招呼語區塊使用 margin-top: auto。
-       這會像一個彈簧，把它從上方的 Header 推下來，填滿所有可用的空間。*/
-    #app-container.chat-is-empty #chat-container {
-        flex-grow: 0; /* 讓它不要自己伸展 */
-        margin-top: auto; /* ✨ 向上推擠的關鍵！*/
-        padding-bottom: 1.5rem; /* 稍微調整與輸入框的間隔 */
-    }
+  /* 縮小間隔：減少輸入欄頂部邊距 */
+  #input-bar-container {
+    padding-top: 0.25rem; /* 原 0.5rem（p-2），縮小為 0.25rem */
+    padding-bottom: 0.25rem;
+  }
 
-    /* 3. 【核心修正 Part 2】
-       對輸入欄區塊使用 margin-bottom: auto。
-       這會像另一個彈簧，把它從螢幕底部推上來。
-       上下兩個 "auto" 的 margin 會平分中間的空間，達成完美的置中！*/
-    #app-container.chat-is-empty #input-bar-container {
-        margin-bottom: auto; /* ✨ 向下推擠的關鍵！*/
-        background-color: transparent;
-        border-top: none;
-        padding: 0;
-    }
+  /* 輸入框改為橢圓形：增加邊框半徑 */
+  #input-wrapper {
+    border-radius: 50px; /* 原 rounded-2xl（約 16px），改為 50px 以更圓潤 */
+  }
 
-    /* 4. 加大招呼語的文字大小 */
-    #app-container.chat-is-empty #message-list p {
-        font-size: 1.5rem; 
-        font-weight: 500;
-    }
-    
-    /* 5. 讓輸入框本身變成橢圓形 */
-    #app-container.chat-is-empty .input-wrapper {
-        border-radius: 9999px;
-        max-width: 48rem;
-        margin-left: auto;
-        margin-right: auto;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        transition: all 0.3s ease-in-out;
-    }
-    
-    #app-container.chat-is-empty .input-wrapper:hover {
-         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-         transform: translateY(-2px);
-    }
-    
-    /* 6. 過渡動畫 */
-    #input-bar-container {
-        transition: all 0.3s ease;
-    }
+  /* 刪除深淺色模式輸入欄周圍底色：設為透明 */
+  #input-wrapper {
+    background-color: transparent; /* 移除淺色模式的底色 */
+  }
+
+  .dark #input-wrapper {
+    background-color: transparent; /* 移除深色模式的底色 */
+  }
+
+  body.custom-wallpaper-active #input-wrapper {
+    background-color: transparent; /* 移除自訂桌布模式的底色（原 rgba(255, 255, 255, 0.2)） */
+  }
 }
-/* --- ✨ 新增：電腦版初始畫面置中樣式 (最終修正版) END --- */
 
+/* ✨ 新增：加大招呼語的大小（僅首條歡迎訊息，電腦版） */
+@media (min-width: 1024px) {
+  #chat-container .message-item:first-child .message-content p {
+    font-size: 1.5rem; /* 原約 1rem，加大到 1.5rem */
+    margin-bottom: 0.5rem; /* 微調間隔，以配合縮小的輸入欄間距 */
+  }
+}
+        
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -4482,7 +4475,6 @@ function renderMarkdownWithFormulas(text) {
             const newConv = createBaseConversation('新對話');
             conversations.unshift(newConv);
             activeConversationId = newConv.id;
-            ALL_ELEMENTS.appContainer.classList.add('chat-is-empty');
             renderAll();
             ALL_ELEMENTS.messageInput.value = '';
             setTimeout(adjustTextareaHeight, 0);
@@ -4935,11 +4927,6 @@ function renderMarkdownWithFormulas(text) {
         const renderChat = () => {
             const conv = getActiveConversation();
             const messageList = ALL_ELEMENTS.messageList;
-            if (conv && conv.messages.length === 0) {
-                ALL_ELEMENTS.appContainer.classList.add('chat-is-empty');
-            } else {
-                ALL_ELEMENTS.appContainer.classList.remove('chat-is-empty');
-            }
             messageList.classList.remove('chat-view-transition');
             if (!conv) {
                 messageList.innerHTML = '';
@@ -5765,7 +5752,6 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
         const handleFormSubmit = async (e) => {
             e.preventDefault();
             if (abortController) return;
-            ALL_ELEMENTS.appContainer.classList.remove('chat-is-empty');
             const userMessage = ALL_ELEMENTS.messageInput.value.trim();
             if (!userMessage && uploadedFiles.length === 0) return;
             
@@ -10250,6 +10236,9 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
                     };
 
                     window.visualViewport.addEventListener('resize', smoothScrollToTarget, { once: true });
+                    if (window.innerWidth >= 1024) {
+  ALL_ELEMENTS.inputBarContainer.classList.remove('centered'); // 發送後移動到底部
+}
                 } else {
                     setTimeout(() => {
                         const inputBarContainer = document.getElementById('input-bar-container');
@@ -10615,6 +10604,9 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             // ✨ END: 新增的附件上彈視窗函式與按鈕邏輯
             setupHistorySidebarInteractions(); // 啟用側邊欄的點擊跳轉功能
     setupHistorySidebarTriggers();   // 啟用側邊欄的滑動和懸停觸發功能
+            if (window.innerWidth >= 1024) {
+  ALL_ELEMENTS.inputBarContainer.classList.add('centered'); // 初次載入時置中
+}
             ALL_ELEMENTS.showPromptsBtn.addEventListener('click', () => {
     const container = ALL_ELEMENTS.followUpContainer;
     
