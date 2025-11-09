@@ -2463,7 +2463,25 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
         min-height: 0;
     }
 }
+ /* ✨ 新增：用於初始畫面置中的樣式 (僅限電腦版) */
+    @media (min-width: 768px) {
+      /* 1. 讓 main 容器準備好進行垂直置中 */
+      main.is-empty {
+        justify-content: center;
+      }
 
+      /* 2. 當置中時，讓訊息列表區塊不要無限伸長，這樣輸入框才能被往上推到中間 */
+      main.is-empty #chat-container {
+        flex-grow: 0;
+      }
+
+      /* 3. 美化一下初始畫面的歡迎訊息，讓它跟輸入框之間有點距離 */
+      main.is-empty #message-list > div.text-center {
+         margin-top: 0;
+         margin-bottom: 2rem; /* 在歡迎詞和輸入框之間增加一些間距 */
+      }
+    }
+        
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -4877,33 +4895,41 @@ function renderMarkdownWithFormulas(text) {
             ALL_ELEMENTS.archivedChatsContainer.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', (e) => deleteChat(e.target.dataset.id, e)));
         };
         const renderChat = () => {
-            const conv = getActiveConversation();
-            const messageList = ALL_ELEMENTS.messageList;
-            messageList.classList.remove('chat-view-transition');
-            if (!conv) {
-                messageList.innerHTML = '';
-                ALL_ELEMENTS.headerTitle.textContent = i18n[config.uiLanguage].newChat;
-                ALL_ELEMENTS.modelSwitcherContainer.innerHTML = '';
-                renderInputIndicators();
-                return;
-            }
-            ALL_ELEMENTS.headerTitle.textContent = conv.archived ? `(${i18n[config.uiLanguage].archived || '已封存'}) ${conv.title}` : conv.title;
-            renderModelSwitcher();
-            renderInputIndicators();
-            messageList.innerHTML = '';
-            if (conv.messages.length === 0) {
-                const greeting = `${currentUser.username}, ${i18n[config.uiLanguage].howCanIHelp || '有什麼可以為您服務的嗎？'}`;
-                messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] mt-16"><p class="text-lg">${greeting}</p></div>`;
-            } else {
-                conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
-            }
-            requestAnimationFrame(() => {
-    setupMessageIntersectionObserver();
-});
-            void messageList.offsetWidth;
-            messageList.classList.add('chat-view-transition');
-            updateInputState();
-        };
+    const mainElement = document.querySelector('#app-container main'); // 取得 main 元素
+    const conv = getActiveConversation();
+    const messageList = ALL_ELEMENTS.messageList;
+    messageList.classList.remove('chat-view-transition');
+
+    if (!conv) {
+        messageList.innerHTML = '';
+        ALL_ELEMENTS.headerTitle.textContent = i18n[config.uiLanguage].newChat;
+        ALL_ELEMENTS.modelSwitcherContainer.innerHTML = '';
+        renderInputIndicators();
+        if(mainElement) mainElement.classList.add('is-empty'); // ✨ 如果沒有對話，也視為空狀態
+        return;
+    }
+
+    ALL_ELEMENTS.headerTitle.textContent = conv.archived ? `(${i18n[config.uiLanguage].archived || '已封存'}) ${conv.title}` : conv.title;
+    renderModelSwitcher();
+    renderInputIndicators();
+    messageList.innerHTML = '';
+
+    if (conv.messages.length === 0) {
+        const greeting = `${currentUser.username}, ${i18n[config.uiLanguage].howCanIHelp || '有什麼可以為您服務的嗎？'}`;
+        messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] mt-16"><p class="text-lg">${greeting}</p></div>`;
+        if(mainElement) mainElement.classList.add('is-empty'); // ✨ 訊息為空，加上 is-empty class
+    } else {
+        conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
+        if(mainElement) mainElement.classList.remove('is-empty'); // ✨ 有訊息了，移除 is-empty class
+    }
+
+    requestAnimationFrame(() => {
+        setupMessageIntersectionObserver();
+    });
+    void messageList.offsetWidth;
+    messageList.classList.add('chat-view-transition');
+    updateInputState();
+};
         
         const updateFunctionButtonsState = () => {
             const { cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn } = ALL_ELEMENTS;
