@@ -5640,20 +5640,11 @@ function renderMarkdownWithFormulas(text) {
             }
             return messageDiv;
         };
-         /**
- * ✨ 全新重構：打字機效果渲染函數 (v2)
- *    - 使用 setInterval 達到勻速輸出
- *    - 隱藏 Markdown 特殊字元，避免渲染過程中的視覺干擾
- * @param {HTMLElement} targetElement 要顯示文字的目標 DOM 元素
- * @param {function(function(string): void): Promise<void>} streamApiCallFn 啟動 API 呼叫的函數
- * @param {AbortSignal} signal 用於中止操作的 AbortSignal
- * @returns {Promise<string>} 返回完整的 AI 回應字串
- */
 /**
- * ✨ 全新重構：自適應速度的打字機效果渲染函數 (v3)
- *    - 自動偵測模型初始輸出速度，並在單次生成中保持該速度
- *    - 使用 async/await 迴圈代替 setInterval，更穩定且易於控制
- *    - 在打字過程中隱藏 Markdown 特殊字元，避免渲染過程中的視覺干擾
+ * ✨ 全新重構：自適應速度與批次處理的打字機效果 (V4)
+ *    - 徹底解決模型輸出速度與 UI 渲染速度不匹配導致的延遲問題。
+ *    - 使用 requestAnimationFrame 確保動畫流暢。
+ *    - 引入動態批次處理：當文字佇列過長時，一次性渲染多個字元以快速「趕上」進度。
  * @param {HTMLElement} targetElement 要顯示文字的目標 DOM 元素
  * @param {function(function(string): void): Promise<void>} streamApiCallFn 啟動 API 呼叫的函數
  * @param {AbortSignal} signal 用於中止操作的 AbortSignal
@@ -5665,93 +5656,101 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
         let textQueue = '';
         let isStreaming = true;
         
-        // --- 自適應速度相關變數 ---
-        let typingInterval = 30; // 初始/備用速度 (ms/字元)，數字越小越快
-        let speedCalculated = false;
-        let startTime = null;
-        let charsCountForSpeedCalc = 0;
-        // ---
+        // ✨ 新增：定義打字速度的邊界值 (單位: ms)
+        const MIN_TYPING_INTERVAL = 5;  // 最快速度，用於追趕進度
+        const MAX_TYPING_INTERVAL = 50; // 最慢速度，用於平緩輸出
 
         const MARKDOWN_CHARS_TO_HIDE = new Set(['*', '_', '#', '`', '[', ']', '(', ')', '|', '-', '=', '~']);
 
         targetElement.innerHTML = '';
         targetElement.classList.add('typing-cursor');
 
-        // 這是 API 串流回傳資料時會呼叫的函式
-        const onChunkReceived = (chunk) => {
+        // API 串流回傳資料時，只負責把文字塞進佇列
+        streamApiCallFn((chunk) => {
             textQueue += chunk;
+        }).catch(error => {
+            isStreaming = false; // 即使出錯也要標記為停止
+            reject(error);
+        }).finally(() => {
+            isStreaming = false; // 串流結束
+        });
 
-            // 在串流初期計算速度
-            if (!speedCalculated) {
-                if (startTime === null) startTime = Date.now();
-                charsCountForSpeedCalc += chunk.length;
-                const elapsedTime = Date.now() - startTime;
-                
-                // 經過 250ms 或收到超過 20 個字元後，進行一次速度計算
-                if (elapsedTime > 250 && charsCountForSpeedCalc > 20) {
-                    const charsPerSecond = (charsCountForSpeedCalc / elapsedTime) * 1000;
-                    // 將速度限制在一個可讀的範圍內 (每秒 40 ~ 200 字)
-                    const clampedCPS = Math.max(40, Math.min(200, charsPerSecond));
-                    typingInterval = 1000 / clampedCPS; // 計算出每個字元的延遲
-                    speedCalculated = true; // 標記為已計算，後續不再更改速度
-                }
+        // 這是新的打字機主迴圈，使用 requestAnimationFrame
+        let lastUpdateTime = 0;
+        function typeLoop(currentTime) {
+            // 如果被中止，就直接結束
+            if (signal.aborted) {
+                targetElement.classList.remove('typing-cursor');
+                resolve(fullText);
+                return;
             }
-        };
 
-        // 啟動 API 呼叫，並在結束時更新 isStreaming 狀態
-        streamApiCallFn(onChunkReceived)
-            .catch(error => {
-                isStreaming = false; // 即使出錯也要停止迴圈
-                reject(error);
-            })
-            .finally(() => {
-                isStreaming = false;
-            });
+            // 計算距離上次更新過了多久
+            if (!lastUpdateTime) lastUpdateTime = currentTime;
+            const deltaTime = currentTime - lastUpdateTime;
 
-        // 這是新的打字機主迴圈
-        const typeLoop = async () => {
-            while (isStreaming || textQueue.length > 0) {
-                if (signal.aborted) {
-                    break; // 如果使用者中止，則跳出迴圈
-                }
+            // ✨ 核心邏輯：動態計算本次更新要處理多少字元
+            let charsToProcess = 0;
+            const queueLength = textQueue.length;
 
-                if (textQueue.length > 0) {
-                    const char = textQueue.charAt(0);
-                    textQueue = textQueue.substring(1);
-                    fullText += char;
+            if (queueLength > 20) {
+                // 如果佇列很長（延遲很高），則加速追趕
+                // 每次處理一小批字元，例如佇列長度的 1/4，但至少 1 個
+                charsToProcess = Math.max(1, Math.floor(queueLength / 4));
+            } else if (queueLength > 0 && deltaTime >= MAX_TYPING_INTERVAL) {
+                // 如果佇列不長，且達到了最慢打字間隔，就處理 1 個字元
+                charsToProcess = 1;
+            } else if (queueLength > 0 && deltaTime >= MIN_TYPING_INTERVAL) {
+                // 如果佇列不長，且達到了最快打字間隔，也處理 1 個字元
+                charsToProcess = 1;
+            }
+            
+            if (charsToProcess > 0) {
+                const chunkToRender = textQueue.substring(0, charsToProcess);
+                textQueue = textQueue.substring(charsToProcess);
+                fullText += chunkToRender;
 
+                // 創建一個文檔片段來進行高效的 DOM 操作
+                const fragment = document.createDocumentFragment();
+                for (const char of chunkToRender) {
                     if (!MARKDOWN_CHARS_TO_HIDE.has(char)) {
                         const span = document.createElement('span');
                         span.className = 'fade-in-char';
                         if (char === '\n') {
-                            targetElement.appendChild(document.createElement('br'));
+                            fragment.appendChild(document.createElement('br'));
                         } else {
                             span.textContent = char;
-                            targetElement.appendChild(span);
+                            fragment.appendChild(span);
                         }
                     }
-                    
-                    // 保持捲動到底部
-                    const chatContainer = ALL_ELEMENTS.chatContainer;
-                    const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
-                    if (isNearBottom) {
-                        chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
-                    }
                 }
-                
-                // 等待動態計算出的延遲時間
-                await new Promise(r => setTimeout(r, typingInterval));
+                targetElement.appendChild(fragment);
+
+                // 更新上次渲染時間
+                lastUpdateTime = currentTime;
+
+                // 保持捲動到底部
+                const chatContainer = ALL_ELEMENTS.chatContainer;
+                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
+                if (isNearBottom) {
+                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+                }
             }
 
-            // 迴圈結束後，進行清理
-            targetElement.classList.remove('typing-cursor');
-            if (signal.aborted) {
-                console.log("打字機效果被中止。");
+            // 如果串流還在繼續，或者佇列中還有文字，就繼續下一幀的動畫
+            if (isStreaming || textQueue.length > 0) {
+                requestAnimationFrame(typeLoop);
+            } else {
+                // 所有工作都完成了
+                targetElement.classList.remove('typing-cursor');
+                // 最終用完整的、經過 Markdown 渲染的內容更新，確保格式正確
+                targetElement.innerHTML = renderMarkdownWithFormulas(fullText);
+                resolve(fullText);
             }
-            resolve(fullText); // 無論如何，都返回目前已收到的完整文字
-        };
+        }
 
-        typeLoop(); // 啟動打字機主迴圈
+        // 啟動打字機主迴圈
+        requestAnimationFrame(typeLoop);
     });
 }
 
