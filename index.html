@@ -31,13 +31,6 @@
     main.flex-1 {
     /* 強制隱藏所有超出寬度的內容 */
     overflow-x: hidden;
-    /* ✨ 新增：讓佈局變化時有平滑的過渡動畫 */
-    transition: justify-content 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* ✨ 新增：這是一個新的 CSS 規則，用來控制置中狀態 */
-main.chat-is-empty {
-    justify-content: center;
 }
     #history-sidebar .history-sidebar-item {
     /* 這是為了讓指示條可以相對於它定位，非常重要！ */
@@ -607,7 +600,6 @@ button:not(.btn-primary):active:not(:disabled) {
     }
     .input-wrapper {
     transition: box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out, padding-top 0.3s ease-in-out; /* 新增 padding-top 的過渡效果 */
-    border-radius: 9999px; /* <-- ✨ 就是加上這一行！ */
     position: relative;
     flex-direction: column;
     padding-top: 0; /* ✨ 新增：預設沒有上方內邊距 */
@@ -2470,7 +2462,19 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
         min-height: 0;
     }
 }
+main.is-empty {
+    justify-content: center; /* 讓 main 容器內的元素垂直置中 */
+}
 
+main.is-empty #chat-container {
+    flex-grow: 0; /* 阻止聊天視窗佔滿多餘空間 */
+    overflow: hidden; /* 隱藏空的聊天視窗可能出現的滾動條 */
+}
+
+main.is-empty #message-list {
+     margin-bottom: 1.5rem; /* 在歡迎語和輸入框之間增加一些間距 */
+}
+        
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -2730,7 +2734,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 <div id="input-bar-container" class="p-2 md:p-4 bg-[var(--input-bar-bg)] border-[var(--border-color)]">
                     <div class="max-w-4xl mx-auto">
                         <div id="file-preview-container" class="w-full flex flex-wrap gap-2 mb-2 px-2 empty:hidden"></div>
-                        <div class="input-wrapper w-full flex items-end gap-2 p-2 rounded-2xl bg-[var(--input-field-bg)] border border-[var(--border-color)] shadow-sm spotlight-effect">
+                        <div class="input-wrapper w-full flex items-end gap-2 p-2 rounded-full bg-[var(--input-field-bg)] border border-[var(--border-color)] shadow-sm spotlight-effect">
                             <div id="input-indicator-container" class="flex gap-1 empty:hidden">
                             </div>
                             <div class="w-full flex items-end gap-2">
@@ -4884,44 +4888,39 @@ function renderMarkdownWithFormulas(text) {
             ALL_ELEMENTS.archivedChatsContainer.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', (e) => deleteChat(e.target.dataset.id, e)));
         };
         const renderChat = () => {
-    const conv = getActiveConversation();
-    const messageList = ALL_ELEMENTS.messageList;
-    const mainContainer = document.querySelector('main.flex-1'); // ✨ 新增：取得 main 容器
-
-    messageList.classList.remove('chat-view-transition');
-
-    if (!conv) {
-        messageList.innerHTML = '';
-        ALL_ELEMENTS.headerTitle.textContent = i18n[config.uiLanguage].newChat;
-        ALL_ELEMENTS.modelSwitcherContainer.innerHTML = '';
-        renderInputIndicators();
-        mainContainer.classList.add('chat-is-empty'); // ✨ 新增：確保沒有對話時也是置中
-        return;
-    }
-
-    ALL_ELEMENTS.headerTitle.textContent = conv.archived ? `(${i18n[config.uiLanguage].archived || '已封存'}) ${conv.title}` : conv.title;
-    renderModelSwitcher();
-    renderInputIndicators();
-    messageList.innerHTML = '';
-
-    // ✨ 核心修改處 START ✨
-    if (conv.messages.length === 0) {
-        const greeting = `我可以如何協助你，${currentUser.username}？`; // <-- 修改了問候語
-        messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] mb-4"><p class="text-3xl font-medium">${greeting}</p></div>`; // <-- 修改了樣式和位置
-        mainContainer.classList.add('chat-is-empty'); // 如果沒有訊息，就加上置中 class
-    } else {
-        conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
-        mainContainer.classList.remove('chat-is-empty'); // 如果有訊息，就移除置中 class
-    }
-    // ✨ 核心修改處 END ✨
-
-    requestAnimationFrame(() => {
-        setupMessageIntersectionObserver();
-    });
-    void messageList.offsetWidth;
-    messageList.classList.add('chat-view-transition');
-    updateInputState();
-};
+            const conv = getActiveConversation();
+            const mainElement = ALL_ELEMENTS.chatContainer.parentElement;
+if (conv && conv.messages.length === 0) {
+    mainElement.classList.add('is-empty');
+} else {
+    mainElement.classList.remove('is-empty');
+}
+            const messageList = ALL_ELEMENTS.messageList;
+            messageList.classList.remove('chat-view-transition');
+            if (!conv) {
+                messageList.innerHTML = '';
+                ALL_ELEMENTS.headerTitle.textContent = i18n[config.uiLanguage].newChat;
+                ALL_ELEMENTS.modelSwitcherContainer.innerHTML = '';
+                renderInputIndicators();
+                return;
+            }
+            ALL_ELEMENTS.headerTitle.textContent = conv.archived ? `(${i18n[config.uiLanguage].archived || '已封存'}) ${conv.title}` : conv.title;
+            renderModelSwitcher();
+            renderInputIndicators();
+            messageList.innerHTML = '';
+            if (conv.messages.length === 0) {
+                const greeting = `${currentUser.username}, ${i18n[config.uiLanguage].howCanIHelp || '有什麼可以為您服務的嗎？'}`;
+                messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] mt-16"><p class="text-lg">${greeting}</p></div>`;
+            } else {
+                conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
+            }
+            requestAnimationFrame(() => {
+    setupMessageIntersectionObserver();
+});
+            void messageList.offsetWidth;
+            messageList.classList.add('chat-view-transition');
+            updateInputState();
+        };
         
         const updateFunctionButtonsState = () => {
             const { cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn } = ALL_ELEMENTS;
@@ -5549,6 +5548,10 @@ function renderMarkdownWithFormulas(text) {
 };
         const addMessageToUI = (msg, index, shouldSave = true, shouldScroll = true) => {
             const conv = getActiveConversation();
+            const mainElement = ALL_ELEMENTS.chatContainer.parentElement;
+if (mainElement.classList.contains('is-empty')) {
+     mainElement.classList.remove('is-empty');
+}
             if (shouldSave) {
                  conv.messages.push(msg);
                 if (conv.messages.length === 1 && msg.role === 'user' && conv.isTemporary && !conv.isRenamed && config.autoNaming) {
