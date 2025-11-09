@@ -2463,58 +2463,63 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
         min-height: 0;
     }
 }
-        /* === Desktop 專用：預聊置中 + 橢圓輸入框 + 去底色 === */
-@media (min-width: 1024px) {
+        @media (min-width: 1024px) {
 
-  /* 1) 首訊前：把輸入欄置中（不固定定位，仍受左側欄擠壓） */
-  body.pre-chat-desktop main { position: relative; }
-  body.pre-chat-desktop #input-bar-container {
-    position: absolute;
-    inset-inline: 0;         /* 左右貼齊 main 內緣 */
-    top: 50%;                /* 垂直中心 */
-    transform: translateY(-50%);
-    background: transparent !important;
-    border: 0 !important;
-    box-shadow: none !important;
-  }
-  /* 預聊時，隱藏追問區 & 底部浮動鈕，避免干擾視覺 */
-  body.pre-chat-desktop #follow-up-container { display: none !important; }
-  body.pre-chat-desktop #scroll-to-bottom-btn { display: none !important; }
+    /* 當 main 區塊有 .no-messages 這個 class 時... */
+    main#main-content-area.no-messages {
+        /* 1. 將其變為 Flex 容器，允許我們控制子元素的對齊 */
+        display: flex;
+        flex-direction: column; /* 讓子元素 (訊息列表、輸入欄) 垂直排列 */
+        
+        /* 2. 這是垂直置中的關鍵！ */
+        justify-content: center;
+    }
 
-  /* 2) 一般狀態（非預聊）重置定位，維持原本在底部的行為 */
-  body:not(.pre-chat-desktop) #input-bar-container {
-    position: static;
-    transform: none;
-  }
+    /* 調整招呼語的樣式 */
+    main#main-content-area.no-messages #message-list > div.text-center {
+        /* 3. 移除它原本可能有的上方外邊距 */
+        margin-top: 0;
+        /* 4. 縮小它與下方輸入框的間距 */
+        margin-bottom: 2rem; /* 您可以調整這個值，例如 1.5rem 或 3rem */
+        padding: 0;
+    }
 
-  /* 3) 輸入框改成橢圓 & 去除周圍底色模塊（淺/深色都生效） */
-  #input-bar-container {
-    background: transparent !important;     /* 去掉容器底色 */
-    border: 0 !important;                   /* 去掉外框線 */
-    padding-top: .5rem !important;          /* 同時縮短和上方內容的距離 */
-  }
-  #input-bar-container .input-wrapper {
-    background: transparent !important;     /* 去掉內層底色 */
-    box-shadow: none !important;            /* 去掉陰影模塊 */
-    border: 1px solid var(--border-color);  /* 保留細框，較清楚 */
-    border-radius: 9999px !important;       /* 橢圓 */
-    padding: .5rem .75rem !important;       /* 內距微調，讓橢圓更自然 */
-  }
-  #message-input {
-    background: transparent !important;
-    border: 0 !important;
-    border-radius: 9999px !important;       /* 讓輸入區本身也有圓角 */
-  }
+    /* 5. 加大招呼語的文字大小 */
+    main#main-content-area.no-messages #message-list > div.text-center p {
+        font-size: 2rem; /* 從原本的 1.125rem 加大 */
+        font-weight: 500; /* 讓字體稍微加粗一點，更有精神 */
+    }
 
-  /* 4) 縮短招呼語與輸入欄距離、放大招呼語 */
-  /* 你的空聊天室招呼語通常掛在 message-list 裡的置中文字區塊 */
-  #chat-container { padding-bottom: .5rem !important; }      /* 原本 md:p-6 太寬鬆 */
-  #message-list > div.text-center {
-    margin-bottom: .75rem !important;       /* 縮短與輸入欄的間距 */
-    font-size: 1.35rem;                     /* 放大招呼語 */
-    font-weight: 700;                       /* 微加粗 */
-    line-height: 1.3;
-  }
+    /* 6. 移除輸入欄外層容器的背景和邊框 */
+    main#main-content-area.no-messages #input-bar-container {
+        background-color: transparent !important;
+        border-top-color: transparent !important;
+    }
+    
+    /* 讓輸入框本身在置中時也有最大寬度限制，看起來更協調 */
+    main#main-content-area.no-messages .input-wrapper {
+        margin-left: auto;
+        margin-right: auto;
+        max-width: 48rem; /* 與聊天氣泡的最大寬度一致 */
+    }
+
+    /* --- 以下是針對所有電腦版輸入欄的樣式修改 --- */
+
+    /* 7. 將輸入框變成橢圓形 (圓角拉到最大) */
+    #input-bar-container .input-wrapper {
+        border-radius: 9999px;
+        /* 增加左右內邊距，讓文字不會貼著邊緣 */
+        padding-left: 1rem;
+        padding-right: 0.5rem;
+    }
+
+    /* 8. 移除輸入框在淺色/深色模式下的背景和陰影 */
+    #input-bar-container .input-wrapper {
+        background-color: transparent !important;
+        box-shadow: none !important;
+        /* 我們保留邊框，讓輸入框在沒有背景時依然可見 */
+        border: 1px solid var(--border-color);
+    }
 }
 
 </style>
@@ -2720,7 +2725,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 </div>
                 </div>
             </aside>
-            <main class="flex-1 flex flex-col relative h-full">
+            <main id="main-content-area" class="flex-1 flex flex-col relative h-full">
 <header class="relative z-10 p-1.5 md:p-2 flex justify-between items-center border-b border-[var(--border-color)]">
     <div class="flex items-center gap-2 min-w-0">
         <button id="menu-toggle-btn" class="p-2 rounded-md hover:bg-[var(--hover-bg)]">
@@ -4931,6 +4936,17 @@ function renderMarkdownWithFormulas(text) {
         };
         const renderChat = () => {
             const conv = getActiveConversation();
+                const mainContentArea = document.getElementById('main-content-area');
+    if (mainContentArea) { // 確保元素存在
+        // 判斷：如果對話存在，且訊息數量為 0
+        if (conv && conv.messages.length === 0) {
+            // 就為 main 區塊加上 'no-messages' 這個 class
+            mainContentArea.classList.add('no-messages');
+        } else {
+            // 否則 (有訊息了)，就移除這個 class
+            mainContentArea.classList.remove('no-messages');
+        }
+    }
             const messageList = ALL_ELEMENTS.messageList;
             messageList.classList.remove('chat-view-transition');
             if (!conv) {
@@ -10765,33 +10781,6 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
         }
         lastTouchEnd = now;
     }, false);
-</script>
-        <script>
-(function () {
-  const isDesktop = () => window.matchMedia('(min-width: 1024px)').matches;
-  const msgList = document.getElementById('message-list');
-
-  function applyPreChatLayout() {
-    if (!msgList) return;
-    const noMessages = msgList.children.length === 0;
-    document.body.classList.toggle('pre-chat-desktop', noMessages && isDesktop());
-  }
-
-  // 監聽訊息列表的新增/刪除（首訊送出或清空對話都會觸發）
-  if (msgList) {
-    const obs = new MutationObserver(applyPreChatLayout);
-    obs.observe(msgList, { childList: true });
-  }
-
-  // 螢幕尺寸變化時也檢查（手機/桌機切換）
-  window.addEventListener('resize', applyPreChatLayout);
-
-  // 首次載入先跑一次
-  document.addEventListener('DOMContentLoaded', applyPreChatLayout);
-
-  // 若你有「新對話」按鈕，可（選擇性）在這裡補掛事件以立即回到置中狀態
-  // document.getElementById('new-chat-btn')?.addEventListener('click', applyPreChatLayout);
-})();
 </script>
 </body>
 </html>
