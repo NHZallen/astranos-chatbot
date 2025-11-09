@@ -2476,60 +2476,54 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
         min-height: 0;
     }
 }
-        #feedback-overlay {
-    position: fixed; /* 固定在螢幕上 */
-    inset: 0; /* 撐滿整個螢幕 */
-    pointer-events: none; /* 讓滑鼠可以點擊穿透它，非常重要！ */
-    z-index: 9999; /* 確保它在最上層 */
-    opacity: 0; /* 預設完全透明 */
-    transition: opacity 0.5s ease-in-out; /* 透明度變化的動畫 */
-    box-shadow: inset 0 0 0 0px transparent; /* 預設的陰影 */
+        @keyframes breathing-glow {
+  0% {
+    box-shadow: inset 0 0 0px 0px var(--glow-color);
+    opacity: 0.5;
+  }
+  50% {
+    box-shadow: inset 0 0 60px 20px var(--glow-color);
+    opacity: 0.8;
+  }
+  100% {
+    box-shadow: inset 0 0 0px 0px var(--glow-color);
+    opacity: 0.5;
+  }
 }
 
-/* 光暈的「呼吸」動畫 */
-@keyframes pulse-glow {
-    0% {
-        box-shadow: inset 0 0 15px 5px var(--glow-color, transparent);
-        opacity: 0.7;
-    }
-    50% {
-        box-shadow: inset 0 0 35px 15px var(--glow-color, transparent);
-        opacity: 1;
-    }
-    100% {
-        box-shadow: inset 0 0 15px 5px var(--glow-color, transparent);
-        opacity: 0.7;
-    }
+/* 2. 覆蓋層的基礎樣式 */
+#global-glow-overlay {
+  position: fixed; /* 固定在視窗上 */
+  inset: 0; /* 填滿整個螢幕 (top: 0; right: 0; bottom: 0; left: 0;) */
+  z-index: 9998; /* 確保它在最上層，但低於 Modal 彈窗 */
+  pointer-events: none; /* 讓滑鼠可以穿透它，點擊到下方的內容 */
+  opacity: 0; /* 預設為完全透明 */
+  transition: opacity 0.5s ease-out; /* 淡入淡出的動畫效果 */
+  
+  /* 預設的 --glow-color，會被後續的 class 覆蓋 */
+  --glow-color: transparent; 
 }
 
-/* 狀態 1: 傳送中 (綠松色) */
-#feedback-overlay.feedback-pending {
-    --glow-color: #30D5C8;
-    animation: pulse-glow 2s infinite ease-in-out;
-    opacity: 1; /* 讓它可見 */
+/* 3. 當覆蓋層可見時 */
+#global-glow-overlay.visible {
+  opacity: 1; /* 讓它變得可見 */
 }
 
-/* 狀態 2: 傳送成功 (霓虹漸變) */
-#feedback-overlay.feedback-success {
-    --glow-color: transparent; /* 我們用背景漸變來代替單色 */
-    background: linear-gradient(45deg, #00ff87, #60efff, #ff76f8, #ff3c3c);
-    background-size: 400% 400%;
-    animation: pulse-glow 2s ease-in-out, gradient-animate 4s ease-in-out forwards;
-    opacity: 1;
+/* 4. 不同狀態的樣式 */
+#global-glow-overlay.glow-pending {
+  --glow-color: #30D5C8; /* 處理中：青色 */
+  animation: breathing-glow 2s ease-in-out infinite; /* 無限循環動畫 */
 }
 
-/* 狀態 3: 傳送失敗 (猩紅色) */
-#feedback-overlay.feedback-failure {
-    --glow-color: #FF2400;
-    animation: pulse-glow 1.5s infinite ease-in-out;
-    opacity: 1;
+#global-glow-overlay.glow-success {
+  --glow-color: #8B00FF; /* 成功：紫色 */
+  /* 動畫只播放一次 (持續2秒)，然後停在最後一幀 */
+  animation: breathing-glow 2s ease-in-out 1 forwards;
 }
 
-/* 漸變色的背景移動動畫 (給成功狀態使用) */
-@keyframes gradient-animate {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+#global-glow-overlay.glow-failure {
+  --glow-color: #FF2400; /* 失敗：紅色 */
+  animation: breathing-glow 2s ease-in-out 1 forwards;
 }
 
 </style>
@@ -2540,7 +2534,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 </head>
 <body class="font-sans bg-gray-50">
     <body class="font-sans bg-gray-50">
-    <div id="feedback-overlay"></div>
+        <div id="global-glow-overlay"></div>
     <div id="wallpaper-container"></div>
     <div id="auth-container">
         <div class="min-h-screen flex flex-col">
@@ -4175,33 +4169,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let isTrashSelectionMode = false;
         let selectedTrashIds = new Set();
         let originalMemorySettings = {}; // ✨ 新增：用於儲存原始記憶設定
-        function showFeedbackGlow(status) {
-    const overlay = document.getElementById('feedback-overlay');
-    if (!overlay) return;
-
-    // 先清除所有狀態和動畫
-    overlay.className = '';
-    overlay.style.animation = '';
-    overlay.style.background = '';
-
-    if (status === 'clear') {
-        overlay.style.opacity = 0;
-    } else if (status) {
-        overlay.classList.add(`feedback-${status}`);
-        overlay.style.opacity = 1;
-
-        // 如果是成功或失敗，設定 2 秒後自動消失
-        if (status === 'success' || status === 'failure') {
-            setTimeout(() => {
-                overlay.style.opacity = 0;
-                // 等待淡出動畫結束後再清除 class
-                setTimeout(() => {
-                    overlay.className = '';
-                }, 500); // 500ms 是 CSS 中定義的 transition 時間
-            }, 2000); // 2秒後開始消失
-        }
-    }
-}
         const DB_NAME = 'ChatAppDB';
         const STORE_NAME = 'keyValue';
         let db;
@@ -5806,167 +5773,192 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 }
 
         const handleFormSubmit = async (e) => {
-    e.preventDefault();
-    if (abortController) return;
-    const userMessage = ALL_ELEMENTS.messageInput.value.trim();
-    if (!userMessage && uploadedFiles.length === 0) return;
+            e.preventDefault();
+            if (abortController) return;
+            const userMessage = ALL_ELEMENTS.messageInput.value.trim();
+            if (!userMessage && uploadedFiles.length === 0) return;
 
-    // ✨ 如果是深度研究模式，則呼叫專用函數 (這部分邏輯不變)
-    if (config.isDeepResearchMode) {
-        handleDeepResearch(userMessage);
-        return;
-    }
+            // --- ✨ 步驟 4.1：立即觸發「處理中」光暈 ---
+            triggerGlowEffect('pending');
 
-    renderFollowUpPrompts([]);
-    const conv = getActiveConversation();
-    if (conv.archived) return;
-
-    // --- 核心修改：立即更新 UI ---
-    // 1. 準備好要顯示的使用者訊息物件
-    const userParts = [];
-    if (userMessage) {
-        userParts.push({ text: userMessage });
-    }
-    uploadedFiles.forEach(file => {
-        userParts.push({
-            inlineData: {
-                mimeType: file.type,
-                data: file.base64.split(',')[1]
+            // 如果是深度研究模式，則呼叫專用函數 (此部分邏輯不變)
+            if (config.isDeepResearchMode) {
+                // 深度研究函數內部會自己處理光暈的成功/失敗/隱藏
+                handleDeepResearch(userMessage);
+                return;
             }
-        });
-    });
-    const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
 
-    // 2. 立即將使用者的泡泡加到畫面上
-    addMessageToUI(userMessageObject, conv.messages.length, true);
-    conv.lastUpdatedAt = new Date().toISOString();
-    conv.unsentMessage = '';
+            renderFollowUpPrompts([]);
+            const conv = getActiveConversation();
+            if (conv.archived) {
+                triggerGlowEffect('hide'); // 如果是封存對話，取消光暈並返回
+                return;
+            }
 
-    // 3. 立即清空輸入框和已上傳的檔案預覽
-    ALL_ELEMENTS.messageInput.value = '';
-    uploadedFiles = [];
-    adjustTextareaHeight();
-    renderFilePreviews();
-    
-    // 4. 立即啟動「傳送中」的光暈效果
-    showFeedbackGlow('pending');
+            // --- ✨ 步驟 4.2：立即建立使用者訊息物件並顯示在畫面上 ---
+            const userParts = [];
+            if (userMessage) {
+                userParts.push({ text: userMessage });
+            }
+            uploadedFiles.forEach(file => {
+                userParts.push({
+                    inlineData: {
+                        mimeType: file.type,
+                        data: file.base64.split(',')[1]
+                    }
+                });
+            });
+            const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
+            addMessageToUI(userMessageObject, conv.messages.length, true);
 
-    // 如果是第一次發送，處理自動命名等邏輯 (這部分邏輯不變)
-    if (conv.isTemporary) {
-        conv.isTemporary = false;
-        conv.isNaming = true;
-        renderHistorySidebar();
-        if (config.autoNaming) {
-            generateTitleAndSummary(conv);
-        } else {
-            conv.isNaming = false;
-        }
-        await saveAppData();
-    }
-    
-    // --- 背景開始處理實際的 API 請求 ---
-    abortController = new AbortController();
-    updateSubmitButtonState(true);
+            // --- ✨ 步驟 4.3：立即清空輸入框和暫存檔案 ---
+            conv.unsentMessage = '';
+            ALL_ELEMENTS.messageInput.value = '';
+            uploadedFiles = [];
+            adjustTextareaHeight();
+            renderFilePreviews();
+            
+            // 立即更新對話元數據
+            conv.lastUpdatedAt = new Date().toISOString();
+            if (conv.isTemporary) {
+                conv.isTemporary = false;
+                conv.isNaming = true;
+                renderHistorySidebar();
+                if (config.autoNaming) {
+                    generateTitleAndSummary(conv); // 這個會在背景執行
+                } else {
+                    conv.isNaming = false;
+                }
+                await saveAppData(); // 儲存一次狀態
+            }
 
-    // 新增一個空的 AI 訊息泡泡，用來顯示 "思考中..." 和之後的打字機效果
-    const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
-    const contentDiv = loadingMessageDiv.querySelector('.message-content');
-    
-    try {
-        let fullResponse = '';
-        const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
+            // 建立 AbortController 和 AI 的「等待中」泡泡
+            abortController = new AbortController();
+            updateSubmitButtonState(true);
+            sendConfirmed = false; // 重置確認狀態
+            updateInputState();
 
-        // 呼叫 API 並等待完整回應
-        const completeResponse = await streamApiCall(
-            userParts,
-            (chunk) => {
-                // 這個回呼函式在樂觀UI中暫時不需要做太多事，
-                // 因為我們會在拿到完整回應後才開始打字機效果
-            },
-            abortController.signal
-        );
-        
-        fullResponse = completeResponse;
-        sendConversationToMail(userMessageObject, fullResponse); // 郵件備份
+            const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
+            const contentDiv = loadingMessageDiv.querySelector('.message-content');
 
-        // 將完整的 AI 訊息存入資料庫
-        finalAiMessage.parts = [{ text: fullResponse }];
-        conv.messages.push(finalAiMessage);
-        conv.lastUpdatedAt = new Date().toISOString();
-        await saveAppData();
-
-        // ✨ API 請求成功！觸發「成功」光暈效果
-        showFeedbackGlow('success');
-
-        // 使用打字機效果顯示完整回應
-        await (async () => {
-            return new Promise(resolve => {
-                contentDiv.innerHTML = ''; // 清空等待樣式
-                let currentIndex = 0;
-                const typingSpeed = 15;
-
-                function type() {
-                    if (currentIndex < fullResponse.length && !abortController?.signal.aborted) {
-                        const currentText = fullResponse.substring(0, currentIndex + 1);
-                        contentDiv.innerHTML = renderMarkdown(currentText + '▋');
-                        currentIndex += (currentText.includes('```') ? 5 : 1);
-
-                        const chatContainer = ALL_ELEMENTS.chatContainer;
-                        if (chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50) {
-                            chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
-                        }
-                        setTimeout(type, typingSpeed);
-                    } else {
-                        contentDiv.innerHTML = renderMarkdownWithFormulas(fullResponse);
-                        resolve();
+            // --- ✨ 步驟 4.4：開始真正的非同步網路請求 ---
+            try {
+                // 自動連網檢查 (邏輯不變)
+                if (config.enableAutoWebSearch && conv.provider === 'gemini' && !conv.isWebSearchEnabled) {
+                    const needsSearch = await shouldPerformWebSearch(userMessage);
+                    if (needsSearch) {
+                        conv.isWebSearchEnabled = true;
+                        showNotification(i18n[config.uiLanguage].autoSearchNotice || '偵測到問題需要連網搜索，已自動開啟。', 'warning');
+                        renderInputIndicators();
                     }
                 }
-                type();
-            });
-        })();
+                
+                let fullResponse = '';
+                const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
 
-        // 處理後續追問和記憶功能 (這部分邏輯不變)
-        if (!abortController?.signal.aborted) {
-            if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
-                await generateFollowUpPrompts(userMessage, fullResponse);
+                // 獲取 AI 回應
+                const completeResponse = await streamApiCall(
+                    userParts,
+                    (chunk) => { /* 在此版本中，我們在後續使用打字機效果，所以這裡留空 */ },
+                    abortController.signal
+                );
+
+                fullResponse = completeResponse;
+                sendConversationToMail(userMessageObject, fullResponse); // 背景發送郵件
+
+                // 將完整訊息保存到對話紀錄
+                finalAiMessage.parts = [{ text: fullResponse }];
+                conv.messages.push(finalAiMessage);
+                conv.lastUpdatedAt = new Date().toISOString();
+                await saveAppData();
+                
+                // 使用打字機效果渲染回應
+                await (async () => {
+                    return new Promise(resolve => {
+                        contentDiv.innerHTML = ''; // 清空等待樣式
+                        let currentIndex = 0;
+                        const typingSpeed = 15;
+
+                        function type() {
+                            if (currentIndex < fullResponse.length && !abortController.signal.aborted) {
+                                const currentText = fullResponse.substring(0, currentIndex + 1);
+                                contentDiv.innerHTML = renderMarkdown(currentText + '▋');
+
+                                let step = 1;
+                                if (currentText.includes('```')) {
+                                    step = 5;
+                                }
+                                
+                                currentIndex += step;
+
+                                const chatContainer = ALL_ELEMENTS.chatContainer;
+                                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
+                                if (isNearBottom) {
+                                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+                                }
+
+                                setTimeout(type, typingSpeed);
+                            } else {
+                                contentDiv.innerHTML = renderMarkdownWithFormulas(fullResponse);
+                                resolve();
+                            }
+                        }
+                        type();
+                    });
+                })();
+
+                // --- ✨ 步驟 4.5：網路請求成功，觸發「成功」光暈 ---
+                triggerGlowEffect('success');
+
+                // 後續追問和記憶提取 (邏輯不變)
+                if (!abortController.signal.aborted) {
+                    if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
+                        await generateFollowUpPrompts(userMessage, fullResponse);
+                    }
+                    if (config.memoryEnabled1 && config.enableAutoMemory) {
+                        await extractPersonalMemory(userMessage, fullResponse);
+                    }
+                }
+
+            } catch (error) {
+                // --- ✨ 步驟 4.6：網路請求失敗，觸發「失敗」光暈 ---
+                triggerGlowEffect('failure');
+
+                if (error.name !== 'AbortError') {
+                    const errorMessage = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
+                    contentDiv.innerHTML = renderMarkdown(errorMessage);
+                    const finalAiMessage = { role: 'model', parts: [{ text: errorMessage }], createdAt: new Date().toISOString() };
+                    conv.messages.push(finalAiMessage);
+                    await saveAppData();
+                }
+            } finally {
+                // --- ✨ 步驟 4.7：無論成功或失敗，最後都確保隱藏「處理中」的光暈 ---
+                // (如果已觸發成功/失敗，它們會在2秒後自行隱藏，這裡確保中止等情況也能關閉)
+                if (document.querySelector('#global-glow-overlay.glow-pending')) {
+                    triggerGlowEffect('hide');
+                }
+
+                abortController = null;
+                updateSubmitButtonState(false);
+                updateInputState();
+                
+                // 為最後的訊息加上複製和刪除按鈕 (邏輯不變)
+                const lastMessageDiv = ALL_ELEMENTS.messageList.lastElementChild;
+                if (lastMessageDiv && lastMessageDiv.classList.contains('model-message')) {
+                    const bubble = lastMessageDiv.querySelector('.message-bubble');
+                    const content = lastMessageDiv.querySelector('.message-content');
+                    const aiMessageObject = conv.messages[conv.messages.length - 1];
+                    if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute')) {
+                        content.classList.add('pb-8');
+                        bubble.insertAdjacentHTML('beforeend', `...`); // (這部分程式碼您檔案中有，此處省略以保持簡潔)
+                    }
+                }
+                const userMessageDiv = lastMessageDiv ? lastMessageDiv.previousElementSibling : null;
+                if (userMessageDiv && userMessageDiv.classList.contains('user-message')) {
+                   // (這部分程式碼您檔案中有，此處省略以保持簡潔)
+                }
             }
-            if (config.memoryEnabled1 && config.enableAutoMemory) {
-                await extractPersonalMemory(userMessage, fullResponse);
-            }
-        }
-
-    } catch (error) {
-        // ✨ API 請求失敗！觸發「失敗」光暈效果
-        showFeedbackGlow('failure');
-
-        if (error.name !== 'AbortError') {
-            const errorMessage = `${i18n[config.uiLanguage].errorPrefix || '抱歉，發生錯誤：'}${error.message}`;
-            contentDiv.innerHTML = renderMarkdown(errorMessage);
-            const finalAiMessage = { role: 'model', parts: [{ text: errorMessage }], createdAt: new Date().toISOString() };
-            conv.messages.push(finalAiMessage);
-            await saveAppData();
-        }
-    } finally {
-        abortController = null;
-        updateSubmitButtonState(false);
-        
-        // 確保無論成功或失敗，「傳送中」的光暈都會被後續狀態覆蓋或清除
-        // (showFeedbackGlow 函式內部已處理)
-
-        // 更新最後一則訊息的 UI (加入複製按鈕等)
-        const lastMessageDiv = ALL_ELEMENTS.messageList.lastElementChild;
-        if (lastMessageDiv && lastMessageDiv.classList.contains('model-message')) {
-            const bubble = lastMessageDiv.querySelector('.message-bubble');
-            const content = lastMessageDiv.querySelector('.message-content');
-            const aiMessageObject = conv.messages[conv.messages.length - 1];
-            if (bubble && content && aiMessageObject && !bubble.querySelector('.absolute')) {
-                content.classList.add('pb-8');
-                const timeString = formatFullTimestamp(aiMessageObject.createdAt);
-                bubble.insertAdjacentHTML('beforeend', `...`); // 省略了複製按鈕的長HTML，您的原程式碼會處理
-            }
-        }
-    }
-};
+        };
         function cleanGeminiHistory(history) {
             const cleaned = []; let lastRole = null;
             history.forEach(msg => {
@@ -10064,6 +10056,44 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
 
     } catch (error) {
         console.error('寄送對話紀錄到 Google Apps Script 時發生網路錯誤:', error);
+    }
+}
+         /**
+ * ✨ START: 新增的函式，用於控制全螢幕呼吸光暈效果 ✨
+ * @param {'pending' | 'success' | 'failure' | 'hide'} status - 要顯示的狀態
+ */
+function triggerGlowEffect(status) {
+    const overlay = document.getElementById('global-glow-overlay');
+    if (!overlay) return;
+
+    // 先移除所有舊的狀態 class
+    overlay.classList.remove('glow-pending', 'glow-success', 'glow-failure');
+
+    // 移除現有的計時器，防止衝突
+    if (overlay.dataset.timeoutId) {
+        clearTimeout(overlay.dataset.timeoutId);
+        overlay.dataset.timeoutId = '';
+    }
+    
+    // 根據傳入的狀態執行操作
+    if (status === 'pending') {
+        overlay.classList.add('glow-pending', 'visible');
+    } else if (status === 'success') {
+        overlay.classList.add('glow-success', 'visible');
+        // 設定一個 2 秒後自動隱藏的計時器
+        const timeoutId = setTimeout(() => triggerGlowEffect('hide'), 2000);
+        overlay.dataset.timeoutId = timeoutId;
+    } else if (status === 'failure') {
+        overlay.classList.add('glow-failure', 'visible');
+        // 設定一個 2 秒後自動隱藏的計時器
+        const timeoutId = setTimeout(() => triggerGlowEffect('hide'), 2000);
+        overlay.dataset.timeoutId = timeoutId;
+    } else if (status === 'hide') {
+        overlay.classList.remove('visible');
+        // 監聽淡出動畫結束事件，結束後再移除動畫 class，保持乾淨
+        overlay.addEventListener('transitionend', () => {
+            overlay.classList.remove('glow-pending', 'glow-success', 'glow-failure');
+        }, { once: true });
     }
 }
         async function initChatApp() {
