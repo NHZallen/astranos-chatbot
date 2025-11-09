@@ -2476,49 +2476,39 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
         min-height: 0;
     }
 }
-        body.is-sending::before {
-    content: '';
-    position: fixed; /* 固定在視窗上 */
-    inset: 0; /* 覆蓋整個螢幕 (top: 0; right: 0; bottom: 0; left: 0;) */
-    z-index: 9999; /* 確保在最上層 */
-    pointer-events: none; /* 讓光暈效果不會擋到滑鼠點擊 */
-    animation: breathing-glow 2.5s ease-in-out infinite;
-    --glow-color: #30D5C8; /* 您指定的顏色 */
+        #sending-indicator-overlay {
+    position: fixed;
+    /* 覆蓋整個畫面 */
+    inset: 0;
+    /* 確保在所有元件的最頂層 */
+    z-index: 9999;
+    /* 讓滑鼠可以點擊下方的元件 */
+    pointer-events: none;
+    /* 預設為完全透明 */
+    opacity: 0;
+    /* 讓淡入淡出有動畫效果 */
+    transition: opacity 0.5s ease-in-out;
+    /* 初始的陰影狀態，完全透明 */
+    box-shadow: inset 0 0 0 0px rgba(48, 213, 200, 0);
 }
 
+/* 當覆蓋層可見時，套用動畫 */
+#sending-indicator-overlay.visible {
+    opacity: 1;
+    animation: breathing-glow 2s ease-in-out infinite;
+}
+
+/* ✨ 新增：定義呼吸光暈的動畫 ✨ */
 @keyframes breathing-glow {
     0% {
-        box-shadow: inset 0 0 10px 5px rgba(var(--glow-color), 0),
-                    inset 0 0 20px 10px rgba(var(--glow-color), 0);
+        box-shadow: inset 0 0 15px 5px rgba(48, 213, 200, 0.5), inset 0 0 30px 10px rgba(48, 213, 200, 0.3);
     }
     50% {
-        /* 這是光暈最亮的時候，增加了內陰影的擴散範圍和透明度 */
-        box-shadow: inset 0 0 40px 15px rgba(var(--glow-color), 0.5),
-                    inset 0 0 60px 20px rgba(var(--glow-color), 0.3);
+        box-shadow: inset 0 0 30px 10px rgba(48, 213, 200, 0.7), inset 0 0 50px 15px rgba(48, 213, 200, 0.5);
     }
     100% {
-        box-shadow: inset 0 0 10px 5px rgba(var(--glow-color), 0),
-                    inset 0 0 20px 10px rgba(var(--glow-color), 0);
+        box-shadow: inset 0 0 15px 5px rgba(48, 213, 200, 0.5), inset 0 0 30px 10px rgba(48, 213, 200, 0.3);
     }
-}
-
-
-/* ✨ 修改：讓傳送按鈕的動畫更精緻、更有彈性 */
-#submit-btn {
-    transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
-                background-color 0.2s ease-out, 
-                box-shadow 0.2s ease-out;
-}
-
-#submit-btn:not(:disabled):hover {
-    transform: scale(1.05); /* 滑鼠懸停時稍微放大 */
-    filter: brightness(1.1);
-}
-
-#submit-btn:not(:disabled):active {
-    transform: scale(0.95); /* 點擊時縮小，製造按壓感 */
-    transition-duration: 0.05s;
-    filter: brightness(0.9);
 }
 
 </style>
@@ -2529,6 +2519,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 </head>
 <body class="font-sans bg-gray-50">
     <body class="font-sans bg-gray-50">
+        <div id="sending-indicator-overlay"></div>
     <div id="wallpaper-container"></div>
     <div id="auth-container">
         <div class="min-h-screen flex flex-col">
@@ -5768,23 +5759,22 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 
         const handleFormSubmit = async (e) => {
             e.preventDefault();
-            if (abortController) return;
+            if (abortController) return; // 如果正在生成中，不執行任何操作
             const userMessage = ALL_ELEMENTS.messageInput.value.trim();
             if (!userMessage && uploadedFiles.length === 0) return;
             
-            // ✨ 新增：如果是研究模式，則直接呼叫舊的專用函數，並中止後續執行
+            // ✨ 檢查是否為研究模式，如果是，則使用舊的流程，不做任何更改
             if (config.isDeepResearchMode) {
                 handleDeepResearch(userMessage);
                 return;
             }
 
-            renderFollowUpPrompts([]);
             const conv = getActiveConversation();
-            if (conv.archived) return;
-            
-            // --- ✨ 核心修改：立即反應區塊 START ---
+            if (!conv || conv.archived) return;
 
-            // 1. 準備好使用者訊息的資料結構
+            // ✨ 步驟 1: 立即更新使用者介面，創造「已傳送」的感覺
+            renderFollowUpPrompts([]);
+            
             const userParts = [];
             if (userMessage) {
                 userParts.push({ text: userMessage });
@@ -5797,68 +5787,65 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     }
                 });
             });
-            const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
 
-            // 2. 立即將使用者的訊息泡泡新增到畫面上
+            const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
+            
+            // 立即將使用者的訊息泡泡加入畫面
             addMessageToUI(userMessageObject, conv.messages.length, true);
             conv.lastUpdatedAt = new Date().toISOString();
             conv.unsentMessage = '';
 
-            // 3. 立即清空輸入框和暫存的檔案
-            ALL_ELEMENTS.messageInput.value = '';
-            uploadedFiles = [];
-            adjustTextareaHeight();
-            renderFilePreviews();
-            
-            // 4. 立即為 body 添加 'is-sending' class，觸發呼吸光暈動畫
-            document.body.classList.add('is-sending');
-
-            // 5. 立即新增一個「等待中」的 AI 訊息泡泡
-            const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
-            const contentDiv = loadingMessageDiv.querySelector('.message-content');
-            
-            // --- 核心修改：立即反應區塊 END ---
-
-            abortController = new AbortController();
-            updateSubmitButtonState(true);
-
-            // 處理新對話的自動命名
+            // 如果是新對話，觸發自動命名
             if (conv.isTemporary) {
                 conv.isTemporary = false;
                 conv.isNaming = true;
                 renderHistorySidebar();
                 if (config.autoNaming) {
-                    generateTitleAndSummary(conv); // 讓它在背景執行
+                    generateTitleAndSummary(conv);
                 } else {
                     conv.isNaming = false;
                 }
                 await saveAppData();
             }
 
-            // 處理智慧聯網
-            if (config.enableAutoWebSearch && conv.provider === 'gemini' && !conv.isWebSearchEnabled) {
-                try {
-                    const needsSearch = await shouldPerformWebSearch(userMessage);
-                    if (needsSearch) {
-                        conv.isWebSearchEnabled = true;
-                        showNotification(i18n[config.uiLanguage].autoSearchNotice || '偵測到問題需要連網搜索，已自動開啟。', 'warning');
-                    }
-                    renderInputIndicators();
-                } catch(err) {
-                    console.error("Auto web search check failed:", err);
-                }
-            }
+            // 立即清空輸入框和檔案預覽
+            ALL_ELEMENTS.messageInput.value = '';
+            uploadedFiles = [];
+            adjustTextareaHeight();
+            renderFilePreviews();
+            
+            // ✨ 步驟 2: 啟用光暈效果並開始背景處理
+            const glowOverlay = document.getElementById('sending-indicator-overlay');
+            glowOverlay.classList.add('visible'); // 顯示呼吸光暈
+
+            abortController = new AbortController();
+            updateSubmitButtonState(true); // 將傳送按鈕變為「停止」圖示
+
+            const loadingMessageDiv = addMessageToUI({ role: 'model', parts: [{ text: '...' }], createdAt: new Date().toISOString() }, conv.messages.length, false);
+            const contentDiv = loadingMessageDiv.querySelector('.message-content');
             
             try {
+                // 智慧連網搜尋的判斷 (維持原狀)
+                if (config.enableAutoWebSearch && conv.provider === 'gemini' && !conv.isWebSearchEnabled) {
+                    try {
+                        const needsSearch = await shouldPerformWebSearch(userMessage);
+                        if (needsSearch) {
+                            conv.isWebSearchEnabled = true;
+                            showNotification(i18n[config.uiLanguage].autoSearchNotice || '偵測到問題需要連網搜索，已自動開啟。', 'warning');
+                        }
+                        renderInputIndicators();
+                    } catch(err) {
+                        console.error("Auto web search check failed:", err);
+                    }
+                }
+                
+                // ✨ 步驟 3: 執行真正的 API 呼叫 (此處邏輯與原版幾乎相同)
                 let fullResponse = '';
                 const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
 
-                // API 請求與打字機效果 (這部分會花費較長時間)
                 const completeResponse = await streamApiCall(
                     userParts,
-                    (chunk) => {
-                        // 在 streamApiCall 內部，我們只收集文字，不渲染
-                    },
+                    (chunk) => {},
                     abortController.signal
                 );
 
@@ -5870,10 +5857,9 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                 conv.lastUpdatedAt = new Date().toISOString();
                 await saveAppData();
                 
-                // 等待打字機動畫完成
                 await (async () => {
                     return new Promise(resolve => {
-                        contentDiv.innerHTML = ''; // 清空等待樣式
+                        contentDiv.innerHTML = '';
                         let currentIndex = 0;
                         const typingSpeed = 15;
 
@@ -5881,12 +5867,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                             if (currentIndex < fullResponse.length && !abortController.signal.aborted) {
                                 const currentText = fullResponse.substring(0, currentIndex + 1);
                                 contentDiv.innerHTML = renderMarkdown(currentText + '▋');
-
-                                let step = 1;
-                                if (currentText.includes('```')) {
-                                    step = 5;
-                                }
-                                
+                                let step = currentText.includes('```') ? 5 : 1;
                                 currentIndex += step;
 
                                 const chatContainer = ALL_ELEMENTS.chatContainer;
@@ -5894,14 +5875,12 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                                 if (isNearBottom) {
                                     chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
                                 }
-
                                 setTimeout(type, typingSpeed);
                             } else {
                                 contentDiv.innerHTML = renderMarkdownWithFormulas(fullResponse);
                                 resolve();
                             }
                         }
-                        
                         type();
                     });
                 })();
@@ -5924,14 +5903,14 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
                     await saveAppData();
                 }
             } finally {
-                // ✨ 核心修改：無論成功或失敗，最後都要移除呼吸光暈效果
-                document.body.classList.remove('is-sending');
-                
-                // 後續的清理工作保持不變
+                // ✨ 步驟 4: 無論成功或失敗，都關閉光暈並還原UI狀態
+                glowOverlay.classList.remove('visible'); // 隱藏呼吸光暈
+
                 abortController = null;
                 updateSubmitButtonState(false);
-                sendConfirmed = false;
-                updateInputState();
+                updateInputState(); // 還原傳送按鈕狀態
+                
+                // 補上複製按鈕等UI元素 (維持原狀)
                 const lastMessageDiv = ALL_ELEMENTS.messageList.lastElementChild;
                 if (lastMessageDiv && lastMessageDiv.classList.contains('model-message')) {
                     const bubble = lastMessageDiv.querySelector('.message-bubble');
@@ -6545,16 +6524,14 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
             }
             ALL_ELEMENTS.messageInput.disabled = !hasApiKey;
             ALL_ELEMENTS.messageInput.placeholder = hasApiKey ? i18n[config.uiLanguage].enterMessagePlaceholder : i18n[config.uiLanguage].enterApiKeyPlaceholder;
+            
+            // ✨ 核心修改：簡化按鈕狀態 ✨
             if (!hasApiKey || !hasContent) {
                 submitButton.disabled = true;
                 submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
             } else {
                 submitButton.disabled = false;
-                if (!sendConfirmed) {
-                    submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-                } else {
-                    submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
-                }
+                submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
             }
         };
         const setupSettingsModal = () => {
