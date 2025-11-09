@@ -2507,6 +2507,34 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     max-width: 46rem;
   }
 }
+        /* ==== Overlay 防穿透補丁（桌機/手機皆可）==== */
+#history-sidebar-overlay,
+#attachment-menu-overlay,
+#sidebar-overlay {
+  position: fixed;        /* 確保是全畫面遮罩 */
+  inset: 0;
+  display: none;
+  opacity: 0;
+  pointer-events: none;   /* 關閉互動，避免擋點擊 */
+}
+
+#history-sidebar-overlay.visible,
+#attachment-menu-overlay.visible,
+#sidebar-overlay.visible {
+  display: block;
+  opacity: 1;
+  pointer-events: auto;   /* 只有顯示時才擋點擊 */
+}
+
+/* 覆蓋層級：右側欄開啟時「遮罩 < 側邊欄本體」 */
+#history-sidebar-overlay { z-index: 60; background: rgba(0,0,0,.4); }
+#history-sidebar          { z-index: 61; }
+
+/* 讓輸入列在平時位於遮罩之下、但可順利點擊 */
+#input-bar-container { position: relative; z-index: 1; }
+
+/* 安全起見：設定視窗關閉時不攔截事件（有些瀏覽器對 visibility/opacity 的行為不同步） */
+#settings-modal:not(.visible) { pointer-events: none; }
 
 </style>
 <script>
@@ -4937,7 +4965,10 @@ function renderMarkdownWithFormulas(text) {
             messageList.innerHTML = '';
             if (conv.messages.length === 0) {
                 const greeting = `${currentUser.username}, ${i18n[config.uiLanguage].howCanIHelp || '有什麼可以為您服務的嗎？'}`;
-                messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] mt-16"><p class="text-lg">${greeting}</p></div>`;
+                messageList.innerHTML = `
+  <div class="text-center text-[var(--text-primary)] mt-20 md:mt-[18vh] lg:mt-[22vh]">
+    <p class="text-2xl md:text-3xl font-semibold">${greeting}</p>
+  </div>`;
             } else {
                 conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
             }
