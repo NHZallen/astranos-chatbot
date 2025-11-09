@@ -2462,27 +2462,31 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
         min-height: 0;
     }
 }
-/* --- ✨ 新增：用於條件式置中聊天內容的正確樣式 (v2) --- */
+/* --- ✨ 新增：用於條件式置中聊天內容的最終樣式 (v3) --- */
 
-/* 1. 當聊天室為空時，讓 header 下方的空間把內容推到中間 */
-main.is-empty > header {
-    margin-bottom: auto;
-}
+/* 僅在螢幕寬度大於等於 1024px (電腦版) 時才應用以下樣式 */
+@media (min-width: 1024px) {
 
-/* 2. 當聊天室為空時，讓聊天視窗本身不要佔用多餘空間 */
-main.is-empty #chat-container {
-    flex-grow: 0;
-}
+    /* 1. 當聊天室為空時，讓 header 下方的空間把內容往下推 */
+    main.is-empty > header {
+        margin-bottom: auto;
+    }
+    
+    /* 2. 當聊天室為空時，讓聊天視窗本身不要自動伸展，縮小以容納內容即可 */
+    main.is-empty #chat-container {
+        flex-grow: 0;
+    }
 
-/* 3. 當聊天室為空時，讓輸入框下方的空間也幫忙向上推，實現完美置中 */
-main.is-empty #input-bar-container {
-    margin-bottom: auto;
-    padding-bottom: 20vh; /* 增加一點額外向上的偏移，視覺上更舒適 */
-}
-
-/* 4. 在歡迎語和輸入框之間增加一些間距 */
-main.is-empty #message-list {
-     margin-bottom: 1.5rem;
+    /* 3. 當聊天室為空時，讓輸入框上方的空間也幫忙把它往下推，實現完美置中 */
+    main.is-empty #input-bar-container {
+        margin-top: auto;
+        margin-bottom: 25vh; /* 讓它離底部有 25% 螢幕高度的距離，視覺上更舒適 */
+    }
+    
+    /* 4. 在歡迎語和輸入框之間增加一些間距 */
+    main.is-empty #message-list {
+         margin-bottom: 1.5rem;
+    }
 }
         
 </style>
@@ -4919,9 +4923,26 @@ if (conv && conv.messages.length === 0) {
             renderInputIndicators();
             messageList.innerHTML = '';
             if (conv.messages.length === 0) {
-                const greeting = `${currentUser.username}, ${i18n[config.uiLanguage].howCanIHelp || '有什麼可以為您服務的嗎？'}`;
-                messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] mt-16"><p class="text-lg">${greeting}</p></div>`;
-            } else {
+    // --- ✨ 新增：隨機招呼語陣列 ---
+    const GREETINGS_POOL = [
+        `有什麼新鮮事想聊聊嗎，${currentUser.username}？`,
+        `今天有什麼新想法嗎，${currentUser.username}？`,
+        `嗨，${currentUser.username}！準備好探索什麼了嗎？`,
+        `很高興再次見到你，${currentUser.username}！`,
+        `今天想解決什麼問題呢，${currentUser.username}？`,
+        `有什麼可以為您服務的嗎，${currentUser.username}？`,
+        `${currentUser.username}，今天過得如何？有什麼想分享的嗎？`,
+        `讓我們開始吧，${currentUser.username}！`,
+        `準備好激發一些創意了嗎，${currentUser.username}？`,
+        `我洗耳恭聽，${currentUser.username}。`
+    ];
+
+    // 從陣列中隨機挑選一句
+    const randomIndex = Math.floor(Math.random() * GREETINGS_POOL.length);
+    const randomGreeting = GREETINGS_POOL[randomIndex];
+
+    messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] mt-16"><p class="text-lg">${randomGreeting}</p></div>`;
+} else {
                 conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
             }
             requestAnimationFrame(() => {
