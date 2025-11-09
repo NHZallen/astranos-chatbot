@@ -2465,45 +2465,32 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
 }
         /* === Pre-chat 置中（僅桌面，手機維持原本）=== */
 @media (min-width: 768px) {
-  /* 讓 main 容器變成一個 flex 容器，來垂直置中它的內容 */
+  /* 1. 讓 main 容器變成 flex 佈局來垂直置中內容 */
   body.pre-chat main {
-    display: flex;
-    flex-direction: column;
     justify-content: center;
-    height: 100%;
   }
-  
-  /* 取消 chat-container 的 flex-grow，讓它的大小由內容決定 */
-  body.pre-chat #chat-container { 
-    flex-grow: 0;
-    padding-bottom: 0 !important; 
-  }
-  
-  /* ✨ 核心修正：移除 input-bar 的 fixed 定位 ✨ */
-  body.pre-chat #input-bar-container {
-    /* 我們不再需要 fixed 定位了！ */
-    position: static; /* 改回靜態定位，讓它回到正常的排版流 */
-    transform: none;  /* 移除 transform */
-    z-index: auto;    /* 移除 z-index */
-    
-    /* 保留原本的透明背景設定 */
-    background: transparent !important;
-    border: 0 !important;
-    box-shadow: none !important;
-  }
-  
-  /* 置中狀態先把「後續追問」收起來，避免佔位 */
-  body.pre-chat #follow-up-container { display: none !important; }
 
-  /* ✨ 確保主內容區在側邊欄打開時被擠壓 ✨ */
-  /* 這是為了確保萬無一失，讓 main 元素在側邊欄打開時，左邊有足夠的間距 */
-  #app-container.sidebar-open main {
-    margin-left: 288px; /* 288px 是你側邊欄的寬度 (w-72) */
-    transition: margin-left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  /* 2. 讓上方歡迎語的容器不要無限伸展，這樣才能被置中 */
+  body.pre-chat #chat-container {
+    flex-grow: 0;
+    padding-bottom: 1.5rem; /* 在歡迎語和輸入框之間加點間距 */
   }
-  #app-container main {
-    margin-left: 0;
-    transition: margin-left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+
+  /* ✨ 關鍵修正：移除歡迎語原本巨大的 top margin，避免它被擠出畫面外 */
+  body.pre-chat #message-list > div {
+    margin-top: 0 !important;
+  }
+
+  /* 3. 讓輸入框容器變回普通元素，這樣它才會被側邊欄推動 */
+  body.pre-chat #input-bar-container {
+    position: static;
+    transform: none;
+    z-index: auto;
+  }
+
+  /* 4. 隱藏在初始畫面不需要的元素 */
+  body.pre-chat #follow-up-container { 
+    display: none !important; 
   }
 }
 /* === 移除輸入區周圍的底色模塊（深/淺通吃）=== */
