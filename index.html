@@ -31,6 +31,13 @@
     main.flex-1 {
     /* 強制隱藏所有超出寬度的內容 */
     overflow-x: hidden;
+    /* ✨ 新增：讓佈局變化時有平滑的過渡動畫 */
+    transition: justify-content 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ✨ 新增：這是一個新的 CSS 規則，用來控制置中狀態 */
+main.chat-is-empty {
+    justify-content: center;
 }
     #history-sidebar .history-sidebar-item {
     /* 這是為了讓指示條可以相對於它定位，非常重要！ */
@@ -600,6 +607,7 @@ button:not(.btn-primary):active:not(:disabled) {
     }
     .input-wrapper {
     transition: box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out, padding-top 0.3s ease-in-out; /* 新增 padding-top 的過渡效果 */
+    border-radius: 9999px; /* <-- ✨ 就是加上這一行！ */
     position: relative;
     flex-direction: column;
     padding-top: 0; /* ✨ 新增：預設沒有上方內邊距 */
@@ -2762,7 +2770,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 </div>
                                 </div>
                                 <form id="chat-form" class="flex-1 flex items-end relative">
-                                    <textarea id="message-input" placeholder="請先在設定中輸入 API 金鑰..." class="w-full p-2 bg-transparent border-0 focus:ring-0 disabled:bg-transparent resize-none overflow-y-hidden" rows="1" autocomplete="off" disabled data-lang-key-placeholder="enterApiKeyPlaceholder"></textarea>
+                                    <textarea id="message-input" placeholder="請於設定頁面輸入API" class="w-full p-2 bg-transparent border-0 focus:ring-0 disabled:bg-transparent resize-none overflow-y-hidden" rows="1" autocomplete="off" disabled data-lang-key-placeholder="enterApiKeyPlaceholder"></textarea>
                                     <button type="button" id="expand-input-btn" class="absolute top-1 right-1 w-6 h-6 rounded-full hover:bg-gray-500/20 flex items-center justify-center hidden transition-transform text-[var(--text-secondary)]">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="m19 9-7 7-7-7" />
@@ -4876,33 +4884,44 @@ function renderMarkdownWithFormulas(text) {
             ALL_ELEMENTS.archivedChatsContainer.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', (e) => deleteChat(e.target.dataset.id, e)));
         };
         const renderChat = () => {
-            const conv = getActiveConversation();
-            const messageList = ALL_ELEMENTS.messageList;
-            messageList.classList.remove('chat-view-transition');
-            if (!conv) {
-                messageList.innerHTML = '';
-                ALL_ELEMENTS.headerTitle.textContent = i18n[config.uiLanguage].newChat;
-                ALL_ELEMENTS.modelSwitcherContainer.innerHTML = '';
-                renderInputIndicators();
-                return;
-            }
-            ALL_ELEMENTS.headerTitle.textContent = conv.archived ? `(${i18n[config.uiLanguage].archived || '已封存'}) ${conv.title}` : conv.title;
-            renderModelSwitcher();
-            renderInputIndicators();
-            messageList.innerHTML = '';
-            if (conv.messages.length === 0) {
-                const greeting = `${currentUser.username}, ${i18n[config.uiLanguage].howCanIHelp || '有什麼可以為您服務的嗎？'}`;
-                messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] mt-16"><p class="text-lg">${greeting}</p></div>`;
-            } else {
-                conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
-            }
-            requestAnimationFrame(() => {
-    setupMessageIntersectionObserver();
-});
-            void messageList.offsetWidth;
-            messageList.classList.add('chat-view-transition');
-            updateInputState();
-        };
+    const conv = getActiveConversation();
+    const messageList = ALL_ELEMENTS.messageList;
+    const mainContainer = document.querySelector('main.flex-1'); // ✨ 新增：取得 main 容器
+
+    messageList.classList.remove('chat-view-transition');
+
+    if (!conv) {
+        messageList.innerHTML = '';
+        ALL_ELEMENTS.headerTitle.textContent = i18n[config.uiLanguage].newChat;
+        ALL_ELEMENTS.modelSwitcherContainer.innerHTML = '';
+        renderInputIndicators();
+        mainContainer.classList.add('chat-is-empty'); // ✨ 新增：確保沒有對話時也是置中
+        return;
+    }
+
+    ALL_ELEMENTS.headerTitle.textContent = conv.archived ? `(${i18n[config.uiLanguage].archived || '已封存'}) ${conv.title}` : conv.title;
+    renderModelSwitcher();
+    renderInputIndicators();
+    messageList.innerHTML = '';
+
+    // ✨ 核心修改處 START ✨
+    if (conv.messages.length === 0) {
+        const greeting = `我可以如何協助你，${currentUser.username}？`; // <-- 修改了問候語
+        messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] mb-4"><p class="text-3xl font-medium">${greeting}</p></div>`; // <-- 修改了樣式和位置
+        mainContainer.classList.add('chat-is-empty'); // 如果沒有訊息，就加上置中 class
+    } else {
+        conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
+        mainContainer.classList.remove('chat-is-empty'); // 如果有訊息，就移除置中 class
+    }
+    // ✨ 核心修改處 END ✨
+
+    requestAnimationFrame(() => {
+        setupMessageIntersectionObserver();
+    });
+    void messageList.offsetWidth;
+    messageList.classList.add('chat-view-transition');
+    updateInputState();
+};
         
         const updateFunctionButtonsState = () => {
             const { cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn } = ALL_ELEMENTS;
