@@ -2463,27 +2463,36 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
         min-height: 0;
     }
 }
-/* ✨ 新增：用於初始畫面置中的樣式 (僅限電腦版) - V2修正版 */
-@media (min-width: 768px) {
-  /* 1. 當 main.is-empty 時，讓聊天容器的上下邊距自動化 */
-  main.is-empty #chat-container {
-    flex-grow: 0; /* 首先，讓它不要佔據所有空間 */
-    margin-top: auto; /* 接著，自動的上邊距會把它往下推 */
-    margin-bottom: auto; /* 自動的下邊距會把它往上推，最終達成垂直置中 */
-  }
-
-  /* 2. 美化一下初始畫面的歡迎訊息，讓它跟輸入框之間有點距離 */
-  main.is-empty #message-list > div.text-center {
-     margin-top: 0;
-     margin-bottom: 2rem; 
-  }
+    main.chat-initial-state {
+    position: relative; /* 讓輸入框可以相對於它來絕對定位 */
 }
 
-/* ✨ 新增：在「非」自訂桌布模式下，移除輸入框的灰色背景 */
-body:not(.custom-wallpaper-active) #input-bar-container .input-wrapper {
-    background-color: transparent !important;
+/* 當聊天室是初始狀態時，我們重新定義輸入框容器的樣式 */
+main.chat-initial-state #input-bar-container {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    transform: translateY(-50%); /* 這是垂直置中的關鍵 */
+    width: 100%;
+    background-color: transparent; /* 讓容器背景變透明 */
+    border-top: none; /* 移除頂部邊線 */
+    padding-top: 0;
+    padding-bottom: 0;
 }
-        
+
+/* 無論在哪種狀態下，都讓輸入框變成橢圓形 */
+#input-bar-container .input-wrapper {
+    border-radius: 9999px; /* 一個很大的數值可以確保任何長度的方塊都變成橢圓形 */
+    /* 我們可以加個陰影讓它在置中時更突出 */
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+/* 當桌布啟用時，置中狀態下的陰影可以調整得更柔和 */
+body.custom-wallpaper-active main.chat-initial-state #input-bar-container .input-wrapper {
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -4897,9 +4906,10 @@ function renderMarkdownWithFormulas(text) {
             ALL_ELEMENTS.archivedChatsContainer.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', (e) => deleteChat(e.target.dataset.id, e)));
         };
         const renderChat = () => {
-    const mainElement = document.querySelector('#app-container main'); // 取得 main 元素
     const conv = getActiveConversation();
     const messageList = ALL_ELEMENTS.messageList;
+    const mainElement = document.querySelector('main'); // <--- 請新增這一行
+
     messageList.classList.remove('chat-view-transition');
 
     if (!conv) {
@@ -4907,30 +4917,22 @@ function renderMarkdownWithFormulas(text) {
         ALL_ELEMENTS.headerTitle.textContent = i18n[config.uiLanguage].newChat;
         ALL_ELEMENTS.modelSwitcherContainer.innerHTML = '';
         renderInputIndicators();
-        if(mainElement) mainElement.classList.add('is-empty'); // ✨ 如果沒有對話，也視為空狀態
+        mainElement.classList.add('chat-initial-state'); // <--- 請新增這一行
         return;
     }
 
+    // --- 請修改以下這段邏輯 ---
+    // 判斷對話中是否有訊息，來決定是否要置中輸入框
+    if (conv.messages.length === 0) {
+        mainElement.classList.add('chat-initial-state'); // 沒有訊息，加上置中 class
+    } else {
+        mainElement.classList.remove('chat-initial-state'); // 有訊息，移除置中 class
+    }
+    // --- 修改結束 ---
+
     ALL_ELEMENTS.headerTitle.textContent = conv.archived ? `(${i18n[config.uiLanguage].archived || '已封存'}) ${conv.title}` : conv.title;
     renderModelSwitcher();
-    renderInputIndicators();
-    messageList.innerHTML = '';
-
-    if (conv.messages.length === 0) {
-        const greeting = `${currentUser.username}, ${i18n[config.uiLanguage].howCanIHelp || '有什麼可以為您服務的嗎？'}`;
-        messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] mt-16"><p class="text-lg">${greeting}</p></div>`;
-        if(mainElement) mainElement.classList.add('is-empty'); // ✨ 訊息為空，加上 is-empty class
-    } else {
-        conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
-        if(mainElement) mainElement.classList.remove('is-empty'); // ✨ 有訊息了，移除 is-empty class
-    }
-
-    requestAnimationFrame(() => {
-        setupMessageIntersectionObserver();
-    });
-    void messageList.offsetWidth;
-    messageList.classList.add('chat-view-transition');
-    updateInputState();
+    // ... 函式剩下的部分保持不變 ...
 };
         
         const updateFunctionButtonsState = () => {
@@ -5731,6 +5733,7 @@ function typewriterStream(targetElement, streamApiCallFn, signal) {
 
         const handleFormSubmit = async (e) => {
             e.preventDefault();
+            document.querySelector('main').classList.remove('chat-initial-state');
             if (abortController) return;
             const userMessage = ALL_ELEMENTS.messageInput.value.trim();
             if (!userMessage && uploadedFiles.length === 0) return;
