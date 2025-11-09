@@ -540,11 +540,16 @@ button:not(.btn-primary):active:not(:disabled) {
     .scroll-area::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
     .scroll-area::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
     .modal {
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
-    }
-    .modal.visible { opacity: 1; visibility: visible; }
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none; /* 新增：隱藏時完全禁用滑鼠事件 */
+    transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+}
+.modal.visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto; /* 新增：顯示時恢復滑鼠事件 */
+}
     .modal > div {
         transform: scale(0.95);
         transition: transform 0.2s ease-in-out;
@@ -2720,10 +2725,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         <polyline points="6 9 12 15 18 9"></polyline>
                     </svg>
                 </button>
-                <div id="input-bar-container" class="p-2 md:p-4 bg-[var(--input-bar-bg)] border-[var(--border-color)]">
+                <div id="input-bar-container" class="p-2 md:p-4 border-[var(--border-color)]">
                     <div class="max-w-4xl mx-auto">
                         <div id="file-preview-container" class="w-full flex flex-wrap gap-2 mb-2 px-2 empty:hidden"></div>
-                        <div class="input-wrapper w-full flex items-end gap-2 p-2 rounded-2xl bg-[var(--input-field-bg)] border border-[var(--border-color)] shadow-sm spotlight-effect">
+                        <div class="input-wrapper w-full flex items-end gap-2 px-4 py-2 rounded-full bg-[var(--input-field-bg)] border border-[var(--border-color)] shadow-sm spotlight-effect">
                             <div id="input-indicator-container" class="flex gap-1 empty:hidden">
                             </div>
                             <div class="w-full flex items-end gap-2">
@@ -4892,9 +4897,35 @@ function renderMarkdownWithFormulas(text) {
             renderInputIndicators();
             messageList.innerHTML = '';
             if (conv.messages.length === 0) {
-                const greeting = `${currentUser.username}, ${i18n[config.uiLanguage].howCanIHelp || '有什麼可以為您服務的嗎？'}`;
-                messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] mt-16"><p class="text-lg">${greeting}</p></div>`;
-            } else {
+    // 1. 建立一個包含 20 個招呼語的陣列
+    const greetings = [
+        `${currentUser.username}，今天有什麼新鮮事？`,
+        `你好，${currentUser.username}！準備好探索新知了嗎？`,
+        `歡迎回來，${currentUser.username}。今天想聊些什麼？`,
+        `嗨，${currentUser.username}！有什麼問題或想法嗎？`,
+        `很高興再次見到你，${currentUser.username}！`,
+        `${currentUser.username}，今天有什麼我可以幫忙的嗎？`,
+        `準備好開始了嗎，${currentUser.username}？`,
+        `有什麼有趣的事想分享嗎，${currentUser.username}？`,
+        `今天你想學習或創造些什麼呢，${currentUser.username}？`,
+        `你好！有什麼能為你服務的嗎？`,
+        `讓今天的對話充滿創意吧，${currentUser.username}！`,
+        `有什麼挑戰需要我幫忙解決嗎？`,
+        `今天過得如何，${currentUser.username}？`,
+        `需要一些靈感嗎，${currentUser.username}？`,
+        `隨時待命，${currentUser.username}！`,
+        `讓我們一起讓今天變得更有效率吧！`,
+        `有什麼想法正在醞釀嗎，${currentUser.username}？`,
+        `很高興能成為你的助理，${currentUser.username}。`,
+        `今天你想完成什麼目標？`,
+        `你好，${currentUser.username}！讓我們開始一段精彩的對話吧。`
+    ];
+    // 2. 從陣列中隨機選擇一個招呼語
+    const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+
+    // 3. 將招呼語顯示在畫面上，並使用更大的字體 (text-2xl)
+    messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] mt-16"><p class="text-2xl font-light">${randomGreeting}</p></div>`;
+} else {
                 conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
             }
             requestAnimationFrame(() => {
