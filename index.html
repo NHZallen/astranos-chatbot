@@ -2751,9 +2751,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 </div>
             </div>
         </div>
-                <div id="greeting-container" class="hidden text-center my-auto px-4">
-    <h2 id="greeting-text" class="text-2xl font-semibold text-gray-700 dark:text-gray-300"></h2>
-</div>
 
         <div id="chat-container" class="flex-1 p-4 md:p-6 overflow-y-auto scroll-area">
             <div id="message-list" class="space-y-8 max-w-4xl mx-auto"></div>
@@ -3580,8 +3577,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             historySidebarTriggerZone: document.getElementById('history-sidebar-trigger-zone'),
             historySidebarOverlay: document.getElementById('history-sidebar-overlay'),
             messageList: document.getElementById('message-list'),
-            greetingContainer: document.getElementById('greeting-container'),
-            greetingText: document.getElementById('greeting-text'),
             messageInput: document.getElementById('message-input'),
             chatForm: document.getElementById('chat-form'),
             submitButton: document.getElementById('submit-btn'),
@@ -4649,23 +4644,6 @@ function renderMarkdownWithFormulas(text) {
         const getActiveConversation = () => {
             return conversations.find(c => c.id === activeConversationId);
         };
-         const displayRandomGreeting = () => {
-    if (!currentUser) return;
-
-
-    const greetingKeys = Array.from({length: 20}, (_, i) => `greeting_${String(i + 1).padStart(2, '0')}`);
-    const randomKey = greetingKeys[Math.floor(Math.random() * greetingKeys.length)];
-    
-    const translations = i18n[config.uiLanguage] || i18n['zh-TW'];
-    let greetingTemplate = translations[randomKey] || "我們該從哪裡開始，{username}？";
-
-
-    const greetingText = greetingTemplate.replace('{username}', currentUser.username);
-
-
-    ALL_ELEMENTS.greetingText.textContent = greetingText;
-    ALL_ELEMENTS.greetingContainer.classList.remove('hidden');
-};
         const renderAll = () => {
             renderHistorySidebar();
             renderFolders();
@@ -4975,19 +4953,9 @@ const mainContainer = document.querySelector('main.flex-1'); // 找到主容器
 if (conv.messages.length === 0) {
     // 如果沒有訊息，就加上 'chat-is-empty' 這個 class
     mainContainer.classList.add('chat-is-empty');
-    
-    // ✨ 新增開始：顯示隨機招呼語 ✨
-    displayRandomGreeting();
-    // ✨ 新增結束 ✨
-
 } else {
     // 如果有訊息了，就移除 'chat-is-empty' 這個 class
     mainContainer.classList.remove('chat-is-empty');
-    
-    // ✨ 新增開始：隱藏招呼語 ✨
-    ALL_ELEMENTS.greetingContainer.classList.add('hidden');
-    // ✨ 新增結束 ✨
-
     conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
 }
 requestAnimationFrame(() => {
