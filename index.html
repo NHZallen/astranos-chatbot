@@ -2492,29 +2492,31 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     display: none; /* 將它完全隱藏起來，不佔據任何空間 */
   }
 }
-        /* --- ✨ 新增：讓輸入框在空對話時置中的樣式 START ✨ --- */
-main.chat-mode-initial {
-    /* 當這個 class 存在時，我們改變 main 區塊的佈局方式 */
-    display: flex;
-    flex-direction: column;
-}
+/* --- ✨ 新增(修正版)：讓輸入框在空對話時置中的樣式 START ✨ --- */
 
+/* 當處於初始模式時... */
 main.chat-mode-initial #chat-container {
-    /* 讓訊息區塊 (包含招呼語) 佔據大部分空間，把輸入框往下推 */
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end; /* 讓內容(招呼語)對齊底部 */
+    /* 1. 關鍵修正：
+       停止 #chat-container (訊息區) 自動伸展佔據所有空間。
+       讓它只佔據其內容 (招呼語) 所需的高度。*/
+    flex-grow: 0;
 }
 
 main.chat-mode-initial #input-bar-container {
-    /* 這是最關鍵的一步！
-       在 flex column 佈局中，margin-bottom: auto; 會佔據所有下方可用的空間，
-       效果就是將元素本身「往上推」，達到垂直置中的效果。*/
+    /* 2. 關鍵實現：
+       現在 <main> 元素中有了大量的可用空間。
+       我們讓輸入框的「上邊距」和「下邊距」都設定為 "auto"。
+       在 Flexbox 佈局中，這會讓這兩個邊距自動平分所有可用空間，
+       從而完美地將輸入框本身垂直置中。*/
+    margin-top: auto;
     margin-bottom: auto;
-    /* 和上方的招呼語之間留下一點間距 */
-    margin-top: 2rem; 
+
+    /* 為了美觀，在置中時給它上下一些呼吸空間 */
+    padding-top: 2rem;
+    padding-bottom: 2rem; 
 }
+
+/* --- ✨ 新增(修正版)：讓輸入框在空對話時置中的樣式 END ✨ --- */
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
