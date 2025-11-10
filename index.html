@@ -2487,35 +2487,11 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     transition: border-radius 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
                 padding-top 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-
-        /* --- ▼▼▼ 新增：電腦版空聊天室輸入框置中樣式 ▼▼▼ --- */
-@media (min-width: 768px) {
-  /* 
-    當 main 容器有 'chat-is-empty' class 時，
-    我們讓它內部的所有東西都垂直置中。
-  */
-  main.chat-is-empty {
-    justify-content: center;
-  }
-
-  /* 
-    同時，我們給輸入框一個 20vh 的下邊距。
-    vh 是 "viewport height" 的縮寫，20vh 代表螢幕高度的 20%。
-    這個下邊距會把已經被置中的輸入框再往上推，達到「置中偏上」的效果。
-  */
-  main.chat-is-empty #input-bar-container {
-    margin-bottom: 45vh; /* 您可以調整這個數值 (例如 20vh, 30vh) 來改變偏上的程度 */
+        @media (max-width: 768px) {
+  .chat-greeting-message {
+    display: none; /* 將它完全隱藏起來，不佔據任何空間 */
   }
 }
-
-/* 
-  為了讓輸入框回到下方時有平滑的動畫，
-  我們需要給它一個 transition (過渡) 效果。
-*/
-#input-bar-container {
-    transition: margin-bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-/* --- ▲▲▲ 新增樣式結束 ▲▲▲ --- */
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -4948,17 +4924,13 @@ function renderMarkdownWithFormulas(text) {
             renderModelSwitcher();
             renderInputIndicators();
             messageList.innerHTML = '';
-const mainContainer = document.querySelector('main.flex-1'); // 找到主容器
-
-if (conv.messages.length === 0) {
-    // 如果沒有訊息，就加上 'chat-is-empty' 這個 class
-    mainContainer.classList.add('chat-is-empty');
+            if (conv.messages.length === 0) {
+    const greeting = `${currentUser.username}, ${i18n[config.uiLanguage].howCanIHelp || '有什麼可以為您服務的嗎？'}`;
+    messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] mt-16 chat-greeting-message"><p class="text-2xl font-semibold">${greeting}</p></div>`;
 } else {
-    // 如果有訊息了，就移除 'chat-is-empty' 這個 class
-    mainContainer.classList.remove('chat-is-empty');
-    conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
-}
-requestAnimationFrame(() => {
+                conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
+            }
+            requestAnimationFrame(() => {
     setupMessageIntersectionObserver();
 });
             void messageList.offsetWidth;
