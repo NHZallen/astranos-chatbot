@@ -2492,45 +2492,6 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     display: none; /* 將它完全隱藏起來，不佔據任何空間 */
   }
 }
-/* --- ✨ 新增(最終修正版)：空對話置中樣式 START ✨ --- */
-
-/* 當處於初始模式時... */
-main.chat-mode-initial {
-    /* 1. 關鍵修復：
-       強制 main 區塊的內容佈局在可見範圍內，禁止滾動。
-       這會解決招呼語被往上推出去以及出現滾動條的問題。*/
-    overflow: hidden;
-}
-
-main.chat-mode-initial #chat-container {
-    /* 2. 關鍵佈局：
-       讓招呼語區塊的上邊距自動擴展，填滿所有可用空間。
-       這會把它自己連同下方的輸入框一起往下推。*/
-    margin-top: auto;
-    
-    /* 同時確保它自身不要無謂地伸展或收縮 */
-    flex-grow: 0;
-    flex-shrink: 0;
-}
-
-main.chat-mode-initial #input-bar-container {
-    /* 3. 精準定位：
-       我們不再使用 margin: auto，而是給輸入框一個相對於視窗高度的下邊距。
-       20vh 表示距離螢幕底部 20% 的高度，這會讓它看起來更自然地懸浮在空中，
-       也完全符合您「讓輸入欄能更上去一點」的期望。*/
-    margin-bottom: 20vh;
-    
-    /* 為了在不同裝置上效果更好，可以加上一個最小邊距 */
-    margin-top: 1rem;
-}
-
-/* 在手機版上，稍微降低輸入框的位置，讓它看起來更協調 */
-@media (max-width: 768px) {
-    main.chat-mode-initial #input-bar-container {
-        margin-bottom: 15vh;
-    }
-}
-/* --- ✨ 新增(最終修正版)：空對話置中樣式 END ✨ --- */
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -3567,7 +3528,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const ALL_ELEMENTS = {
             authContainer: document.getElementById('auth-container'),
             appContainer: document.getElementById('app-container'),
-            mainContentArea: document.querySelector('#app-container > .relative.flex > main'),
             authForm: document.getElementById('auth-form'),
             usernameInput: document.getElementById('username-input'),
             passwordInput: document.getElementById('password-input'),
@@ -4950,46 +4910,33 @@ function renderMarkdownWithFormulas(text) {
             ALL_ELEMENTS.archivedChatsContainer.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', (e) => deleteChat(e.target.dataset.id, e)));
         };
         const renderChat = () => {
-    const conv = getActiveConversation();
-    const messageList = ALL_ELEMENTS.messageList;
-    const mainArea = ALL_ELEMENTS.mainContentArea; // ✨ 取得 main 元素
-
-    // ✨ 新增/修改的程式碼 START ✨
-    // 判斷是否為初始狀態 (沒有對話，或是有對話但沒有訊息)
-    const isInitialState = !conv || conv.messages.length === 0;
-
-    // 根據狀態，動態添加或移除我們的 CSS class
-    if (mainArea) {
-        mainArea.classList.toggle('chat-mode-initial', isInitialState);
-    }
-    // ✨ 新增/修改的程式碼 END ✨
-
-    messageList.classList.remove('chat-view-transition');
-    if (!conv) {
-        messageList.innerHTML = '';
-        ALL_ELEMENTS.headerTitle.textContent = i18n[config.uiLanguage].newChat;
-        ALL_ELEMENTS.modelSwitcherContainer.innerHTML = '';
-        renderInputIndicators();
-        return;
-    }
-    ALL_ELEMENTS.headerTitle.textContent = conv.archived ? `(${i18n[config.uiLanguage].archived || '已封存'}) ${conv.title}` : conv.title;
-    renderModelSwitcher();
-    renderInputIndicators();
-    messageList.innerHTML = '';
-    if (conv.messages.length === 0) {
-        const greeting = `${currentUser.username}, ${i18n[config.uiLanguage].howCanIHelp || '有什麼可以為您服務的嗎？'}`;
-        // ✨ 我們不再需要 mt-16 (margin-top)，因為 CSS 會自動處理置中
-        messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] chat-greeting-message"><p class="text-2xl font-semibold">${greeting}</p></div>`;
-    } else {
-        conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
-    }
-    requestAnimationFrame(() => {
-        setupMessageIntersectionObserver();
-    });
-    void messageList.offsetWidth;
-    messageList.classList.add('chat-view-transition');
-    updateInputState();
-};
+            const conv = getActiveConversation();
+            const messageList = ALL_ELEMENTS.messageList;
+            messageList.classList.remove('chat-view-transition');
+            if (!conv) {
+                messageList.innerHTML = '';
+                ALL_ELEMENTS.headerTitle.textContent = i18n[config.uiLanguage].newChat;
+                ALL_ELEMENTS.modelSwitcherContainer.innerHTML = '';
+                renderInputIndicators();
+                return;
+            }
+            ALL_ELEMENTS.headerTitle.textContent = conv.archived ? `(${i18n[config.uiLanguage].archived || '已封存'}) ${conv.title}` : conv.title;
+            renderModelSwitcher();
+            renderInputIndicators();
+            messageList.innerHTML = '';
+            if (conv.messages.length === 0) {
+    const greeting = `${currentUser.username}, ${i18n[config.uiLanguage].howCanIHelp || '有什麼可以為您服務的嗎？'}`;
+    messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] mt-16 chat-greeting-message"><p class="text-2xl font-semibold">${greeting}</p></div>`;
+} else {
+                conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
+            }
+            requestAnimationFrame(() => {
+    setupMessageIntersectionObserver();
+});
+            void messageList.offsetWidth;
+            messageList.classList.add('chat-view-transition');
+            updateInputState();
+        };
         
         const updateFunctionButtonsState = () => {
             const { cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn } = ALL_ELEMENTS;
