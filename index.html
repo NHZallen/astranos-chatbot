@@ -2492,31 +2492,45 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     display: none; /* 將它完全隱藏起來，不佔據任何空間 */
   }
 }
-/* --- ✨ 新增(修正版)：讓輸入框在空對話時置中的樣式 START ✨ --- */
+/* --- ✨ 新增(最終修正版)：空對話置中樣式 START ✨ --- */
 
 /* 當處於初始模式時... */
+main.chat-mode-initial {
+    /* 1. 關鍵修復：
+       強制 main 區塊的內容佈局在可見範圍內，禁止滾動。
+       這會解決招呼語被往上推出去以及出現滾動條的問題。*/
+    overflow: hidden;
+}
+
 main.chat-mode-initial #chat-container {
-    /* 1. 關鍵修正：
-       停止 #chat-container (訊息區) 自動伸展佔據所有空間。
-       讓它只佔據其內容 (招呼語) 所需的高度。*/
+    /* 2. 關鍵佈局：
+       讓招呼語區塊的上邊距自動擴展，填滿所有可用空間。
+       這會把它自己連同下方的輸入框一起往下推。*/
+    margin-top: auto;
+    
+    /* 同時確保它自身不要無謂地伸展或收縮 */
     flex-grow: 0;
+    flex-shrink: 0;
 }
 
 main.chat-mode-initial #input-bar-container {
-    /* 2. 關鍵實現：
-       現在 <main> 元素中有了大量的可用空間。
-       我們讓輸入框的「上邊距」和「下邊距」都設定為 "auto"。
-       在 Flexbox 佈局中，這會讓這兩個邊距自動平分所有可用空間，
-       從而完美地將輸入框本身垂直置中。*/
-    margin-top: auto;
-    margin-bottom: auto;
-
-    /* 為了美觀，在置中時給它上下一些呼吸空間 */
-    padding-top: 2rem;
-    padding-bottom: 2rem; 
+    /* 3. 精準定位：
+       我們不再使用 margin: auto，而是給輸入框一個相對於視窗高度的下邊距。
+       20vh 表示距離螢幕底部 20% 的高度，這會讓它看起來更自然地懸浮在空中，
+       也完全符合您「讓輸入欄能更上去一點」的期望。*/
+    margin-bottom: 20vh;
+    
+    /* 為了在不同裝置上效果更好，可以加上一個最小邊距 */
+    margin-top: 1rem;
 }
 
-/* --- ✨ 新增(修正版)：讓輸入框在空對話時置中的樣式 END ✨ --- */
+/* 在手機版上，稍微降低輸入框的位置，讓它看起來更協調 */
+@media (max-width: 768px) {
+    main.chat-mode-initial #input-bar-container {
+        margin-bottom: 15vh;
+    }
+}
+/* --- ✨ 新增(最終修正版)：空對話置中樣式 END ✨ --- */
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
