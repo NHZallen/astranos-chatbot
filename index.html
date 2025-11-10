@@ -2492,28 +2492,28 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     display: none; /* 將它完全隱藏起來，不佔據任何空間 */
   }
 }
-/* --- 最終修正 V3：新對話輸入框置中效果 --- */
-@media (min-width: 768px) { 
-  /* 這條規則只在螢幕寬度大於 768px (電腦版) 時生效 */
+        /* --- ✨ 新增：讓輸入框在空對話時置中的樣式 START ✨ --- */
+main.chat-mode-initial {
+    /* 當這個 class 存在時，我們改變 main 區塊的佈局方式 */
+    display: flex;
+    flex-direction: column;
+}
 
-  /* 1. 當處於置中模式時，讓聊天容器 (#chat-container) 佔滿所有可用垂直空間 */
-  main.main-content-centered #chat-container {
-    flex-grow: 1;           /* 確保它填滿 header 和 input bar 之間的空間 */
-    display: flex;          /* 讓它自己也變成一個 flex 容器 */
-    flex-direction: column; /* 內部元素垂直排列 */
-    justify-content: flex-end; /* ✨ 關鍵！將所有內部內容(即招呼語)推到容器的底部 */
-  }
+main.chat-mode-initial #chat-container {
+    /* 讓訊息區塊 (包含招呼語) 佔據大部分空間，把輸入框往下推 */
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end; /* 讓內容(招呼語)對齊底部 */
+}
 
-  /* 2. 讓招呼語本身有一點下邊距，把輸入框從底部稍微往上推，達到視覺上的置中感 */
-  main.main-content-centered .chat-greeting-message {
-    margin-bottom: 3vh; /* 使用 vh (視窗高度百分比) 單位，讓間距自適應，3vh 的效果會比 2vh 更置中一些 */
-    padding-bottom: 0; /* 確保沒有多餘的內邊距影響佈局 */
-  }
-  
-  /* 3. 為相關元素加上平滑的過渡動畫 */
-  #chat-container, .chat-greeting-message {
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  }
+main.chat-mode-initial #input-bar-container {
+    /* 這是最關鍵的一步！
+       在 flex column 佈局中，margin-bottom: auto; 會佔據所有下方可用的空間，
+       效果就是將元素本身「往上推」，達到垂直置中的效果。*/
+    margin-bottom: auto;
+    /* 和上方的招呼語之間留下一點間距 */
+    margin-top: 2rem; 
 }
 </style>
 <script>
@@ -3551,6 +3551,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const ALL_ELEMENTS = {
             authContainer: document.getElementById('auth-container'),
             appContainer: document.getElementById('app-container'),
+            mainContentArea: document.querySelector('#app-container > .relative.flex > main'),
             authForm: document.getElementById('auth-form'),
             usernameInput: document.getElementById('username-input'),
             passwordInput: document.getElementById('password-input'),
@@ -4933,36 +4934,46 @@ function renderMarkdownWithFormulas(text) {
             ALL_ELEMENTS.archivedChatsContainer.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', (e) => deleteChat(e.target.dataset.id, e)));
         };
         const renderChat = () => {
-            const conv = getActiveConversation();
-            const messageList = ALL_ELEMENTS.messageList;
-            const mainContentArea = document.querySelector('main.flex-1.flex-col'); // 找到 main 容器
-            messageList.classList.remove('chat-view-transition');
-            if (!conv) {
-                messageList.innerHTML = '';
-                ALL_ELEMENTS.headerTitle.textContent = i18n[config.uiLanguage].newChat;
-                ALL_ELEMENTS.modelSwitcherContainer.innerHTML = '';
-                renderInputIndicators();
-                return;
-            }
-            ALL_ELEMENTS.headerTitle.textContent = conv.archived ? `(${i18n[config.uiLanguage].archived || '已封存'}) ${conv.title}` : conv.title;
-            renderModelSwitcher();
-            renderInputIndicators();
-            messageList.innerHTML = '';
-            if (conv.messages.length === 0) {
-    const greeting = `${currentUser.username}, ${i18n[config.uiLanguage].howCanIHelp || '有什麼可以為您服務的嗎？'}`;
-    messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] mt-16 chat-greeting-message"><p class="text-2xl font-semibold">${greeting}</p></div>`;
-if (mainContentArea) mainContentArea.classList.add('main-content-centered'); // 如果沒訊息，就加上置中 class
-            } else {
-                if (mainContentArea) mainContentArea.classList.remove('main-content-centered'); // 如果有訊息，就移除置中 class
-                conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
-            }
-            requestAnimationFrame(() => {
-    setupMessageIntersectionObserver();
-});
-            void messageList.offsetWidth;
-            messageList.classList.add('chat-view-transition');
-            updateInputState();
-        };
+    const conv = getActiveConversation();
+    const messageList = ALL_ELEMENTS.messageList;
+    const mainArea = ALL_ELEMENTS.mainContentArea; // ✨ 取得 main 元素
+
+    // ✨ 新增/修改的程式碼 START ✨
+    // 判斷是否為初始狀態 (沒有對話，或是有對話但沒有訊息)
+    const isInitialState = !conv || conv.messages.length === 0;
+
+    // 根據狀態，動態添加或移除我們的 CSS class
+    if (mainArea) {
+        mainArea.classList.toggle('chat-mode-initial', isInitialState);
+    }
+    // ✨ 新增/修改的程式碼 END ✨
+
+    messageList.classList.remove('chat-view-transition');
+    if (!conv) {
+        messageList.innerHTML = '';
+        ALL_ELEMENTS.headerTitle.textContent = i18n[config.uiLanguage].newChat;
+        ALL_ELEMENTS.modelSwitcherContainer.innerHTML = '';
+        renderInputIndicators();
+        return;
+    }
+    ALL_ELEMENTS.headerTitle.textContent = conv.archived ? `(${i18n[config.uiLanguage].archived || '已封存'}) ${conv.title}` : conv.title;
+    renderModelSwitcher();
+    renderInputIndicators();
+    messageList.innerHTML = '';
+    if (conv.messages.length === 0) {
+        const greeting = `${currentUser.username}, ${i18n[config.uiLanguage].howCanIHelp || '有什麼可以為您服務的嗎？'}`;
+        // ✨ 我們不再需要 mt-16 (margin-top)，因為 CSS 會自動處理置中
+        messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] chat-greeting-message"><p class="text-2xl font-semibold">${greeting}</p></div>`;
+    } else {
+        conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
+    }
+    requestAnimationFrame(() => {
+        setupMessageIntersectionObserver();
+    });
+    void messageList.offsetWidth;
+    messageList.classList.add('chat-view-transition');
+    updateInputState();
+};
         
         const updateFunctionButtonsState = () => {
             const { cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn } = ALL_ELEMENTS;
@@ -5785,8 +5796,6 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
 
         const handleFormSubmit = async (e) => {
             e.preventDefault();
-            const mainContentArea = document.querySelector('main.flex-1.flex-col');
-    if (mainContentArea) mainContentArea.classList.remove('main-content-centered');
             if (abortController) return;
             const userMessage = ALL_ELEMENTS.messageInput.value.trim();
             if (!userMessage && uploadedFiles.length === 0) return;
