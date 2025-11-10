@@ -2492,27 +2492,24 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     display: none; /* 將它完全隱藏起來，不佔據任何空間 */
   }
 }
-        /* --- 新增：空對話時輸入框置中 (修正版) --- */
-@media (min-width: 768px) { /* 這條規則只在寬度大於 768px (電腦版) 時生效 */
-  
-  main.chat-view-empty {
-    justify-content: center;
-  }
-  
-  main.chat-view-empty #chat-container {
-    /* 這是核心修正：強制讓聊天區塊停止伸展，讓出空間給置中佈局 */
-    flex: none !important; 
+        /* --- 新增：新對話輸入框置中效果 --- */
+@media (min-width: 768px) { 
+  /* 這條規則只在螢幕寬度大於 768px (電腦版) 時生效 */
+
+  main.main-content-centered {
+    /* 當 main 容器有我們的自訂 class 時 */
+    justify-content: center; /* 讓內部的所有東西在垂直方向上集中 */
   }
 
-  main.chat-view-empty .chat-greeting-message {
-    margin-top: 0;
-    padding-bottom: 2rem; 
+  main.main-content-centered #chat-container {
+    /* 針對置中狀態下的聊天區塊 */
+    flex-grow: 0; /* 關鍵！取消它的「自動長高」屬性，這樣它才不會把輸入框推到最下面 */
   }
-}
-
-/* 為輸入框容器增加平滑的過渡動畫效果 */
-#input-bar-container {
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  #input-bar-container {
+    /* 為了讓移動過程更平滑，加上一個過渡動畫 */
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
 }
 </style>
 <script>
@@ -4933,18 +4930,8 @@ function renderMarkdownWithFormulas(text) {
         };
         const renderChat = () => {
             const conv = getActiveConversation();
-            const mainElement = document.querySelector('main');
-
-    if (mainElement) { // 確保 main 元素存在
-        if (conv && conv.messages.length === 0) {
-            // 如果對話存在且沒有訊息，就加上置中 class
-            mainElement.classList.add('chat-view-empty');
-        } else {
-            // 否則就移除置中 class
-            mainElement.classList.remove('chat-view-empty');
-        }
-    }
             const messageList = ALL_ELEMENTS.messageList;
+            const mainContentArea = document.querySelector('main.flex-1.flex-col'); // 找到 main 容器
             messageList.classList.remove('chat-view-transition');
             if (!conv) {
                 messageList.innerHTML = '';
@@ -4960,7 +4947,9 @@ function renderMarkdownWithFormulas(text) {
             if (conv.messages.length === 0) {
     const greeting = `${currentUser.username}, ${i18n[config.uiLanguage].howCanIHelp || '有什麼可以為您服務的嗎？'}`;
     messageList.innerHTML = `<div class="text-center text-[var(--text-primary)] mt-16 chat-greeting-message"><p class="text-2xl font-semibold">${greeting}</p></div>`;
-} else {
+if (mainContentArea) mainContentArea.classList.add('main-content-centered'); // 如果沒訊息，就加上置中 class
+            } else {
+                if (mainContentArea) mainContentArea.classList.remove('main-content-centered'); // 如果有訊息，就移除置中 class
                 conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
             }
             requestAnimationFrame(() => {
@@ -5792,6 +5781,8 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
 
         const handleFormSubmit = async (e) => {
             e.preventDefault();
+            const mainContentArea = document.querySelector('main.flex-1.flex-col');
+    if (mainContentArea) mainContentArea.classList.remove('main-content-centered');
             if (abortController) return;
             const userMessage = ALL_ELEMENTS.messageInput.value.trim();
             if (!userMessage && uploadedFiles.length === 0) return;
@@ -5821,7 +5812,6 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
             });
             const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
             addMessageToUI(userMessageObject, conv.messages.length, true);
-            document.querySelector('main').classList.remove('chat-view-empty');
             conv.lastUpdatedAt = new Date().toISOString();
             conv.unsentMessage = '';
             if (conv.isTemporary) {
