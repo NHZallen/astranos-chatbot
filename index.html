@@ -32,9 +32,6 @@
     /* 強制隱藏所有超出寬度的內容 */
     overflow-x: hidden;
 }
-        #chat-container, #input-bar-container {
-    transition: flex-grow 0.3s ease-in-out;
-}
     #history-sidebar .history-sidebar-item {
     /* 這是為了讓指示條可以相對於它定位，非常重要！ */
     position: relative; 
@@ -2490,29 +2487,35 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     transition: border-radius 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
                 padding-top 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-/* --- ✨ 新增：電腦版初始畫面輸入框置中 START --- */
+
+        /* --- ▼▼▼ 新增：電腦版空聊天室輸入框置中樣式 ▼▼▼ --- */
 @media (min-width: 768px) {
-  main.chat-initial-state {
-    /* 當這個 class 存在時，讓 main 元素內部也變成一個 flex 容器 */
-    display: flex;
-    flex-direction: column;
+  /* 
+    當 main 容器有 'chat-is-empty' class 時，
+    我們讓它內部的所有東西都垂直置中。
+  */
+  main.chat-is-empty {
+    justify-content: center;
   }
 
-  main.chat-initial-state #chat-container {
-    /* 讓聊天訊息區塊 (此時是空的) 佔據上半部所有剩餘空間，像一個隱形的墊片 */
-    flex-grow: 1;
-  }
-
-  main.chat-initial-state #input-bar-container {
-    /* 讓輸入框容器也佔據下半部所有剩餘空間 */
-    flex-grow: 1;
-    /* 關鍵！讓輸入框本身對齊這個容器的「頂部」，從而達到垂直置中的效果 */
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
+  /* 
+    同時，我們給輸入框一個 20vh 的下邊距。
+    vh 是 "viewport height" 的縮寫，20vh 代表螢幕高度的 20%。
+    這個下邊距會把已經被置中的輸入框再往上推，達到「置中偏上」的效果。
+  */
+  main.chat-is-empty #input-bar-container {
+    margin-bottom: 25vh; /* 您可以調整這個數值 (例如 20vh, 30vh) 來改變偏上的程度 */
   }
 }
-/* --- ✨ 新增：電腦版初始畫面輸入框置中 END --- */
+
+/* 
+  為了讓輸入框回到下方時有平滑的動畫，
+  我們需要給它一個 transition (過渡) 效果。
+*/
+#input-bar-container {
+    transition: margin-bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+/* --- ▲▲▲ 新增樣式結束 ▲▲▲ --- */
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -3547,7 +3550,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         });
         const ALL_ELEMENTS = {
-            mainContent: document.querySelector('main.flex-1'),
             authContainer: document.getElementById('auth-container'),
             appContainer: document.getElementById('app-container'),
             authForm: document.getElementById('auth-form'),
@@ -4933,11 +4935,6 @@ function renderMarkdownWithFormulas(text) {
         };
         const renderChat = () => {
             const conv = getActiveConversation();
-            if (conv && conv.messages.length === 0) {
-        ALL_ELEMENTS.mainContent.classList.add('chat-initial-state');
-    } else {
-        ALL_ELEMENTS.mainContent.classList.remove('chat-initial-state');
-    }
             const messageList = ALL_ELEMENTS.messageList;
             messageList.classList.remove('chat-view-transition');
             if (!conv) {
@@ -4951,8 +4948,16 @@ function renderMarkdownWithFormulas(text) {
             renderModelSwitcher();
             renderInputIndicators();
             messageList.innerHTML = '';
-// 檢查對話中是否有訊息，如果沒有，這裡就會是空白
-conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
+const mainContainer = document.querySelector('main.flex-1'); // 找到主容器
+
+if (conv.messages.length === 0) {
+    // 如果沒有訊息，就加上 'chat-is-empty' 這個 class
+    mainContainer.classList.add('chat-is-empty');
+} else {
+    // 如果有訊息了，就移除 'chat-is-empty' 這個 class
+    mainContainer.classList.remove('chat-is-empty');
+    conv.messages.forEach((msg, index) => addMessageToUI(msg, index, false, false));
+}
 requestAnimationFrame(() => {
     setupMessageIntersectionObserver();
 });
