@@ -2492,6 +2492,32 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     display: none; /* 將它完全隱藏起來，不佔據任何空間 */
   }
 }
+        /* --- 新增：空對話時輸入框置中 --- */
+@media (min-width: 768px) { /* 這條規則只在寬度大於 768px (電腦版) 時生效 */
+  
+  main.chat-view-empty {
+    /* 當 main 元素有 chat-view-empty 這個 class 時 */
+    /* 讓裡面的所有子元素 (招呼語和輸入框) 垂直置中 */
+    justify-content: center;
+  }
+  
+  main.chat-view-empty #chat-container {
+    /* 在置中狀態下，我們不希望聊天區塊無限伸展，所以把它關掉 */
+    flex-grow: 0;
+  }
+
+  main.chat-view-empty .chat-greeting-message {
+    /* 移除原本招呼語上方過多的間距，讓版面更協調 */
+    margin-top: 0;
+    /* 在招呼語和輸入框之間增加一點距離 */
+    padding-bottom: 2rem; 
+  }
+}
+
+/* 為輸入框容器增加平滑的過渡動畫效果 */
+#input-bar-container {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -4911,6 +4937,17 @@ function renderMarkdownWithFormulas(text) {
         };
         const renderChat = () => {
             const conv = getActiveConversation();
+            const mainElement = document.querySelector('main');
+
+    if (mainElement) { // 確保 main 元素存在
+        if (conv && conv.messages.length === 0) {
+            // 如果對話存在且沒有訊息，就加上置中 class
+            mainElement.classList.add('chat-view-empty');
+        } else {
+            // 否則就移除置中 class
+            mainElement.classList.remove('chat-view-empty');
+        }
+    }
             const messageList = ALL_ELEMENTS.messageList;
             messageList.classList.remove('chat-view-transition');
             if (!conv) {
@@ -5788,6 +5825,7 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
             });
             const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
             addMessageToUI(userMessageObject, conv.messages.length, true);
+            document.querySelector('main').classList.remove('chat-view-empty');
             conv.lastUpdatedAt = new Date().toISOString();
             conv.unsentMessage = '';
             if (conv.isTemporary) {
