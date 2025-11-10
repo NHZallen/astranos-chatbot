@@ -2492,23 +2492,33 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     display: none; /* 將它完全隱藏起來，不佔據任何空間 */
   }
 }
-        /* --- 新增：新對話輸入框置中效果 --- */
-@media (min-width: 768px) { 
+/* --- 全新修正：新對話輸入框置中效果 V2 --- */
+@media (min-width: 768px) {
   /* 這條規則只在螢幕寬度大於 768px (電腦版) 時生效 */
 
-  main.main-content-centered {
-    /* 當 main 容器有我們的自訂 class 時 */
-    justify-content: center; /* 讓內部的所有東西在垂直方向上集中 */
+  /* 當處於置中模式時，讓聊天區塊不再強制伸展佔滿空間 */
+  main.main-content-centered #chat-container {
+    flex-grow: 0;
   }
 
+  /* 
+    這是實現置中的核心魔法：
+    1. `margin-top: auto;` 會在聊天區塊的上方創造一個彈性的空白，
+       把它從頂部導覽列推開。
+    2. `margin-bottom: auto;` 會在輸入框的下方創造一個彈性的空白，
+       把它從頁面底部推開。
+    3. 最終效果就是 [招呼語 + 輸入框] 這個群組被完美地垂直置中了。
+  */
   main.main-content-centered #chat-container {
-    /* 針對置中狀態下的聊天區塊 */
-    flex-grow: 0; /* 關鍵！取消它的「自動長高」屬性，這樣它才不會把輸入框推到最下面 */
+    margin-top: auto;
   }
-  
-  #input-bar-container {
-    /* 為了讓移動過程更平滑，加上一個過渡動畫 */
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  main.main-content-centered #input-bar-container {
+    margin-bottom: auto;
+  }
+
+  /* 為了讓位置變動更平滑，為這兩個區塊加上過渡動畫 */
+  #chat-container, #input-bar-container {
+    transition: margin 0.4s cubic-bezier(0.4, 0, 0.2, 1), flex-grow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 </style>
