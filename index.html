@@ -32,6 +32,9 @@
     /* 強制隱藏所有超出寬度的內容 */
     overflow-x: hidden;
 }
+        #chat-container, #input-bar-container {
+    transition: flex-grow 0.3s ease-in-out;
+}
     #history-sidebar .history-sidebar-item {
     /* 這是為了讓指示條可以相對於它定位，非常重要！ */
     position: relative; 
@@ -2487,7 +2490,29 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     transition: border-radius 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
                 padding-top 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+/* --- ✨ 新增：電腦版初始畫面輸入框置中 START --- */
+@media (min-width: 768px) {
+  main.chat-initial-state {
+    /* 當這個 class 存在時，讓 main 元素內部也變成一個 flex 容器 */
+    display: flex;
+    flex-direction: column;
+  }
 
+  main.chat-initial-state #chat-container {
+    /* 讓聊天訊息區塊 (此時是空的) 佔據上半部所有剩餘空間，像一個隱形的墊片 */
+    flex-grow: 1;
+  }
+
+  main.chat-initial-state #input-bar-container {
+    /* 讓輸入框容器也佔據下半部所有剩餘空間 */
+    flex-grow: 1;
+    /* 關鍵！讓輸入框本身對齊這個容器的「頂部」，從而達到垂直置中的效果 */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+}
+/* --- ✨ 新增：電腦版初始畫面輸入框置中 END --- */
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -3522,6 +3547,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         });
         const ALL_ELEMENTS = {
+            mainContent: document.querySelector('main.flex-1'),
             authContainer: document.getElementById('auth-container'),
             appContainer: document.getElementById('app-container'),
             authForm: document.getElementById('auth-form'),
@@ -4907,6 +4933,11 @@ function renderMarkdownWithFormulas(text) {
         };
         const renderChat = () => {
             const conv = getActiveConversation();
+            if (conv && conv.messages.length === 0) {
+        ALL_ELEMENTS.mainContent.classList.add('chat-initial-state');
+    } else {
+        ALL_ELEMENTS.mainContent.classList.remove('chat-initial-state');
+    }
             const messageList = ALL_ELEMENTS.messageList;
             messageList.classList.remove('chat-view-transition');
             if (!conv) {
