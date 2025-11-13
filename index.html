@@ -2955,23 +2955,34 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         </div>
                         <h3 class="text-lg font-semibold mb-3 mt-6" data-lang-key="personalMemoryManage">個人習慣記憶管理</h3>
                         <div class="flex justify-between items-center mb-2">
-        <span id="memory-selection-count" class="text-sm text-[var(--text-secondary)] hidden"></span>
-        <div>
-            <button id="memory-batch-select-btn" class="text-sm px-3 py-1.5 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] hover:bg-[var(--hover-bg)]" data-lang-key="batchSelect">
-                批次選取
+    <span id="memory-selection-count" class="text-sm text-[var(--text-secondary)] hidden"></span>
+    <div>
+        <!-- 將「批次選取」改為下拉選單按鈕 -->
+        <div id="memory-batch-actions-menu" class="relative inline-block text-left">
+            <button id="memory-batch-menu-btn" class="text-sm px-3 py-1.5 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] hover:bg-[var(--hover-bg)] flex items-center gap-1">
+                <span data-lang-key="batchActions">批次操作</span>
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
             </button>
-            <button id="memory-cancel-selection-btn" class="text-sm px-3 py-1.5 rounded-md text-blue-600 hover:underline font-semibold hidden" data-lang-key="done">
-                完成
-            </button>
+            <!-- 下拉選單內容 -->
+            <div id="memory-batch-options-popover" class="popover absolute right-0 mt-2 w-48 rounded-md shadow-lg z-50">
+                <div class="py-1">
+                    <a href="#" class="block px-4 py-2 text-sm" data-action="enable" data-lang-key="batchEnable">批次啟用</a>
+                    <a href="#" class="block px-4 py-2 text-sm" data-action="disable" data-lang-key="batchDisable">批次停用</a>
+                    <div class="border-t my-1 border-[var(--border-color)]"></div>
+                    <a href="#" class="block px-4 py-2 text-sm text-red-600" data-action="delete" data-lang-key="batchDelete">批次刪除</a>
+                </div>
+            </div>
         </div>
+        <button id="memory-cancel-selection-btn" class="text-sm px-3 py-1.5 rounded-md text-blue-600 hover:underline font-semibold hidden" data-lang-key="done">
+            完成
+        </button>
     </div>
-    <div id="memory-batch-action-bar" class="hidden mb-4 p-2 rounded-md bg-[var(--sidebar-bg)] border border-[var(--border-color)]">
-        <div class="grid grid-cols-3 gap-2">
-            <button id="memory-batch-enable-btn" class="p-2 text-sm rounded-md bg-green-500 text-white disabled:bg-green-300" disabled data-lang-key="enableSelected">啟用所選</button>
-            <button id="memory-batch-disable-btn" class="p-2 text-sm rounded-md bg-yellow-500 text-white disabled:bg-yellow-300" disabled data-lang-key="disableSelected">停用所選</button>
-            <button id="memory-batch-delete-btn" class="p-2 text-sm rounded-md bg-red-500 text-white disabled:bg-red-300" disabled data-lang-key="deleteSelected">刪除所選</button>
-        </div>
+</div>
+<div id="memory-batch-action-bar" class="hidden mb-4 p-2 rounded-md bg-[var(--sidebar-bg)] border border-[var(--border-color)]">
+    <div class="flex justify-end">
+        <button id="memory-batch-apply-btn" class="p-2 text-sm rounded-md bg-blue-500 text-white disabled:bg-blue-300" disabled>套用變更</button>
     </div>
+</div>
                         <div id="personal-memory-list" class="space-y-2"></div>
                         <button id="add-personal-memory-btn" class="mt-4 px-4 py-2 rounded-md btn-primary" data-lang-key="addMemory">新增記憶</button>
                     </div>
@@ -4133,7 +4144,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let modelPieChart = null;
         let timeDistChart = null;
         let cropperInstance = null;
-        let isMemorySelectionMode = false;
+        let memorySelectionMode = 'none'; // 'none', 'enable', 'disable', 'delete'
 let selectedMemoryIds = new Set();
         let messageObserver = null;
         let currentStoreCategory = '全部';
@@ -7913,6 +7924,57 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
     const count = selectedMemoryIds.size;
     const selectionCountEl = document.getElementById('memory-selection-count');
     const actionBar = document.getElementById('memory-batch-action-bar');
+    const menuBtn = document.getElementById('memory-batch-menu-btn');
+    const cancelBtn = document.getElementById('memory-cancel-selection-btn');
+    const applyBtn = document.getElementById('memory-batch-apply-btn');
+
+
+    if (memorySelectionMode !== 'none') {
+        actionBar.classList.remove('hidden');
+        selectionCountEl.classList.remove('hidden');
+        menuBtn.classList.add('hidden');
+        cancelBtn.classList.remove('hidden');
+        
+        selectionCountEl.textContent = `${i18n[config.uiLanguage].selected || '已選取'} ${count} ${i18n[config.uiLanguage].items || '個項目'}`;
+        
+        applyBtn.disabled = count === 0;
+        const actionText = {
+            'enable': '啟用', 'disable': '停用', 'delete': '刪除'
+        }[memorySelectionMode];
+        applyBtn.textContent = `${actionText} ${count} 個項目`;
+
+
+    } else {
+        actionBar.classList.add('hidden');
+        selectionCountEl.classList.add('hidden');
+        menuBtn.classList.remove('hidden');
+        cancelBtn.classList.add('hidden');
+    }
+};
+
+
+const toggleMemorySelectionMode = (mode = 'none') => {
+    memorySelectionMode = mode;
+    selectedMemoryIds.clear();
+    
+    // 預先選中符合條件的項目
+    if (mode === 'enable') {
+        personalMemories.forEach(m => {
+            if (!m.enabled) selectedMemoryIds.add(m.id);
+        });
+    } else if (mode === 'disable') {
+         personalMemories.forEach(m => {
+            if (m.enabled) selectedMemoryIds.add(m.id);
+        });
+    }
+
+
+    renderPersonalMemoryList();
+    renderMemoryBatchActionBar();
+};
+    const count = selectedMemoryIds.size;
+    const selectionCountEl = document.getElementById('memory-selection-count');
+    const actionBar = document.getElementById('memory-batch-action-bar');
     const batchSelectBtn = document.getElementById('memory-batch-select-btn');
     const cancelSelectionBtn = document.getElementById('memory-cancel-selection-btn');
 
@@ -7946,92 +8008,93 @@ const toggleMemorySelectionMode = () => {
 };
 
 
-const handleBatchMemoryAction = async (action) => {
+const handleBatchMemoryAction = async () => {
     const count = selectedMemoryIds.size;
-    if (count === 0) return;
+    if (count === 0) {
+        toggleMemorySelectionMode('none');
+        return;
+    };
 
 
     let changedCount = 0;
     let notificationMessage = '';
+    const action = memorySelectionMode;
 
 
     if (action === 'delete') {
         if (!(await showCustomConfirm(`${i18n[config.uiLanguage].confirmBatchDeleteMemory || '您確定要刪除這'} ${count} ${i18n[config.uiLanguage].memories || '個記憶嗎？'}`))) return;
-        
         personalMemories = personalMemories.filter(m => !selectedMemoryIds.has(m.id));
         changedCount = count;
         notificationMessage = `${i18n[config.uiLanguage].batchDeletedMemories || '已成功刪除'} ${changedCount} ${i18n[config.uiLanguage].memories || '個記憶'}`;
-
-
     } else {
         const enable = action === 'enable';
         personalMemories.forEach(m => {
-            // 核心邏輯：只有在「被選中」且「狀態不同」時才改變
-            if (selectedMemoryIds.has(m.id) && m.enabled !== enable) {
+            if (selectedMemoryIds.has(m.id)) {
                 m.enabled = enable;
                 changedCount++;
             }
         });
-
-
-        if (changedCount > 0) {
-            const actionText = enable 
-                ? i18n[config.uiLanguage].batchEnabled 
-                : i18n[config.uiLanguage].batchDisabled;
-            notificationMessage = `${actionText} ${changedCount} ${i18n[config.uiLanguage].memories || '個記憶'}`;
-        } else {
-            // 如果沒有任何項目被改變，給予不同的提示
-            notificationMessage = i18n[config.uiLanguage].noMemoriesNeedUpdate || '沒有需要更新狀態的記憶。';
-        }
+        const actionText = enable ? i18n[config.uiLanguage].batchEnabled : i18n[config.uiLanguage].batchDisabled;
+        notificationMessage = `${actionText} ${changedCount} ${i18n[config.uiLanguage].memories || '個記憶'}`;
     }
 
 
     await saveAppData();
-    
-    // 只有在真的有變動時才顯示成功通知
-    if (changedCount > 0) {
-        showNotification(notificationMessage, 'success');
-    } else {
-        showNotification(notificationMessage, 'warning'); // 如果沒變動，顯示警告或提示訊息
-    }
-
-
-    toggleMemorySelectionMode();
+    showNotification(notificationMessage, 'success');
+    toggleMemorySelectionMode('none'); // 操作完成後退出批次模式
 };
         const renderPersonalMemoryList = () => {
     const container = ALL_ELEMENTS.personalMemoryList;
     container.innerHTML = '';
+    const isBatchMode = memorySelectionMode !== 'none';
+
+
     personalMemories.forEach(memory => {
         const item = document.createElement('div');
         item.className = 'flex items-center justify-between p-2 rounded-lg bg-[var(--hover-bg)] border border-[var(--border-color)]';
         
-        // ✨ 這是核心修改：根據是否為批次選取模式，產生不同的 HTML
-        if (isMemorySelectionMode) {
+        let isSelectable = true;
+        // 根據不同模式，決定項目是否可被選取
+        if (memorySelectionMode === 'enable' && memory.enabled) {
+            isSelectable = false;
+        } else if (memorySelectionMode === 'disable' && !memory.enabled) {
+            isSelectable = false;
+        }
+
+
+        if (isBatchMode) {
             item.classList.add('cursor-pointer');
+            if (!isSelectable) {
+                item.classList.add('opacity-50', 'pointer-events-none');
+            }
+
+
+            // 直接使用 checkbox 的 checked 狀態來表示原始狀態
+            const isChecked = (memorySelectionMode === 'enable' && memory.enabled) ||
+                            (memorySelectionMode === 'disable' && !memory.enabled) ||
+                            selectedMemoryIds.has(memory.id);
+
+
             item.innerHTML = `
-    <div class="flex items-center gap-3 flex-1 min-w-0">
-        <input type="checkbox" class="memory-select-checkbox w-4 h-4 flex-shrink-0" data-id="${memory.id}" ${selectedMemoryIds.has(memory.id) ? 'checked' : ''}>
-        
-        <!-- 這裡新增一個不可點擊的狀態開關 -->
-        <div class="relative inline-block w-10 h-5 rounded-full flex-shrink-0 ${memory.enabled ? 'bg-blue-500' : 'bg-gray-300'}">
-            <div class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${memory.enabled ? 'transform translate-x-5' : ''}"></div>
-        </div>
-
-
-        <span class="text-sm" style="word-break: break-word;">${memory.content}</span>
-    </div>
+                <div class="flex items-center gap-3 flex-1 min-w-0">
+                    <input type="checkbox" class="memory-select-checkbox w-4 h-4 flex-shrink-0" 
+                           data-id="${memory.id}" 
+                           ${isChecked ? 'checked' : ''}
+                           ${!isSelectable ? 'disabled' : ''}>
+                    <span class="text-sm" style="word-break: break-word;">${memory.content}</span>
+                </div>
             `;
             
             item.addEventListener('click', (e) => {
                 const checkbox = e.currentTarget.querySelector('.memory-select-checkbox');
-                if (checkbox && e.target !== checkbox) {
+                if (checkbox && e.target !== checkbox && !checkbox.disabled) {
                     checkbox.checked = !checkbox.checked;
                     checkbox.dispatchEvent(new Event('change'));
                 }
             });
 
 
-        } else {
+        } else { // 非批次模式下的正常顯示
             item.innerHTML = `
                 <div class="flex items-center gap-2 flex-1 min-w-0">
                     <input type="checkbox" class="memory-enabled-checkbox w-4 h-4" data-id="${memory.id}" ${memory.enabled ? 'checked' : ''}>
@@ -8048,7 +8111,7 @@ const handleBatchMemoryAction = async (action) => {
     });
 
 
-    // 統一在這裡綁定事件，無論在哪種模式下
+    // 統一在這裡綁定事件
     container.querySelectorAll('.memory-enabled-checkbox').forEach(cb => {
         cb.addEventListener('change', async (e) => {
             const id = e.target.dataset.id;
@@ -10724,11 +10787,28 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             followUpContainer.addEventListener('touchstart', stopPropagation);
             followUpContainer.addEventListener('touchmove', stopPropagation);
             followUpContainer.addEventListener('touchend', stopPropagation);
-            document.getElementById('memory-batch-select-btn').addEventListener('click', toggleMemorySelectionMode);
-document.getElementById('memory-cancel-selection-btn').addEventListener('click', toggleMemorySelectionMode);
-document.getElementById('memory-batch-enable-btn').addEventListener('click', () => handleBatchMemoryAction('enable'));
-document.getElementById('memory-batch-disable-btn').addEventListener('click', () => handleBatchMemoryAction('disable'));
-document.getElementById('memory-batch-delete-btn').addEventListener('click', () => handleBatchMemoryAction('delete'));
+            const memoryMenuBtn = document.getElementById('memory-batch-menu-btn');
+const memoryMenuPopover = document.getElementById('memory-batch-options-popover');
+
+
+memoryMenuBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    memoryMenuPopover.classList.toggle('visible');
+});
+
+
+memoryMenuPopover.addEventListener('click', (e) => {
+    e.preventDefault();
+    const action = e.target.dataset.action;
+    if (action) {
+        toggleMemorySelectionMode(action);
+        memoryMenuPopover.classList.remove('visible');
+    }
+});
+
+
+document.getElementById('memory-cancel-selection-btn').addEventListener('click', () => toggleMemorySelectionMode('none'));
+document.getElementById('memory-batch-apply-btn').addEventListener('click', handleBatchMemoryAction);
         }
         }
         const handleDeleteMessagePair = async (index) => {
