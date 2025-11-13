@@ -9992,584 +9992,589 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
     }
 }
         async function initChatApp() {
-            if (window.innerWidth >= 1024) {
+    if (window.innerWidth >= 1024) {
         sidebarOpen = true;
         ALL_ELEMENTS.appContainer.classList.add('sidebar-open');
     }
-            injectDeepResearchStyles(); // ✨ 注入樣式
-            setTheme(config.theme);
-            ALL_ELEMENTS.usernameDisplay.textContent = currentUser.username;
-            document.querySelector('.user-avatar').textContent = currentUser.username.charAt(0).toUpperCase();
-            if (!conversations.find(c => !c.archived && !c.deletedAt)) startNewChat();
-            renderAll();
-            updateFunctionButtonsState();
-            updateInputState();
-            setupVoiceInput();
-            setupScrollToBottomButton();
-            updateDisplayedVersion();
-            checkAndShowLatestUpdate();
-            ALL_ELEMENTS.menuToggleBtn.addEventListener('click', () => toggleSidebar());
-            ALL_ELEMENTS.sidebarOverlay.addEventListener('click', () => toggleSidebar(false));
-            ALL_ELEMENTS.sidebarOverlay.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
-            ALL_ELEMENTS.newChatBtn.addEventListener('click', () => startNewChat());
-            ALL_ELEMENTS.newChatBtnHeader.addEventListener('click', () => startNewChat()); // ✨ 新增這一行
-            ALL_ELEMENTS.openSearchBtn.addEventListener('click', () => {
-                toggleModal(ALL_ELEMENTS.searchModal, true);
-                ALL_ELEMENTS.openSearchBtn.classList.add('active'); // <-- ✨ 加上這一行
-                ALL_ELEMENTS.modalSearchInput.value = '';
-                ALL_ELEMENTS.searchResultsContainer.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].searchPrompt}</p>`;
-                setTimeout(() => ALL_ELEMENTS.modalSearchInput.focus(), 50);
-            });
-            ALL_ELEMENTS.apiKeyWarningBadge.addEventListener('click', () => {
-                setupSettingsModal();
-                toggleModal(ALL_ELEMENTS.settingsModal, true);
-                const navItems = ALL_ELEMENTS.settingsNav.querySelectorAll('.settings-nav-item');
-                navItems.forEach(i => i.classList.remove('active'));
-                document.querySelector('.settings-nav-item[data-section="model-management"]').classList.add('active');
-                document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
-                document.getElementById('model-management-section').classList.add('active');
-            });
-            ALL_ELEMENTS.closeSearchModalBtn.addEventListener('click', () => {
-                toggleModal(ALL_ELEMENTS.searchModal, false);
-                ALL_ELEMENTS.openSearchBtn.classList.remove('active'); // <-- ✨ 加上這一行
-            });
-            ALL_ELEMENTS.performSearchBtn.addEventListener('click', performSearchAndRenderResults);
-            ALL_ELEMENTS.modalSearchInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    performSearchAndRenderResults();
-                }
-            });
-            ALL_ELEMENTS.modalSearchScopeSelect.addEventListener('change', performSearchAndRenderResults);
-            const closeSearchView = () => toggleModal(ALL_ELEMENTS.searchViewModal, false);
-            ALL_ELEMENTS.closeSearchViewModalBtn.addEventListener('click', closeSearchView);
-            ALL_ELEMENTS.searchViewCloseBtn.addEventListener('click', closeSearchView);
-            ALL_ELEMENTS.searchViewConfirmBtn.addEventListener('click', (e) => {
-                const convId = e.currentTarget.dataset.id;
-                if (convId) {
-                    loadChat(convId);
-                    toggleSidebar(false);
-                    closeSearchView();
-                    toggleModal(ALL_ELEMENTS.searchModal, false);
-                }
-            });
-            const closeTrashView = () => toggleModal(ALL_ELEMENTS.trashViewModal, false);
-            ALL_ELEMENTS.closeTrashViewModalBtn.addEventListener('click', closeTrashView);
-            ALL_ELEMENTS.trashViewCloseBtn.addEventListener('click', closeTrashView);
-            ALL_ELEMENTS.settingsBtn.addEventListener('click', () => { setupSettingsModal(); toggleModal(ALL_ELEMENTS.settingsModal, true); });
-            ALL_ELEMENTS.closeSettingsBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.settingsModal, false));
-            ALL_ELEMENTS.saveSettingsBtn.addEventListener('click', saveSettings);
-            ALL_ELEMENTS.themeLightBtn.addEventListener('click', () => setTheme('light'));
-            ALL_ELEMENTS.themeDarkBtn.addEventListener('click', () => setTheme('dark'));
-            ALL_ELEMENTS.openArchivedModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.archivedChatsModal, true));
-            ALL_ELEMENTS.closeArchivedModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.archivedChatsModal, false));
-            const closeViewArchivedModal = () => toggleModal(ALL_ELEMENTS.viewArchivedChatModal, false);
-            ALL_ELEMENTS.closeViewArchivedModalBtn.addEventListener('click', closeViewArchivedModal);
-            ALL_ELEMENTS.closeViewArchivedModalBtnFooter.addEventListener('click', closeViewArchivedModal);
-            ALL_ELEMENTS.saveRenameBtn.addEventListener('click', handleRename);
-            ALL_ELEMENTS.cancelRenameBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.renameModal, false));
-            ALL_ELEMENTS.saveFolderSettingsBtn.addEventListener('click', handleSaveFolderSettings);
-            ALL_ELEMENTS.cancelFolderSettingsBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.folderSettingsModal, false));
-            ALL_ELEMENTS.exportDataBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.exportDataModal, true));
-            ALL_ELEMENTS.cancelExportBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.exportDataModal, false));
-            ALL_ELEMENTS.confirmExportBtn.addEventListener('click', handleExport);
-            ALL_ELEMENTS.importDataBtn.addEventListener('click', () => { ALL_ELEMENTS.importFileInput.value=''; toggleModal(ALL_ELEMENTS.importDataModal, true); });
-            ALL_ELEMENTS.cancelImportBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.importDataModal, false));
-            ALL_ELEMENTS.confirmImportBtn.addEventListener('click', handleImport);
-            ALL_ELEMENTS.logoutBtn.addEventListener('click', handleLogout);
-            ALL_ELEMENTS.userProfileBtn.addEventListener('click', openDashboard);
-            ALL_ELEMENTS.closeDashboardBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.dataDashboardModal, false));
-            ALL_ELEMENTS.messageList.addEventListener('click', (e) => {
-                const copyBtn = e.target.closest('.copy-content-btn');
-                const deleteBtn = e.target.closest('.delete-message-btn');
-                if (copyBtn) {
-                    const messageItem = copyBtn.closest('.message-item');
-                    if (messageItem) {
-                        const messageIndex = parseInt(messageItem.dataset.messageIndex);
-                        const conv = getActiveConversation();
-                        const msg = conv?.messages[messageIndex];
-                        if (msg && msg.role === 'model') {
-                            const textToCopy = msg.parts.map(p => p.text).join('\n');
-                            copyTextToClipboard(textToCopy)
-                                .then(() => showNotification(i18n[config.uiLanguage].copySuccess || '內容已複製！', 'success'))
-                                .catch(err => {
-                                    showNotification(i18n[config.uiLanguage].copyFailed || '複製失敗！瀏覽器可能限制了此功能。', 'error');
-                                    console.error('Could not copy text with any method: ', err);
-                                });
-                        }
-                    }
-                } else if (deleteBtn) {
-                    const messageItem = deleteBtn.closest('.message-item');
-                     if (messageItem) {
-                        const messageIndex = parseInt(messageItem.dataset.messageIndex);
-                        handleDeleteMessagePair(messageIndex);
-                    }
-                }
-            });
-
-            ALL_ELEMENTS.cameraBtn.addEventListener('click', () => {
-                ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
-                ALL_ELEMENTS.imageVideoInput.setAttribute('capture','environment');
-                ALL_ELEMENTS.imageVideoInput.click();
-            });
-            ALL_ELEMENTS.webSearchPopoverBtn.addEventListener('click', async () => {
-                ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
+    injectDeepResearchStyles(); // ✨ 注入樣式
+    setTheme(config.theme);
+    ALL_ELEMENTS.usernameDisplay.textContent = currentUser.username;
+    document.querySelector('.user-avatar').textContent = currentUser.username.charAt(0).toUpperCase();
+    if (!conversations.find(c => !c.archived && !c.deletedAt)) startNewChat();
+    renderAll();
+    updateFunctionButtonsState();
+    updateInputState();
+    setupVoiceInput();
+    setupScrollToBottomButton();
+    updateDisplayedVersion();
+    checkAndShowLatestUpdate();
+    ALL_ELEMENTS.menuToggleBtn.addEventListener('click', () => toggleSidebar());
+    ALL_ELEMENTS.sidebarOverlay.addEventListener('click', () => toggleSidebar(false));
+    ALL_ELEMENTS.sidebarOverlay.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+    ALL_ELEMENTS.newChatBtn.addEventListener('click', () => startNewChat());
+    ALL_ELEMENTS.newChatBtnHeader.addEventListener('click', () => startNewChat()); // ✨ 新增這一行
+    ALL_ELEMENTS.openSearchBtn.addEventListener('click', () => {
+        toggleModal(ALL_ELEMENTS.searchModal, true);
+        ALL_ELEMENTS.openSearchBtn.classList.add('active'); // <-- ✨ 加上這一行
+        ALL_ELEMENTS.modalSearchInput.value = '';
+        ALL_ELEMENTS.searchResultsContainer.innerHTML = `<p class="text-center text-[var(--text-secondary)]">${i18n[config.uiLanguage].searchPrompt}</p>`;
+        setTimeout(() => ALL_ELEMENTS.modalSearchInput.focus(), 50);
+    });
+    ALL_ELEMENTS.apiKeyWarningBadge.addEventListener('click', () => {
+        setupSettingsModal();
+        toggleModal(ALL_ELEMENTS.settingsModal, true);
+        const navItems = ALL_ELEMENTS.settingsNav.querySelectorAll('.settings-nav-item');
+        navItems.forEach(i => i.classList.remove('active'));
+        document.querySelector('.settings-nav-item[data-section="model-management"]').classList.add('active');
+        document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
+        document.getElementById('model-management-section').classList.add('active');
+    });
+    ALL_ELEMENTS.closeSearchModalBtn.addEventListener('click', () => {
+        toggleModal(ALL_ELEMENTS.searchModal, false);
+        ALL_ELEMENTS.openSearchBtn.classList.remove('active'); // <-- ✨ 加上這一行
+    });
+    ALL_ELEMENTS.performSearchBtn.addEventListener('click', performSearchAndRenderResults);
+    ALL_ELEMENTS.modalSearchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            performSearchAndRenderResults();
+        }
+    });
+    ALL_ELEMENTS.modalSearchScopeSelect.addEventListener('change', performSearchAndRenderResults);
+    const closeSearchView = () => toggleModal(ALL_ELEMENTS.searchViewModal, false);
+    ALL_ELEMENTS.closeSearchViewModalBtn.addEventListener('click', closeSearchView);
+    ALL_ELEMENTS.searchViewCloseBtn.addEventListener('click', closeSearchView);
+    ALL_ELEMENTS.searchViewConfirmBtn.addEventListener('click', (e) => {
+        const convId = e.currentTarget.dataset.id;
+        if (convId) {
+            loadChat(convId);
+            toggleSidebar(false);
+            closeSearchView();
+            toggleModal(ALL_ELEMENTS.searchModal, false);
+        }
+    });
+    const closeTrashView = () => toggleModal(ALL_ELEMENTS.trashViewModal, false);
+    ALL_ELEMENTS.closeTrashViewModalBtn.addEventListener('click', closeTrashView);
+    ALL_ELEMENTS.trashViewCloseBtn.addEventListener('click', closeTrashView);
+    ALL_ELEMENTS.settingsBtn.addEventListener('click', () => { setupSettingsModal(); toggleModal(ALL_ELEMENTS.settingsModal, true); });
+    ALL_ELEMENTS.closeSettingsBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.settingsModal, false));
+    ALL_ELEMENTS.saveSettingsBtn.addEventListener('click', saveSettings);
+    ALL_ELEMENTS.themeLightBtn.addEventListener('click', () => setTheme('light'));
+    ALL_ELEMENTS.themeDarkBtn.addEventListener('click', () => setTheme('dark'));
+    ALL_ELEMENTS.openArchivedModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.archivedChatsModal, true));
+    ALL_ELEMENTS.closeArchivedModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.archivedChatsModal, false));
+    const closeViewArchivedModal = () => toggleModal(ALL_ELEMENTS.viewArchivedChatModal, false);
+    ALL_ELEMENTS.closeViewArchivedModalBtn.addEventListener('click', closeViewArchivedModal);
+    ALL_ELEMENTS.closeViewArchivedModalBtnFooter.addEventListener('click', closeViewArchivedModal);
+    ALL_ELEMENTS.saveRenameBtn.addEventListener('click', handleRename);
+    ALL_ELEMENTS.cancelRenameBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.renameModal, false));
+    ALL_ELEMENTS.saveFolderSettingsBtn.addEventListener('click', handleSaveFolderSettings);
+    ALL_ELEMENTS.cancelFolderSettingsBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.folderSettingsModal, false));
+    ALL_ELEMENTS.exportDataBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.exportDataModal, true));
+    ALL_ELEMENTS.cancelExportBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.exportDataModal, false));
+    ALL_ELEMENTS.confirmExportBtn.addEventListener('click', handleExport);
+    ALL_ELEMENTS.importDataBtn.addEventListener('click', () => { ALL_ELEMENTS.importFileInput.value=''; toggleModal(ALL_ELEMENTS.importDataModal, true); });
+    ALL_ELEMENTS.cancelImportBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.importDataModal, false));
+    ALL_ELEMENTS.confirmImportBtn.addEventListener('click', handleImport);
+    ALL_ELEMENTS.logoutBtn.addEventListener('click', handleLogout);
+    ALL_ELEMENTS.userProfileBtn.addEventListener('click', openDashboard);
+    ALL_ELEMENTS.closeDashboardBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.dataDashboardModal, false));
+    ALL_ELEMENTS.messageList.addEventListener('click', (e) => {
+        const copyBtn = e.target.closest('.copy-content-btn');
+        const deleteBtn = e.target.closest('.delete-message-btn');
+        if (copyBtn) {
+            const messageItem = copyBtn.closest('.message-item');
+            if (messageItem) {
+                const messageIndex = parseInt(messageItem.dataset.messageIndex);
                 const conv = getActiveConversation();
-                if (!conv || conv.provider !== 'gemini' || conv.archived) {
-                    showNotification(i18n[config.uiLanguage].webSearchNotAvailable || '當前模型不支援或無法使用聯網搜尋。', 'warning');
-                    return;
-                }
-                conv.isWebSearchEnabled = !conv.isWebSearchEnabled;
-                renderInputIndicators();
-                await saveAppData();
-            });
-            ALL_ELEMENTS.learningModeBtn.addEventListener('click', toggleLearningMode);
-            ALL_ELEMENTS.deepResearchBtn.addEventListener('click', toggleDeepResearchMode);
-            ALL_ELEMENTS.uploadImageBtn.addEventListener('click', () => {
-                ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
-                ALL_ELEMENTS.imageVideoInput.removeAttribute('capture');
-                ALL_ELEMENTS.imageVideoInput.click();
-            });
-            ALL_ELEMENTS.uploadFileBtn.addEventListener('click', () => {
-                ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
-                ALL_ELEMENTS.fileUploadInput.click();
-            });
-            ALL_ELEMENTS.imageVideoInput.addEventListener('change', handleFileSelection);
-            ALL_ELEMENTS.fileUploadInput.addEventListener('change', handleFileSelection);
-            ALL_ELEMENTS.selectionModeBtn.addEventListener('click', toggleSelectionMode);
-            ALL_ELEMENTS.cancelSelectionBtn.addEventListener('click', toggleSelectionMode);
-            ALL_ELEMENTS.batchDeleteBtn.addEventListener('click', handleBatchDelete);
-            ALL_ELEMENTS.batchArchiveBtn.addEventListener('click', handleBatchArchive);
-            ALL_ELEMENTS.batchMoveBtn.addEventListener('click', handleBatchMove);
-            ALL_ELEMENTS.batchMoveCancelBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.batchMoveModal, false));
-            ALL_ELEMENTS.batchMoveConfirmBtn.addEventListener('click', () => { /* Logic moved to option clicks */ });
-            ALL_ELEMENTS.followUpHeader.addEventListener('click', toggleFollowUpPrompts);
-            ALL_ELEMENTS.messageInput.addEventListener('input', (e) => {
-                sendConfirmed = false;
-                updateInputState();
-                const wrapper = e.target.closest('.input-wrapper');
-                if (wrapper) {
-                    wrapper.classList.remove('pulse-glow');
-                    void wrapper.offsetWidth;
-                    wrapper.classList.add('pulse-glow');
-                }
-            });
-            ALL_ELEMENTS.messageInput.addEventListener('input', adjustTextareaHeight);
-            const expandBtn = document.getElementById('expand-input-btn');
-            if (expandBtn) {
-                expandBtn.addEventListener('click', () => {
-                    ALL_ELEMENTS.messageInput.classList.toggle('expanded');
-                    expandBtn.classList.toggle('rotated');
-                    adjustTextareaHeight(); // 點擊後重新計算一次高度
-                });
-            }
-            ALL_ELEMENTS.messageInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && e.shiftKey) { 
-                    e.preventDefault(); // 阻止 Shift+Enter 的默認換行行為
-                    ALL_ELEMENTS.submitButton.click();
-                }
-            });
-            const handleInputFocus = () => {
-                if (window.visualViewport) {
-                    const smoothScrollToTarget = () => {
-                        const inputBarContainer = document.getElementById('input-bar-container');
-                        if (!inputBarContainer) return;
-
-                        requestAnimationFrame(() => {
-                            const PADDING_BOTTOM = 10;
-                            const inputBarRect = inputBarContainer.getBoundingClientRect();
-                            const viewportHeight = window.visualViewport.height;
-                            const offset = inputBarRect.bottom - viewportHeight + PADDING_BOTTOM;
-
-                            if (offset > 0) {
-                                const newScrollPosition = window.scrollY + offset;
-                                window.scrollTo({
-                                    top: newScrollPosition,
-                                    behavior: 'smooth'
-                                });
-                            }
+                const msg = conv?.messages[messageIndex];
+                if (msg && msg.role === 'model') {
+                    const textToCopy = msg.parts.map(p => p.text).join('\n');
+                    copyTextToClipboard(textToCopy)
+                        .then(() => showNotification(i18n[config.uiLanguage].copySuccess || '內容已複製！', 'success'))
+                        .catch(err => {
+                            showNotification(i18n[config.uiLanguage].copyFailed || '複製失敗！瀏覽器可能限制了此功能。', 'error');
+                            console.error('Could not copy text with any method: ', err);
                         });
-                    };
+                }
+            }
+        } else if (deleteBtn) {
+             if (messageItem) {
+                const messageIndex = parseInt(messageItem.dataset.messageIndex);
+                handleDeleteMessagePair(messageIndex);
+            }
+        }
+    });
 
-                    window.visualViewport.addEventListener('resize', smoothScrollToTarget, { once: true });
-                } else {
-                    setTimeout(() => {
-                        const inputBarContainer = document.getElementById('input-bar-container');
-                        if (inputBarContainer) {
-                            inputBarContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                        }
-                    }, 300);
-                }
-            };
 
-            ALL_ELEMENTS.messageInput.addEventListener('focus', handleInputFocus);
-
-            ALL_ELEMENTS.messageInput.addEventListener('input', () => {
-                const conv = getActiveConversation();
-                if (conv) {
-                    conv.unsentMessage = ALL_ELEMENTS.messageInput.value;
-                }
-            });
-            ALL_ELEMENTS.submitButton.addEventListener('click', (e) => {
-    e.preventDefault();
-    if (abortController) {
-        try { abortController.abort(); } catch {}
-    } else if (!ALL_ELEMENTS.submitButton.disabled) {
-        // 直接觸發 form 的 submit 事件
-        ALL_ELEMENTS.chatForm.dispatchEvent(new Event('submit', {cancelable: true}));
-    }
-});
-            ALL_ELEMENTS.chatForm.addEventListener('submit', handleFormSubmit);
-            document.addEventListener('click', (e) => {
-                const targets = [
-                    ALL_ELEMENTS.modelSwitcherContainer,
-                    ALL_ELEMENTS.fileInputContainer
-                ];
-                let clickedInsidePopover = false;
-                document.querySelectorAll('.popover.visible').forEach(popover => {
-                    if (popover.contains(e.target)) clickedInsidePopover = true;
-                });
-                const clickedOnPopoverTrigger =
-                    ALL_ELEMENTS.modelSwitcherContainer.contains(e.target) ||
-                    ALL_ELEMENTS.fileInputContainer.contains(e.target) ||
-                    e.target.closest('.chat-options-btn') ||
-                    e.target.closest('.astras-options-btn') ||
-                    e.target.closest('.folder-options-btn');
-                if (!clickedInsidePopover && !clickedOnPopoverTrigger) {
-                    closeAllPopovers();
-                }
-                const colorMenus = document.querySelectorAll('.color-dropdown-menu.show');
-                colorMenus.forEach(menu => {
-                    if (!menu.parentElement.contains(e.target)) {
-                        menu.classList.remove('show');
-                    }
-                });
-            });
-            ALL_ELEMENTS.newFolderBtn.addEventListener('click', async () => {
-                const name = await showCustomPrompt(i18n[config.uiLanguage].enterFolderName, i18n[config.uiLanguage].createFolder);
-                if (name) {
-                    createNewFolder(name);
-                    showNotification(i18n[config.uiLanguage].folderCreated);
-                }
-            });
-            ALL_ELEMENTS.newAstrasBtn.addEventListener('click', createAstras);
-            ALL_ELEMENTS.saveAstrasBtn.addEventListener('click', handleSaveAstras);
-            ALL_ELEMENTS.cancelAstrasBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.astrasCreateModal, false));
-            ALL_ELEMENTS.addPersonalMemoryBtn.addEventListener('click', async () => {
-                const content = await showCustomPrompt(i18n[config.uiLanguage].enterNewMemory, i18n[config.uiLanguage].addMemory);
-                if (content) {
-                    personalMemories.push({ id: crypto.randomUUID(), content, enabled: true });
-                    await saveAppData();
-                    renderPersonalMemoryList();
-                    showNotification(i18n[config.uiLanguage].memoryAdded);
-                }
-            });
-            ALL_ELEMENTS.uploadWallpaperBtn.addEventListener('click', () => ALL_ELEMENTS.wallpaperUploadInput.click());
-            ALL_ELEMENTS.wallpaperUploadInput.addEventListener('change', handleWallpaperUpload);
-            ALL_ELEMENTS.restoreWallpaperBtn.addEventListener('click', restoreDefaultWallpaper);
-            ALL_ELEMENTS.confirmCropBtn.addEventListener('click', handleConfirmCrop);
-            ALL_ELEMENTS.cancelCropBtn.addEventListener('click', () => {
-                toggleModal(ALL_ELEMENTS.wallpaperCropModal, false);
-                if(cropperInstance) {
-                    cropperInstance.destroy();
-                    cropperInstance = null;
-                }
-            });
-            ALL_ELEMENTS.deleteAllDataBtn.addEventListener('click', handleDeleteAllData);
-            ALL_ELEMENTS.uiLanguageSelect.addEventListener('change', (e) => {
-                config.uiLanguage = e.target.value;
-                applyLanguage(config.uiLanguage);
-            });
-            ALL_ELEMENTS.openStoreBtn.addEventListener('click', openStore);
-            ALL_ELEMENTS.backToChatBtn.addEventListener('click', closeStore);
-            ALL_ELEMENTS.astrasAvatarInput.addEventListener('change', handleAvatarUpload);
-            ALL_ELEMENTS.confirmAvatarCropBtn.addEventListener('click', handleConfirmAvatarCrop);
-            ALL_ELEMENTS.cancelAvatarCropBtn.addEventListener('click', () => {
-                 toggleModal(ALL_ELEMENTS.astrasAvatarModal, false);
-                if(cropperInstance) {
-                    cropperInstance.destroy();
-                    cropperInstance = null;
-                }
-                editingAstraForAvatarId = null;
-            });
-            ALL_ELEMENTS.updateInfoBtn.addEventListener('click', showUpdateHistory);
-            ALL_ELEMENTS.closeUpdateInfoModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.updateInfoModal, false));
-            ALL_ELEMENTS.closeLatestUpdateModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.latestUpdateModal, false));
-            ALL_ELEMENTS.trashBatchSelectBtn.addEventListener('click', toggleTrashSelectionMode);
-            ALL_ELEMENTS.trashCancelSelectionBtn.addEventListener('click', toggleTrashSelectionMode);
-            ALL_ELEMENTS.trashBatchRestoreBtn.addEventListener('click', handleBatchRestoreFromTrash);
-            ALL_ELEMENTS.trashBatchDeleteBtn.addEventListener('click', handleBatchDeleteFromTrash);
-            ALL_ELEMENTS.emptyTrashBtn.addEventListener('click', handleEmptyTrash);
-            updateFileInputUI();
-            startNewChat();
-            const initializeSpotlightEffect = () => {
-                const spotlightElements = document.querySelectorAll('.spotlight-effect');
-                spotlightElements.forEach(el => {
-                    const handleMove = (e) => {
-                        const rect = el.getBoundingClientRect();
-                        const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-                        const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-                        el.style.setProperty('--spotlight-x', `${x}px`);
-                        el.style.setProperty('--spotlight-y', `${y}px`);
-                    };
-                    el.addEventListener('mousemove', handleMove);
-                    el.addEventListener('touchmove', handleMove, { passive: true });
-                });
-            };
-            ALL_ELEMENTS.sendFeedbackBtn.addEventListener('click', async () => {
-    const feedbackContent = ALL_ELEMENTS.feedbackTextarea.value.trim();
-    const sendButton = ALL_ELEMENTS.sendFeedbackBtn;
-    
-    if (!feedbackContent) {
-        showNotification('請先輸入您的意見！', 'warning');
-        return;
-    }
-    
-    // ✨ 使用我們統一的 Google Apps Script 網址
-    const FORM_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzDz8mauVmRsJtSxpXbfMiMCnx0Mofqh0r3YV_riwRTwugf8EUgzsD_gCwfwSvmOqV4yg/exec';
-
-    const originalButtonText = sendButton.textContent;
-    sendButton.disabled = true;
-    sendButton.textContent = '發送中...';
-
-    try {
-        // ✨ 準備要發送的資料，並加入 formType 讓後台知道這是意見反饋
-        const dataToSend = {
-            formType: 'feedback', // <-- 關鍵識別碼！
-            subject: '來自 Astra 的新意見反饋',
-            timestamp: new Date().toISOString(),
-            message: feedbackContent
-        };
-
-        const response = await fetch(FORM_ENDPOINT, {
-            method: 'POST',
-            mode: 'no-cors', 
-            body: JSON.stringify(dataToSend)
+    ALL_ELEMENTS.cameraBtn.addEventListener('click', () => {
+        ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
+        ALL_ELEMENTS.imageVideoInput.setAttribute('capture','environment');
+        ALL_ELEMENTS.imageVideoInput.click();
+    });
+    ALL_ELEMENTS.webSearchPopoverBtn.addEventListener('click', async () => {
+        ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
+        const conv = getActiveConversation();
+        if (!conv || conv.provider !== 'gemini' || conv.archived) {
+            showNotification(i18n[config.uiLanguage].webSearchNotAvailable || '當前模型不支援或無法使用聯網搜尋。', 'warning');
+            return;
+        }
+        conv.isWebSearchEnabled = !conv.isWebSearchEnabled;
+        renderInputIndicators();
+        await saveAppData();
+    });
+    ALL_ELEMENTS.learningModeBtn.addEventListener('click', toggleLearningMode);
+    ALL_ELEMENTS.deepResearchBtn.addEventListener('click', toggleDeepResearchMode);
+    ALL_ELEMENTS.uploadImageBtn.addEventListener('click', () => {
+        ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
+        ALL_ELEMENTS.imageVideoInput.removeAttribute('capture');
+        ALL_ELEMENTS.imageVideoInput.click();
+    });
+    ALL_ELEMENTS.uploadFileBtn.addEventListener('click', () => {
+        ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
+        ALL_ELEMENTS.fileUploadInput.click();
+    });
+    ALL_ELEMENTS.imageVideoInput.addEventListener('change', handleFileSelection);
+    ALL_ELEMENTS.fileUploadInput.addEventListener('change', handleFileSelection);
+    ALL_ELEMENTS.selectionModeBtn.addEventListener('click', toggleSelectionMode);
+    ALL_ELEMENTS.cancelSelectionBtn.addEventListener('click', toggleSelectionMode);
+    ALL_ELEMENTS.batchDeleteBtn.addEventListener('click', handleBatchDelete);
+    ALL_ELEMENTS.batchArchiveBtn.addEventListener('click', handleBatchArchive);
+    ALL_ELEMENTS.batchMoveBtn.addEventListener('click', handleBatchMove);
+    ALL_ELEMENTS.batchMoveCancelBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.batchMoveModal, false));
+    ALL_ELEMENTS.batchMoveConfirmBtn.addEventListener('click', () => { /* Logic moved to option clicks */ });
+    ALL_ELEMENTS.followUpHeader.addEventListener('click', toggleFollowUpPrompts);
+    ALL_ELEMENTS.messageInput.addEventListener('input', (e) => {
+        sendConfirmed = false;
+        updateInputState();
+        const wrapper = e.target.closest('.input-wrapper');
+        if (wrapper) {
+            wrapper.classList.remove('pulse-glow');
+            void wrapper.offsetWidth;
+            wrapper.classList.add('pulse-glow');
+        }
+    });
+    ALL_ELEMENTS.messageInput.addEventListener('input', adjustTextareaHeight);
+    const expandBtn = document.getElementById('expand-input-btn');
+    if (expandBtn) {
+        expandBtn.addEventListener('click', () => {
+            ALL_ELEMENTS.messageInput.classList.toggle('expanded');
+            expandBtn.classList.toggle('rotated');
+            adjustTextareaHeight(); // 點擊後重新計算一次高度
         });
-
-        // 由於 'no-cors'，我們無法讀取回應，但請求已發出
-        showNotification('反饋已成功發送，感謝您！', 'success');
-        ALL_ELEMENTS.feedbackTextarea.value = '';
-
-    } catch (error) {
-        console.error('發送反饋時出錯:', error);
-        showNotification('發送失敗，請檢查您的網路連線。', 'error');
-    } finally {
-        sendButton.disabled = false;
-        sendButton.textContent = originalButtonText;
     }
-});
-            ALL_ELEMENTS.proposeAstrasBtn.addEventListener('click', () => {
-                ALL_ELEMENTS.proposalNameInput.value = '';
-                ALL_ELEMENTS.proposalDescInput.value = '';
-                ALL_ELEMENTS.proposalInstructionsInput.value = '';
-                toggleModal(ALL_ELEMENTS.astrasProposalModal, true);
-            });
+    ALL_ELEMENTS.messageInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.shiftKey) { 
+            e.preventDefault(); // 阻止 Shift+Enter 的默認換行行為
+            ALL_ELEMENTS.submitButton.click();
+        }
+    });
+    const handleInputFocus = () => {
+        if (window.visualViewport) {
+            const smoothScrollToTarget = () => {
+                const inputBarContainer = document.getElementById('input-bar-container');
+                if (!inputBarContainer) return;
 
-
-            ALL_ELEMENTS.cancelProposalBtn.addEventListener('click', () => {
-                toggleModal(ALL_ELEMENTS.astrasProposalModal, false);
-            });
-
-
-            ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
-    const name = ALL_ELEMENTS.proposalNameInput.value.trim();
-    const description = ALL_ELEMENTS.proposalDescInput.value.trim();
-    const instructions = ALL_ELEMENTS.proposalInstructionsInput.value.trim();
-    const submitButton = ALL_ELEMENTS.submitProposalBtn;
-
-    if (!name || !instructions) {
-        showNotification('提案的「名稱」和「指令」是必填的喔！', 'warning');
-        return;
-    }
-    
-    // ✨ 同樣使用我們統一的 Google Apps Script 網址
-    const FORM_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzDz8mauVmRsJtSxpXbfMiMCnx0Mofqh0r3YV_riwRTwugf8EUgzsD_gCwfwSvmOqV4yg/exec';
-
-    const originalButtonText = submitButton.textContent;
-    submitButton.disabled = true;
-    submitButton.textContent = '提交中...';
-
-    try {
-        // ✨ 準備要發送的資料，並加入 formType 讓後台知道這是 Astra 提案
-        const dataToSend = {
-            formType: 'astra_proposal', // <-- 關鍵識別碼！
-            subject: `新的 Astra 提案: ${name}`,
-            timestamp: new Date().toISOString(),
-            proposal_name: name,
-            proposal_desc: description,
-            proposal_instructions: instructions
-        };
-    
-        const response = await fetch(FORM_ENDPOINT, {
-            method: 'POST',
-            mode: 'no-cors',
-            body: JSON.stringify(dataToSend)
-        });
-
-        // 由於 'no-cors'，我們無法讀取回應，但請求已發出
-        toggleModal(ALL_ELEMENTS.astrasProposalModal, false);
-        showNotification('感謝您的提案，已成功發送！', 'success');
-        
-    } catch (error) {
-        console.error('提交提案時出錯:', error);
-        showNotification('提交失敗，請檢查您的網路連線。', 'error');
-    } finally {
-        submitButton.disabled = false;
-        submitButton.textContent = originalButtonText;
-    }
-});
-            initializeSpotlightEffect();
-            document.querySelectorAll('.sidebar-section-header').forEach(header => {
-                header.addEventListener('click', (e) => {
-                    // 如果點擊的是按鈕，則不觸發折疊
-                    if (e.target.closest('button')) {
-                        return;
-                    }
-                    const section = header.closest('.sidebar-section');
-                    if (section) {
-                        const isOpen = section.dataset.open === 'true';
-                        section.dataset.open = !isOpen;
-                    }
-                });
-            });
-
-            // ✨ START: 新增的附件上彈視窗函式與按鈕邏輯
-
-            // 這個函式專門用來建立和顯示手機版的上彈視窗
-            const showAttachmentMenu = () => {
-                // 檢查是否已經存在，避免重複建立
-                if (document.getElementById('attachment-menu')) return;
-
-                const wrapper = document.getElementById('attachment-menu-wrapper');
-                wrapper.innerHTML = ''; // 清空舊內容
-
-                const overlay = document.createElement('div');
-                overlay.id = 'attachment-menu-overlay';
-
-                const menu = document.createElement('div');
-                menu.id = 'attachment-menu';
-
-                // 取得當前模型資訊
-                const conv = getActiveConversation();
-                const modelInfo = MODELS.find(m => m.id === conv?.model);
-                const provider = modelInfo?.provider;
-
-                const allMenuItems = [
-                    { id: 'camera-btn', svg: `<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle>`, textKey: 'camera', originalElement: ALL_ELEMENTS.cameraBtn },
-                    { id: 'upload-image-btn', svg: `<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline>`, textKey: 'image', originalElement: ALL_ELEMENTS.uploadImageBtn },
-                    { id: 'upload-file-btn', svg: `<path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline>`, textKey: 'file', originalElement: ALL_ELEMENTS.uploadFileBtn },
-                    { type: 'divider' },
-                    { id: 'web-search-popover-btn', svg: `<circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>`, textKey: 'search', originalElement: ALL_ELEMENTS.webSearchPopoverBtn },
-                    { id: 'learning-mode-btn', svg: `<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V5H6.5A2.5 2.5 0 0 0 4 7.5v12z"/>`, textKey: 'learning', originalElement: ALL_ELEMENTS.learningModeBtn },
-                    { type: 'divider' },
-                    { id: 'deep-research-btn', svg: `<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>`, textKey: 'research', originalElement: ALL_ELEMENTS.deepResearchBtn }
-                ];
-
-                let visibleMenuItems = allMenuItems;
-                if (provider === 'openrouter') {
-                    const supportsVision = OPENROUTER_VISION_MODELS.includes(modelInfo?.id);
-                    visibleMenuItems = allMenuItems.filter(item => {
-                        // OpenRouter 模型總是顯示學習和研究
-                        if (item.id === 'learning-mode-btn' || item.id === 'deep-research-btn') return true;
-                        // OpenRouter 模型隱藏檔案上傳和網路搜尋
-                        if (item.id === 'upload-file-btn' || item.id === 'web-search-popover-btn') return false;
-                        // 只有支援的模型才顯示相機和圖片
-                        if (item.id === 'camera-btn' || item.id === 'upload-image-btn') return supportsVision;
-                        // 分隔線邏輯稍後處理
-                        return item.type === 'divider';
-                    });
-                }
-
-                let itemsHTML = '';
-                visibleMenuItems.forEach((item, index) => {
-                    if (item.type === 'divider') {
-                        if (index > 0 && index < visibleMenuItems.length - 1 && visibleMenuItems[index - 1].type !== 'divider') {
-                            // 這是用來在視覺上分隔選項的，在手機選單中是透過 CSS 的 border-bottom 實現
-                        }
-                    } else {
-                        itemsHTML += `
-                            <div class="menu-item" data-trigger-id="${item.id}">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${item.svg}</svg>
-                                <span data-lang-key="${item.textKey}">${i18n[config.uiLanguage][item.textKey] || item.textKey}</span>
-                            </div>
-                        `;
-                    }
-                });
-
-                menu.innerHTML = `
-                    <div class="menu-header" data-lang-key="attachFile">${i18n[config.uiLanguage].attachFile || '附加檔案'}</div>
-                    <div class="menu-options">${itemsHTML}</div>
-                `;
-                
-                wrapper.appendChild(overlay);
-                wrapper.appendChild(menu);
 
                 requestAnimationFrame(() => {
-                    overlay.classList.add('visible');
-                    menu.classList.add('visible');
-                });
-                
-                const closeMenu = () => {
-                    overlay.classList.remove('visible');
-                    menu.classList.remove('visible');
-                    menu.addEventListener('transitionend', () => wrapper.innerHTML = '', { once: true });
-                };
+                    const PADDING_BOTTOM = 10;
+                    const inputBarRect = inputBarContainer.getBoundingClientRect();
+                    const viewportHeight = window.visualViewport.height;
+                    const offset = inputBarRect.bottom - viewportHeight + PADDING_BOTTOM;
 
-                overlay.addEventListener('click', closeMenu);
 
-                menu.querySelectorAll('.menu-item').forEach(menuItem => {
-                    menuItem.addEventListener('click', () => {
-                        const triggerId = menuItem.dataset.triggerId;
-                        const originalElement = allMenuItems.find(i => i.id === triggerId)?.originalElement;
-                        if (originalElement) {
-                            originalElement.click();
-                        }
-                        closeMenu();
-                    });
+                    if (offset > 0) {
+                        const newScrollPosition = window.scrollY + offset;
+                        window.scrollTo({
+                            top: newScrollPosition,
+                            behavior: 'smooth'
+                        });
+                    }
                 });
             };
-            // 這是新的「附加檔案」按鈕點擊事件
-            ALL_ELEMENTS.addFileBtn.addEventListener('click', (e) => {
-                e.stopPropagation(); // 防止事件冒泡
-                
-                // 判斷螢幕寬度
-                if (window.innerWidth <= 768) { 
-                    // 如果是手機，顯示上彈視窗
-                    showAttachmentMenu();
-                } else { 
-                    // 如果是電腦，維持舊的小視窗
-                    updateFunctionButtonsState();
-                    const popover = ALL_ELEMENTS.fileOptionsPopover;
-                    if (popover.classList.contains('visible')) {
-                        popover.classList.remove('visible');
-                    } else {
-                        closeAllPopovers();
-                        popover.classList.add('visible');
-                    }
+
+
+            window.visualViewport.addEventListener('resize', smoothScrollToTarget, { once: true });
+        } else {
+            setTimeout(() => {
+                const inputBarContainer = document.getElementById('input-bar-container');
+                if (inputBarContainer) {
+                    inputBarContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
                 }
+            }, 300);
+        }
+    };
+
+
+    ALL_ELEMENTS.messageInput.addEventListener('focus', handleInputFocus);
+
+
+    ALL_ELEMENTS.messageInput.addEventListener('input', () => {
+        const conv = getActiveConversation();
+        if (conv) {
+            conv.unsentMessage = ALL_ELEMENTS.messageInput.value;
+        }
+    });
+    ALL_ELEMENTS.submitButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (abortController) {
+            try { abortController.abort(); } catch {}
+        } else if (!ALL_ELEMENTS.submitButton.disabled) {
+            // 直接觸發 form 的 submit 事件
+            ALL_ELEMENTS.chatForm.dispatchEvent(new Event('submit', {cancelable: true}));
+        }
+    });
+    ALL_ELEMENTS.chatForm.addEventListener('submit', handleFormSubmit);
+    document.addEventListener('click', (e) => {
+        const targets = [
+            ALL_ELEMENTS.modelSwitcherContainer,
+            ALL_ELEMENTS.fileInputContainer
+        ];
+        let clickedInsidePopover = false;
+        document.querySelectorAll('.popover.visible').forEach(popover => {
+            if (popover.contains(e.target)) clickedInsidePopover = true;
+        });
+        const clickedOnPopoverTrigger =
+            ALL_ELEMENTS.modelSwitcherContainer.contains(e.target) ||
+            ALL_ELEMENTS.fileInputContainer.contains(e.target) ||
+            e.target.closest('.chat-options-btn') ||
+            e.target.closest('.astras-options-btn') ||
+            e.target.closest('.folder-options-btn');
+        if (!clickedInsidePopover && !clickedOnPopoverTrigger) {
+            closeAllPopovers();
+        }
+        const colorMenus = document.querySelectorAll('.color-dropdown-menu.show');
+        colorMenus.forEach(menu => {
+            if (!menu.parentElement.contains(e.target)) {
+                menu.classList.remove('show');
+            }
+        });
+    });
+    ALL_ELEMENTS.newFolderBtn.addEventListener('click', async () => {
+        const name = await showCustomPrompt(i18n[config.uiLanguage].enterFolderName, i18n[config.uiLanguage].createFolder);
+        if (name) {
+            createNewFolder(name);
+            showNotification(i18n[config.uiLanguage].folderCreated);
+        }
+    });
+    ALL_ELEMENTS.newAstrasBtn.addEventListener('click', createAstras);
+    ALL_ELEMENTS.saveAstrasBtn.addEventListener('click', handleSaveAstras);
+    ALL_ELEMENTS.cancelAstrasBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.astrasCreateModal, false));
+    ALL_ELEMENTS.addPersonalMemoryBtn.addEventListener('click', async () => {
+        const content = await showCustomPrompt(i18n[config.uiLanguage].enterNewMemory, i18n[config.uiLanguage].addMemory);
+        if (content) {
+            personalMemories.push({ id: crypto.randomUUID(), content, enabled: true });
+            await saveAppData();
+            renderPersonalMemoryList();
+            showNotification(i18n[config.uiLanguage].memoryAdded);
+        }
+    });
+    ALL_ELEMENTS.uploadWallpaperBtn.addEventListener('click', () => ALL_ELEMENTS.wallpaperUploadInput.click());
+    ALL_ELEMENTS.wallpaperUploadInput.addEventListener('change', handleWallpaperUpload);
+    ALL_ELEMENTS.restoreWallpaperBtn.addEventListener('click', restoreDefaultWallpaper);
+    ALL_ELEMENTS.confirmCropBtn.addEventListener('click', handleConfirmCrop);
+    ALL_ELEMENTS.cancelCropBtn.addEventListener('click', () => {
+        toggleModal(ALL_ELEMENTS.wallpaperCropModal, false);
+        if(cropperInstance) {
+            cropperInstance.destroy();
+            cropperInstance = null;
+        }
+    });
+    ALL_ELEMENTS.deleteAllDataBtn.addEventListener('click', handleDeleteAllData);
+    ALL_ELEMENTS.uiLanguageSelect.addEventListener('change', (e) => {
+        config.uiLanguage = e.target.value;
+        applyLanguage(config.uiLanguage);
+    });
+    ALL_ELEMENTS.openStoreBtn.addEventListener('click', openStore);
+    ALL_ELEMENTS.backToChatBtn.addEventListener('click', closeStore);
+    ALL_ELEMENTS.astrasAvatarInput.addEventListener('change', handleAvatarUpload);
+    ALL_ELEMENTS.confirmAvatarCropBtn.addEventListener('click', handleConfirmAvatarCrop);
+    ALL_ELEMENTS.cancelAvatarCropBtn.addEventListener('click', () => {
+         toggleModal(ALL_ELEMENTS.astrasAvatarModal, false);
+        if(cropperInstance) {
+            cropperInstance.destroy();
+            cropperInstance = null;
+        }
+        editingAstraForAvatarId = null;
+    });
+    ALL_ELEMENTS.updateInfoBtn.addEventListener('click', showUpdateHistory);
+    ALL_ELEMENTS.closeUpdateInfoModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.updateInfoModal, false));
+    ALL_ELEMENTS.closeLatestUpdateModalBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.latestUpdateModal, false));
+    ALL_ELEMENTS.trashBatchSelectBtn.addEventListener('click', toggleTrashSelectionMode);
+    ALL_ELEMENTS.trashCancelSelectionBtn.addEventListener('click', toggleTrashSelectionMode);
+    ALL_ELEMENTS.trashBatchRestoreBtn.addEventListener('click', handleBatchRestoreFromTrash);
+    ALL_ELEMENTS.trashBatchDeleteBtn.addEventListener('click', handleBatchDeleteFromTrash);
+    ALL_ELEMENTS.emptyTrashBtn.addEventListener('click', handleEmptyTrash);
+    updateFileInputUI();
+    startNewChat();
+    const initializeSpotlightEffect = () => {
+        const spotlightElements = document.querySelectorAll('.spotlight-effect');
+        spotlightElements.forEach(el => {
+            const handleMove = (e) => {
+                const rect = el.getBoundingClientRect();
+                const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+                const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+                el.style.setProperty('--spotlight-x', `${x}px`);
+                el.style.setProperty('--spotlight-y', `${y}px`);
+            };
+            el.addEventListener('mousemove', handleMove);
+            el.addEventListener('touchmove', handleMove, { passive: true });
+        });
+    };
+    ALL_ELEMENTS.sendFeedbackBtn.addEventListener('click', async () => {
+        const feedbackContent = ALL_ELEMENTS.feedbackTextarea.value.trim();
+        const sendButton = ALL_ELEMENTS.sendFeedbackBtn;
+        
+        if (!feedbackContent) {
+            showNotification('請先輸入您的意見！', 'warning');
+            return;
+        }
+        
+        // ✨ 使用我們統一的 Google Apps Script 網址
+        const FORM_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzDz8mauVmRsJtSxpXbfMiMCnx0Mofqh0r3YV_riwRTwugf8EUgzsD_gCwfwSvmOqV4yg/exec';
+
+        const originalButtonText = sendButton.textContent;
+        sendButton.disabled = true;
+        sendButton.textContent = '發送中...';
+
+        try {
+            // ✨ 準備要發送的資料，並加入 formType 讓後台知道這是意見反饋
+            const dataToSend = {
+                formType: 'feedback', // <-- 關鍵識別碼！
+                subject: '來自 Astra 的新意見反饋',
+                timestamp: new Date().toISOString(),
+                message: feedbackContent
+            };
+
+            const response = await fetch(FORM_ENDPOINT, {
+                method: 'POST',
+                mode: 'no-cors', 
+                body: JSON.stringify(dataToSend)
             });
 
-            // ✨ END: 新增的附件上彈視窗函式與按鈕邏輯
-            setupHistorySidebarInteractions(); // 啟用側邊欄的點擊跳轉功能
+            // 由於 'no-cors'，我們無法讀取回應，但請求已發出
+            showNotification('反饋已成功發送，感謝您！', 'success');
+            ALL_ELEMENTS.feedbackTextarea.value = '';
+
+        } catch (error) {
+            console.error('發送反饋時出錯:', error);
+            showNotification('發送失敗，請檢查您的網路連線。', 'error');
+        } finally {
+            sendButton.disabled = false;
+            sendButton.textContent = originalButtonText;
+        }
+    });
+    ALL_ELEMENTS.proposeAstrasBtn.addEventListener('click', () => {
+        ALL_ELEMENTS.proposalNameInput.value = '';
+        ALL_ELEMENTS.proposalDescInput.value = '';
+        ALL_ELEMENTS.proposalInstructionsInput.value = '';
+        toggleModal(ALL_ELEMENTS.astrasProposalModal, true);
+    });
+
+
+    ALL_ELEMENTS.cancelProposalBtn.addEventListener('click', () => {
+        toggleModal(ALL_ELEMENTS.astrasProposalModal, false);
+    });
+
+
+    ALL_ELEMENTS.submitProposalBtn.addEventListener('click', async () => {
+        const name = ALL_ELEMENTS.proposalNameInput.value.trim();
+        const description = ALL_ELEMENTS.proposalDescInput.value.trim();
+        const instructions = ALL_ELEMENTS.proposalInstructionsInput.value.trim();
+        const submitButton = ALL_ELEMENTS.submitProposalBtn;
+
+        if (!name || !instructions) {
+            showNotification('提案的「名稱」和「指令」是必填的喔！', 'warning');
+            return;
+        }
+        
+        // ✨ 同樣使用我們統一的 Google Apps Script 網址
+        const FORM_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzDz8mauVmRsJtSxpXbfMiMCnx0Mofqh0r3YV_riwRTwugf8EUgzsD_gCwfwSvmOqV4yg/exec';
+
+        const originalButtonText = submitButton.textContent;
+        submitButton.disabled = true;
+        submitButton.textContent = '提交中...';
+
+        try {
+            // ✨ 準備要發送的資料，並加入 formType 讓後台知道這是 Astra 提案
+            const dataToSend = {
+                formType: 'astra_proposal', // <-- 關鍵識別碼！
+                subject: `新的 Astra 提案: ${name}`,
+                timestamp: new Date().toISOString(),
+                proposal_name: name,
+                proposal_desc: description,
+                proposal_instructions: instructions
+            };
+        
+            const response = await fetch(FORM_ENDPOINT, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify(dataToSend)
+            });
+
+            // 由於 'no-cors'，我們無法讀取回應，但請求已發出
+            toggleModal(ALL_ELEMENTS.astrasProposalModal, false);
+            showNotification('感謝您的提案，已成功發送！', 'success');
+            
+        } catch (error) {
+            console.error('提交提案時出錯:', error);
+            showNotification('提交失敗，請檢查您的網路連線。', 'error');
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = originalButtonText;
+        }
+    });
+    initializeSpotlightEffect();
+    document.querySelectorAll('.sidebar-section-header').forEach(header => {
+        header.addEventListener('click', (e) => {
+            // 如果點擊的是按鈕，則不觸發折疊
+            if (e.target.closest('button')) {
+                return;
+            }
+            const section = header.closest('.sidebar-section');
+            if (section) {
+                const isOpen = section.dataset.open === 'true';
+                section.dataset.open = !isOpen;
+            }
+        });
+    });
+
+    // ✨ START: 新增的附件上彈視窗函式與按鈕邏輯
+
+    // 這個函式專門用來建立和顯示手機版的上彈視窗
+    const showAttachmentMenu = () => {
+        // 檢查是否已經存在，避免重複建立
+        if (document.getElementById('attachment-menu')) return;
+
+        const wrapper = document.getElementById('attachment-menu-wrapper');
+        wrapper.innerHTML = ''; // 清空舊內容
+
+        const overlay = document.createElement('div');
+        overlay.id = 'attachment-menu-overlay';
+
+        const menu = document.createElement('div');
+        menu.id = 'attachment-menu';
+
+        // 取得當前模型資訊
+        const conv = getActiveConversation();
+        const modelInfo = MODELS.find(m => m.id === conv?.model);
+        const provider = modelInfo?.provider;
+
+        const allMenuItems = [
+            { id: 'camera-btn', svg: `<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle>`, textKey: 'camera', originalElement: ALL_ELEMENTS.cameraBtn },
+            { id: 'upload-image-btn', svg: `<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline>`, textKey: 'image', originalElement: ALL_ELEMENTS.uploadImageBtn },
+            { id: 'upload-file-btn', svg: `<path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline>`, textKey: 'file', originalElement: ALL_ELEMENTS.uploadFileBtn },
+            { type: 'divider' },
+            { id: 'web-search-popover-btn', svg: `<circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>`, textKey: 'search', originalElement: ALL_ELEMENTS.webSearchPopoverBtn },
+            { id: 'learning-mode-btn', svg: `<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V5H6.5A2.5 2.5 0 0 0 4 7.5v12z"/>`, textKey: 'learning', originalElement: ALL_ELEMENTS.learningModeBtn },
+            { type: 'divider' },
+            { id: 'deep-research-btn', svg: `<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>`, textKey: 'research', originalElement: ALL_ELEMENTS.deepResearchBtn }
+        ];
+
+        let visibleMenuItems = allMenuItems;
+        if (provider === 'openrouter') {
+            const supportsVision = OPENROUTER_VISION_MODELS.includes(modelInfo?.id);
+            visibleMenuItems = allMenuItems.filter(item => {
+                // OpenRouter 模型總是顯示學習和研究
+                if (item.id === 'learning-mode-btn' || item.id === 'deep-research-btn') return true;
+                // OpenRouter 模型隱藏檔案上傳和網路搜尋
+                if (item.id === 'upload-file-btn' || item.id === 'web-search-popover-btn') return false;
+                // 只有支援的模型才顯示相機和圖片
+                if (item.id === 'camera-btn' || item.id === 'upload-image-btn') return supportsVision;
+                // 分隔線邏輯稍後處理
+                return item.type === 'divider';
+            });
+        }
+
+        let itemsHTML = '';
+        visibleMenuItems.forEach((item, index) => {
+            if (item.type === 'divider') {
+                if (index > 0 && index < visibleMenuItems.length - 1 && visibleMenuItems[index - 1].type !== 'divider') {
+                    // 這是用來在視覺上分隔選項的，在手機選單中是透過 CSS 的 border-bottom 實現
+                }
+            } else {
+                itemsHTML += `
+                    <div class="menu-item" data-trigger-id="${item.id}">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${item.svg}</svg>
+                        <span data-lang-key="${item.textKey}">${i18n[config.uiLanguage][item.textKey] || item.textKey}</span>
+                    </div>
+                `;
+            }
+        });
+
+        menu.innerHTML = `
+            <div class="menu-header" data-lang-key="attachFile">${i18n[config.uiLanguage].attachFile || '附加檔案'}</div>
+            <div class="menu-options">${itemsHTML}</div>
+        `;
+        
+        wrapper.appendChild(overlay);
+        wrapper.appendChild(menu);
+
+        requestAnimationFrame(() => {
+            overlay.classList.add('visible');
+            menu.classList.add('visible');
+        });
+        
+        const closeMenu = () => {
+            overlay.classList.remove('visible');
+            menu.classList.remove('visible');
+            menu.addEventListener('transitionend', () => wrapper.innerHTML = '', { once: true });
+        };
+
+        overlay.addEventListener('click', closeMenu);
+
+        menu.querySelectorAll('.menu-item').forEach(menuItem => {
+            menuItem.addEventListener('click', () => {
+                const triggerId = menuItem.dataset.triggerId;
+                const originalElement = allMenuItems.find(i => i.id === triggerId)?.originalElement;
+                if (originalElement) {
+                    originalElement.click();
+                }
+                closeMenu();
+            });
+        });
+    };
+    // 這是新的「附加檔案」按鈕點擊事件
+    ALL_ELEMENTS.addFileBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // 防止事件冒泡
+        
+        // 判斷螢幕寬度
+        if (window.innerWidth <= 768) { 
+            // 如果是手機，顯示上彈視窗
+            showAttachmentMenu();
+        } else { 
+            // 如果是電腦，維持舊的小視窗
+            updateFunctionButtonsState();
+            const popover = ALL_ELEMENTS.fileOptionsPopover;
+            if (popover.classList.contains('visible')) {
+                popover.classList.remove('visible');
+            } else {
+                closeAllPopovers();
+                popover.classList.add('visible');
+            }
+        }
+    });
+
+    // ✨ END: 新增的附件上彈視窗函式與按鈕邏輯
+    setupHistorySidebarInteractions(); // 啟用側邊欄的點擊跳轉功能
     setupHistorySidebarTriggers();   // 啟用側邊欄的滑動和懸停觸發功能
-            ALL_ELEMENTS.showPromptsBtn.addEventListener('click', () => {
-    const container = ALL_ELEMENTS.followUpContainer;
-    
-    // 直接切換容器的顯示/隱藏
-    container.classList.toggle('hidden');
-    
-    // 根據容器「現在」是否可見，來決定按鈕是否為 active (黃色)
-    const isVisible = !container.classList.contains('hidden');
-    ALL_ELEMENTS.showPromptsBtn.classList.toggle('active', isVisible);
-});
-        const followUpContainer = document.getElementById('follow-up-container');
-        if (followUpContainer) {
-            const stopPropagation = (e) => e.stopPropagation();
-            followUpContainer.addEventListener('touchstart', stopPropagation);
-            followUpContainer.addEventListener('touchmove', stopPropagation);
-            followUpContainer.addEventListener('touchend', stopPropagation);
-        }
-        }
+    ALL_ELEMENTS.showPromptsBtn.addEventListener('click', () => {
+        const container = ALL_ELEMENTS.followUpContainer;
+        
+        // 直接切換容器的顯示/隱藏
+        container.classList.toggle('hidden');
+        
+        // 根據容器「現在」是否可見，來決定按鈕是否為 active (黃色)
+        const isVisible = !container.classList.contains('hidden');
+        ALL_ELEMENTS.showPromptsBtn.classList.toggle('active', isVisible);
+    });
+    const followUpContainer = document.getElementById('follow-up-container');
+    if (followUpContainer) {
+        const stopPropagation = (e) => e.stopPropagation();
+        followUpContainer.addEventListener('touchstart', stopPropagation);
+        followUpContainer.addEventListener('touchmove', stopPropagation);
+        followUpContainer.addEventListener('touchend', stopPropagation);
+    }
+}
         const handleDeleteMessagePair = async (index) => {
             const confirmed = await showCustomDialog({
                 title: i18n[config.uiLanguage].deleteConfirmationTitle || '刪除確認',
