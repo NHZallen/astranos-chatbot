@@ -7951,23 +7951,51 @@ const handleBatchMemoryAction = async (action) => {
     if (count === 0) return;
 
 
+    let changedCount = 0;
+    let notificationMessage = '';
+
+
     if (action === 'delete') {
         if (!(await showCustomConfirm(`${i18n[config.uiLanguage].confirmBatchDeleteMemory || '您確定要刪除這'} ${count} ${i18n[config.uiLanguage].memories || '個記憶嗎？'}`))) return;
+        
         personalMemories = personalMemories.filter(m => !selectedMemoryIds.has(m.id));
-        showNotification(`${i18n[config.uiLanguage].deleted || '已刪除'} ${count} ${i18n[config.uiLanguage].memories || '個記憶'}`, 'success');
+        changedCount = count;
+        notificationMessage = `${i18n[config.uiLanguage].batchDeletedMemories || '已成功刪除'} ${changedCount} ${i18n[config.uiLanguage].memories || '個記憶'}`;
+
+
     } else {
         const enable = action === 'enable';
         personalMemories.forEach(m => {
-            if (selectedMemoryIds.has(m.id)) {
+            // 核心邏輯：只有在「被選中」且「狀態不同」時才改變
+            if (selectedMemoryIds.has(m.id) && m.enabled !== enable) {
                 m.enabled = enable;
+                changedCount++;
             }
         });
-        const actionText = enable ? i18n[config.uiLanguage].enabled : i18n[config.uiLanguage].disabled;
-        showNotification(`${actionText} ${count} ${i18n[config.uiLanguage].memories || '個記憶'}`, 'success');
+
+
+        if (changedCount > 0) {
+            const actionText = enable 
+                ? i18n[config.uiLanguage].batchEnabled 
+                : i18n[config.uiLanguage].batchDisabled;
+            notificationMessage = `${actionText} ${changedCount} ${i18n[config.uiLanguage].memories || '個記憶'}`;
+        } else {
+            // 如果沒有任何項目被改變，給予不同的提示
+            notificationMessage = i18n[config.uiLanguage].noMemoriesNeedUpdate || '沒有需要更新狀態的記憶。';
+        }
     }
 
 
     await saveAppData();
+    
+    // 只有在真的有變動時才顯示成功通知
+    if (changedCount > 0) {
+        showNotification(notificationMessage, 'success');
+    } else {
+        showNotification(notificationMessage, 'warning'); // 如果沒變動，顯示警告或提示訊息
+    }
+
+
     toggleMemorySelectionMode();
 };
         const renderPersonalMemoryList = () => {
@@ -7981,10 +8009,17 @@ const handleBatchMemoryAction = async (action) => {
         if (isMemorySelectionMode) {
             item.classList.add('cursor-pointer');
             item.innerHTML = `
-                <div class="flex items-center gap-3 flex-1 min-w-0">
-                    <input type="checkbox" class="memory-select-checkbox w-4 h-4" data-id="${memory.id}" ${selectedMemoryIds.has(memory.id) ? 'checked' : ''}>
-                    <span class="text-sm" style="word-break: break-word;">${memory.content}</span>
-                </div>
+    <div class="flex items-center gap-3 flex-1 min-w-0">
+        <input type="checkbox" class="memory-select-checkbox w-4 h-4 flex-shrink-0" data-id="${memory.id}" ${selectedMemoryIds.has(memory.id) ? 'checked' : ''}>
+        
+        <!-- 這裡新增一個不可點擊的狀態開關 -->
+        <div class="relative inline-block w-10 h-5 rounded-full flex-shrink-0 ${memory.enabled ? 'bg-blue-500' : 'bg-gray-300'}">
+            <div class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${memory.enabled ? 'transform translate-x-5' : ''}"></div>
+        </div>
+
+
+        <span class="text-sm" style="word-break: break-word;">${memory.content}</span>
+    </div>
             `;
             
             item.addEventListener('click', (e) => {
