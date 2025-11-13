@@ -259,6 +259,28 @@ body.custom-wallpaper-active #history-sidebar h3 {
 .sidebar-section[data-open="true"] .section-toggle-arrow {
     transform: rotate(0deg); /* 修改點 2: 展開時轉回來 */
 }
+    .collapsible-info-content {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.collapsible-info-content > p {
+    overflow: hidden;
+}
+
+.collapsible-arrow {
+    transition: transform 0.3s ease;
+    transform: rotate(-90deg); /* 預設箭頭向右 */
+}
+
+.collapsible-info-section[data-open="true"] .collapsible-info-content {
+    grid-template-rows: 1fr;
+}
+
+.collapsible-info-section[data-open="true"] .collapsible-arrow {
+    transform: rotate(0deg); /* 展開時箭頭向下 */
+}
     #user-controls {
     display: flex;
     align-items: center;
@@ -3071,12 +3093,42 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     </button>
 </div>
 <div class="border-t border-[var(--border-color)] my-6"></div>
-                        <h3 class="text-lg font-semibold mb-3" data-lang-key="helpCenter">協助中心</h3>
-                        <p class="text-sm text-[var(--text-secondary)] mb-4" data-lang-key="helpCenterDesc">內容待補充...</p>
-                        <h3 class="text-lg font-semibold mb-3" data-lang-key="termsOfUse">使用條款</h3>
-                        <p class="text-sm text-[var(--text-secondary)] mb-4" data-lang-key="termsOfUseDesc">內容待補充...</p>
-                        <h3 class="text-lg font-semibold mb-3" data-lang-key="privacyPolicy">隱私權政策</h3>
-                        <p class="text-sm text-[var(--text-secondary)] mb-4" data-lang-key="privacyPolicyDesc">內容待補充...</p>
+                        <div class="space-y-2">
+    <!-- 協助中心 -->
+    <div class="collapsible-info-section">
+        <header class="collapsible-info-header flex justify-between items-center cursor-pointer p-2 rounded-md hover:bg-[var(--hover-bg)]">
+            <h3 class="text-lg font-semibold" data-lang-key="helpCenter">協助中心</h3>
+            <svg class="collapsible-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </header>
+        <div class="collapsible-info-content">
+            <p class="text-sm text-[var(--text-secondary)] p-2 pt-0" data-lang-key="helpCenterDesc">內容待補充...</p>
+        </div>
+    </div>
+
+
+    <!-- 使用條款 -->
+    <div class="collapsible-info-section">
+        <header class="collapsible-info-header flex justify-between items-center cursor-pointer p-2 rounded-md hover:bg-[var(--hover-bg)]">
+            <h3 class="text-lg font-semibold" data-lang-key="termsOfUse">使用條款</h3>
+            <svg class="collapsible-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </header>
+        <div class="collapsible-info-content">
+            <p class="text-sm text-[var(--text-secondary)] p-2 pt-0" data-lang-key="termsOfUseDesc">內容待補充...</p>
+        </div>
+    </div>
+
+
+    <!-- 隱私權政策 -->
+    <div class="collapsible-info-section">
+        <header class="collapsible-info-header flex justify-between items-center cursor-pointer p-2 rounded-md hover:bg-[var(--hover-bg)]">
+            <h3 class="text-lg font-semibold" data-lang-key="privacyPolicy">隱私權政策</h3>
+            <svg class="collapsible-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </header>
+        <div class="collapsible-info-content">
+            <p class="text-sm text-[var(--text-secondary)] p-2 pt-0" data-lang-key="privacyPolicyDesc">內容待補充...</p>
+        </div>
+    </div>
+</div>
                         <h3 class="text-lg font-semibold mb-3" data-lang-key="versionInfo">版本資訊</h3>
                         <div class="space-y-3 p-3 rounded-lg bg-[var(--input-field-bg)] border border-[var(--border-color)]">
                             <button id="update-info-btn" class="w-full text-left py-2 rounded-md hover:bg-[var(--hover-bg)] font-medium flex justify-between items-center">
@@ -10049,6 +10101,18 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
                     toggleModal(ALL_ELEMENTS.searchModal, false);
                 }
             });
+            const aboutSection = document.getElementById('about-section');
+if (aboutSection) {
+    aboutSection.addEventListener('click', (e) => {
+        const header = e.target.closest('.collapsible-info-header');
+        if (header) {
+            const section = header.closest('.collapsible-info-section');
+            if (section) {
+                section.classList.toggle('open');
+            }
+        }
+    });
+}
             const closeTrashView = () => toggleModal(ALL_ELEMENTS.trashViewModal, false);
             ALL_ELEMENTS.closeTrashViewModalBtn.addEventListener('click', closeTrashView);
             ALL_ELEMENTS.trashViewCloseBtn.addEventListener('click', closeTrashView);
