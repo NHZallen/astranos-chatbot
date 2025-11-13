@@ -2954,6 +2954,24 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                             </div>
                         </div>
                         <h3 class="text-lg font-semibold mb-3 mt-6" data-lang-key="personalMemoryManage">個人習慣記憶管理</h3>
+                        <div class="flex justify-between items-center mb-2">
+        <span id="memory-selection-count" class="text-sm text-[var(--text-secondary)] hidden"></span>
+        <div>
+            <button id="memory-batch-select-btn" class="text-sm px-3 py-1.5 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)] hover:bg-[var(--hover-bg)]" data-lang-key="batchSelect">
+                批次選取
+            </button>
+            <button id="memory-cancel-selection-btn" class="text-sm px-3 py-1.5 rounded-md text-blue-600 hover:underline font-semibold hidden" data-lang-key="done">
+                完成
+            </button>
+        </div>
+    </div>
+    <div id="memory-batch-action-bar" class="hidden mb-4 p-2 rounded-md bg-[var(--sidebar-bg)] border border-[var(--border-color)]">
+        <div class="grid grid-cols-3 gap-2">
+            <button id="memory-batch-enable-btn" class="p-2 text-sm rounded-md bg-green-500 text-white disabled:bg-green-300" disabled data-lang-key="enableSelected">啟用所選</button>
+            <button id="memory-batch-disable-btn" class="p-2 text-sm rounded-md bg-yellow-500 text-white disabled:bg-yellow-300" disabled data-lang-key="disableSelected">停用所選</button>
+            <button id="memory-batch-delete-btn" class="p-2 text-sm rounded-md bg-red-500 text-white disabled:bg-red-300" disabled data-lang-key="deleteSelected">刪除所選</button>
+        </div>
+    </div>
                         <div id="personal-memory-list" class="space-y-2"></div>
                         <button id="add-personal-memory-btn" class="mt-4 px-4 py-2 rounded-md btn-primary" data-lang-key="addMemory">新增記憶</button>
                     </div>
@@ -4115,6 +4133,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let modelPieChart = null;
         let timeDistChart = null;
         let cropperInstance = null;
+        let isMemorySelectionMode = false;
+let selectedMemoryIds = new Set();
         let messageObserver = null;
         let currentStoreCategory = '全部';
         let editingAstraForAvatarId = null;
@@ -7889,44 +7909,148 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
             currentSpeechRecognition.start();
             ALL_ELEMENTS[`voiceInputBtn${target.charAt(0).toUpperCase() + target.slice(1)}`].classList.add('active');
         };
+        const renderMemoryBatchActionBar = () => {
+    const count = selectedMemoryIds.size;
+    const selectionCountEl = document.getElementById('memory-selection-count');
+    const actionBar = document.getElementById('memory-batch-action-bar');
+    const batchSelectBtn = document.getElementById('memory-batch-select-btn');
+    const cancelSelectionBtn = document.getElementById('memory-cancel-selection-btn');
+
+
+    if (isMemorySelectionMode) {
+        actionBar.classList.remove('hidden');
+        selectionCountEl.classList.remove('hidden');
+        batchSelectBtn.classList.add('hidden');
+        cancelSelectionBtn.classList.remove('hidden');
+        
+        selectionCountEl.textContent = `${i18n[config.uiLanguage].selected || '已選取'} ${count} ${i18n[config.uiLanguage].items || '個項目'}`;
+        
+        const hasSelection = count > 0;
+        document.getElementById('memory-batch-enable-btn').disabled = !hasSelection;
+        document.getElementById('memory-batch-disable-btn').disabled = !hasSelection;
+        document.getElementById('memory-batch-delete-btn').disabled = !hasSelection;
+    } else {
+        actionBar.classList.add('hidden');
+        selectionCountEl.classList.add('hidden');
+        batchSelectBtn.classList.remove('hidden');
+        cancelSelectionBtn.classList.add('hidden');
+    }
+};
+
+
+const toggleMemorySelectionMode = () => {
+    isMemorySelectionMode = !isMemorySelectionMode;
+    selectedMemoryIds.clear();
+    renderPersonalMemoryList();
+    renderMemoryBatchActionBar();
+};
+
+
+const handleBatchMemoryAction = async (action) => {
+    const count = selectedMemoryIds.size;
+    if (count === 0) return;
+
+
+    if (action === 'delete') {
+        if (!(await showCustomConfirm(`${i18n[config.uiLanguage].confirmBatchDeleteMemory || '您確定要刪除這'} ${count} ${i18n[config.uiLanguage].memories || '個記憶嗎？'}`))) return;
+        personalMemories = personalMemories.filter(m => !selectedMemoryIds.has(m.id));
+        showNotification(`${i18n[config.uiLanguage].deleted || '已刪除'} ${count} ${i18n[config.uiLanguage].memories || '個記憶'}`, 'success');
+    } else {
+        const enable = action === 'enable';
+        personalMemories.forEach(m => {
+            if (selectedMemoryIds.has(m.id)) {
+                m.enabled = enable;
+            }
+        });
+        const actionText = enable ? i18n[config.uiLanguage].enabled : i18n[config.uiLanguage].disabled;
+        showNotification(`${actionText} ${count} ${i18n[config.uiLanguage].memories || '個記憶'}`, 'success');
+    }
+
+
+    await saveAppData();
+    toggleMemorySelectionMode();
+};
         const renderPersonalMemoryList = () => {
-            const container = ALL_ELEMENTS.personalMemoryList;
-            container.innerHTML = '';
-            personalMemories.forEach(memory => {
-                const item = document.createElement('div');
-                item.className = 'flex items-center justify-between p-2 rounded-lg bg-[var(--hover-bg)] border border-[var(--border-color)]';
-                item.innerHTML = `
-                    <div class="flex items-center gap-2 flex-1">
-                        <input type="checkbox" class="memory-enabled-checkbox w-4 h-4" data-id="${memory.id}" ${memory.enabled ? 'checked' : ''}>
-                        <span class="text-sm truncate">${memory.content}</span>
-                    </div>
-                    <button class="delete-memory-btn text-red-600 hover:text-red-800" data-id="${memory.id}">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-                    </button>
-                `;
-                container.appendChild(item);
+    const container = ALL_ELEMENTS.personalMemoryList;
+    container.innerHTML = '';
+    personalMemories.forEach(memory => {
+        const item = document.createElement('div');
+        item.className = 'flex items-center justify-between p-2 rounded-lg bg-[var(--hover-bg)] border border-[var(--border-color)]';
+        
+        // ✨ 這是核心修改：根據是否為批次選取模式，產生不同的 HTML
+        if (isMemorySelectionMode) {
+            item.classList.add('cursor-pointer');
+            item.innerHTML = `
+                <div class="flex items-center gap-3 flex-1 min-w-0">
+                    <input type="checkbox" class="memory-select-checkbox w-4 h-4" data-id="${memory.id}" ${selectedMemoryIds.has(memory.id) ? 'checked' : ''}>
+                    <span class="text-sm" style="word-break: break-word;">${memory.content}</span>
+                </div>
+            `;
+            
+            item.addEventListener('click', (e) => {
+                const checkbox = e.currentTarget.querySelector('.memory-select-checkbox');
+                if (checkbox && e.target !== checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    checkbox.dispatchEvent(new Event('change'));
+                }
             });
-            container.querySelectorAll('.memory-enabled-checkbox').forEach(cb => {
-                cb.addEventListener('change', async (e) => {
-                    const id = e.target.dataset.id;
-                    const memory = personalMemories.find(m => m.id === id);
-                    if (memory) {
-                        memory.enabled = e.target.checked;
-                        await saveAppData();
-                    }
-                });
-            });
-            container.querySelectorAll('.delete-memory-btn').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    const id = e.currentTarget.dataset.id;
-                    if (await showCustomConfirm(i18n[config.uiLanguage].confirmDeleteMemory || '確定刪除此記憶？')) {
-                        personalMemories = personalMemories.filter(m => m.id !== id);
-                        await saveAppData();
-                        renderPersonalMemoryList();
-                    }
-                });
-            });
-        };
+
+
+        } else {
+            item.innerHTML = `
+                <div class="flex items-center gap-2 flex-1 min-w-0">
+                    <input type="checkbox" class="memory-enabled-checkbox w-4 h-4" data-id="${memory.id}" ${memory.enabled ? 'checked' : ''}>
+                    <span class="text-sm" style="word-break: break-word;">${memory.content}</span>
+                </div>
+                <button class="delete-memory-btn text-red-600 hover:text-red-800" data-id="${memory.id}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                </button>
+            `;
+        }
+
+
+        container.appendChild(item);
+    });
+
+
+    // 統一在這裡綁定事件，無論在哪種模式下
+    container.querySelectorAll('.memory-enabled-checkbox').forEach(cb => {
+        cb.addEventListener('change', async (e) => {
+            const id = e.target.dataset.id;
+            const memory = personalMemories.find(m => m.id === id);
+            if (memory) {
+                memory.enabled = e.target.checked;
+                await saveAppData();
+            }
+        });
+    });
+
+
+    container.querySelectorAll('.delete-memory-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const id = e.currentTarget.dataset.id;
+            if (await showCustomConfirm(i18n[config.uiLanguage].confirmDeleteMemory || '確定刪除此記憶？')) {
+                personalMemories = personalMemories.filter(m => m.id !== id);
+                await saveAppData();
+                renderPersonalMemoryList();
+            }
+        });
+    });
+
+
+    container.querySelectorAll('.memory-select-checkbox').forEach(cb => {
+        cb.addEventListener('change', (e) => {
+            const id = e.target.dataset.id;
+            if (e.target.checked) {
+                selectedMemoryIds.add(id);
+            } else {
+                selectedMemoryIds.delete(id);
+            }
+            renderMemoryBatchActionBar();
+        });
+    });
+};
+
         const refineAndStoreMemories = async (potentialMemories) => {
             if (potentialMemories.length === 0) return;
 
@@ -10565,6 +10689,11 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             followUpContainer.addEventListener('touchstart', stopPropagation);
             followUpContainer.addEventListener('touchmove', stopPropagation);
             followUpContainer.addEventListener('touchend', stopPropagation);
+            document.getElementById('memory-batch-select-btn').addEventListener('click', toggleMemorySelectionMode);
+document.getElementById('memory-cancel-selection-btn').addEventListener('click', toggleMemorySelectionMode);
+document.getElementById('memory-batch-enable-btn').addEventListener('click', () => handleBatchMemoryAction('enable'));
+document.getElementById('memory-batch-disable-btn').addEventListener('click', () => handleBatchMemoryAction('disable'));
+document.getElementById('memory-batch-delete-btn').addEventListener('click', () => handleBatchMemoryAction('delete'));
         }
         }
         const handleDeleteMessagePair = async (index) => {
