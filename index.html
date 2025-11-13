@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AstraChat-15.8.1</title>
+    <title>AstraChat-15.9.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
@@ -2945,15 +2945,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                     <label for="memory-toggle-1" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
                                 </div>
                             </div>
-                            <!-- START: Added Cross-Dialogue Memory Toggle -->
-                            <div class="flex items-center justify-between">
-                                <label class="flex-1 text-sm font-medium" data-lang-key="crossDialogueMemory">跨對話記憶 (類型2)</label>
-                                <div class="relative inline-block w-12 h-6 mr-2 align-middle select-none transition duration-200 ease-in">
-                                    <input type="checkbox" id="memory-toggle-2" class="toggle-checkbox absolute block w-full, h-full rounded-full opacity-0 appearance-none cursor-pointer"/>
-                                    <label for="memory-toggle-2" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
-                                </div>
-                            </div>
-                            <!-- END: Added Cross-Dialogue Memory Toggle -->
                             <div class="flex items-center justify-between">
                                 <label for="auto-memory-toggle-switch" class="flex-1 text-sm font-medium" data-lang-key="enableAutoMemory">啟用自動添加記憶</label>
                                 <div class="relative inline-block w-12 h-6 mr-2 align-middle select-none transition duration-200 ease-in">
@@ -3657,7 +3648,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             voiceInputBtnMessage: document.getElementById('voice-input-btn-message'),
             voiceInputBtnSearch: document.getElementById('voice-input-btn-search'),
             memoryToggle1: document.getElementById('memory-toggle-1'),
-            memoryToggle2: document.getElementById('memory-toggle-2'),
             personalMemoryList: document.getElementById('personal-memory-list'),
             addPersonalMemoryBtn: document.getElementById('add-personal-memory-btn'),
             autoMemoryToggleSwitch: document.getElementById('auto-memory-toggle-switch'),
@@ -4091,7 +4081,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             autoNaming: true,
             lastUsedModel: null,
             memoryEnabled1: true,
-            memoryEnabled2: true,
             enableAutoMemory: true,
             customWallpaper: null,
             wallpaperBrightness: 'light',
@@ -4999,7 +4988,6 @@ function renderMarkdownWithFormulas(text) {
                 // 啟用模式：儲存並關閉記憶
                 originalMemorySettings = {
                     memoryEnabled1: config.memoryEnabled1,
-                    memoryEnabled2: config.memoryEnabled2,
                     enableAutoMemory: config.enableAutoMemory,
                 };
                 config.memoryEnabled1 = false;
@@ -5010,7 +4998,6 @@ function renderMarkdownWithFormulas(text) {
                 // 關閉模式：還原記憶設定
                 if (originalMemorySettings) {
                     config.memoryEnabled1 = originalMemorySettings.memoryEnabled1;
-                    config.memoryEnabled2 = originalMemorySettings.memoryEnabled2;
                     config.enableAutoMemory = originalMemorySettings.enableAutoMemory;
                 }
                 showNotification(i18n[config.uiLanguage].researchDisabledFull || '研究模式已關閉。記憶功能已還原。', 'success');
@@ -6019,37 +6006,6 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
                 }
             }
 
-            if (config.memoryEnabled2 && conv.messages.length > 0) {
-                try {
-                    const currentUserMessage = conv.messages[conv.messages.length - 1].parts.map(p => p.text).join(' ');
-                    const keywordPrompt = `從以下句子中提取出 3 到 5 個最重要的核心關鍵詞或主題，並以 JSON 陣列的格式回傳。例如：["關鍵詞1", "關鍵詞2", "關鍵詞3"]。\n\n句子："${currentUserMessage}"`;
-                    const keywordSchema = { type: "ARRAY", items: { type: "STRING" } };
-                    const keywords = await callApiWithSchema(keywordPrompt, keywordSchema);
-
-                    if (keywords && keywords.length > 0) {
-                        const scoredConversations = conversations
-                            .filter(c => c.id !== conv.id && c.summary && !c.archived && !c.deletedAt)
-                            .map(c => ({
-                                ...c,
-                                relevance: calculateRelevanceScore(c.summary, keywords)
-                            }))
-                            .filter(c => c.relevance > 0);
-
-                        const topConversations = scoredConversations
-                            .sort((a, b) => b.relevance - a.relevance)
-                            .slice(0, 15);
-
-                        if (topConversations.length > 0) {
-                            const memorySummaries = topConversations
-                                .map(c => `- ${c.title}: ${c.summary}`)
-                                .join('\n');
-                            memoryPrompt += `\n相關歷史對話摘要 (從使用者過往對話中檢索到的相關內容，請作為背景參考):\n${memorySummaries}\n`;
-                        }
-                    }
-                } catch (error) {
-                    console.error("Error retrieving relevant conversation memories:", error);
-                }
-            }
             if (memoryPrompt) {
                 if (systemInstruction && systemInstruction.parts[0].text) {
                     systemInstruction.parts[0].text += `\n\n${memoryPrompt}`;
@@ -6531,7 +6487,6 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
             ALL_ELEMENTS.autoNamingToggleSwitch.checked = config.autoNaming;
             ALL_ELEMENTS.autoWebSearchToggleSwitch.checked = config.enableAutoWebSearch;
             ALL_ELEMENTS.memoryToggle1.checked = config.memoryEnabled1;
-            ALL_ELEMENTS.memoryToggle2.checked = config.memoryEnabled2;
             ALL_ELEMENTS.autoMemoryToggleSwitch.checked = config.enableAutoMemory;
             ALL_ELEMENTS.uiLanguageSelect.value = config.uiLanguage;
             ALL_ELEMENTS.aiLanguageSelect.value = config.aiDefaultLanguage;
@@ -6588,7 +6543,6 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
             config.userBubbleColor = ALL_ELEMENTS.userBubbleColorDropdown.querySelector('.color-dropdown-btn')?.dataset.color || 'default';
             config.autoNaming = ALL_ELEMENTS.autoNamingToggleSwitch.checked;
             config.memoryEnabled1 = ALL_ELEMENTS.memoryToggle1.checked;
-            config.memoryEnabled2 = ALL_ELEMENTS.memoryToggle2.checked;
             config.enableAutoMemory = ALL_ELEMENTS.autoMemoryToggleSwitch.checked;
             config.uiLanguage = ALL_ELEMENTS.uiLanguageSelect.value;
             config.aiDefaultLanguage = ALL_ELEMENTS.aiLanguageSelect.value;
@@ -7447,7 +7401,6 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
                     defaultModel: config.defaultModel, theme: config.theme, modelSettings: config.modelSettings,
                     enableFollowUp: config.enableFollowUp, aiBubbleColor: config.aiBubbleColor, userBubbleColor: config.userBubbleColor,
                     autoNaming: config.autoNaming, enableAutoWebSearch: config.enableAutoWebSearch, memoryEnabled1: config.memoryEnabled1,
-                    memoryEnabled2: config.memoryEnabled2,
                     enableAutoMemory: config.enableAutoMemory, customWallpaper: config.customWallpaper, wallpaperBrightness: config.wallpaperBrightness,
                     uiTheme: config.uiTheme, uiLanguage: config.uiLanguage, aiDefaultLanguage: config.aiDefaultLanguage,
                     isLearningMode: config.isLearningMode
