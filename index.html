@@ -2945,6 +2945,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                     <label for="memory-toggle-1" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
                                 </div>
                             </div>
+
                             <div class="flex items-center justify-between">
                                 <label for="auto-memory-toggle-switch" class="flex-1 text-sm font-medium" data-lang-key="enableAutoMemory">啟用自動添加記憶</label>
                                 <div class="relative inline-block w-12 h-6 mr-2 align-middle select-none transition duration-200 ease-in">
@@ -3648,6 +3649,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             voiceInputBtnMessage: document.getElementById('voice-input-btn-message'),
             voiceInputBtnSearch: document.getElementById('voice-input-btn-search'),
             memoryToggle1: document.getElementById('memory-toggle-1'),
+            memoryToggle2: document.getElementById('memory-toggle-2'),
             personalMemoryList: document.getElementById('personal-memory-list'),
             addPersonalMemoryBtn: document.getElementById('add-personal-memory-btn'),
             autoMemoryToggleSwitch: document.getElementById('auto-memory-toggle-switch'),
@@ -4987,19 +4989,17 @@ function renderMarkdownWithFormulas(text) {
             if (config.isDeepResearchMode) {
                 // 啟用模式：儲存並關閉記憶
                 originalMemorySettings = {
-                    memoryEnabled1: config.memoryEnabled1,
-                    enableAutoMemory: config.enableAutoMemory,
-                };
-                config.memoryEnabled1 = false;
-                config.memoryEnabled2 = false;
-                config.enableAutoMemory = false;
+    memoryEnabled1: config.memoryEnabled1,
+    enableAutoMemory: config.enableAutoMemory,
+};
+config.memoryEnabled1 = false;
+config.enableAutoMemory = false;
                 showNotification(i18n[config.uiLanguage].researchEnabledFull || '研究模式已啟用。記憶功能已暫時關閉。', 'success');
             } else {
                 // 關閉模式：還原記憶設定
                 if (originalMemorySettings) {
-                    config.memoryEnabled1 = originalMemorySettings.memoryEnabled1;
-                    config.memoryEnabled2 = originalMemorySettings.memoryEnabled2;
-                    config.enableAutoMemory = originalMemorySettings.enableAutoMemory;
+    config.memoryEnabled1 = originalMemorySettings.memoryEnabled1;
+    config.enableAutoMemory = originalMemorySettings.enableAutoMemory;
                 }
                 showNotification(i18n[config.uiLanguage].researchDisabledFull || '研究模式已關閉。記憶功能已還原。', 'success');
             }
@@ -5942,6 +5942,20 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
             if (cleaned.length > 0 && cleaned[0].role !== 'user') cleaned.shift();
             return cleaned;
         }
+        function calculateRelevanceScore(summary, keywords) {
+            if (!summary || !keywords || keywords.length === 0) {
+                return 0;
+            }
+            const summaryLower = summary.toLowerCase();
+            let score = 0;
+            keywords.forEach(keyword => {
+                if (summaryLower.includes(keyword.toLowerCase())) {
+                    score++;
+                }
+            });
+            const coverageRatio = score / keywords.length;
+            return score * (1 + coverageRatio);
+        }
         async function streamApiCall(parts, onChunk, signal, isWebSearchForced = false) {
             const conv = getActiveConversation();
             const modelInfo = MODELS.find(m => m.id === conv.model);
@@ -6530,6 +6544,7 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
             config.userBubbleColor = ALL_ELEMENTS.userBubbleColorDropdown.querySelector('.color-dropdown-btn')?.dataset.color || 'default';
             config.autoNaming = ALL_ELEMENTS.autoNamingToggleSwitch.checked;
             config.memoryEnabled1 = ALL_ELEMENTS.memoryToggle1.checked;
+            config.memoryEnabled2 = ALL_ELEMENTS.memoryToggle2.checked;
             config.enableAutoMemory = ALL_ELEMENTS.autoMemoryToggleSwitch.checked;
             config.uiLanguage = ALL_ELEMENTS.uiLanguageSelect.value;
             config.aiDefaultLanguage = ALL_ELEMENTS.aiLanguageSelect.value;
@@ -7388,6 +7403,7 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
                     defaultModel: config.defaultModel, theme: config.theme, modelSettings: config.modelSettings,
                     enableFollowUp: config.enableFollowUp, aiBubbleColor: config.aiBubbleColor, userBubbleColor: config.userBubbleColor,
                     autoNaming: config.autoNaming, enableAutoWebSearch: config.enableAutoWebSearch, memoryEnabled1: config.memoryEnabled1,
+                    memoryEnabled2: config.memoryEnabled2,
                     enableAutoMemory: config.enableAutoMemory, customWallpaper: config.customWallpaper, wallpaperBrightness: config.wallpaperBrightness,
                     uiTheme: config.uiTheme, uiLanguage: config.uiLanguage, aiDefaultLanguage: config.aiDefaultLanguage,
                     isLearningMode: config.isLearningMode
