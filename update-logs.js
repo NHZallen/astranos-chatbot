@@ -1,5 +1,18 @@
 const updateLogs = [
         {
+        "version": "15.9.1",
+        "date": "2025-11-14",
+        "content": [
+            "<strong>【模型庫重大升級 & 效能優化】</strong>",
+            "在 15.9.1 版本中，我們對核心模型庫進行了重要的更新，並持續優化底層架構，旨在為您提供更強大、更穩定的服務：",
+            "<strong>模型更新：</strong>",
+            "<ul><li><strong>新增 OpenAI GPT-5.1 模型：</strong> 我們正式引入了 OpenAI 最新的旗艦模型 GPT-5.1。此模型在推理、知識廣度與可靠性方面皆有顯著突破，為您處理複雜任務提供更強大的支援。</li><li><strong>模型庫整理：</strong> 為了提供更精簡、高效的模型選項，我們移除了測試版模型 <code>Polaris Alpha</code> 以及由 GPT-5.1 取代的舊版 <code>GPT-5</code>。</li></ul>",
+            "<strong>穩定性與體驗優化：</strong>",
+            "<ul><li><strong>後端架構調整：</strong> 為了更好地支援新模型並提升整體效能，我們對後端服務進行了必要的調整與優化。</li><li><strong>介面微調：</strong> 修正了部分介面在特定情況下的樣式顯示問題，提升視覺一致性。</li></ul>",
+            "感謝您持續支持 Astra，您的使用是我們不斷進步的最佳動力。<br><br>Astra 開發團隊 敬上"
+        ]
+    },
+        {
     "version": "15.9.0",
     "date": "2025-11-13",
     "content": [
