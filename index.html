@@ -2551,32 +2551,28 @@ body {
     height: 100%;
     width: 100%;
 }
-        #app-container {
-    /* 
-      再次明確定義，確保它從螢幕的四個物理邊緣開始計算，
-      而不是從安全區域開始。這是解決初始畫面無法延伸的關鍵。
-    */
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    height: 100%;
+        #sidebar-overlay {
+    /* 提高 z-index，確保它在 header 之上，但在 sidebar 之下 */
+    z-index: 39;
+    
+    /* 讓遮罩本身也從安全區域開始，完美對齊 Header */
+    padding-top: env(safe-area-inset-top);
 }
 
-#sidebar-overlay {
-    /* 
-      同樣，強制遮罩層從螢幕的四個物理邊緣開始，
-      這樣它就能蓋住包含狀態列在內的所有區域。
-      z-index 確保它在頂部標題列之上。
-    */
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 30; /* 確保遮罩在最上層 */
+/* 確保歷史紀錄的遮罩也有足夠高的層級 */
+#history-sidebar-overlay {
+    z-index: 19; /* 應高於 main content (預設 0) 但低於 history-sidebar (z-20) */
+}
+
+/*
+   由於我們在 body 上設定了 overflow: hidden，
+   這可能會影響到部分內部的滾動。
+   我們需要明確指定聊天容器可以滾動。
+*/
+#chat-container {
+    overflow-y: auto;
+    /* 增加這個可以讓 iOS 上的滾動更平滑 */
+    -webkit-overflow-scrolling: touch;
 }
 </style>
 <script>
@@ -2781,7 +2777,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 </div>
                 </div>
             </aside>
-            <main class="flex-1 flex flex-col relative h-full">
+            <main class="flex-1 flex flex-col relative">
 <header class="relative z-10 p-1.5 md:p-2 flex justify-between items-center border-b border-[var(--border-color)]">
     <div class="flex items-center gap-2 min-w-0">
         <button id="menu-toggle-btn" class="p-2 rounded-md hover:bg-[var(--hover-bg)]">
