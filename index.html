@@ -16,6 +16,51 @@
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlVjOTgjdwCRYIFDPlSJyGothspOJCINgRdBNPCoCoAPgatCKssVNPfISAc" crossorigin="anonymous"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/mhchem.min.js" integrity="sha384-LiYbuyabPcvZ2wQ2MR2kJyS2N9p/hO3N/15H0/0YxJqT4Lg/ZqD53aQyD+Jz3lM7" crossorigin="anonymous"></script>
     <style>
+    html, body {
+    height: 100%;
+    width: 100%;
+    overflow: hidden; /* 防止在 body 層級出現不必要的滾動條 */
+    position: fixed; /* 幫助穩定在移動裝置上的視窗行為 */
+}
+    :root {
+    --safe-area-inset-top: env(safe-area-inset-top);
+    --safe-area-inset-right: env(safe-area-inset-right);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom);
+    --safe-area-inset-left: env(safe-area-inset-left);
+}
+
+/* 讓最外層的 App 容器尊重安全區域 */
+#app-container {
+    padding-top: var(--safe-area-inset-top);
+    padding-bottom: var(--safe-area-inset-bottom);
+    padding-left: var(--safe-area-inset-left);
+    padding-right: var(--safe-area-inset-right);
+}
+
+/* 修正固定在頂部的 Header */
+main > header {
+    padding-top: var(--safe-area-inset-top);
+}
+
+/* 修正固定在底部的輸入框區域 */
+#input-bar-container {
+    padding-bottom: var(--safe-area-inset-bottom);
+}
+
+/* 修正從側邊滑出的側邊欄 */
+#sidebar {
+    padding-top: var(--safe-area-inset-top);
+    padding-bottom: var(--safe-area-inset-bottom);
+    padding-left: var(--safe-area-inset-left);
+}
+
+/* 修正其他彈出視窗 (Modal) */
+.modal {
+    padding-top: var(--safe-area-inset-top);
+    padding-bottom: var(--safe-area-inset-bottom);
+    padding-left: var(--safe-area-inset-left);
+    padding-right: var(--safe-area-inset-right);
+}
     body {
     touch-action: manipulation;
 }
@@ -2494,109 +2539,6 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     display: none; /* 將它完全隱藏起來，不佔據任何空間 */
   }
 }
-        /* --- 針對 iOS/Android 安全區域的修正 --- */
-body {
-    /* 確保在延伸後，整個背景仍然有顏色 */
-    background-color: var(--chat-bg);
-}
-
-/* 修正側邊欄，讓它的內容從安全區域開始 */
-#sidebar {
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-}
-
-/* 修正聊天視窗頂部的標題列 */
-main > header {
-    padding-top: env(safe-area-inset-top);
-}
-
-/* 修正聊天視窗底部的輸入框區域 */
-#input-bar-container {
-    padding-bottom: env(safe-area-inset-bottom);
-}
-
-/* 修正從底部彈出的選單，避免被手勢操作區域擋住 */
-#mobile-context-menu, #attachment-menu {
-    padding-bottom: env(safe-area-inset-bottom);
-}
-
-/* 修正一些全螢幕的彈出視窗 */
-#settings-modal, #search-modal, #data-dashboard-modal {
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-}
-        html, body {
-    /* 關鍵！強制 html 和 body 佔滿整個可用高度 */
-    height: 100%;
-    width: 100%;
-    
-    /* 防止在手機上滑動頁面時觸發「下拉刷新」或看到邊界 */
-    overscroll-behavior: none;
-    
-    /* 禁用頁面本身的滾動條，因為我們的滾動是在 #chat-container 內部處理的 */
-    overflow: hidden;
-    
-    /* 確保最底層的 html 元素也有背景色，防止任何情況下的白邊 */
-    background-color: var(--chat-bg);
-}
-
-/* 再次確保 body 的背景色被正確應用 */
-body {
-    background-color: var(--chat-bg) !important;
-}
-
-/* 確保 App 主容器正確地佔滿空間 */
-#app-container {
-    height: 100%;
-    width: 100%;
-}
-        #sidebar-overlay {
-    /* 提高 z-index，確保它在 header 之上，但在 sidebar 之下 */
-    z-index: 39;
-    
-    /* 讓遮罩本身也從安全區域開始，完美對齊 Header */
-    padding-top: env(safe-area-inset-top);
-}
-
-/* 確保歷史紀錄的遮罩也有足夠高的層級 */
-#history-sidebar-overlay {
-    z-index: 19; /* 應高於 main content (預設 0) 但低於 history-sidebar (z-20) */
-}
-
-/*
-   由於我們在 body 上設定了 overflow: hidden，
-   這可能會影響到部分內部的滾動。
-   我們需要明確指定聊天容器可以滾動。
-*/
-#chat-container {
-    overflow-y: auto;
-    /* 增加這個可以讓 iOS 上的滾動更平滑 */
-    -webkit-overflow-scrolling: touch;
-}
-        #app-container {
-    opacity: 0;
-    pointer-events: none; /* 看不見的時候不能點擊 */
-    /* 移除造成層級問題的 transform 動畫 */
-    transform: none !important;
-    transition: opacity 0.4s ease-in; /* 動畫改為單純的淡入淡出 */
-}
-
-/* 2. 設定 #app-container.visible 的最終狀態 */
-#app-container.visible {
-    opacity: 1;
-    pointer-events: auto; /* 看得見時恢復點擊 */
-    transform: none !important;
-}
-
-/* 3. 再次修正側邊欄遮罩，確保萬無一失 */
-#sidebar-overlay {
-    /* 提高 z-index，確保它在 header (z-10) 之上，但在 sidebar (z-40) 之下 */
-    z-index: 39;
-    
-    /* 讓遮罩本身也從安全區域開始，完美對齊 Header */
-    padding-top: env(safe-area-inset-top);
-}
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -2704,7 +2646,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             </footer>
         </div>
     </div>
-    <div id="app-container" class="fixed inset-0">
+    <div id="app-container" class="hidden fixed inset-0">
         <div class="relative flex h-full w-full bg-[var(--chat-bg)]">
             <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 opacity-0"></div>
             <div id="sidebar-open-handle" class="fixed top-0 left-0 h-full z-20" style="width: 20px; touch-action: pan-y;"></div>
@@ -2800,7 +2742,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 </div>
                 </div>
             </aside>
-            <main class="flex-1 flex flex-col relative">
+            <main class="flex-1 flex flex-col relative h-full">
 <header class="relative z-10 p-1.5 md:p-2 flex justify-between items-center border-b border-[var(--border-color)]">
     <div class="flex items-center gap-2 min-w-0">
         <button id="menu-toggle-btn" class="p-2 rounded-md hover:bg-[var(--hover-bg)]">
