@@ -1,5 +1,5 @@
 // 【重要】每次更新 PWA 時，請手動增加此版本號！
-const CACHE_NAME = 'astra-chat-cache-v6';
+const CACHE_NAME = 'astra-chat-cache-v7';
 
 // 靜態資源，可以長期快取
 const STATIC_ASSETS = [
@@ -168,4 +168,24 @@ self.addEventListener('notificationclick', event => {
             return clients.openWindow('/');
         })
     );
+});
+self.addEventListener('message', event => {
+    // 检查是不是我们定义的手动显示通知指令
+    if (event.data && event.data.type === 'SHOW_NOTIFICATION_MANUALLY') {
+        console.log('Service Worker: 收到手动显示通知的指令！');
+        
+        const data = event.data;
+        const title = data.title || '手动测试通知';
+        const body = data.body || '这是一则来自测试工具的讯息。';
+
+        // 使用 self.registration.showNotification 来显示通知
+        // 这是 Service Worker 显示通知的标准方法
+        event.waitUntil(
+            self.registration.showNotification(title, {
+                body: body,
+                icon: './icon-192.png',
+                badge: './icon-192.png',
+            })
+        );
+    }
 });
