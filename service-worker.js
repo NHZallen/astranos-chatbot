@@ -49,8 +49,7 @@ self.addEventListener('activate', event => {
         })
       ).then(() => {
         console.log('Service Worker: 已取得控制權。');
-        // 當 Service Worker 啟動時，設定一個定時器，每小時檢查一次更新
-        setInterval(checkForUpdates, 3600000); // 3600000 毫秒 = 1 小時
+        setInterval(checkForUpdates, 1800000);
         return self.clients.claim();
       });
     })
