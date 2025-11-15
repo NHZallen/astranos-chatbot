@@ -2574,6 +2574,29 @@ body {
     /* 增加這個可以讓 iOS 上的滾動更平滑 */
     -webkit-overflow-scrolling: touch;
 }
+        #app-container {
+    opacity: 0;
+    pointer-events: none; /* 看不見的時候不能點擊 */
+    /* 移除造成層級問題的 transform 動畫 */
+    transform: none !important;
+    transition: opacity 0.4s ease-in; /* 動畫改為單純的淡入淡出 */
+}
+
+/* 2. 設定 #app-container.visible 的最終狀態 */
+#app-container.visible {
+    opacity: 1;
+    pointer-events: auto; /* 看得見時恢復點擊 */
+    transform: none !important;
+}
+
+/* 3. 再次修正側邊欄遮罩，確保萬無一失 */
+#sidebar-overlay {
+    /* 提高 z-index，確保它在 header (z-10) 之上，但在 sidebar (z-40) 之下 */
+    z-index: 39;
+    
+    /* 讓遮罩本身也從安全區域開始，完美對齊 Header */
+    padding-top: env(safe-area-inset-top);
+}
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -2681,7 +2704,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             </footer>
         </div>
     </div>
-    <div id="app-container" class="hidden fixed inset-0">
+    <div id="app-container" class="fixed inset-0">
         <div class="relative flex h-full w-full bg-[var(--chat-bg)]">
             <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 opacity-0"></div>
             <div id="sidebar-open-handle" class="fixed top-0 left-0 h-full z-20" style="width: 20px; touch-action: pan-y;"></div>
