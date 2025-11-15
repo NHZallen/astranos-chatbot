@@ -3,7 +3,10 @@ const CACHE_NAME = 'astra-chat-cache-v1';
 const urlsToCache = [
   '/',
   '/index.html',
-  '/index.html',
+  '/i18n.js',
+  '/update-logs.js',
+  '/demo-conversations.js',
+  '/astras-data.js',
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png'
