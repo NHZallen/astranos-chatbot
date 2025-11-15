@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>Astra PWA 通知测试工具</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: sans-serif; margin: 2em; background-color: #f4f4f9; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 2em; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h1 { color: #3b82f6; }
+        label { display: block; margin-top: 1em; font-weight: bold; }
+        input, textarea { width: 100%; padding: 0.5em; margin-top: 0.5em; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #3b82f6; color: white; padding: 0.8em 1.5em; border: none; border-radius: 4px; font-size: 1em; cursor: pointer; margin-top: 1.5em; }
+        button:disabled { background-color: #a0a0a0; }
+        #status { margin-top: 1.5em; padding: 1em; background-color: #e0e0e0; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Astra PWA 通知测试工具</h1>
+        <p>这个工具可以直接命令您 PWA 的 Service Worker 显示一则通知，用来测试通知功能是否正常运作。</p>
+        
+        <label for="title">通知标题:</label>
+        <input type="text" id="title" value="🔔 新版本已推出！">
+
+        <label for="body">通知内容 (会自动截断):</label>
+        <textarea id="body" rows="4">这是 15.10.1 版本的更新内容：现在支援推播通知，让您不再错过任何重要更新！</textarea>
+
+        <button id="send-btn">发送测试通知</button>
+
+        <div id="status">状态：等待操作...</div>
+    </div>
+
+    <script>
+        const sendBtn = document.getElementById('send-btn');
+        const statusDiv = document.getElementById('status');
+        const titleInput = document.getElementById('title');
+        const bodyInput = document.getElementById('body');
+
+        // 检查浏览器是否支援 Service Worker
+        if (!('serviceWorker' in navigator)) {
+            sendBtn.disabled = true;
+            statusDiv.textContent = '错误：您的浏览器不支援 Service Worker。';
+        }
+
+        sendBtn.addEventListener('click', async () => {
+            statusDiv.textContent = '状态：正在发送指令...';
+            sendBtn.disabled = true;
+
+            try {
+                // 1. 获取 Service Worker 的注册物件
+                const registration = await navigator.serviceWorker.ready;
+                if (!registration.active) {
+                    throw new Error('没有正在运行的 Service Worker。');
+                }
+
+                // 2. 准备要发送的资料
+                const payload = {
+                    type: 'SHOW_NOTIFICATION_MANUALLY', // 这是一个我们自己定义，用来识别的指令
+                    title: titleInput.value,
+                    body: bodyInput.value
+                };
+
+                // 3. 使用 postMessage 将指令和资料发送给 Service Worker
+                registration.active.postMessage(payload);
+
+                statusDiv.textContent = '状态：指令已成功发送给 Service Worker！\n请检查您的手机/电脑是否跳出通知。';
+
+            } catch (error) {
+                statusDiv.textContent = `状态：发生错误！\n${error.message}\n请确认 PWA 已经安装并至少运行过一次。`;
+            } finally {
+                sendBtn.disabled = false;
+            }
+        });
+    </script>
+
+</body>
+</html>
