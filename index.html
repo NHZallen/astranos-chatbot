@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>AstraChat-15.10.0</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3b82f6"/>
@@ -2494,6 +2494,60 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     display: none; /* 將它完全隱藏起來，不佔據任何空間 */
   }
 }
+        /* --- 安全區域設定 --- */
+      /* 為了相容性，我們先設定一個預設值 */
+      :root {
+        --safe-area-inset-top: 0px;
+        --safe-area-inset-right: 0px;
+        --safe-area-inset-bottom: 0px;
+        --safe-area-inset-left: 0px;
+      }
+
+      /* 只有支援 env() 的瀏覽器才會應用這些設定 */
+      @supports (padding-top: env(safe-area-inset-top)) {
+        :root {
+          --safe-area-inset-top: env(safe-area-inset-top);
+          --safe-area-inset-right: env(safe-area-inset-right);
+          --safe-area-inset-bottom: env(safe-area-inset-bottom);
+          --safe-area-inset-left: env(safe-area-inset-left);
+        }
+
+        body {
+          /* 確保 body 本身有內距，防止內容在橫向模式時被遮擋 */
+          padding: 
+            var(--safe-area-inset-top) 
+            var(--safe-area-inset-right) 
+            var(--safe-area-inset-bottom) 
+            var(--safe-area-inset-left);
+        }
+
+        /* 1. 處理頂部標頭 */
+        main > header {
+          padding-top: calc(0.5rem + var(--safe-area-inset-top)); /* 0.5rem 是原本的 p-2 */
+        }
+
+        /* 2. 處理側邊欄 */
+        #sidebar {
+          padding-top: var(--safe-area-inset-top);
+          padding-bottom: var(--safe-area-inset-bottom);
+        }
+
+        /* 3. 處理最重要的底部輸入框 */
+        #input-bar-container {
+          padding-bottom: var(--safe-area-inset-bottom);
+        }
+
+        /* 4. 處理手機版彈出式選單 (避免被底部橫條遮擋) */
+        #mobile-context-menu, #attachment-menu {
+          padding-bottom: calc(1rem + var(--safe-area-inset-bottom)); /* 1rem 是原本的 p-4 */
+        }
+        
+        /* 5. 處理設定、搜尋等全螢幕彈窗 */
+        #settings-modal, #search-modal, #store-container {
+           padding-top: var(--safe-area-inset-top);
+           padding-bottom: var(--safe-area-inset-bottom);
+        }
+      }
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
