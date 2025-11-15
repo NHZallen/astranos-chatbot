@@ -3079,6 +3079,13 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         <p class="text-sm text-[var(--text-secondary)] mb-4" data-lang-key="termsOfUseDesc">內容待補充...</p>
                         <h3 class="text-lg font-semibold mb-3" data-lang-key="privacyPolicy">隱私權政策</h3>
                         <p class="text-sm text-[var(--text-secondary)] mb-4" data-lang-key="privacyPolicyDesc">內容待補充...</p>
+                        <h3 class="text-lg font-semibold mb-3 mt-6" data-lang-key="notificationSettings">通知設定</h3>
+    <div class="space-y-3 p-3 rounded-lg bg-[var(--input-field-bg)] border border-[var(--border-color)]">
+        <button id="enable-notifications-btn" class="w-full text-left py-2 rounded-md hover:bg-[var(--hover-bg)] font-medium flex justify-between items-center">
+            <span data-lang-key="enableUpdateNotificationsBtn">啟用新版本推播通知</span>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+        </button>
+    </div>
                         <h3 class="text-lg font-semibold mb-3" data-lang-key="versionInfo">版本資訊</h3>
                         <div class="space-y-3 p-3 rounded-lg bg-[var(--input-field-bg)] border border-[var(--border-color)]">
                             <button id="update-info-btn" class="w-full text-left py-2 rounded-md hover:bg-[var(--hover-bg)] font-medium flex justify-between items-center">
@@ -9988,6 +9995,53 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
         console.error('寄送對話紀錄到 Google Apps Script 時發生網路錯誤:', error);
     }
 }
+        async function handleNotificationSubscription() {
+    // 檢查瀏覽器是否支援 Service Worker 和 Push Manager
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        showNotification('您的瀏覽器不支援推播通知。', 'error');
+        return;
+    }
+
+    // 請求通知權限
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+        showNotification('您拒絕了通知授權，將無法收到更新提醒。', 'warning');
+        return;
+    }
+
+    // 獲取 Service Worker 的註冊物件
+    const registration = await navigator.serviceWorker.ready;
+    let subscription = await registration.pushManager.getSubscription();
+
+    if (subscription) {
+        // 如果已經訂閱過了，就提示使用者
+        showNotification('您已經訂閱過更新通知了！', 'success');
+        console.log('現有的訂閱:', JSON.stringify(subscription));
+        return;
+    }
+
+    // 如果還沒訂閱，就進行訂閱
+    try {
+        // 注意：即使沒有後端，這裡也需要一個 VAPID 公鑰，這是標準流程的一部分
+        // 您可以使用一個佔位的公鑰，或者用我上次提供的方法產生一個
+        const vapidPublicKey = 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U'; // 這是一個範例公鑰，您可以直接用
+
+        subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true, // 這是必須的
+            applicationServerKey: vapidPublicKey
+        });
+
+        console.log('新的訂閱成功:', JSON.stringify(subscription));
+        showNotification('成功訂閱新版本通知！', 'success');
+        
+        // 因為我們沒有後端，所以我們不需要把 subscription 送到伺服器
+        // 這一步在這裡是空的
+
+    } catch (error) {
+        console.error('訂閱失敗:', error);
+        showNotification('訂閱通知時發生錯誤。', 'error');
+    }
+}
         async function initChatApp() {
             if ('serviceWorker' in navigator) {
         navigator.serviceWorker.addEventListener('message', event => {
@@ -9998,6 +10052,10 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
                 showUpdateHistory();
             }
         });
+    }
+            const enableNotificationsBtn = document.getElementById('enable-notifications-btn');
+    if (enableNotificationsBtn) {
+        enableNotificationsBtn.addEventListener('click', handleNotificationSubscription);
     }
             if (window.innerWidth >= 1024) {
         sidebarOpen = true;
