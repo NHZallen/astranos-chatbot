@@ -10718,6 +10718,27 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
               console.log('Service Worker 註冊失敗:', error);
             });
         });
+        let isUpdateNotificationShown = false; // 防止重複顯示
+    navigator.serviceWorker.addEventListener('message', event => {
+      // 檢查是否是我們定義的更新訊息
+      if (event.data && event.data.type === 'NEW_VERSION_ACTIVATED' && !isUpdateNotificationShown) {
+        isUpdateNotificationShown = true;
+        console.log('接收到來自 Service Worker 的新版本通知！');
+        // 顯示一個提示，告訴使用者新版本已可用，並建議重新整理
+        showCustomDialog({
+            title: '應用程式已更新！',
+            message: 'Astra 已更新至最新版本，重新整理頁面即可體驗新功能。',
+            buttons: [
+                { text: '稍後再說', class: 'bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]', value: () => false },
+                { text: '立即重新整理', class: 'px-4 py-2 rounded-md btn-primary', value: () => true }
+            ]
+        }).then(shouldReload => {
+            if (shouldReload) {
+                window.location.reload();
+            }
+        });
+      }
+    });
       }
 </script>
 </body>
