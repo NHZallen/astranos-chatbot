@@ -1,5 +1,16 @@
 const updateLogs = [
         {
+    "version": "15.10.1",
+    "date": "2025-11-16",
+    "content": [
+        "<strong>【模型庫更新：引入實驗性新模型 & 優化列表】</strong>",
+        "在 15.10.1 版本中，我們對模型庫進行了調整，引入了兩款由 OpenRouter 提供的全新免費測試版模型，並移除了部分模型以保持清單的整潔高效。",
+        "<strong>✨ 本次更新亮點：</strong>",
+        "<ul><li><strong>🚀 新增實驗性模型：</strong> 我們新增了兩款令人興奮的 Alpha 測試模型，它們目前免費，並且都具備圖片輸入能力：<ul style='margin-left: 20px; margin-top: 5px;'><li><strong>Sherlock Dash Alpha：</strong> 專為快速、直接的問答與任務執行而設計。</li><li><strong>Sherlock Think Alpha：</strong> 專為需要深度思考、推理和規劃的複雜任務而設計。</li></ul></li><li><strong>🧹 模型列表精簡：</strong> 為了優化您的選擇體驗，我們已將 <strong>Minimax M2</strong> 模型從列表中移除。</li></ul>",
+        "我們將持續評估並引進最新的 AI 模型，為您提供更多元、更強大的選擇。歡迎您試用新的測試版模型，並期待您的反饋！<br><br>Astra 開發團隊 敬上"
+    ]
+},
+        {
     "version": "15.10.0",
     "date": "2025-11-15",
     "content": [
