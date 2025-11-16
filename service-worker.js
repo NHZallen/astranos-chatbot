@@ -1,5 +1,5 @@
 // 【重要】每次更新 PWA 時，請手動增加此版本號！
-const CACHE_NAME = 'astra-chat-cache-v5';
+const CACHE_NAME = 'astra-chat-cache-v6';
 
 // 靜態資源，可以長期快取
 const STATIC_ASSETS = [
@@ -15,6 +15,7 @@ const STATIC_ASSETS = [
 // 核心檔案，需要優先從網路獲取
 const CORE_FILES = [
   '/index.html',
+  '/i18n.js',
   '/update-logs.js'
 ];
 
