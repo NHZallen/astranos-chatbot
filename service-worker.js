@@ -1,5 +1,5 @@
 ﻿// 【重要】每次更新 PWA 時，請手動增加此版本號！
-const CACHE_NAME = 'astra-chat-cache-v7';
+const CACHE_NAME = 'astra-chat-cache-v6';
 
 
 // 靜態資源，可以長期快取
@@ -8,6 +8,7 @@ const STATIC_ASSETS = [
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png',
+  '/i18n.js',
   '/demo-conversations.js',
   '/astras-data.js'
 ];
@@ -88,3 +89,4 @@ self.addEventListener('fetch', event => {
   );
 
 });
+
