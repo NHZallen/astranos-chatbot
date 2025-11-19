@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AstraChat-15.10.1</title>
+    
+    <!-- PWA 設定 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#3b82f6"/>
+    
+    <!-- 外部函式庫 (保持用 CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/mhchem.min.js"></script>
+    
+    <!-- 引入我們分離出來的 CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Vercel Analytics (原本代碼裡的) -->
+    <script>
+        window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
+    </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body class="font-sans bg-gray-50">
+    
+    <!-- 這裡放置原本那一大串 HTML 結構 (header, main, modals 等等) -->
+    <!-- 請將你原本 <body> 標籤內的所有 HTML 結構貼在這裡 -->
+    <!-- 注意：不要貼 <script> 或 <style> 的部分 -->
+    
+    <div id="wallpaper-container"></div>
+    <div id="auth-container">
+        <!-- ... 中間省略數千行 HTML ... -->
+        <!-- 請將原本 Body 內的 HTML 內容完整貼過來 -->
+    </div>
+
+    <!-- 引入我們分離出來的 JavaScript -->
+    <!-- 注意順序：先載入資料，再載入主程式 -->
+    <script src="js/i18n.js"></script>
+    <script src="js/demo-conversations.js"></script>
+    <script src="js/astras-data.js"></script>
+    <script src="js/update-logs.js"></script>
+    <script src="js/app.js"></script>
+
+    <!-- Service Worker 註冊腳本 (因為很短，可以留在這裡，或移到 app.js) -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                // 注意路徑是在根目錄
+                navigator.serviceWorker.register('./service-worker.js')
+                .then(registration => {
+                    console.log('Service Worker 註冊成功:', registration);
+                })
+                .catch(error => {
+                    console.log('Service Worker 註冊失敗:', error);
+                });
+
+                let isUpdateNotificationShown = false;
+                navigator.serviceWorker.addEventListener('message', event => {
+                    if (event.data && event.data.type === 'NEW_VERSION_ACTIVATED' && !isUpdateNotificationShown) {
+                        isUpdateNotificationShown = true;
+                        // 這裡調用的是 app.js 裡的 showCustomDialog
+                        if (typeof showCustomDialog === 'function') {
+                            showCustomDialog({
+                                title: '應用程式已更新！',
+                                message: 'Astra 已更新至最新版本，重新整理頁面即可體驗新功能。',
+                                buttons: [
+                                    { text: '稍後再說', class: 'bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]', value: () => false },
+                                    { text: '立即重新整理', class: 'px-4 py-2 rounded-md btn-primary', value: () => true }
+                                ]
+                            }).then(shouldReload => {
+                                if (shouldReload) window.location.reload();
+                            });
+                        }
+                    }
+                });
+            });
+        }
+    </script>
+</body>
+</html>
