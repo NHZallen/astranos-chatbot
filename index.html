@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AstraChat-15.10.1</title>
+    <title>AstraChat-15.10.2</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3b82f6"/>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -797,6 +797,14 @@ button:not(.btn-primary):active:not(:disabled) {
     .folder-summary .folder-arrow {
         transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
     }
+    .folder-icon-svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2;
+    fill: none;
+    stroke: currentColor; /* 這讓 SVG 線條顏色跟隨文字顏色設定 */
+    transition: stroke 0.3s ease;
+}
     .folder-item[data-open="true"] .folder-summary .folder-arrow {
         transform: rotate(90deg);
     }
@@ -4422,7 +4430,7 @@ function renderMarkdownWithFormulas(text) {
             }
         };
         const getDefaultGenConfig = () => ({ temperature: 0.7, topP: 0.95, maxTokens: null });
-        const getDefaultFolder = () => ({ color: 'gray', icon: '📁' , isOpen: false});
+        const getDefaultFolder = () => ({ color: 'gray', icon: 'default', textColor: 'gray', isOpen: false});
         const createBaseConversation = (title) => {
             const defaultModelInfo = MODELS.find(m => m.id === config.lastUsedModel) || MODELS.find(m => m.id === config.defaultModel) || MODELS[0];
             const now = new Date().toISOString();
@@ -4734,12 +4742,27 @@ function renderMarkdownWithFormulas(text) {
                 folderElement.className = 'folder-item text-sm';
                 folderElement.dataset.id = folder.id;
                 folderElement.dataset.open = folder.isOpen;
+                // 取得 SVG 路徑，如果找不到就用預設的
+                const svgPath = FOLDER_SVGS[folder.icon] || FOLDER_SVGS['default'];
+                // 取得 SVG 線條顏色 (使用原有的 FOLDER_COLORS)
+                const iconColor = FOLDER_COLORS[folder.color] || FOLDER_COLORS.gray;
+                // 取得文字顏色 (使用新的 FOLDER_TEXT_COLORS)
+                const textColor = FOLDER_TEXT_COLORS[folder.textColor] || FOLDER_TEXT_COLORS.gray;
+
                 folderElement.innerHTML = `
                     <div class="folder-summary sidebar-item p-3 rounded-lg flex items-center justify-between">
                         <div class="flex items-center gap-2 truncate">
                             <svg class="folder-arrow flex-shrink-0" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                            <span class="folder-icon mr-1">${folder.icon}</span>
-                            <span class="font-medium truncate" style="color: ${FOLDER_COLORS[folder.color] || FOLDER_COLORS.gray};">${folder.name}</span>
+                            
+                            <!-- 修改：這裡顯示 SVG 圖示，顏色套用在 style 的 color 屬性上 -->
+                            <span class="folder-icon mr-1 flex-shrink-0" style="color: ${iconColor};">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="folder-icon-svg">
+                                    ${svgPath}
+                                </svg>
+                            </span>
+                            
+                            <!-- 修改：文字顏色獨立設定 -->
+                            <span class="font-medium truncate" style="color: ${textColor};">${folder.name}</span>
                         </div>
                         <button data-id="${folder.id}" class="folder-options-btn flex-shrink-0 w-6 h-6 rounded-md hover:bg-[var(--active-bg)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>
                     </div>
@@ -6930,45 +6953,136 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
             folderToCustomize = id;
             const folder = folders.find(f => f.id === id);
             if (!folder) return;
+
+            // 1. 選擇圖示線條顏色 (原有的顏色選擇)
             ALL_ELEMENTS.colorSwatchesContainer.innerHTML = '';
+            // 加上標題提示
+            ALL_ELEMENTS.colorSwatchesContainer.parentElement.querySelector('h3').textContent = "選擇圖示線條顏色";
+            
             Object.entries(FOLDER_COLORS).forEach(([name, hex]) => {
                 const swatch = document.createElement('div');
-                swatch.className = `color-swatch w-8 h-8 rounded-full cursor-pointer`;
+                swatch.className = `color-swatch w-8 h-8 rounded-full cursor-pointer border-2 border-transparent`;
                 swatch.style.backgroundColor = hex;
                 swatch.dataset.color = name;
                 if (folder.color === name) {
                     swatch.classList.add('selected');
+                    swatch.style.borderColor = '#3b82f6'; // 選中時加藍框
                 }
                 swatch.addEventListener('click', () => {
-                    ALL_ELEMENTS.colorSwatchesContainer.querySelector('.selected')?.classList.remove('selected');
+                    ALL_ELEMENTS.colorSwatchesContainer.querySelectorAll('.selected').forEach(el => {
+                        el.classList.remove('selected');
+                        el.style.borderColor = 'transparent';
+                    });
                     swatch.classList.add('selected');
+                    swatch.style.borderColor = '#3b82f6';
                 });
                 ALL_ELEMENTS.colorSwatchesContainer.appendChild(swatch);
             });
+
+            // 2. 選擇 SVG 圖示 (修改為顯示 SVG)
             ALL_ELEMENTS.iconOptionsContainer.innerHTML = '';
-            FOLDER_ICONS.forEach(icon => {
+            Object.entries(FOLDER_SVGS).forEach(([key, svgPath]) => {
                 const iconOption = document.createElement('div');
-                iconOption.className = 'icon-option w-10 h-10 rounded-lg cursor-pointer flex items-center justify-center text-xl bg-[var(--sidebar-bg)]';
-                iconOption.textContent = icon;
-                iconOption.dataset.icon = icon;
-                if (folder.icon === icon) {
+                iconOption.className = 'icon-option w-12 h-12 rounded-lg cursor-pointer flex items-center justify-center bg-[var(--sidebar-bg)] border border-transparent hover:bg-[var(--hover-bg)]';
+                // 這裡讓選單中的圖示顯示為灰色，選中後才變色比較複雜，我們先統一顯示預設色
+                iconOption.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${svgPath}</svg>`;
+                iconOption.dataset.icon = key;
+                
+                if (folder.icon === key || (!folder.icon && key === 'default')) {
                     iconOption.classList.add('selected');
+                    iconOption.style.borderColor = '#3b82f6';
+                    iconOption.style.color = '#3b82f6';
+                } else {
+                    iconOption.style.color = 'var(--text-secondary)';
                 }
+
                 iconOption.addEventListener('click', () => {
-                    ALL_ELEMENTS.iconOptionsContainer.querySelector('.selected')?.classList.remove('selected');
+                    ALL_ELEMENTS.iconOptionsContainer.querySelectorAll('.selected').forEach(el => {
+                        el.classList.remove('selected');
+                        el.style.borderColor = 'transparent';
+                        el.style.color = 'var(--text-secondary)';
+                    });
                     iconOption.classList.add('selected');
+                    iconOption.style.borderColor = '#3b82f6';
+                    iconOption.style.color = '#3b82f6';
                 });
                 ALL_ELEMENTS.iconOptionsContainer.appendChild(iconOption);
             });
+
+            // 3. 新增：選擇文字顏色 (黑、白、灰)
+            // 檢查是否已經有文字顏色選擇區，如果沒有就動態建立
+            let textColorContainer = document.getElementById('text-color-container');
+            if (!textColorContainer) {
+                const containerDiv = document.createElement('div');
+                containerDiv.id = 'text-color-container';
+                containerDiv.className = 'mt-4';
+                containerDiv.innerHTML = `
+                    <h3 class="text-sm font-medium mb-2">選擇文字顏色</h3>
+                    <div id="text-color-options" class="flex gap-3"></div>
+                `;
+                // 插入到 icon container 之後
+                ALL_ELEMENTS.iconOptionsContainer.parentElement.after(containerDiv);
+                textColorContainer = containerDiv;
+            }
+
+            const textColorOptions = document.getElementById('text-color-options');
+            textColorOptions.innerHTML = '';
+            
+            const textColorMap = {
+                'gray': { label: '灰色', bg: '#6b7280', border: 'transparent' },
+                'black': { label: '黑色', bg: '#111827', border: 'transparent' },
+                'white': { label: '白色', bg: '#ffffff', border: '#e5e7eb' } // 白色加個邊框才看得到
+            };
+
+            Object.entries(textColorMap).forEach(([key, info]) => {
+                const btn = document.createElement('button');
+                btn.className = 'w-8 h-8 rounded-full cursor-pointer border-2 relative';
+                btn.style.backgroundColor = info.bg;
+                btn.style.borderColor = info.border;
+                btn.dataset.textColor = key;
+                btn.title = info.label;
+
+                // 當前選中的標記
+                if (folder.textColor === key || (!folder.textColor && key === 'gray')) {
+                    btn.classList.add('selected-text');
+                    // 加個打勾圖示
+                    btn.innerHTML = `<svg class="w-4 h-4 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 ${key === 'white' ? 'text-black' : 'text-white'}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+                    if (key === 'white') btn.style.borderColor = '#3b82f6';
+                }
+
+                btn.addEventListener('click', () => {
+                    textColorOptions.querySelectorAll('.selected-text').forEach(el => {
+                        el.classList.remove('selected-text');
+                        el.innerHTML = ''; // 移除打勾
+                        if (el.dataset.textColor === 'white') el.style.borderColor = '#e5e7eb';
+                    });
+                    btn.classList.add('selected-text');
+                    btn.innerHTML = `<svg class="w-4 h-4 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 ${key === 'white' ? 'text-black' : 'text-white'}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+                    if (key === 'white') btn.style.borderColor = '#3b82f6';
+                });
+                textColorOptions.appendChild(btn);
+            });
+
             toggleModal(ALL_ELEMENTS.folderSettingsModal, true);
         };
         const handleSaveFolderSettings = async () => {
             const folder = folders.find(f => f.id === folderToCustomize);
             if (!folder) return;
+
+            // 1. 取得選中的線條顏色
             const selectedColor = ALL_ELEMENTS.colorSwatchesContainer.querySelector('.selected')?.dataset.color;
+            
+            // 2. 取得選中的圖示 Key
             const selectedIcon = ALL_ELEMENTS.iconOptionsContainer.querySelector('.selected')?.dataset.icon;
+            
+            // 3. 取得選中的文字顏色 (新功能)
+            const textColorContainer = document.getElementById('text-color-options');
+            const selectedTextColor = textColorContainer?.querySelector('.selected-text')?.dataset.textColor;
+
             if (selectedColor) folder.color = selectedColor;
             if (selectedIcon) folder.icon = selectedIcon;
+            if (selectedTextColor) folder.textColor = selectedTextColor;
+
             await saveAppData();
             renderAll();
             toggleModal(ALL_ELEMENTS.folderSettingsModal, false);
@@ -10653,7 +10767,23 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
     }
     document.getElementById('auth-container').classList.add('visible');
 })();
-            const FOLDER_ICONS = ['📁', '📂', '🗂️', '📚', '📝', '🗃️', '📘', '📙', '📗', '📕'];
+            const FOLDER_SVGS = {
+    'default': '<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />',
+    'open': '<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776" />',
+    'archive': '<path stroke-linecap="round" stroke-linejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />',
+    'user': '<path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-1.752-2.725 4.125 4.125 0 0 0-2.206-.573H13.11a4.125 4.125 0 0 0-2.206.573 4.125 4.125 0 0 0-1.752 2.725 8.027 8.027 0 0 0 .215.744M14.999 19.076c.508-.047 1.012-.126 1.508-.234m-3.017.234c-.496-.108-1-.187-1.508-.234M12 12.75h.008v.008H12v-.008ZM12 10.5h.008v.008H12v-.008ZM8.625 12.75h.008v.008H8.625v-.008ZM8.625 10.5h.008v.008H8.625v-.008ZM15.375 12.75h.008v.008H15.375v-.008ZM15.375 10.5h.008v.008H15.375v-.008ZM6 3.75v15a2.25 2.25 0 0 0 2.25 2.25h9.75a2.25 2.25 0 0 0 2.25-2.25V3.75" />',
+    'star': '<path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.563.563 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.563.563 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />',
+    'cloud': '<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15a4.5 4.5 0 0 0 4.5 4.5H18a3.75 3.75 0 0 0 1.332-7.257 3 3 0 0 0-3.758-3.848 5.25 5.25 0 0 0-10.233 2.33A4.502 4.502 0 0 0 2.25 15Z" />',
+    'briefcase': '<path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.67.38-1.085.355-2.228.635-3.386.813-.745.114-1.5.175-2.25.175-.75 0-1.505-.061-2.25-.175-1.158-.178-2.3-.458-3.386-.813a2.482 2.482 0 0 1-.67-.38m-4.5-8.006c0-1.08.768-2.015 1.837-2.175 1.133-.16 2.273-.29 3.413-.387m4.5 8.006c.194.165.42.295.67.38 1.085.355 2.228.635 3.386.813.745.114 1.5.175 2.25.175.75 0 1.505-.061 2.25-.175 1.158-.178 2.3-.458 3.386-.813a2.482 2.482 0 0 0-.67-.38m0-8.006a48.109 48.109 0 0 1 3.413.387m-4.25-2.26L12 3.75m0 0-1.664.896m1.664-.896a23.61 23.61 0 0 1 5.814 3.807m-9.956 0a23.66 23.66 0 0 1 5.814-3.807m0 0V2.25" />',
+    'tag': '<path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z" />'
+};
+
+// 定義文字顏色選項
+const FOLDER_TEXT_COLORS = {
+    'gray': '#6b7280', // 預設灰色
+    'black': '#111827',
+    'white': '#ffffff'
+};
             const adjustTextareaHeight = () => {
     const textarea = ALL_ELEMENTS.messageInput;
     const expandBtn = document.getElementById('expand-input-btn');
