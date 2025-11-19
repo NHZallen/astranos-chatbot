@@ -1,6 +1,5 @@
-﻿// 【重要】每次更新 PWA 時，請手動增加此版本號！
+// 【重要】每次更新 PWA 時，請手動增加此版本號！
 const CACHE_NAME = 'astra-chat-cache-v6';
-
 
 // 靜態資源，可以長期快取
 const STATIC_ASSETS = [
@@ -13,14 +12,12 @@ const STATIC_ASSETS = [
   '/astras-data.js'
 ];
 
-
 // 核心檔案，需要優先從網路獲取
 const CORE_FILES = [
   '/index.html',
   '/i18n.js',
   '/update-logs.js'
 ];
-
 
 // Service Worker 安裝事件
 self.addEventListener('install', event => {
@@ -34,7 +31,6 @@ self.addEventListener('install', event => {
   );
   self.skipWaiting();
 });
-
 
 // Service Worker 啟動事件
 self.addEventListener('activate', event => {
@@ -56,11 +52,9 @@ self.addEventListener('activate', event => {
   );
 });
 
-
 // Service Worker 攔截網路請求事件
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
-
 
   // 【策略一：核心檔案，網路優先】
   // 如果請求的是 index.html 或 update-logs.js
@@ -80,13 +74,12 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-
   // 【策略二：其他所有請求，快取優先】
   event.respondWith(
     caches.match(event.request).then(response => {
       return response || fetch(event.request);
     })
   );
-
 });
+
 
