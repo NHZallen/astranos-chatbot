@@ -373,6 +373,10 @@ window.i18n = {
         proposalSuccess: '感謝您的提案，已成功發送！',
         submitting: '提交中...',
         // Model Descriptions & Limits
+        model_gemini_3_pro_preview_desc_tier_free: '不提供',
+        model_gemini_3_pro_preview_desc_tier_paid: '百萬輸入/2$、百萬輸出/12$',
+        model_google_gemini_3_pro_preview_desc_tier_free: '不提供',
+        model_google_gemini_3_pro_preview_desc_tier_paid: '百萬輸入/2$、百萬輸出/12$',
         model_gemini_2_5_pro_desc_tier_free: '費用-免費 (2次/分鐘、50次/天)',
         model_gemini_2_5_pro_desc_tier_paid: '百萬輸入/1.25$、百萬輸出/10$',
         model_gemini_2_5_flash_pv_desc_tier_free: '費用-免費 (10次/分鐘、250次/天)',
@@ -853,6 +857,10 @@ window.i18n = {
         proposalSuccess: 'Thank you for your proposal, it has been sent successfully!',
         submitting: 'Submitting...',
         // Model Descriptions & Limits
+        model_gemini_3_pro_preview_desc_tier_free: 'Not available',
+        model_gemini_3_pro_preview_desc_tier_paid: '$2/M input, $12/M output',
+        model_google_gemini_3_pro_preview_desc_tier_free: 'Not available',
+        model_google_gemini_3_pro_preview_desc_tier_paid: '$2/M input, $12/M output',
         model_gemini_2_5_pro_desc_tier_free: 'Cost - Free (2 req/min, 50 req/day)',
         model_gemini_2_5_pro_desc_tier_paid: '$1.25/M input, $10/M output',
         model_gemini_2_5_flash_pv_desc_tier_free: 'Cost - Free (10 req/min, 250 req/day)',
@@ -1325,6 +1333,10 @@ window.i18n = {
         proposalSuccess: 'Merci pour votre proposition, elle a été envoyée avec succès !',
         submitting: 'Soumission en cours...',
         // Model Descriptions & Limits
+        model_gemini_3_pro_preview_desc_tier_free: 'Non disponible',
+        model_gemini_3_pro_preview_desc_tier_paid: '2 $/M entrée, 12 $/M sortie',
+        model_google_gemini_3_pro_preview_desc_tier_free: 'Non disponible',
+        model_google_gemini_3_pro_preview_desc_tier_paid: '2 $/M entrée, 12 $/M sortie',
         model_gemini_2_5_pro_desc_tier_free: 'Coût - Gratuit (5 req/min, 100 req/jour)',
         model_gemini_2_5_pro_desc_tier_paid: '1,25 $/M entrée, 10 $/M sortie',
         model_gemini_2_5_flash_pv_desc_tier_free: 'Coût - Gratuit (10 req/min, 250 req/jour)',
