@@ -450,6 +450,9 @@ window.i18n = {
         model_qwen_qwen3_235b_a22b_thinking_2507_desc_tier_paid: '百萬輸入/0.11$、百萬輸出/0.60$',
         model_qwen2_5_vl_72b_instruct_desc_tier_free: '不提供',
         model_qwen2_5_vl_72b_instruct_desc_tier_paid: '百萬輸入/0.08$、百萬輸出/0.33$',
+        // Gemini 3 Pro Preview
+        model_gemini_3_pro_preview_desc_tier_free: '不提供',
+        model_gemini_3_pro_preview_desc_tier_paid: '百萬輸入/2$、百萬輸出/12$',
         // MoonshotAI Paid
         model_kimi_k2_0905_desc_tier_free: '不提供',
         model_kimi_k2_0905_desc_tier_paid: '百萬輸入/0.39$、百萬輸出/1.90$',
@@ -927,6 +930,9 @@ window.i18n = {
         model_kimi_k2_0905_desc_tier_paid: '$0.39/M input, $1.90/M output',
         model_kimi_k2_thinking_desc_tier_free: 'Not available',
         model_kimi_k2_thinking_desc_tier_paid: '$0.60/M input, $2.50/M output',
+        // Gemini 3 Pro Preview
+        model_gemini_3_pro_preview_desc_tier_free: 'Not available',
+        model_gemini_3_pro_preview_desc_tier_paid: '$2/M input, $12/M output',
         // Official Astras
         astras_official_writer_01_name: 'Travel Blogger',
         astras_official_writer_01_desc: 'This is an Astras designed for social media platforms, capable of writing elegant and engaging introductions for tourist attractions and hotels. It uses refined language to convey a high-end feel, incorporating the city\'s historical background and popular hashtags to attract the target audience and increase content visibility.',
@@ -1399,6 +1405,9 @@ window.i18n = {
         model_kimi_k2_0905_desc_tier_paid: '0,39 $/M entrée, 1,90 $/M sortie',
         model_kimi_k2_thinking_desc_tier_free: 'Non disponible',
         model_kimi_k2_thinking_desc_tier_paid: '0,60 $/M entrée, 2,50 $/M sortie',
+        // Gemini 3 Pro Preview
+        model_gemini_3_pro_preview_desc_tier_free: 'Non disponible',
+        model_gemini_3_pro_preview_desc_tier_paid: '2 $/M entrée, 12 $/M sortie',
         // Official Astras
         astras_official_writer_01_name: 'Blogueur de Voyage',
         astras_official_writer_01_desc: 'Ceci est un Astras conçu pour les plateformes de médias sociaux, capable de rédiger des introductions élégantes et engageantes pour les attractions touristiques et les hôtels. Il utilise un langage raffiné pour transmettre une sensation haut de gamme, en incorporant le contexte historique de la ville et des hashtags populaires pour attirer le public cible et augmenter la visibilité du contenu.',
