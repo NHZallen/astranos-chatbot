@@ -3946,11 +3946,20 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     let touchStartY = 0;
 
     chatContainer.addEventListener('touchstart', (e) => {
+        // ✨ 修改：如果使用者按在表格滾動容器內，就不紀錄滑動起點（等於停用側邊欄手勢）
+        if (e.target.closest('.table-scroll-container')) {
+            touchStartX = null; // 設為 null 標記為無效
+            return;
+        }
+        
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
     }, { passive: true });
 
     chatContainer.addEventListener('touchend', (e) => {
+        // ✨ 修改：如果起點是無效的 (null)，表示剛才按在表格上，直接結束不處理
+        if (touchStartX === null) return;
+
         const touchEndX = e.changedTouches[0].clientX;
         const touchEndY = e.changedTouches[0].clientY;
         
@@ -4325,11 +4334,20 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const dirty = marked.parse(text);
             let clean = DOMPurify.sanitize(dirty);
 
-            // ✨ 新增：使用正則表達式，將 <table> 包裹在可滑動的 div 中
-            // 這裡將 <table... 替換為 <div class="..."><table...
-            clean = clean.replace(/<table/g, '<div class="table-scroll-container"><table');
-            // 這裡將 </table> 替換為 </table></div>
-            clean = clean.replace(/<\/table>/g, '</table></div>');
+            // 1. 先加上表格容器的開頭
+            // 使用 class="table-scroll-container"
+            if (clean.includes('<table')) {
+                clean = clean.replace(/<table/g, '<div class="table-scroll-container"><table');
+            }
+
+            // 2. 加上表格容器的結尾
+            if (clean.includes('</table>')) {
+                clean = clean.replace(/<\/table>/g, '</table></div>');
+            } else if (clean.includes('<div class="table-scroll-container">')) {
+                // ✨ 重點優化：如果正在輸出中 (有開頭但還沒有結尾)
+                // 我們手動在最後面補上一個 div 結尾，讓滑動框能即時生效
+                clean += '</div>';
+            }
 
             return clean;
         };
