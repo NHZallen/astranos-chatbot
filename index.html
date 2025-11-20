@@ -384,58 +384,6 @@ body.custom-wallpaper-active #history-sidebar h3 {
     height: 24px;
     color: var(--text-secondary);
 }
-/* --- ✨ 新增：多版本控制樣式 ✨ --- */
-.version-controls {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-right: 0.5rem;
-    background-color: rgba(0, 0, 0, 0.05);
-    padding: 0.15rem 0.5rem;
-    border-radius: 9999px;
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-}
-.dark .version-controls {
-    background-color: rgba(255, 255, 255, 0.1);
-}
-.version-nav-btn {
-    padding: 0.15rem;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-}
-.version-nav-btn:hover:not(:disabled) {
-    background-color: rgba(0, 0, 0, 0.1);
-    color: var(--text-primary);
-}
-.dark .version-nav-btn:hover:not(:disabled) {
-    background-color: rgba(255, 255, 255, 0.2);
-}
-.version-nav-btn:disabled {
-    opacity: 0.3;
-    cursor: default;
-}
-.confirm-version-btn {
-    font-size: 0.75rem;
-    padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
-    background-color: #10b981; /* Green */
-    color: white;
-    font-weight: 600;
-    margin-left: 0.5rem;
-    transition: background-color 0.2s;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-.confirm-version-btn:hover {
-    background-color: #059669;
-}
-.regenerate-btn {
-    /* 繼承 copy-btn 的樣式，但這裡稍微定義一下確保對齊 */
-    margin-right: 0.25rem;
-}
 
 /* 針對暗黑模式和自訂桌布的適配 */
 .dark #attachment-menu .menu-header,
@@ -3877,8 +3825,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     }
 
     conv.messages.forEach((msg, index) => {
-        const currentParts = (msg.versions && msg.versions[msg.currentVersionIndex]) ? msg.versions[msg.currentVersionIndex].parts : msg.parts;
-        const textPart = currentParts.find(p => p.text);
+        const textPart = msg.parts.find(p => p.text);
         let snippet = textPart ? textPart.text : (msg.role === 'user' ? '用戶訊息' : 'AI 回覆');
         
         const icon = getMessageTypeIcon(msg);
@@ -4059,6 +4006,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const MODELS = [
     // Gemini Models
     { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'gemini', descriptionKey: 'model_gemini_2_5_pro_desc' },
+    { id: 'gemini-2.0-flash-preview-image-generation', name: 'Gemini 2.0 Flash Image', provider: 'gemini', descriptionKey: 'model_gemini_2_0_flash_image_desc', category: 'image' },
     { id: 'gemini-2.5-flash-preview-09-2025', name: 'Gemini 2.5 Flash Preview', provider: 'gemini', descriptionKey: 'model_gemini_2_5_flash_pv_desc' },
     { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'gemini', descriptionKey: 'model_gemini_2_5_flash_desc' },
     { id: 'gemini-2.5-flash-lite-preview-09-2025', name: 'Gemini 2.5 Flash Lite Preview', provider: 'gemini', descriptionKey: 'model_gemini_2_5_flash_lite_pv_desc' },
@@ -5678,50 +5626,32 @@ function renderMarkdownWithFormulas(text) {
 };
         const addMessageToUI = (msg, index, shouldSave = true, shouldScroll = true) => {
             const conv = getActiveConversation();
-            
-            // 1. 資料結構初始化：確保有 versions 陣列
-            if (!msg.versions) {
-                msg.versions = [{ parts: msg.parts, createdAt: msg.createdAt }];
-                msg.currentVersionIndex = 0;
-                msg.isConfirmed = false;
-            }
-            
-            // 確保索引安全
-            if (typeof msg.currentVersionIndex === 'undefined' || msg.currentVersionIndex >= msg.versions.length) {
-                msg.currentVersionIndex = msg.versions.length - 1;
-            }
-
             if (shouldSave) {
-                 // 如果是新訊息，這裡不重複 push，因為 handleFormSubmit 會處理
-                 // 但如果是透過重新生成觸發的 UI 更新，我們需要確保資料一致
-                 // 在這個函數中主要負責 UI 渲染
+                 conv.messages.push(msg);
+                if (conv.messages.length === 1 && msg.role === 'user' && conv.isTemporary && !conv.isRenamed && config.autoNaming) {
+                    const textPart = msg.parts.find(p => p.text);
+                    if (textPart) {
+                        conv.title = textPart.text.substring(0, 30) || i18n[config.uiLanguage].newChat || '新對話';
+                        ALL_ELEMENTS.headerTitle.textContent = conv.title;
+                    }
+                }
+                saveAppData();
             }
-            
-            // 取得當前要顯示的版本
-            const currentVersion = msg.versions[msg.currentVersionIndex];
-            // 暫時用版本的 parts 覆蓋顯示用的 msg.parts (不影響存檔，只影響本次渲染)
-            const displayParts = currentVersion.parts;
-
             const messageDiv = document.createElement('div');
             messageDiv.dataset.messageIndex = index;
             const isUser = msg.role === 'user';
             messageDiv.className = `message-item flex items-start gap-2 md:gap-4 ${isUser ? 'justify-end user-message' : 'model-message'}`;
-            
             const icon = isUser ? `<div class="bg-blue-600 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold">${currentUser ? currentUser.username.charAt(0).toUpperCase() : 'Y'}</div>` : `<div class="bg-gray-800 text-white w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 15h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div>`;
-            
             let contentHTML = '';
             let actionButtons = '';
             let contentPaddingClass = '';
-            
-            // 檢查是否為 loading 狀態
-            const isLoadingMessage = !isUser && displayParts.length === 1 && displayParts[0].text === '...';
-            
+            const isLoadingMessage = !isUser && msg.parts.length === 1 && msg.parts[0].text === '...';
             if (isLoadingMessage) {
-                contentHTML = `<div class="typing-cursor">&nbsp;</div>`;
-            } else {
+            contentHTML = `<div class="typing-cursor">&nbsp;</div>`;
+        } else {
                 let textPartsContent = [];
                 let mediaPartsContent = [];
-                displayParts.forEach(part => {
+                msg.parts.forEach(part => {
                     if (part.text) {
                         textPartsContent.push(part.text);
                     } else if (part.inlineData) {
@@ -5748,57 +5678,17 @@ function renderMarkdownWithFormulas(text) {
                     mediaHTML += '</div>';
                     contentHTML += mediaHTML;
                 }
-
-                // --- ✨ 重點修改：AI 訊息的操作按鈕區域 ---
                 if (!isUser) {
-                    const timeString = formatFullTimestamp(currentVersion.createdAt || msg.createdAt);
-                    contentPaddingClass = 'pb-10'; // 增加底部空間給按鈕
-
-                    // 1. 版本導航 HTML (只有當版本數 > 1 且尚未確認時顯示)
-                    let versionNavHTML = '';
-                    if (msg.versions.length > 1 && !msg.isConfirmed) {
-                        versionNavHTML = `
-                            <div class="version-controls">
-                                <button class="version-nav-btn prev-version-btn" ${msg.currentVersionIndex === 0 ? 'disabled' : ''}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                                </button>
-                                <span class="mx-1 font-mono">${msg.currentVersionIndex + 1}/${msg.versions.length}</span>
-                                <button class="version-nav-btn next-version-btn" ${msg.currentVersionIndex === msg.versions.length - 1 ? 'disabled' : ''}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                                </button>
-                            </div>
-                        `;
-                    }
-
-                    // 2. 確認按鈕 HTML (只有在未確認時顯示)
-                    let confirmBtnHTML = '';
-                    if (!msg.isConfirmed && msg.versions.length > 1) {
-                        confirmBtnHTML = `<button class="confirm-version-btn shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all">確認版本</button>`;
-                    }
-
-                    // 3. 重新生成按鈕 HTML (如果是最後一條訊息且未確認，或者已確認但想重來)
-                    // 這裡我們簡化邏輯：只要是 AI 訊息就可以重新生成，但如果「未確認」則顯示在操作列
-                    let regenerateBtnHTML = `
-                        <button class="regenerate-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="重新生成回覆">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
-                        </button>
-                    `;
-
+                    const timeString = formatFullTimestamp(msg.createdAt);
                     actionButtons = `
                         <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center">
-                            <div class="flex items-center">
-                                ${versionNavHTML}
-                                ${regenerateBtnHTML}
-                                <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                                </button>
-                                ${confirmBtnHTML}
-                            </div>
-                            <span class="text-xs text-gray-400">${timeString}</span>
-                        </div>
+                            <button class="copy-content-btn p-1 rounded-md hover:bg-gray-500/20 text-[var(--text-secondary)] opacity-50 hover:opacity-100 transition-opacity" title="${i18n[config.uiLanguage].copyContent || '複製內容'}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                            </button>
+                            <span class="text-xs text-gray-400">${timeString}</span></div>
                     `;
+                    contentPaddingClass = 'pb-8';
                 } else {
-                    // 使用者訊息的刪除按鈕邏輯保持不變
                     const currentConv = getActiveConversation();
                     if (currentConv && index + 1 < currentConv.messages.length && currentConv.messages[index + 1].role === 'model') {
                          actionButtons = `
@@ -5812,65 +5702,16 @@ function renderMarkdownWithFormulas(text) {
                     }
                 }
             }
-
             const messageBubble = `
                 <div class="p-3 md:p-4 rounded-lg shadow-sm max-w-full md:max-w-xl message-bubble relative ${isUser ? 'text-white' : ''}" >
                     <div class="prose prose-sm max-w-none ${isUser ? 'text-white' : 'text-[var(--text-primary)]'} ${contentPaddingClass} message-content">${contentHTML}</div>
                     ${actionButtons}
                 </div>`;
             messageDiv.innerHTML = isUser ? `${messageBubble}${icon}` : `${icon}${messageBubble}`;
-            
             if (ALL_ELEMENTS.messageList.querySelector('.text-center')) ALL_ELEMENTS.messageList.innerHTML = '';
             ALL_ELEMENTS.messageList.appendChild(messageDiv);
-
-            // --- ✨ 綁定新按鈕的事件 ---
-            if (!isUser && !isLoadingMessage) {
-                const regenBtn = messageDiv.querySelector('.regenerate-btn');
-                const prevBtn = messageDiv.querySelector('.prev-version-btn');
-                const nextBtn = messageDiv.querySelector('.next-version-btn');
-                const confirmBtn = messageDiv.querySelector('.confirm-version-btn');
-
-                if (regenBtn) {
-                    regenBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        handleRegenerate(index);
-                    });
-                }
-
-                if (prevBtn) {
-                    prevBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        msg.currentVersionIndex = Math.max(0, msg.currentVersionIndex - 1);
-                        // 簡單地重新渲染整個聊天室來更新 UI (雖然重繪成本較高，但最安全)
-                        saveAppData();
-                        renderChat();
-                    });
-                }
-
-                if (nextBtn) {
-                    nextBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        msg.currentVersionIndex = Math.min(msg.versions.length - 1, msg.currentVersionIndex + 1);
-                        saveAppData();
-                        renderChat();
-                    });
-                }
-
-                if (confirmBtn) {
-                    confirmBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        msg.isConfirmed = true;
-                        saveAppData();
-                        renderChat();
-                        // 重新檢查輸入框狀態 (解鎖)
-                        updateInputState(); 
-                        showNotification('已確認版本', 'success');
-                    });
-                }
-            }
-
             if (shouldScroll) {
-                if (isAutoScrolling || index === conv.messages.length - 1) { // 如果是最新訊息強制滾動
+                if (isAutoScrolling) {
                     ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
                 }
             }
@@ -5977,152 +5818,6 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
     // 返回完整的文字內容
     return fullText;
 }
-        const handleRegenerate = async (messageIndex) => {
-            const conv = getActiveConversation();
-            if (!conv || conv.archived) return;
-            
-            // 確保我們是針對 AI 的訊息操作
-            const aiMessage = conv.messages[messageIndex];
-            if (!aiMessage || aiMessage.role !== 'model') return;
-            
-            // 找到這個 AI 回覆對應的「上一個」使用者訊息
-            // 通常是 index - 1，但為了保險，我們往前找最近的一個 user message
-            let contextParts = [];
-            let historyForApi = [];
-            
-            // 為了 API 呼叫，我們需要重建當時的歷史紀錄 (截斷到這個 AI 訊息之前)
-            historyForApi = conv.messages.slice(0, messageIndex);
-            
-            // 檢查上一條是否為使用者
-            const lastUserMsg = historyForApi[historyForApi.length - 1];
-            if (!lastUserMsg || lastUserMsg.role !== 'user') {
-                showNotification('找不到對應的使用者訊息，無法重新生成。', 'error');
-                return;
-            }
-
-            // 準備 API 呼叫
-            contextParts = lastUserMsg.parts; // 這是最後的使用者輸入
-            
-            // UI 狀態更新
-            abortController = new AbortController();
-            updateSubmitButtonState(true);
-            
-            // 初始化新版本
-            const newVersionIndex = aiMessage.versions.length;
-            aiMessage.versions.push({
-                parts: [{ text: '...' }], // 預設 placeholder
-                createdAt: new Date().toISOString()
-            });
-            aiMessage.currentVersionIndex = newVersionIndex;
-            aiMessage.isConfirmed = false; // 設為未確認狀態
-            
-            // 鎖定輸入框
-            updateInputState();
-            
-            // 重新渲染 UI (此時會顯示 loading)
-            renderChat();
-            
-            // 取得剛剛渲染出來的 DOM 元素，用於串流更新
-            // 由於 renderChat 重繪了所有訊息，我们需要重新獲取 DOM
-            const messageDiv = ALL_ELEMENTS.messageList.querySelector(`[data-message-index="${messageIndex}"]`);
-            const contentDiv = messageDiv.querySelector('.message-content');
-            
-            try {
-                let fullResponse = '';
-                
-                // 為了避免傳送重複的歷史紀錄給 API，我們需要暫時將對話紀錄「騙」回 API
-                // streamApiCall 預設會讀取 `conv.messages`，我們需要構造一個正確的 context
-                // 這裡我們直接使用 streamApiCall，但要小心它內部的 history 取法
-                // 為了簡化，我們手動呼叫底層邏輯，或是暫時修改 conv.messages (較危險)。
-                // 最佳解法：我們稍微修改 streamApiCall 的參數，或是在這裡手動執行 fetch。
-                // 為了保持一致性，我們採用「模擬 User 發送」的方式，但實際上是更新舊訊息。
-                
-                // 由於原本的 streamApiCall 依賴 getActiveConversation().messages
-                // 我們可以暫時利用它，但只傳入 historyForApi 給 API
-                
-                // --- 重要：這裡我們需要一個能夠指定 history 的 streamApiCall 版本 ---
-                // 為了不動到原本龐大的 streamApiCall，我們在 handleRegenerate 內直接實作簡單的 API 呼叫邏輯
-                // 或者，更聰明的方法：使用一個 flag 告訴 streamApiCall 使用特定歷史
-                
-                // 讓我們直接使用 streamApiCall，但在呼叫前，先「暫時」把 conv.messages 截斷
-                // 這是最快的方法，但要記得還原
-                const originalMessages = [...conv.messages];
-                conv.messages = historyForApi; // 暫時截斷
-                // 最後要補上使用者訊息，因為 streamApiCall 預期 currentMessage 不在 history 中
-                // 但 userMsg 已經在 historyForApi 最後一筆了。
-                // 所以：historyForApi 應該排除最後一筆 userMsg
-                const realHistory = historyForApi.slice(0, -1);
-                conv.messages = realHistory; // 設定歷史為「使用者發言前」
-                
-                // 現在 currentMessage 是 lastUserMsg
-                
-                fullResponse = await streamApiCall(
-                    lastUserMsg.parts, // 使用者的輸入 parts
-                    (chunk) => {
-                        // 這裡是串流回調，原本 streamApiCall 會累積文字
-                        // 我們不需要在這裡做 DOM 操作，因為下面有 typewriterStream
-                    },
-                    abortController.signal
-                );
-                
-                // 還原對話紀錄
-                conv.messages = originalMessages;
-                
-                // 寫入結果到版本中
-                aiMessage.versions[newVersionIndex].parts = [{ text: fullResponse }];
-                
-                // 使用打字機效果渲染
-                contentDiv.innerHTML = ''; // 清空 loading
-                await (async () => {
-                    return new Promise(resolve => {
-                        let currentIndex = 0;
-                        const typingSpeed = 15;
-                        function type() {
-                            if (currentIndex < fullResponse.length && !abortController.signal.aborted) {
-                                const currentText = fullResponse.substring(0, currentIndex + 1);
-                                contentDiv.innerHTML = renderMarkdown(currentText + '▋');
-                                let step = 1;
-                                if (currentText.includes('```')) step = 5;
-                                currentIndex += step;
-                                
-                                // 保持滾動
-                                const chatContainer = ALL_ELEMENTS.chatContainer;
-                                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 100;
-                                if (isNearBottom) {
-                                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
-                                }
-                                
-                                setTimeout(type, typingSpeed);
-                            } else {
-                                contentDiv.innerHTML = renderMarkdownWithFormulas(fullResponse);
-                                resolve();
-                            }
-                        }
-                        type();
-                    });
-                })();
-                
-                await saveAppData();
-                
-            } catch (error) {
-                // 還原
-                conv.messages = conv.messages.length < originalMessages.length ? originalMessages : conv.messages;
-                
-                if (error.name !== 'AbortError') {
-                    const errorText = `重新生成失敗：${error.message}`;
-                    contentDiv.innerHTML = renderMarkdown(errorText);
-                    aiMessage.versions[newVersionIndex].parts = [{ text: errorText }];
-                    await saveAppData();
-                }
-            } finally {
-                abortController = null;
-                updateSubmitButtonState(false);
-                updateInputState(); // 解鎖狀態會根據 isConfirmed 判斷
-                
-                // 確保按鈕列出現
-                renderChat();
-            }
-        };
 
         const handleFormSubmit = async (e) => {
             e.preventDefault();
@@ -6467,8 +6162,52 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
                 };
                 headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
             }
+            if (modelId === 'gemini-2.0-flash-preview-image-generation') {
+                url = url.replace('streamGenerateContent', 'generateContent');
+            }
+
             const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
-            if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'API 請求失敗'); }
+            
+            if (!response.ok) { 
+                const err = await response.json(); 
+                throw new Error(err.error?.message || 'API 請求失敗'); 
+            }
+
+            // 特殊處理：如果是圖片生成模型，直接解析 JSON 並回傳圖片標籤
+            if (modelId === 'gemini-2.0-flash-preview-image-generation') {
+                const data = await response.json();
+                const parts = data.candidates?.[0]?.content?.parts || [];
+                let resultHtml = '';
+                
+                for (const part of parts) {
+                    // 檢查是否有 inlineData (圖片數據)
+                    if (part.inlineData && part.inlineData.mimeType.startsWith('image/')) {
+                        const base64Data = part.inlineData.data;
+                        const mimeType = part.inlineData.mimeType;
+                        // 建立一個可點擊下載的圖片 HTML
+                        // 我們加入 download-trigger class 來讓下方的腳本識別
+                        resultHtml += `
+                            <div class="generated-image-container my-2">
+                                <img src="data:${mimeType};base64,${base64Data}" 
+                                     class="rounded-lg border border-gray-200 shadow-sm cursor-pointer hover:opacity-90 transition-opacity download-trigger" 
+                                     alt="Gemini Generated Image"
+                                     title="點擊下載圖片"
+                                     onclick="downloadBase64Image('data:${mimeType};base64,${base64Data}')">
+                                <p class="text-xs text-gray-500 mt-1">✨ 點擊圖片即可下載</p>
+                            </div>`;
+                    } else if (part.text) {
+                        resultHtml += part.text + '\n';
+                    }
+                }
+                
+                if (!resultHtml) throw new Error("模型沒有回傳圖片數據。");
+                
+                // 模擬串流回傳給介面 (因為主程式期待串流)
+                onChunk(resultHtml);
+                return resultHtml;
+            }
+
+            // 一般文字模型的標準串流處理 (保持不變)
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
@@ -6825,41 +6564,23 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
         const updateInputState = () => {
             const hasContent = ALL_ELEMENTS.messageInput.value.trim() !== '' || uploadedFiles.length > 0;
             const { submitButton, submitButtonIcon } = ALL_ELEMENTS;
-            
-            // 1. 如果正在生成中，允許停止
             if (abortController) {
                 submitButton.disabled = false;
                 submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>`;
                 return;
             }
-
             const conv = getActiveConversation();
             if (!conv) {
                 submitButton.disabled = true;
                 submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
                 return;
             }
-
-            // 2. ✨ 新增：檢查最後一則訊息是否處於「待確認版本」狀態
-            const lastMsg = conv.messages[conv.messages.length - 1];
-            const isWaitingForConfirm = lastMsg && lastMsg.role === 'model' && lastMsg.versions && lastMsg.versions.length > 1 && !lastMsg.isConfirmed;
-
             if (conv.archived) {
                 ALL_ELEMENTS.messageInput.disabled = true;
                 submitButton.disabled = true;
                 ALL_ELEMENTS.messageInput.placeholder = i18n[config.uiLanguage].viewingArchived || '正在檢視封存的對話，無法傳送訊息。';
                 return;
             }
-
-            // 如果等待確認，鎖定輸入框
-            if (isWaitingForConfirm) {
-                ALL_ELEMENTS.messageInput.disabled = true;
-                submitButton.disabled = true;
-                ALL_ELEMENTS.messageInput.placeholder = "請先確認您想要保留的回覆版本...";
-                submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
-                return;
-            }
-
             const modelInfo = MODELS.find(m => m.id === conv.model);
             const provider = modelInfo?.provider;
             let hasApiKey = false;
@@ -6868,16 +6589,14 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
             } else if (provider === 'openrouter') {
                 hasApiKey = !!config.apiKeys.openrouter;
             }
-            
             ALL_ELEMENTS.messageInput.disabled = !hasApiKey;
-            ALL_ELEMENTS.messageInput.placeholder = hasApiKey ? (i18n[config.uiLanguage].enterMessagePlaceholder || '輸入訊息...') : (i18n[config.uiLanguage].enterApiKeyPlaceholder || '請輸入 API 金鑰...');
-            
+            ALL_ELEMENTS.messageInput.placeholder = hasApiKey ? i18n[config.uiLanguage].enterMessagePlaceholder : i18n[config.uiLanguage].enterApiKeyPlaceholder;
             if (!hasApiKey || !hasContent) {
                 submitButton.disabled = true;
                 submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
             } else {
                 submitButton.disabled = false;
-                submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
+submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>`;
             }
         };
         const setupSettingsModal = () => {
@@ -11223,6 +10942,28 @@ const FOLDER_TEXT_COLORS = {
                     ALL_ELEMENTS.loginLangMenu.classList.remove('visible');
                 }
             });
+         window.downloadBase64Image = function(base64Data) {
+        const link = document.createElement('a');
+        link.href = base64Data;
+        
+        // 產生一個帶有時間戳的檔名，例如：gemini-image-123456789.png
+        const timestamp = new Date().getTime();
+        link.download = `gemini-image-${timestamp}.png`;
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // 顯示提示
+        const notificationContainer = document.getElementById('notification-container');
+        if (notificationContainer) {
+            const notification = document.createElement('div');
+            notification.className = 'notification success';
+            notification.textContent = '圖片下載已開始';
+            notificationContainer.appendChild(notification);
+            setTimeout(() => { notification.remove(); }, 3000);
+        }
+    };
     </script>
     <script>
     document.addEventListener('touchstart', function(event) {
