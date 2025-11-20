@@ -2382,6 +2382,60 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     content: '🔗'; /* 在連結前加一個小圖示 */
     font-size: 0.8em;
 }
+/* --- 資料來源收折樣式 --- */
+.source-details {
+    margin-top: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.source-summary {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    font-weight: 600;
+    background-color: var(--hover-bg);
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.source-summary:hover {
+    color: var(--text-primary);
+}
+
+.source-summary::after {
+    content: '▼';
+    font-size: 0.8em;
+    transition: transform 0.2s;
+}
+
+.source-details[open] .source-summary::after {
+    transform: rotate(180deg);
+}
+
+.source-content {
+    padding: 0.5rem 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+/* 修正連結列表的樣式，拿掉原本的 ul 設定，改用乾淨的 flex */
+.source-content ul {
+    margin: 0 !important;
+    padding: 0 !important;
+    list-style: none !important;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.source-content li {
+    margin: 0 !important;
+}
 /* ✨ 新增：深度研究儀表板樣式 */
 .research-dashboard {
     background-color: var(--sidebar-bg);
@@ -4370,11 +4424,36 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const dirty = marked.parse(text);
             let clean = DOMPurify.sanitize(dirty);
 
-            // ✨ 修改：單純的替換邏輯
-            // 只要遇到 table 就包上 div 容器
-            clean = clean.replace(/<table/g, '<div class="table-scroll-container"><table');
-            // 遇到 table 結束標籤，就補上 div 的結束標籤
-            clean = clean.replace(/<\/table>/g, '</table></div>');
+            // 1. 處理表格容器 (之前的功能)
+            if (clean.includes('<table')) {
+                clean = clean.replace(/<table/g, '<div class="table-scroll-container"><table');
+            }
+            if (clean.includes('</table>')) {
+                clean = clean.replace(/<\/table>/g, '</table></div>');
+            } else if (clean.includes('<div class="table-scroll-container">')) {
+                clean += '</div>';
+            }
+
+            // ✨ 2. 處理資料來源收折 (關鍵修改)
+            // 尋找 ### 資料來源 或 ## 資料來源，以及緊接著的列表
+            // 我們將其替換為 <details> 結構
+            const sourceRegex = /<h[23][^>]*>資料來源<\/h[23]>([\s\S]*?)(?=<\/div>|$)/i;
+            
+            if (sourceRegex.test(clean)) {
+                clean = clean.replace(sourceRegex, (match, content) => {
+                    // 預設展開 (open)，如果您希望預設收起，請把 open 拿掉
+                    return `
+                        <details class="source-details" open>
+                            <summary class="source-summary">參考資料來源</summary>
+                            <div class="source-content">${content}</div>
+                        </details>
+                    `;
+                });
+            }
+
+            // ✨ 3. 強制所有連結開新視窗 (修復手機版跳轉問題)
+            // 這會防止手機瀏覽器在原頁面跳轉，導致 SPA 狀態(如輸入框)丟失
+            clean = clean.replace(/<a href="/g, '<a target="_blank" rel="noopener noreferrer" href="');
 
             return clean;
         };
@@ -5766,93 +5845,84 @@ function renderMarkdownWithFormulas(text) {
  */
 async function typewriterStream(targetElement, streamApiCallFn, signal) {
     let fullText = '';
-    let textQueue = ''; // 用於暫存兩次渲染幀之間收到的文字
+    let textQueue = '';
     let isStreaming = true;
-    let isFrameRequested = false; // 標記是否已經預約了下一幀的渲染
+    let isFrameRequested = false;
+    let isFastForwarding = false; // ✨ 新增：是否開啟快轉模式
 
     targetElement.innerHTML = '';
     targetElement.classList.add('typing-cursor');
 
-    // 這是渲染單一幀畫面的核心函式
     const renderFrame = () => {
-        // 如果佇列裡有文字，就全部渲染出來
         if (textQueue.length > 0) {
+            // ✨ 檢查是否包含資料來源標題，如果是，開啟快轉
+            if (!isFastForwarding && (textQueue.includes('### 資料來源') || textQueue.includes('## 資料來源'))) {
+                isFastForwarding = true;
+            }
+
             const chunkToRender = textQueue;
-            textQueue = ''; // 清空佇列
+            textQueue = '';
             fullText += chunkToRender;
 
-            const fragment = document.createDocumentFragment();
-            for (const char of chunkToRender) {
-                const span = document.createElement('span');
-                // 這裡不再隱藏 Markdown 字元，直接輸出，讓 Markdown 渲染器處理
-                span.className = 'fade-in-char'; 
-                if (char === '\n') {
-                    fragment.appendChild(document.createElement('br'));
-                } else {
-                    span.textContent = char;
-                    fragment.appendChild(span);
+            if (isFastForwarding) {
+                // ✨ 快轉模式：直接重新渲染整個 Markdown，包含收折效果
+                targetElement.innerHTML = renderMarkdownWithFormulas(fullText);
+                // 保持滾動到底部
+                const chatContainer = ALL_ELEMENTS.chatContainer;
+                 chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+            } else {
+                // 原本的打字機模式
+                const fragment = document.createDocumentFragment();
+                for (const char of chunkToRender) {
+                    const span = document.createElement('span');
+                    span.className = 'fade-in-char';
+                    if (char === '\n') {
+                        fragment.appendChild(document.createElement('br'));
+                    } else {
+                        span.textContent = char;
+                        fragment.appendChild(span);
+                    }
+                }
+                targetElement.appendChild(fragment);
+                
+                const chatContainer = ALL_ELEMENTS.chatContainer;
+                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 100;
+                if (isNearBottom) {
+                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
                 }
             }
-            targetElement.appendChild(fragment);
-
-            // 保持捲動到底部
-            const chatContainer = ALL_ELEMENTS.chatContainer;
-            const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
-            if (isNearBottom) {
-                chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
-            }
         }
-        
-        // 渲染完成後，將標記重設為 false，允許下一次的資料觸發新的渲染
         isFrameRequested = false;
     };
 
-    // 當 API 收到新資料時呼叫此函式
     const onChunkReceived = (chunk) => {
         textQueue += chunk;
-        // 如果目前沒有正在等待的渲染幀，就預約下一幀
         if (!isFrameRequested) {
             isFrameRequested = true;
             requestAnimationFrame(renderFrame);
         }
     };
 
-    // 使用 try...finally 結構確保無論成功或失敗都能正確清理
     try {
-        // 等待 API 串流 पूरी तरह से खत्म हो जाए
         await streamApiCallFn(onChunkReceived);
     } catch (error) {
         console.error("Stream API call failed:", error);
-        // 如果出錯，也要確保最後的清理工作能執行
         isStreaming = false;
-        // 將錯誤訊息直接顯示在畫面上
         targetElement.innerHTML = renderMarkdown(`抱歉，發生錯誤：${error.message}`);
-        // 向上層拋出錯誤
-        throw error; 
+        throw error;
     } finally {
         isStreaming = false;
-
-        // 等待最後一幀的渲染完成 (如果有的話)
-        // 這是為了處理這種情況：串流結束了，但最後一點文字還在佇列裡，等待下一幀渲染
         const waitForLastFrame = async () => {
             while (isFrameRequested || textQueue.length > 0) {
-                // 如果還有佇列或正在等待的幀，就再預約一幀並等待
-                if (!isFrameRequested) {
-                    requestAnimationFrame(renderFrame);
-                }
-                await new Promise(resolve => setTimeout(resolve, 16)); // 等待一小段時間
+                if (!isFrameRequested) requestAnimationFrame(renderFrame);
+                await new Promise(resolve => setTimeout(resolve, 16));
             }
         };
-
         await waitForLastFrame();
-        
-        // 所有工作都完成了，進行最終清理
         targetElement.classList.remove('typing-cursor');
-        // 為了確保所有 Markdown 和數學公式都能正確渲染，用完整的文字重新渲染一次最終結果
+        // ✨ 最後再完整渲染一次，確保格式正確
         targetElement.innerHTML = renderMarkdownWithFormulas(fullText);
     }
-
-    // 返回完整的文字內容
     return fullText;
 }
 
@@ -10076,7 +10146,6 @@ ${stepCountInstruction}
     *   **不要**按照原始的研究步驟來分段。你必須跨越步驟的界線，將資料重新組合，形成流暢的敘事。
     *   使用條列式清單、粗體等格式來增強可讀性。
 4.  **結論 (Conclusion)**: 在報告結尾，提出一個基於前面分析的綜合性結論或建議。
-5.  **資料來源 (References)**: 這是必要欄位。請在報告最末尾，建立一個「## 資料來源」章節，並以無序列表 (Bullet points) 格式列出所有參考過的網頁標題與原始 URL。格式範例：`- [網頁標題](URL)`。
 
 # 待處理資料
 原始任務: "${userMessage}"
