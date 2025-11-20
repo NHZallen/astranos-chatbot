@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AstraChat-15.11.0</title>
+    <title>AstraChat-16.0.0</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3b82f6"/>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -2382,13 +2382,17 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     content: '🔗'; /* 在連結前加一個小圖示 */
     font-size: 0.8em;
 }
-/* --- 資料來源收折樣式 --- */
+/* --- 資料來源樣式 (向上展開 + 動畫版) --- */
 .source-details {
     margin-top: 1rem;
     border: 1px solid var(--border-color);
     border-radius: 0.5rem;
-    overflow: hidden;
     background-color: rgba(0, 0, 0, 0.02);
+    
+    /* ✨ 關鍵：反轉排列，讓標題(Summary)在下方，內容(Content)在上方 */
+    display: flex;
+    flex-direction: column-reverse; 
+    overflow: hidden;
 }
 
 .source-summary {
@@ -2402,38 +2406,54 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     justify-content: space-between;
     color: var(--text-secondary);
     font-size: 0.9rem;
+    transition: background-color 0.2s;
 }
 
 .source-summary:hover {
+    background-color: var(--active-bg);
     color: var(--text-primary);
 }
 
+/* 箭頭圖示 */
 .source-summary::after {
-    content: '▼';
+    content: '▲'; /* 改成向上箭頭，表示向上展開 */
     font-size: 0.8em;
-    transition: transform 0.2s;
+    transition: transform 0.3s ease;
 }
 
+/* 展開時箭頭旋轉 */
 .source-details[open] .source-summary::after {
     transform: rotate(180deg);
 }
 
-.source-content {
-    padding: 0.5rem 1rem;
-    border-top: 1px solid var(--border-color);
+/* --- 動畫容器 --- */
+.source-content-wrapper {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-bottom: none; /* 預設沒有底線 */
 }
 
-/* 修正連結列表的樣式，拿掉原本的 ul 設定，改用乾淨的 flex */
-.source-content ul {
-    margin: 0 !important;
-    padding: 0 !important;
-    list-style: none !important;
+.source-details[open] .source-content-wrapper {
+    grid-template-rows: 1fr; /* 展開時高度自動 */
+    border-bottom: 1px solid var(--border-color); /* 展開後才顯示分隔線 */
+}
+
+.source-content {
+    overflow: hidden; /* 配合 grid 動畫必須隱藏溢出 */
+}
+
+/* 連結列表樣式 */
+.source-links {
+    padding: 0.5rem 1rem;
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
+    list-style: none !important;
+    margin: 0 !important;
 }
 
-.source-content li {
+.source-links li {
     margin: 0 !important;
 }
 /* ✨ 新增：深度研究儀表板樣式 */
@@ -4434,18 +4454,23 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 clean += '</div>';
             }
 
-            // ✨ 2. 處理資料來源收折 (關鍵修改)
+            // ✨ 2. 處理資料來源收折 (向上展開 + 動畫結構)
             // 尋找 ### 資料來源 或 ## 資料來源，以及緊接著的列表
-            // 我們將其替換為 <details> 結構
             const sourceRegex = /<h[23][^>]*>資料來源<\/h[23]>([\s\S]*?)(?=<\/div>|$)/i;
             
             if (sourceRegex.test(clean)) {
                 clean = clean.replace(sourceRegex, (match, content) => {
-                    // 預設展開 (open)，如果您希望預設收起，請把 open 拿掉
+                    // 注意：這裡移除了 'open' 屬性，所以預設是收起的
+                    // 增加了 source-content-wrapper 來做動畫
+                    // 將內容 ul 整理乾淨
                     return `
-                        <details class="source-details" open>
+                        <details class="source-details" id="source-details-container">
                             <summary class="source-summary">參考資料來源</summary>
-                            <div class="source-content">${content}</div>
+                            <div class="source-content-wrapper">
+                                <div class="source-content">
+                                    <ul class="source-links">${content.replace(/<ul[^>]*>|<\/ul>/g, '').replace(/<li[^>]*>/g, '<li>')}</ul>
+                                </div>
+                            </div>
                         </details>
                     `;
                 });
@@ -5848,14 +5873,14 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
     let textQueue = '';
     let isStreaming = true;
     let isFrameRequested = false;
-    let isFastForwarding = false; // ✨ 新增：是否開啟快轉模式
+    let isFastForwarding = false;
 
     targetElement.innerHTML = '';
     targetElement.classList.add('typing-cursor');
 
     const renderFrame = () => {
         if (textQueue.length > 0) {
-            // ✨ 檢查是否包含資料來源標題，如果是，開啟快轉
+            // 偵測資料來源關鍵字，開啟快轉模式
             if (!isFastForwarding && (textQueue.includes('### 資料來源') || textQueue.includes('## 資料來源'))) {
                 isFastForwarding = true;
             }
@@ -5864,14 +5889,16 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
             textQueue = '';
             fullText += chunkToRender;
 
+            // ✨ 核心修改：狀態保存 ✨
+            // 1. 在重繪之前，檢查是否存在 source-details 且是否為展開狀態
+            const existingDetails = targetElement.querySelector('.source-details');
+            const wasOpen = existingDetails ? existingDetails.hasAttribute('open') : false;
+
             if (isFastForwarding) {
-                // ✨ 快轉模式：直接重新渲染整個 Markdown，包含收折效果
+                // 快轉模式：渲染完整 HTML
                 targetElement.innerHTML = renderMarkdownWithFormulas(fullText);
-                // 保持滾動到底部
-                const chatContainer = ALL_ELEMENTS.chatContainer;
-                 chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
             } else {
-                // 原本的打字機模式
+                // 打字機模式
                 const fragment = document.createDocumentFragment();
                 for (const char of chunkToRender) {
                     const span = document.createElement('span');
@@ -5884,12 +5911,23 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
                     }
                 }
                 targetElement.appendChild(fragment);
-                
-                const chatContainer = ALL_ELEMENTS.chatContainer;
-                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 100;
-                if (isNearBottom) {
-                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+            }
+
+            // ✨ 核心修改：狀態恢復 ✨
+            // 2. 重繪完成後，如果之前是展開的，或是剛生成出來(第一次)且我們希望它怎樣(目前預設收起，所以不需額外操作)
+            // 這裡的邏輯是：如果使用者手動展開了(wasOpen=true)，我們就強制加回 open 屬性
+            if (wasOpen) {
+                const newDetails = targetElement.querySelector('.source-details');
+                if (newDetails) {
+                    newDetails.setAttribute('open', '');
                 }
+            }
+
+            // 滾動邏輯
+            const chatContainer = ALL_ELEMENTS.chatContainer;
+            const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 150; // 增加容錯像素
+            if (isNearBottom) {
+                chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
             }
         }
         isFrameRequested = false;
@@ -5920,8 +5958,17 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
         };
         await waitForLastFrame();
         targetElement.classList.remove('typing-cursor');
-        // ✨ 最後再完整渲染一次，確保格式正確
+        
+        // 最後一次完整渲染，同樣要保持狀態
+        const existingDetails = targetElement.querySelector('.source-details');
+        const wasOpen = existingDetails ? existingDetails.hasAttribute('open') : false;
+        
         targetElement.innerHTML = renderMarkdownWithFormulas(fullText);
+        
+        if (wasOpen) {
+            const finalDetails = targetElement.querySelector('.source-details');
+            if (finalDetails) finalDetails.setAttribute('open', '');
+        }
     }
     return fullText;
 }
