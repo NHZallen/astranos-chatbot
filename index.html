@@ -2388,11 +2388,8 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     border: 1px solid var(--border-color);
     border-radius: 0.5rem;
     background-color: rgba(0, 0, 0, 0.02);
-    
-    /* ✨ 關鍵：反轉排列，讓標題(Summary)在下方，內容(Content)在上方 */
-    display: flex;
-    flex-direction: column-reverse; 
     overflow: hidden;
+    /* 移除之前的 column-reverse，恢復預設的向下流向 */
 }
 
 .source-summary {
@@ -2414,9 +2411,9 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     color: var(--text-primary);
 }
 
-/* 箭頭圖示 */
+/* 箭頭圖示 (恢復向下箭頭) */
 .source-summary::after {
-    content: '▲'; /* 改成向上箭頭，表示向上展開 */
+    content: '▼'; 
     font-size: 0.8em;
     transition: transform 0.3s ease;
 }
@@ -2431,19 +2428,18 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     display: grid;
     grid-template-rows: 0fr;
     transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border-bottom: none; /* 預設沒有底線 */
+    border-top: none;
 }
 
 .source-details[open] .source-content-wrapper {
-    grid-template-rows: 1fr; /* 展開時高度自動 */
-    border-bottom: 1px solid var(--border-color); /* 展開後才顯示分隔線 */
+    grid-template-rows: 1fr;
+    border-top: 1px solid var(--border-color); /* 內容在下方，所以線在上方 */
 }
 
 .source-content {
-    overflow: hidden; /* 配合 grid 動畫必須隱藏溢出 */
+    overflow: hidden;
 }
 
-/* 連結列表樣式 */
 .source-links {
     padding: 0.5rem 1rem;
     display: flex;
@@ -2455,6 +2451,16 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
 
 .source-links li {
     margin: 0 !important;
+}
+
+/* 輸出中鎖定狀態的樣式 */
+.source-details.locked {
+    opacity: 0.7;
+    pointer-events: none; /* 禁止點擊 */
+}
+.source-details.locked .source-summary::after {
+    content: '⏳'; /* 輸出中顯示沙漏或隱藏箭頭 */
+    animation: spin 1s linear infinite;
 }
 /* ✨ 新增：深度研究儀表板樣式 */
 .research-dashboard {
@@ -4444,7 +4450,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const dirty = marked.parse(text);
             let clean = DOMPurify.sanitize(dirty);
 
-            // 1. 處理表格容器 (之前的功能)
+            // 1. 表格容器處理
             if (clean.includes('<table')) {
                 clean = clean.replace(/<table/g, '<div class="table-scroll-container"><table');
             }
@@ -4454,17 +4460,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 clean += '</div>';
             }
 
-            // ✨ 2. 處理資料來源收折 (向上展開 + 動畫結構)
-            // 尋找 ### 資料來源 或 ## 資料來源，以及緊接著的列表
+            // ✨ 2. 資料來源處理 (標準向下展開，預設收起)
             const sourceRegex = /<h[23][^>]*>資料來源<\/h[23]>([\s\S]*?)(?=<\/div>|$)/i;
             
             if (sourceRegex.test(clean)) {
                 clean = clean.replace(sourceRegex, (match, content) => {
-                    // 注意：這裡移除了 'open' 屬性，所以預設是收起的
-                    // 增加了 source-content-wrapper 來做動畫
-                    // 將內容 ul 整理乾淨
+                    // 注意：這裡沒有 open 屬性，所以預設收起
                     return `
-                        <details class="source-details" id="source-details-container">
+                        <details class="source-details">
                             <summary class="source-summary">參考資料來源</summary>
                             <div class="source-content-wrapper">
                                 <div class="source-content">
@@ -4476,8 +4479,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 });
             }
 
-            // ✨ 3. 強制所有連結開新視窗 (修復手機版跳轉問題)
-            // 這會防止手機瀏覽器在原頁面跳轉，導致 SPA 狀態(如輸入框)丟失
+            // ✨ 3. 強制連結開新視窗 (修復手機版輸入欄消失問題)
             clean = clean.replace(/<a href="/g, '<a target="_blank" rel="noopener noreferrer" href="');
 
             return clean;
@@ -5871,16 +5873,15 @@ function renderMarkdownWithFormulas(text) {
 async function typewriterStream(targetElement, streamApiCallFn, signal) {
     let fullText = '';
     let textQueue = '';
-    let isStreaming = true;
     let isFrameRequested = false;
-    let isFastForwarding = false;
+    let isFastForwarding = false; // 是否進入資料來源輸出階段
 
     targetElement.innerHTML = '';
     targetElement.classList.add('typing-cursor');
 
     const renderFrame = () => {
         if (textQueue.length > 0) {
-            // 偵測資料來源關鍵字，開啟快轉模式
+            // 偵測資料來源關鍵字
             if (!isFastForwarding && (textQueue.includes('### 資料來源') || textQueue.includes('## 資料來源'))) {
                 isFastForwarding = true;
             }
@@ -5889,45 +5890,40 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
             textQueue = '';
             fullText += chunkToRender;
 
-            // ✨ 核心修改：狀態保存 ✨
-            // 1. 在重繪之前，檢查是否存在 source-details 且是否為展開狀態
-            const existingDetails = targetElement.querySelector('.source-details');
-            const wasOpen = existingDetails ? existingDetails.hasAttribute('open') : false;
-
             if (isFastForwarding) {
-                // 快轉模式：渲染完整 HTML
-                targetElement.innerHTML = renderMarkdownWithFormulas(fullText);
+                // ✨ 快轉模式 (處理資料來源)
+                let html = renderMarkdownWithFormulas(fullText);
+                
+                // 1. 強制替換標題文字
+                html = html.replace('參考資料來源', '資料來源輸出中請稍後...');
+                
+                // 2. 強制加上 locked class (配合 CSS pointer-events: none 禁止互動)
+                html = html.replace('class="source-details"', 'class="source-details locked" open'); 
+                // 注意：輸出中我們強制加上 open 讓使用者看到它正在長出來，或者您可以拿掉 open 讓它在背景跑
+                // 根據您的需求「輸出完才能展開」，我建議這裡不要加 open，讓它收著跑，或者加 open 但鎖住。
+                // 根據您的描述「輸出中收縮欄標題顯示...」，通常代表它是收著的。
+                // 所以這裡我們只加 locked，不加 open。
+                
+                targetElement.innerHTML = html;
+                
+                // 保持捲動到底部
+                const chatContainer = ALL_ELEMENTS.chatContainer;
+                chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+
             } else {
-                // 打字機模式
+                // 一般打字模式
                 const fragment = document.createDocumentFragment();
                 for (const char of chunkToRender) {
                     const span = document.createElement('span');
                     span.className = 'fade-in-char';
-                    if (char === '\n') {
-                        fragment.appendChild(document.createElement('br'));
-                    } else {
-                        span.textContent = char;
-                        fragment.appendChild(span);
-                    }
+                    if (char === '\n') fragment.appendChild(document.createElement('br'));
+                    else { span.textContent = char; fragment.appendChild(span); }
                 }
                 targetElement.appendChild(fragment);
-            }
-
-            // ✨ 核心修改：狀態恢復 ✨
-            // 2. 重繪完成後，如果之前是展開的，或是剛生成出來(第一次)且我們希望它怎樣(目前預設收起，所以不需額外操作)
-            // 這裡的邏輯是：如果使用者手動展開了(wasOpen=true)，我們就強制加回 open 屬性
-            if (wasOpen) {
-                const newDetails = targetElement.querySelector('.source-details');
-                if (newDetails) {
-                    newDetails.setAttribute('open', '');
-                }
-            }
-
-            // 滾動邏輯
-            const chatContainer = ALL_ELEMENTS.chatContainer;
-            const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 150; // 增加容錯像素
-            if (isNearBottom) {
-                chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+                
+                const chatContainer = ALL_ELEMENTS.chatContainer;
+                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 100;
+                if (isNearBottom) chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
             }
         }
         isFrameRequested = false;
@@ -5944,12 +5940,10 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
     try {
         await streamApiCallFn(onChunkReceived);
     } catch (error) {
-        console.error("Stream API call failed:", error);
-        isStreaming = false;
+        console.error("Stream error:", error);
         targetElement.innerHTML = renderMarkdown(`抱歉，發生錯誤：${error.message}`);
         throw error;
     } finally {
-        isStreaming = false;
         const waitForLastFrame = async () => {
             while (isFrameRequested || textQueue.length > 0) {
                 if (!isFrameRequested) requestAnimationFrame(renderFrame);
@@ -5959,16 +5953,9 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
         await waitForLastFrame();
         targetElement.classList.remove('typing-cursor');
         
-        // 最後一次完整渲染，同樣要保持狀態
-        const existingDetails = targetElement.querySelector('.source-details');
-        const wasOpen = existingDetails ? existingDetails.hasAttribute('open') : false;
-        
+        // ✨ 輸出結束：完整渲染，標題變回「參考資料來源」，移除 locked 狀態
+        // renderMarkdownWithFormulas 預設會產生乾淨的、未鎖定的 HTML
         targetElement.innerHTML = renderMarkdownWithFormulas(fullText);
-        
-        if (wasOpen) {
-            const finalDetails = targetElement.querySelector('.source-details');
-            if (finalDetails) finalDetails.setAttribute('open', '');
-        }
     }
     return fullText;
 }
@@ -10338,6 +10325,20 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
         sidebarOpen = true;
         ALL_ELEMENTS.appContainer.classList.add('sidebar-open');
     }
+            ALL_ELEMENTS.messageList.addEventListener('click', (e) => {
+                // 檢查是否點擊了資料來源的標題
+                if (e.target.classList.contains('source-summary')) {
+                    const details = e.target.closest('details');
+                    // 如果目前是關閉的（即將展開）
+                    if (!details.hasAttribute('open')) {
+                        // 設定一個微小的延遲，等待 CSS 動畫開始計算高度
+                        setTimeout(() => {
+                            // 方法 A: 將該元素滾動到視窗底部
+                            details.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                        }, 310); // 延遲時間略大於 CSS transition (0.3s)
+                    }
+                }
+            });
             injectDeepResearchStyles(); // ✨ 注入樣式
             setTheme(config.theme);
             ALL_ELEMENTS.usernameDisplay.textContent = currentUser.username;
