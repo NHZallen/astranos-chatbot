@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AstraChat-16.0.0</title>
+    <title>AstraChat-15.10.3</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3b82f6"/>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -2344,135 +2344,6 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     color: #111827 !important; 
 }
 
-/* --- 資料來源連結樣式 --- */
-.prose a {
-    color: var(--button-primary-bg);
-    text-decoration: none;
-    font-weight: 500;
-    border-bottom: 1px dotted currentColor;
-    transition: all 0.2s;
-}
-.prose a:hover {
-    opacity: 0.8;
-    border-bottom-style: solid;
-}
-
-/* 針對「參考資料」或「資料來源」列表的特殊樣式 */
-/* 我們會讓 AI 用無序列表 (ul) 來輸出連結 */
-.prose ul li a {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    background-color: rgba(0, 0, 0, 0.05);
-    padding: 0.1rem 0.5rem;
-    border-radius: 4px;
-    border-bottom: none;
-    font-size: 0.9em;
-    margin-top: 2px;
-}
-.dark .prose ul li a {
-    background-color: rgba(255, 255, 255, 0.1);
-}
-@media (hover: hover) {
-    .prose ul li a:hover {
-        background-color: var(--button-primary-bg);
-        color: #ffffff;
-    }
-}
-.prose ul li a::before {
-    content: '🔗'; /* 在連結前加一個小圖示 */
-    font-size: 0.8em;
-}
-/* --- 資料來源樣式 (向上展開 + 動畫版) --- */
-.source-details {
-    margin-top: 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: 0.5rem;
-    background-color: rgba(0, 0, 0, 0.02);
-    overflow: hidden;
-    /* 移除之前的 column-reverse，恢復預設的向下流向 */
-}
-
-.source-summary {
-    padding: 0.5rem 1rem;
-    cursor: pointer;
-    font-weight: 600;
-    background-color: var(--hover-bg);
-    user-select: none;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    transition: background-color 0.2s;
-}
-
-@media (hover: hover) {
-    .source-summary:hover {
-        background-color: var(--active-bg);
-        color: var(--text-primary);
-    }
-}
-
-/* 輸出中鎖定狀態的樣式 */
-.source-details.locked {
-    border-color: #ef4444; /* 紅色邊框 */
-    background-color: rgba(239, 68, 68, 0.05); /* 淡淡的紅色背景 */
-    pointer-events: none; /* 禁止點擊 */
-    cursor: wait;
-}
-
-.source-details.locked .source-summary {
-    color: #ef4444; /* 標題文字變紅 */
-    background-color: rgba(239, 68, 68, 0.1); /* 標題背景變紅 */
-}
-
-/* 輸出中顯示沙漏，並讓它旋轉 */
-.source-details.locked .source-summary::after {
-    content: '⏳'; 
-    animation: spin 1s linear infinite;
-    transform: none !important; /* 覆蓋原本的箭頭旋轉 */
-}
-
-/* --- 動畫容器 --- */
-.source-content-wrapper {
-    display: grid;
-    grid-template-rows: 0fr;
-    transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border-top: none;
-}
-
-.source-details[open] .source-content-wrapper {
-    grid-template-rows: 1fr;
-    border-top: 1px solid var(--border-color); /* 內容在下方，所以線在上方 */
-}
-
-.source-content {
-    overflow: hidden;
-}
-
-.source-links {
-    padding: 0.5rem 1rem;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    list-style: none !important;
-    margin: 0 !important;
-}
-
-.source-links li {
-    margin: 0 !important;
-}
-
-/* 輸出中鎖定狀態的樣式 */
-.source-details.locked {
-    opacity: 0.7;
-    pointer-events: none; /* 禁止點擊 */
-}
-.source-details.locked .source-summary::after {
-    content: '⏳'; /* 輸出中顯示沙漏或隱藏箭頭 */
-    animation: spin 1s linear infinite;
-}
 /* ✨ 新增：深度研究儀表板樣式 */
 .research-dashboard {
     background-color: var(--sidebar-bg);
@@ -4461,37 +4332,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const dirty = marked.parse(text);
             let clean = DOMPurify.sanitize(dirty);
 
-            // 1. 表格容器處理
-            if (clean.includes('<table')) {
-                clean = clean.replace(/<table/g, '<div class="table-scroll-container"><table');
-            }
-            if (clean.includes('</table>')) {
-                clean = clean.replace(/<\/table>/g, '</table></div>');
-            } else if (clean.includes('<div class="table-scroll-container">')) {
-                clean += '</div>';
-            }
-
-            // ✨ 2. 資料來源處理 (標準向下展開，預設收起)
-            const sourceRegex = /<h[23][^>]*>資料來源<\/h[23]>([\s\S]*?)(?=<\/div>|$)/i;
-            
-            if (sourceRegex.test(clean)) {
-                clean = clean.replace(sourceRegex, (match, content) => {
-                    // 注意：這裡沒有 open 屬性，所以預設收起
-                    return `
-                        <details class="source-details">
-                            <summary class="source-summary">參考資料來源</summary>
-                            <div class="source-content-wrapper">
-                                <div class="source-content">
-                                    <ul class="source-links">${content.replace(/<ul[^>]*>|<\/ul>/g, '').replace(/<li[^>]*>/g, '<li>')}</ul>
-                                </div>
-                            </div>
-                        </details>
-                    `;
-                });
-            }
-
-            // ✨ 3. 強制連結開新視窗 (修復手機版輸入欄消失問題)
-            clean = clean.replace(/<a href="/g, '<a target="_blank" rel="noopener noreferrer" href="');
+            // ✨ 修改：單純的替換邏輯
+            // 只要遇到 table 就包上 div 容器
+            clean = clean.replace(/<table/g, '<div class="table-scroll-container"><table');
+            // 遇到 table 結束標籤，就補上 div 的結束標籤
+            clean = clean.replace(/<\/table>/g, '</table></div>');
 
             return clean;
         };
@@ -5883,89 +5728,93 @@ function renderMarkdownWithFormulas(text) {
  */
 async function typewriterStream(targetElement, streamApiCallFn, signal) {
     let fullText = '';
-    let textQueue = '';
-    let isFrameRequested = false;
-    let isFastForwarding = false; // 是否進入資料來源輸出階段
+    let textQueue = ''; // 用於暫存兩次渲染幀之間收到的文字
+    let isStreaming = true;
+    let isFrameRequested = false; // 標記是否已經預約了下一幀的渲染
 
     targetElement.innerHTML = '';
     targetElement.classList.add('typing-cursor');
 
+    // 這是渲染單一幀畫面的核心函式
     const renderFrame = () => {
+        // 如果佇列裡有文字，就全部渲染出來
         if (textQueue.length > 0) {
-            // 偵測資料來源關鍵字
-            if (!isFastForwarding && (textQueue.includes('### 資料來源') || textQueue.includes('## 資料來源'))) {
-                isFastForwarding = true;
-            }
-
             const chunkToRender = textQueue;
-            textQueue = '';
+            textQueue = ''; // 清空佇列
             fullText += chunkToRender;
 
-            if (isFastForwarding) {
-                // ✨ 快轉模式 (處理資料來源)
-                let html = renderMarkdownWithFormulas(fullText);
-                
-                // ✨ 核心修改：不再更改文字，只加上 locked class
-                // 注意：我們不加 'open' 屬性，因為您希望它預設收起，
-                // 這樣使用者會看到一個紅色的收起欄位，直到輸出完成變回原色。
-                if (html.includes('class="source-details"')) {
-                     html = html.replace('class="source-details"', 'class="source-details locked"');
+            const fragment = document.createDocumentFragment();
+            for (const char of chunkToRender) {
+                const span = document.createElement('span');
+                // 這裡不再隱藏 Markdown 字元，直接輸出，讓 Markdown 渲染器處理
+                span.className = 'fade-in-char'; 
+                if (char === '\n') {
+                    fragment.appendChild(document.createElement('br'));
+                } else {
+                    span.textContent = char;
+                    fragment.appendChild(span);
                 }
-                
-                targetElement.innerHTML = html;
-                
-                // 保持捲動到底部
-                const chatContainer = ALL_ELEMENTS.chatContainer;
-                chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+            }
+            targetElement.appendChild(fragment);
 
-            } else {
-                // 一般打字模式
-                const fragment = document.createDocumentFragment();
-                for (const char of chunkToRender) {
-                    const span = document.createElement('span');
-                    span.className = 'fade-in-char';
-                    if (char === '\n') fragment.appendChild(document.createElement('br'));
-                    else { span.textContent = char; fragment.appendChild(span); }
-                }
-                targetElement.appendChild(fragment);
-                
-                const chatContainer = ALL_ELEMENTS.chatContainer;
-                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 100;
-                if (isNearBottom) chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+            // 保持捲動到底部
+            const chatContainer = ALL_ELEMENTS.chatContainer;
+            const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
+            if (isNearBottom) {
+                chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
             }
         }
+        
+        // 渲染完成後，將標記重設為 false，允許下一次的資料觸發新的渲染
         isFrameRequested = false;
     };
 
+    // 當 API 收到新資料時呼叫此函式
     const onChunkReceived = (chunk) => {
         textQueue += chunk;
+        // 如果目前沒有正在等待的渲染幀，就預約下一幀
         if (!isFrameRequested) {
             isFrameRequested = true;
             requestAnimationFrame(renderFrame);
         }
     };
 
+    // 使用 try...finally 結構確保無論成功或失敗都能正確清理
     try {
+        // 等待 API 串流 पूरी तरह से खत्म हो जाए
         await streamApiCallFn(onChunkReceived);
     } catch (error) {
-        console.error("Stream error:", error);
+        console.error("Stream API call failed:", error);
+        // 如果出錯，也要確保最後的清理工作能執行
+        isStreaming = false;
+        // 將錯誤訊息直接顯示在畫面上
         targetElement.innerHTML = renderMarkdown(`抱歉，發生錯誤：${error.message}`);
-        throw error;
+        // 向上層拋出錯誤
+        throw error; 
     } finally {
+        isStreaming = false;
+
+        // 等待最後一幀的渲染完成 (如果有的話)
+        // 這是為了處理這種情況：串流結束了，但最後一點文字還在佇列裡，等待下一幀渲染
         const waitForLastFrame = async () => {
             while (isFrameRequested || textQueue.length > 0) {
-                if (!isFrameRequested) requestAnimationFrame(renderFrame);
-                await new Promise(resolve => setTimeout(resolve, 16));
+                // 如果還有佇列或正在等待的幀，就再預約一幀並等待
+                if (!isFrameRequested) {
+                    requestAnimationFrame(renderFrame);
+                }
+                await new Promise(resolve => setTimeout(resolve, 16)); // 等待一小段時間
             }
         };
+
         await waitForLastFrame();
+        
+        // 所有工作都完成了，進行最終清理
         targetElement.classList.remove('typing-cursor');
-        
-        // ✨ 輸出結束：完整渲染，renderMarkdown 會生成沒有 locked 的 HTML，所以會自動變回原色
+        // 為了確保所有 Markdown 和數學公式都能正確渲染，用完整的文字重新渲染一次最終結果
         targetElement.innerHTML = renderMarkdownWithFormulas(fullText);
-        
-        ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
     }
+
+    // 返回完整的文字內容
     return fullText;
 }
 
@@ -6208,10 +6057,6 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
                 'fr': 'Veuillez répondre en français, sauf si l\'utilisateur demande spécifiquement le contraire.'
             };
             baseInstructionText = langMap[config.aiDefaultLanguage] || '';
-            // 如果開啟了聯網搜尋 (包含深度研究強制開啟的情況)，強制要求列出來源
-            if ((conv.isWebSearchEnabled || isWebSearchForced) && provider === 'gemini') {
-                baseInstructionText += '\n\n【重要指令】你現在擁有聯網搜尋能力。請根據搜尋結果回答問題。回答結束後，必須在末尾附上一個「### 資料來源」區塊，並以 Markdown 列表格式列出參考連結，例如：\n- [標題](URL)';
-            }
 
             if (conv.astrasId) {
                 const ast = astras.find(a => a.id === conv.astrasId);
@@ -10147,7 +9992,7 @@ ${stepCountInstruction}
                         
                         const searchPromises = searchQueries.map(query => 
                             streamApiCall(
-                                [{ text: query + " (請務必在搜尋結果中保留來源標題與完整 URL 網址)" }], 
+                                [{ text: query }], 
                                 () => {}, 
                                 abortController.signal,
                                 true // 強制使用 Web Search
@@ -10334,32 +10179,6 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
         sidebarOpen = true;
         ALL_ELEMENTS.appContainer.classList.add('sidebar-open');
     }
-            ALL_ELEMENTS.messageList.addEventListener('click', (e) => {
-                // 檢查是否點擊了資料來源的標題
-                if (e.target.classList.contains('source-summary')) {
-                    const details = e.target.closest('details');
-                    // 如果目前是關閉的（即將展開）
-                    if (!details.hasAttribute('open')) {
-                        // ✨ 立即隱藏置底按鈕，避免展開瞬間因為高度變化而閃爍
-                        ALL_ELEMENTS.scrollToBottomBtn.classList.remove('visible');
-                        
-                        // 設定一個微小的延遲，等待 CSS 動畫開始計算高度
-                        setTimeout(() => {
-                            // 將聊天室窗滾動到底部
-                            ALL_ELEMENTS.chatContainer.scrollTo({ 
-                                top: ALL_ELEMENTS.chatContainer.scrollHeight, 
-                                behavior: 'smooth' 
-                            });
-                            
-                            // 再次確保按鈕隱藏 (因為 smooth scroll 結束後可能會觸發 scroll event)
-                            // 我們設定一個旗標告訴 scroll handler 暫時忽略
-                            isAutoScrolling = true; 
-                            setTimeout(() => { isAutoScrolling = false; }, 500);
-
-                        }, 310); // 延遲時間略大於 CSS transition (0.3s)
-                    }
-                }
-            });
             injectDeepResearchStyles(); // ✨ 注入樣式
             setTheme(config.theme);
             ALL_ELEMENTS.usernameDisplay.textContent = currentUser.username;
