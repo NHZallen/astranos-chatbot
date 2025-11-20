@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AstraChat-15.10.2</title>
+    <title>AstraChat-15.10.3</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3b82f6"/>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -1032,12 +1032,37 @@ button:not(.btn-primary):active:not(:disabled) {
     .prose h3 { font-size: 1.25rem; }
     .prose p { margin-bottom: 1em; }
     .prose table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 1em;
-  max-width: 100%;
-  word-break: break-all;
-  table-layout: fixed;
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0; /* 邊距交給外層容器 */
+    max-width: none;  /* 允許表格寬度超過父容器 */
+    word-break: normal; /* 防止文字被暴力切斷 */
+    table-layout: auto; /* 讓內容決定寬度，這是防止擠壓的關鍵 */
+}
+
+/* 讓表頭文字不換行，保持整齊 */
+.prose th {
+    white-space: nowrap; 
+    background-color: var(--hover-bg);
+}
+
+/* 新增：表格專用的滾動容器樣式 */
+.table-scroll-container {
+    overflow-x: auto; /* 關鍵：內容超出時顯示水平卷軸 */
+    -webkit-overflow-scrolling: touch; /* 讓手機滑動更順暢 */
+    margin-bottom: 1em;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    background-color: var(--modal-bg); /* 確保背景色正確 */
+}
+
+/* 自訂滾動條樣式，讓它在電腦上比較美觀 */
+.table-scroll-container::-webkit-scrollbar {
+    height: 8px;
+}
+.table-scroll-container::-webkit-scrollbar-thumb {
+    background-color: var(--border-color);
+    border-radius: 4px;
 }
     .prose table th, .prose table td { border: 1px solid var(--border-color); padding: 0.75rem; text-align: left; }
     .prose table thead { background-color: var(--hover-bg); }
@@ -4298,7 +4323,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         };
         const renderMarkdown = (text) => {
             const dirty = marked.parse(text);
-            const clean = DOMPurify.sanitize(dirty);
+            let clean = DOMPurify.sanitize(dirty);
+
+            // ✨ 新增：使用正則表達式，將 <table> 包裹在可滑動的 div 中
+            // 這裡將 <table... 替換為 <div class="..."><table...
+            clean = clean.replace(/<table/g, '<div class="table-scroll-container"><table');
+            // 這裡將 </table> 替換為 </table></div>
+            clean = clean.replace(/<\/table>/g, '</table></div>');
+
             return clean;
         };
         /**
