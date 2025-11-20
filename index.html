@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AstraChat-15.10.3</title>
+    <title>AstraChat-15.11.0</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3b82f6"/>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -2344,6 +2344,44 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     color: #111827 !important; 
 }
 
+/* --- 資料來源連結樣式 --- */
+.prose a {
+    color: var(--button-primary-bg);
+    text-decoration: none;
+    font-weight: 500;
+    border-bottom: 1px dotted currentColor;
+    transition: all 0.2s;
+}
+.prose a:hover {
+    opacity: 0.8;
+    border-bottom-style: solid;
+}
+
+/* 針對「參考資料」或「資料來源」列表的特殊樣式 */
+/* 我們會讓 AI 用無序列表 (ul) 來輸出連結 */
+.prose ul li a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 0.1rem 0.5rem;
+    border-radius: 4px;
+    border-bottom: none;
+    font-size: 0.9em;
+    margin-top: 2px;
+}
+.dark .prose ul li a {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+.prose ul li a:hover {
+    background-color: var(--button-primary-bg);
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+.prose ul li a::before {
+    content: '🔗'; /* 在連結前加一個小圖示 */
+    font-size: 0.8em;
+}
 /* ✨ 新增：深度研究儀表板樣式 */
 .research-dashboard {
     background-color: var(--sidebar-bg);
@@ -6057,6 +6095,10 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
                 'fr': 'Veuillez répondre en français, sauf si l\'utilisateur demande spécifiquement le contraire.'
             };
             baseInstructionText = langMap[config.aiDefaultLanguage] || '';
+            // 如果開啟了聯網搜尋 (包含深度研究強制開啟的情況)，強制要求列出來源
+            if ((conv.isWebSearchEnabled || isWebSearchForced) && provider === 'gemini') {
+                baseInstructionText += '\n\n【重要指令】你現在擁有聯網搜尋能力。請根據搜尋結果回答問題。回答結束後，必須在末尾附上一個「### 資料來源」區塊，並以 Markdown 列表格式列出參考連結，例如：\n- [標題](URL)';
+            }
 
             if (conv.astrasId) {
                 const ast = astras.find(a => a.id === conv.astrasId);
@@ -9992,7 +10034,7 @@ ${stepCountInstruction}
                         
                         const searchPromises = searchQueries.map(query => 
                             streamApiCall(
-                                [{ text: query }], 
+                                [{ text: query + " (請務必在搜尋結果中保留來源標題與完整 URL 網址)" }], 
                                 () => {}, 
                                 abortController.signal,
                                 true // 強制使用 Web Search
@@ -10034,6 +10076,7 @@ ${stepCountInstruction}
     *   **不要**按照原始的研究步驟來分段。你必須跨越步驟的界線，將資料重新組合，形成流暢的敘事。
     *   使用條列式清單、粗體等格式來增強可讀性。
 4.  **結論 (Conclusion)**: 在報告結尾，提出一個基於前面分析的綜合性結論或建議。
+5.  **資料來源 (References)**: 這是必要欄位。請在報告最末尾，建立一個「## 資料來源」章節，並以無序列表 (Bullet points) 格式列出所有參考過的網頁標題與原始 URL。格式範例：`- [網頁標題](URL)`。
 
 # 待處理資料
 原始任務: "${userMessage}"
