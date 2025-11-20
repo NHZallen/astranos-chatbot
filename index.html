@@ -2377,7 +2377,6 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     .prose ul li a:hover {
         background-color: var(--button-primary-bg);
         color: #ffffff;
-        transform: translateY(-1px);
     }
 }
 .prose ul li a::before {
@@ -2417,30 +2416,22 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
 
 /* 輸出中鎖定狀態的樣式 */
 .source-details.locked {
-    opacity: 0.8;
+    border-color: #ef4444; /* 紅色邊框 */
+    background-color: rgba(239, 68, 68, 0.05); /* 淡淡的紅色背景 */
     pointer-events: none; /* 禁止點擊 */
     cursor: wait;
 }
-/* 讓鎖定時的摘要背景稍微閃爍，提示正在運作 */
+
 .source-details.locked .source-summary {
-    background-color: var(--hover-bg);
-    animation: pulse-gray 1.5s infinite ease-in-out;
-}
-@keyframes pulse-gray {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
+    color: #ef4444; /* 標題文字變紅 */
+    background-color: rgba(239, 68, 68, 0.1); /* 標題背景變紅 */
 }
 
-/* 箭頭圖示 (恢復向下箭頭) */
-.source-summary::after {
-    content: '▼'; 
-    font-size: 0.8em;
-    transition: transform 0.3s ease;
-}
-
-/* 展開時箭頭旋轉 */
-.source-details[open] .source-summary::after {
-    transform: rotate(180deg);
+/* 輸出中顯示沙漏，並讓它旋轉 */
+.source-details.locked .source-summary::after {
+    content: '⏳'; 
+    animation: spin 1s linear infinite;
+    transform: none !important; /* 覆蓋原本的箭頭旋轉 */
 }
 
 /* --- 動畫容器 --- */
@@ -5914,16 +5905,11 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
                 // ✨ 快轉模式 (處理資料來源)
                 let html = renderMarkdownWithFormulas(fullText);
                 
-                // 1. 強制替換標題文字 (這裡是關鍵修正)
-                // 我們尋找 renderMarkdown 生成的標準 HTML 結構並進行替換
-                if (html.includes('參考資料來源')) {
-                    html = html.replace(
-                        '參考資料來源', 
-                        '資料來源輸出中請稍後...' // 您希望顯示的文字
-                    );
-                    
-                    // 2. 強制加上 locked class 與 open 屬性
-                    html = html.replace('class="source-details"', 'class="source-details locked" open');
+                // ✨ 核心修改：不再更改文字，只加上 locked class
+                // 注意：我們不加 'open' 屬性，因為您希望它預設收起，
+                // 這樣使用者會看到一個紅色的收起欄位，直到輸出完成變回原色。
+                if (html.includes('class="source-details"')) {
+                     html = html.replace('class="source-details"', 'class="source-details locked"');
                 }
                 
                 targetElement.innerHTML = html;
@@ -5975,10 +5961,9 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
         await waitForLastFrame();
         targetElement.classList.remove('typing-cursor');
         
-        // ✨ 輸出結束：完整渲染，標題會自動變回「參考資料來源」(因為沒有執行 replace)，並移除 locked 狀態
+        // ✨ 輸出結束：完整渲染，renderMarkdown 會生成沒有 locked 的 HTML，所以會自動變回原色
         targetElement.innerHTML = renderMarkdownWithFormulas(fullText);
         
-        // 確保輸出結束後滾動到底部
         ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
     }
     return fullText;
