@@ -2373,10 +2373,12 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
 .dark .prose ul li a {
     background-color: rgba(255, 255, 255, 0.1);
 }
-.prose ul li a:hover {
-    background-color: var(--button-primary-bg);
-    color: #ffffff;
-    transform: translateY(-1px);
+@media (hover: hover) {
+    .prose ul li a:hover {
+        background-color: var(--button-primary-bg);
+        color: #ffffff;
+        transform: translateY(-1px);
+    }
 }
 .prose ul li a::before {
     content: '🔗'; /* 在連結前加一個小圖示 */
@@ -2406,9 +2408,27 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     transition: background-color 0.2s;
 }
 
-.source-summary:hover {
-    background-color: var(--active-bg);
-    color: var(--text-primary);
+@media (hover: hover) {
+    .source-summary:hover {
+        background-color: var(--active-bg);
+        color: var(--text-primary);
+    }
+}
+
+/* 輸出中鎖定狀態的樣式 */
+.source-details.locked {
+    opacity: 0.8;
+    pointer-events: none; /* 禁止點擊 */
+    cursor: wait;
+}
+/* 讓鎖定時的摘要背景稍微閃爍，提示正在運作 */
+.source-details.locked .source-summary {
+    background-color: var(--hover-bg);
+    animation: pulse-gray 1.5s infinite ease-in-out;
+}
+@keyframes pulse-gray {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
 }
 
 /* 箭頭圖示 (恢復向下箭頭) */
@@ -5894,15 +5914,17 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
                 // ✨ 快轉模式 (處理資料來源)
                 let html = renderMarkdownWithFormulas(fullText);
                 
-                // 1. 強制替換標題文字
-                html = html.replace('參考資料來源', '資料來源輸出中請稍後...');
-                
-                // 2. 強制加上 locked class (配合 CSS pointer-events: none 禁止互動)
-                html = html.replace('class="source-details"', 'class="source-details locked" open'); 
-                // 注意：輸出中我們強制加上 open 讓使用者看到它正在長出來，或者您可以拿掉 open 讓它在背景跑
-                // 根據您的需求「輸出完才能展開」，我建議這裡不要加 open，讓它收著跑，或者加 open 但鎖住。
-                // 根據您的描述「輸出中收縮欄標題顯示...」，通常代表它是收著的。
-                // 所以這裡我們只加 locked，不加 open。
+                // 1. 強制替換標題文字 (這裡是關鍵修正)
+                // 我們尋找 renderMarkdown 生成的標準 HTML 結構並進行替換
+                if (html.includes('參考資料來源')) {
+                    html = html.replace(
+                        '參考資料來源', 
+                        '資料來源輸出中請稍後...' // 您希望顯示的文字
+                    );
+                    
+                    // 2. 強制加上 locked class 與 open 屬性
+                    html = html.replace('class="source-details"', 'class="source-details locked" open');
+                }
                 
                 targetElement.innerHTML = html;
                 
@@ -5953,9 +5975,11 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
         await waitForLastFrame();
         targetElement.classList.remove('typing-cursor');
         
-        // ✨ 輸出結束：完整渲染，標題變回「參考資料來源」，移除 locked 狀態
-        // renderMarkdownWithFormulas 預設會產生乾淨的、未鎖定的 HTML
+        // ✨ 輸出結束：完整渲染，標題會自動變回「參考資料來源」(因為沒有執行 replace)，並移除 locked 狀態
         targetElement.innerHTML = renderMarkdownWithFormulas(fullText);
+        
+        // 確保輸出結束後滾動到底部
+        ALL_ELEMENTS.chatContainer.scrollTo({ top: ALL_ELEMENTS.chatContainer.scrollHeight, behavior: 'smooth' });
     }
     return fullText;
 }
@@ -10331,10 +10355,22 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
                     const details = e.target.closest('details');
                     // 如果目前是關閉的（即將展開）
                     if (!details.hasAttribute('open')) {
+                        // ✨ 立即隱藏置底按鈕，避免展開瞬間因為高度變化而閃爍
+                        ALL_ELEMENTS.scrollToBottomBtn.classList.remove('visible');
+                        
                         // 設定一個微小的延遲，等待 CSS 動畫開始計算高度
                         setTimeout(() => {
-                            // 方法 A: 將該元素滾動到視窗底部
-                            details.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                            // 將聊天室窗滾動到底部
+                            ALL_ELEMENTS.chatContainer.scrollTo({ 
+                                top: ALL_ELEMENTS.chatContainer.scrollHeight, 
+                                behavior: 'smooth' 
+                            });
+                            
+                            // 再次確保按鈕隱藏 (因為 smooth scroll 結束後可能會觸發 scroll event)
+                            // 我們設定一個旗標告訴 scroll handler 暫時忽略
+                            isAutoScrolling = true; 
+                            setTimeout(() => { isAutoScrolling = false; }, 500);
+
                         }, 310); // 延遲時間略大於 CSS transition (0.3s)
                     }
                 }
