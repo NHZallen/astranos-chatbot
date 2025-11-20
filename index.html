@@ -4014,8 +4014,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     // OpenRouter Free Models
     { id: 'openai/gpt-oss-20b:free', name: 'OpenAI GPT-OSS 20B', provider: 'openrouter', descriptionKey: 'model_gpt_oss_20b_desc', category: 'general' }, // Free models can also have categories
     { id: 'tngtech/deepseek-r1t2-chimera:free', name: 'Deepseek R1T2 Chimera', provider: 'openrouter', descriptionKey: 'model_deepseek_r1t2_chimera_desc' },
-    { id: 'openrouter/sherlock-dash-alpha', name: 'Sherlock Dash Alpha', provider: 'openrouter', descriptionKey: 'model_sherlock_dash_alpha_desc', isBeta: true, category: 'general' },
-    { id: 'openrouter/sherlock-think-alpha', name: 'Sherlock Think Alpha', provider: 'openrouter', descriptionKey: 'model_sherlock_think_alpha_desc', isBeta: true, category: 'thinking' },
     { id: 'nvidia/nemotron-nano-12b-v2-vl:free', name: 'Nemotron Nano 12B V2 VL', provider: 'openrouter', descriptionKey: 'model_nemotron_nano_12b_v2_vl_desc', category: 'image' },
     // OpenRouter Paid Models (OpenAI)
     { id: 'openai/gpt-5-pro', name: 'OpenAI GPT-5 Pro', provider: 'openrouter', descriptionKey: 'model_gpt_5_pro_desc', category: 'general' },
@@ -4044,6 +4042,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
     // OpenRouter Paid Models (x-ai)
     { id: 'x-ai/grok-4-fast', name: 'Grok 4 Fast', provider: 'openrouter', descriptionKey: 'model_grok_4_fast_desc', category: 'general' },
+    { id: 'x-ai/grok-4.1-fast', name: 'Grok 4.1 Fast', provider: 'openrouter', descriptionKey: 'model_grok_4_1_fast_desc', category: 'general' },
     { id: 'x-ai/grok-code-fast-1', name: 'Grok Code Fast 1', provider: 'openrouter', descriptionKey: 'model_grok_code_fast_1_desc', category: 'coding' },
 
     // OpenRouter Paid Models (Qwen)
@@ -4069,12 +4068,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     'anthropic/claude-sonnet-4.5', 'anthropic/claude-haiku-4.5', 'anthropic/claude-sonnet-4',
     'perplexity/sonar',
     'x-ai/grok-4-fast',
+    'x-ai/grok-4.1-fast',
     'qwen/qwen3-vl-32b-instruct',
     'qwen/qwen3-vl-8b-instruct',
     'nvidia/nemotron-nano-12b-v2-vl:free',
     'qwen/qwen2.5-vl-72b-instruct',
-    'openrouter/sherlock-dash-alpha',
-    'openrouter/sherlock-think-alpha',
     'google/gemini-3-pro-preview'
 ];
         const FOLDER_COLORS = {
@@ -4334,20 +4332,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const dirty = marked.parse(text);
             let clean = DOMPurify.sanitize(dirty);
 
-            // 1. 先加上表格容器的開頭
-            // 使用 class="table-scroll-container"
-            if (clean.includes('<table')) {
-                clean = clean.replace(/<table/g, '<div class="table-scroll-container"><table');
-            }
-
-            // 2. 加上表格容器的結尾
-            if (clean.includes('</table>')) {
-                clean = clean.replace(/<\/table>/g, '</table></div>');
-            } else if (clean.includes('<div class="table-scroll-container">')) {
-                // ✨ 重點優化：如果正在輸出中 (有開頭但還沒有結尾)
-                // 我們手動在最後面補上一個 div 結尾，讓滑動框能即時生效
-                clean += '</div>';
-            }
+            // ✨ 修改：單純的替換邏輯
+            // 只要遇到 table 就包上 div 容器
+            clean = clean.replace(/<table/g, '<div class="table-scroll-container"><table');
+            // 遇到 table 結束標籤，就補上 div 的結束標籤
+            clean = clean.replace(/<\/table>/g, '</table></div>');
 
             return clean;
         };
