@@ -2527,6 +2527,47 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     display: none; /* 將它完全隱藏起來，不佔據任何空間 */
   }
 }
+        /* --- 拖移功能相關樣式 (新增) --- */
+
+/* 可拖移的項目游標 */
+.draggable-item {
+    cursor: grab;
+    touch-action: none; /* 防止觸控裝置上的預設捲動干擾拖移 */
+}
+.draggable-item:active {
+    cursor: grabbing;
+}
+
+/* 正在被拖移的項目 (半透明) */
+.dragging {
+    opacity: 0.4;
+    background-color: var(--hover-bg);
+    border: 1px dashed var(--text-secondary);
+}
+
+/* 預覽效果：拖移到項目上方時顯示的藍線 */
+.drag-over-top {
+    border-top: 2px solid var(--button-primary-bg) !important;
+    margin-top: 2px;
+    transition: all 0.1s;
+}
+.drag-over-bottom {
+    border-bottom: 2px solid var(--button-primary-bg) !important;
+    margin-bottom: 2px;
+    transition: all 0.1s;
+}
+
+/* 預覽效果：拖移到資料夾上時的高亮 */
+.drag-over-folder {
+    background-color: var(--hover-bg);
+    outline: 2px dashed var(--button-primary-bg);
+    outline-offset: -2px;
+}
+
+/* 禁止拖移時的樣式 */
+.no-drop {
+    cursor: no-drop;
+}
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -3776,6 +3817,257 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             cancelPlanBtn: document.getElementById('cancel-plan-btn'),
             showPromptsBtn: document.getElementById('show-prompts-btn'), // 新增這行
         };
+        /* --- 拖移功能核心邏輯 (新增) --- */
+
+let draggedItem = null; // 儲存當前正在拖移的物件資訊 { id, type, folderId }
+
+// 1. 開始拖移
+function handleDragStart(e) {
+    const target = e.target.closest('.sidebar-item') || e.target.closest('.folder-item');
+    if (!target) return;
+
+    const id = target.dataset.id;
+    // 判斷是資料夾還是對話
+    const type = target.classList.contains('folder-item') ? 'folder' : 'conversation';
+    
+    // 如果是對話，判斷它原本在哪個資料夾 (為了處理移出/移入)
+    let originFolderId = null;
+    if (type === 'conversation') {
+        const parentFolder = target.closest('.folder-item');
+        if (parentFolder) {
+            originFolderId = parentFolder.dataset.id;
+        }
+    }
+
+    draggedItem = { id, type, originFolderId };
+    e.dataTransfer.effectAllowed = 'move';
+    
+    // 為了讓樣式生效，延遲添加 class
+    setTimeout(() => target.classList.add('dragging'), 0);
+}
+
+// 2. 拖移結束 (無論成功與否都會觸發，用於清理樣式)
+function handleDragEnd(e) {
+    const target = e.target.closest('.sidebar-item') || e.target.closest('.folder-item');
+    if (target) target.classList.remove('dragging');
+    
+    // 清除所有預覽線
+    document.querySelectorAll('.drag-over-top, .drag-over-bottom, .drag-over-folder').forEach(el => {
+        el.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-over-folder');
+    });
+    
+    draggedItem = null;
+}
+
+// 3. 拖移經過某個元素 (處理預覽效果)
+function handleDragOver(e) {
+    e.preventDefault(); // 必要：允許 drop
+    if (!draggedItem) return;
+
+    const target = e.target.closest('.sidebar-item') || e.target.closest('.folder-summary');
+    if (!target) return;
+
+    // 避免自己拖到自己身上
+    // 注意：folder-summary 的父層才是 folder-item (有 dataset.id)
+    const targetId = target.dataset.id || target.closest('.folder-item')?.dataset.id;
+    if (draggedItem.id === targetId) return;
+
+    // 清理其他元素的樣式
+    document.querySelectorAll('.drag-over-top, .drag-over-bottom, .drag-over-folder').forEach(el => {
+        if (el !== target && el !== target.closest('.folder-item')) {
+            el.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-over-folder');
+        }
+    });
+
+    const rect = target.getBoundingClientRect();
+    const offset = e.clientY - rect.top;
+    const isTopHalf = offset < rect.height / 2;
+
+    // 邏輯分支 A: 拖移資料夾
+    if (draggedItem.type === 'folder') {
+        // 資料夾只能跟資料夾排序
+        if (target.closest('.folder-item')) {
+            if (isTopHalf) {
+                target.closest('.folder-item').classList.add('drag-over-top');
+                target.closest('.folder-item').classList.remove('drag-over-bottom');
+            } else {
+                target.closest('.folder-item').classList.add('drag-over-bottom');
+                target.closest('.folder-item').classList.remove('drag-over-top');
+            }
+        }
+    }
+    // 邏輯分支 B: 拖移對話
+    else if (draggedItem.type === 'conversation') {
+        const isTargetFolder = target.classList.contains('folder-summary');
+        const isTargetConv = target.classList.contains('sidebar-item') && !isTargetFolder;
+
+        // B1. 拖到資料夾標題上 -> 放入資料夾
+        if (isTargetFolder) {
+            target.closest('.folder-item').classList.add('drag-over-folder');
+        }
+        // B2. 拖到另一個對話上 -> 排序 (僅限釘選或同資料夾內)
+        else if (isTargetConv) {
+            const targetConvId = targetId;
+            const targetConv = conversations.find(c => c.id === targetConvId);
+            const draggedConv = conversations.find(c => c.id === draggedItem.id);
+
+            // 規則：只有釘選的對話，或者在同一個資料夾內的對話可以排序
+            const canReorder = (targetConv.pinned && draggedConv.pinned) || 
+                               (draggedItem.originFolderId && targetConv.folderId === draggedItem.originFolderId);
+
+            if (canReorder) {
+                if (isTopHalf) {
+                    target.classList.add('drag-over-top');
+                    target.classList.remove('drag-over-bottom');
+                } else {
+                    target.classList.add('drag-over-bottom');
+                    target.classList.remove('drag-over-top');
+                }
+            }
+        }
+    }
+}
+
+// 4. 放開 (確定變更)
+async function handleDrop(e) {
+    e.preventDefault();
+    if (!draggedItem) return;
+
+    // 找到放置的目標
+    const targetItem = e.target.closest('.sidebar-item') || e.target.closest('.folder-summary');
+    // 如果目標是 folder-summary，我們要找它的 wrapper folder-item
+    const targetFolderItem = targetItem ? targetItem.closest('.folder-item') : null;
+    
+    // 取得目標 ID
+    const targetId = targetFolderItem ? targetFolderItem.dataset.id : (targetItem ? targetItem.dataset.id : null);
+
+    if (!targetId || targetId === draggedItem.id) return;
+
+    const rect = targetItem.getBoundingClientRect();
+    const offset = e.clientY - rect.top;
+    const isTopHalf = offset < rect.height / 2;
+
+    // --- 執行資料變更 ---
+
+    // 情境 1: 資料夾排序
+    if (draggedItem.type === 'folder' && targetFolderItem) {
+        const fromIndex = folders.findIndex(f => f.id === draggedItem.id);
+        const toIndex = folders.findIndex(f => f.id === targetId);
+        
+        if (fromIndex > -1 && toIndex > -1) {
+            // 移動陣列元素
+            const [movedFolder] = folders.splice(fromIndex, 1);
+            // 如果放在上半部，插入目標前；下半部，插入目標後
+            // 注意：如果從下往上拖，index 會變，這裡簡化處理直接依位置插入
+            const insertIndex = isTopHalf ? toIndex : toIndex + 1;
+            // 修正 splice 插入位置 (因為移出了一個元素)
+            const finalIndex = insertIndex > fromIndex ? insertIndex - 1 : insertIndex;
+            
+            folders.splice(finalIndex, 0, movedFolder);
+            await saveAppData();
+            renderFolders(); // 重新渲染
+        }
+    }
+
+    // 情境 2: 對話操作
+    else if (draggedItem.type === 'conversation') {
+        const draggedConv = conversations.find(c => c.id === draggedItem.id);
+        
+        // 2-A: 拖入資料夾
+        if (targetFolderItem && targetItem.classList.contains('folder-summary')) {
+            const targetFolderId = targetFolderItem.dataset.id;
+            
+            // 如果原本就在這個資料夾，不做事
+            if (draggedConv.folderId === targetFolderId) return;
+
+            // 執行移動 (呼叫現有函式)
+            await moveConversationToFolder(draggedConv.id, targetFolderId);
+        }
+        // 2-B: 對話排序 (或移出資料夾到根目錄)
+        else if (targetItem && !targetItem.classList.contains('folder-summary')) {
+            const targetConv = conversations.find(c => c.id === targetId);
+            
+            // 判斷是否為有效的排序操作
+            // 規則：都是釘選，或是都在同一個資料夾
+            const isBothPinned = draggedConv.pinned && targetConv.pinned;
+            const isSameFolder = draggedConv.folderId && targetConv.folderId && (draggedConv.folderId === targetConv.folderId);
+            
+            // 特殊規則：如果從資料夾拖到根目錄的釘選對話上 (移出資料夾)
+            const isMoveOutToPinned = draggedConv.folderId && !targetConv.folderId && targetConv.pinned && draggedConv.pinned;
+
+            if (isBothPinned && !draggedConv.folderId && !targetConv.folderId) {
+                // === 根目錄釘選排序 ===
+                // 這裡我們需要重新排列 conversations 陣列
+                // 因為渲染是依照陣列順序 (對於釘選項目)
+                const fromIndex = conversations.findIndex(c => c.id === draggedConv.id);
+                const toIndex = conversations.findIndex(c => c.id === targetConv.id);
+                
+                const [movedConv] = conversations.splice(fromIndex, 1);
+                // 計算插入位置
+                let finalIndex = isTopHalf ? toIndex : toIndex + 1;
+                if (finalIndex > fromIndex) finalIndex--; // 修正索引
+
+                conversations.splice(finalIndex, 0, movedConv);
+                await saveAppData();
+                renderHistorySidebar(); // 重新渲染側邊欄
+            }
+            else if (isSameFolder) {
+                // === 資料夾內部排序 ===
+                const folder = folders.find(f => f.id === draggedConv.folderId);
+                if (folder) {
+                    const list = folder.conversationIds;
+                    const fromIdx = list.indexOf(draggedConv.id);
+                    const toIdx = list.indexOf(targetConv.id);
+                    
+                    if (fromIdx > -1 && toIdx > -1) {
+                        list.splice(fromIdx, 1);
+                        let insertIdx = isTopHalf ? toIdx : toIdx + 1;
+                        if (insertIdx > fromIdx) insertIdx--;
+                        list.splice(insertIdx, 0, draggedConv.id);
+                        
+                        await saveAppData();
+                        renderFolders(); // 重新渲染資料夾
+                    }
+                }
+            }
+            else if (isMoveOutToPinned) {
+                // === 從資料夾移出並插入到釘選列 ===
+                await moveConversationToFolder(draggedConv.id, null); // 先移出
+                // 接著處理排序 (因為 moveConversationToFolder 會重繪，這裡可能需要優化，但先簡單處理)
+                // 重新獲取位置
+                const newFromIndex = conversations.findIndex(c => c.id === draggedConv.id);
+                const newToIndex = conversations.findIndex(c => c.id === targetConv.id);
+                const [movedConv] = conversations.splice(newFromIndex, 1);
+                 let finalIndex = isTopHalf ? newToIndex : newToIndex + 1;
+                if (finalIndex > newFromIndex) finalIndex--;
+                conversations.splice(finalIndex, 0, movedConv);
+                await saveAppData();
+                renderHistorySidebar();
+            }
+        }
+    }
+    
+    handleDragEnd(e); // 清理樣式
+}
+
+// 輔助函式：為元素添加拖移監聽器
+function attachDragListeners(element, isDraggable) {
+    if (isDraggable) {
+        element.draggable = true;
+        element.classList.add('draggable-item');
+        element.addEventListener('dragstart', handleDragStart);
+        element.addEventListener('dragend', handleDragEnd);
+    }
+    // 所有項目都可以是放置目標
+    element.addEventListener('dragover', handleDragOver);
+    element.addEventListener('drop', handleDrop);
+    element.addEventListener('dragleave', (e) => {
+       // 簡單清理 hover 樣式
+       if (e.target === element) {
+           element.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-over-folder');
+       }
+    });
+}
         function toggleHistorySidebar(show) {
     const { historySidebar, historySidebarOverlay } = ALL_ELEMENTS;
     if (show) {
@@ -4006,7 +4298,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const MODELS = [
     // Gemini Models
     { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'gemini', descriptionKey: 'model_gemini_2_5_pro_desc' },
-    { id: 'gemini-2.0-flash-preview-image-generation', name: 'Gemini 2.0 Flash Image', provider: 'gemini', descriptionKey: 'model_gemini_2_0_flash_image_desc', category: 'image' },
     { id: 'gemini-2.5-flash-preview-09-2025', name: 'Gemini 2.5 Flash Preview', provider: 'gemini', descriptionKey: 'model_gemini_2_5_flash_pv_desc' },
     { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'gemini', descriptionKey: 'model_gemini_2_5_flash_desc' },
     { id: 'gemini-2.5-flash-lite-preview-09-2025', name: 'Gemini 2.5 Flash Lite Preview', provider: 'gemini', descriptionKey: 'model_gemini_2_5_flash_lite_pv_desc' },
@@ -4470,7 +4761,7 @@ function renderMarkdownWithFormulas(text) {
             }
         };
         const getDefaultGenConfig = () => ({ temperature: 0.7, topP: 0.95, maxTokens: null });
-        const getDefaultFolder = () => ({ color: 'gray', icon: 'default', textColor: 'gray', isOpen: false});
+        const getDefaultFolder = () => ({ color: 'gray', icon: 'default', textColor: 'gray', isOpen: false, pinned: false });
         const createBaseConversation = (title) => {
             const defaultModelInfo = MODELS.find(m => m.id === config.lastUsedModel) || MODELS.find(m => m.id === config.defaultModel) || MODELS[0];
             const now = new Date().toISOString();
@@ -4677,20 +4968,42 @@ function renderMarkdownWithFormulas(text) {
         };
         const renderHistorySidebar = () => {
             ALL_ELEMENTS.historyList.innerHTML = '';
-            const sortedConversations = conversations
-                .filter(c => !c.archived && !c.folderId && !c.deletedAt)
-                .sort((a, b) => {
-                    if (a.pinned && !b.pinned) return -1;
-                    if (!a.pinned && b.pinned) return 1;
-                    const dateB = b.lastUpdatedAt || b.createdAt;
-                    const dateA = a.lastUpdatedAt || a.createdAt;
-                    return new Date(dateB) - new Date(dateA);
-                });
-            sortedConversations.forEach(conv => {
-                if (conv.isTemporary) {
-                    return;
-                }
+            
+            // 這裡我們不改變既有的排序邏輯：釘選優先，然後時間
+            // 但為了支援拖移後的順序，我們直接使用 conversations 陣列的順序
+            // 前提是 handleDrop 已經正確調整了陣列順序
+            const visibleConversations = conversations.filter(c => !c.archived && !c.folderId && !c.deletedAt);
+            
+            // 如果您希望未釘選的依然保持時間排序，釘選的保持自訂排序，這需要一點混合邏輯
+            // 簡單做法：為了讓拖移生效，我們暫時完全信任 conversations 陣列的順序
+            // 但為了符合您的需求「只有釘選的對話才能拖動並自訂順序」，未釘選的我們強制按時間排
+            
+            const pinnedConvs = visibleConversations.filter(c => c.pinned); // 保持陣列順序
+            const unpinnedConvs = visibleConversations.filter(c => !c.pinned).sort((a, b) => {
+                const dateB = b.lastUpdatedAt || b.createdAt;
+                const dateA = a.lastUpdatedAt || a.createdAt;
+                return new Date(dateB) - new Date(dateA);
+            });
+
+            // 渲染釘選的 (可拖移)
+            pinnedConvs.forEach(conv => {
+                const item = createConversationElement(conv);
+                attachDragListeners(item, true); // true = 可拖移
+                ALL_ELEMENTS.historyList.appendChild(item);
+            });
+
+            // 分隔線 (可選)
+            if (pinnedConvs.length > 0 && unpinnedConvs.length > 0) {
+                const divider = document.createElement('div');
+                divider.className = 'border-t border-[var(--border-color)] my-1 mx-2';
+                ALL_ELEMENTS.historyList.appendChild(divider);
+            }
+
+            // 渲染未釘選的 (支援拖移進資料夾，但不可自訂排序)
+            unpinnedConvs.forEach(conv => {
+                if (conv.isTemporary) return;
                 if (conv.isNaming) {
+                     // ... (保留原本的 naming placeholder 邏輯) ...
                     const thinkingPlaceholder = document.createElement('div');
                     thinkingPlaceholder.className = 'sidebar-item p-3 rounded-lg flex items-center gap-3 text-[var(--text-secondary)] italic';
                     thinkingPlaceholder.innerHTML = `
@@ -4703,7 +5016,12 @@ function renderMarkdownWithFormulas(text) {
                     ALL_ELEMENTS.historyList.appendChild(thinkingPlaceholder);
                     return;
                 }
-                ALL_ELEMENTS.historyList.appendChild(createConversationElement(conv));
+                
+                const item = createConversationElement(conv);
+                // 即使未釘選，也要設為 draggable，為了能拖進資料夾
+                // 但在 handleDragOver 中我們會限制它不能 drop 來進行排序
+                attachDragListeners(item, true); 
+                ALL_ELEMENTS.historyList.appendChild(item);
             });
         };
         const renderAstras = () => {
@@ -4767,51 +5085,63 @@ function renderMarkdownWithFormulas(text) {
         };
         const renderFolders = () => {
             ALL_ELEMENTS.folderList.innerHTML = '';
-            folders.forEach(folder => {
+            
+            // 修改 1: 排序資料夾 (釘選的在最上面)
+            const sortedFolders = [...folders].sort((a, b) => {
+                if (a.pinned && !b.pinned) return -1;
+                if (!a.pinned && b.pinned) return 1;
+                return 0; // 其他維持使用者自訂的順序 (透過拖移改變的陣列順序)
+            });
+
+            sortedFolders.forEach(folder => {
+                // 修改 2: 取得資料夾內的對話 (依照 folder.conversationIds 的順序)
+                // 這樣拖移排序後的順序才會被保留
                 const folderConvs = folder.conversationIds
                     .map(id => conversations.find(c => c.id === id))
-                    .filter(c => c && !c.archived && !c.deletedAt)
-                    .sort((a,b) => {
-                        if (a.pinned && !b.pinned) return -1;
-                        if (!a.pinned && b.pinned) return 1;
-                        const dateB = b.lastUpdatedAt || b.createdAt;
-                        const dateA = a.lastUpdatedAt || a.createdAt;
-                        return new Date(dateB) - new Date(dateA);
-                    });
+                    .filter(c => c && !c.archived && !c.deletedAt);
+                    // 這裡不再使用 sort((a,b) => date)，因為我們要支援自訂排序
+
                 const folderElement = document.createElement('div');
                 folderElement.className = 'folder-item text-sm';
                 folderElement.dataset.id = folder.id;
                 folderElement.dataset.open = folder.isOpen;
-                // 取得 SVG 路徑，如果找不到就用預設的
+                
                 const svgPath = FOLDER_SVGS[folder.icon] || FOLDER_SVGS['default'];
-                // 取得 SVG 線條顏色 (使用原有的 FOLDER_COLORS)
                 const iconColor = FOLDER_COLORS[folder.color] || FOLDER_COLORS.gray;
-                // 取得文字顏色 (使用新的 FOLDER_TEXT_COLORS)
                 const textColor = FOLDER_TEXT_COLORS[folder.textColor] || FOLDER_TEXT_COLORS.gray;
 
+                // 資料夾標題 HTML
                 folderElement.innerHTML = `
                     <div class="folder-summary sidebar-item p-3 rounded-lg flex items-center justify-between">
-                        <div class="flex items-center gap-2 truncate">
+                        <div class="flex items-center gap-2 truncate pointer-events-none"> <!-- pointer-events-none 讓拖移時更容易選中父層 -->
                             <svg class="folder-arrow flex-shrink-0" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                            
-                            <!-- 修改：這裡顯示 SVG 圖示，顏色套用在 style 的 color 屬性上 -->
                             <span class="folder-icon mr-1 flex-shrink-0" style="color: ${iconColor};">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="folder-icon-svg">
                                     ${svgPath}
                                 </svg>
                             </span>
-                            
-                            <!-- 修改：文字顏色獨立設定 -->
-                            <span class="font-medium truncate" style="color: ${textColor};">${folder.name}</span>
+                            <span class="font-medium truncate" style="color: ${textColor};">
+                                ${folder.name} 
+                                ${folder.pinned ? '<span class="pinned-icon ml-1">📌</span>' : ''}
+                            </span>
                         </div>
-                        <button data-id="${folder.id}" class="folder-options-btn flex-shrink-0 w-6 h-6 rounded-md hover:bg-[var(--active-bg)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>
+                        <button data-id="${folder.id}" class="folder-options-btn flex-shrink-0 w-6 h-6 rounded-md hover:bg-[var(--active-bg)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] pointer-events-auto"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>
                     </div>
                     <div class="folder-content-container pl-4 mt-1 space-y-1"></div>
                 `;
+
+                // 修改 3: 為資料夾加入拖移監聽器
+                attachDragListeners(folderElement, true);
+
                 const contentContainer = folderElement.querySelector('.folder-content-container');
                 folderConvs.forEach(conv => {
-                    contentContainer.appendChild(createConversationElement(conv));
+                    // 修改 4: 建立對話元素，並強制設為可拖移 (因為在資料夾內可以排序/移出)
+                    const convEl = createConversationElement(conv);
+                    attachDragListeners(convEl, true); // 資料夾內的項目總是可拖移
+                    contentContainer.appendChild(convEl);
                 });
+
+                // ... (保留原本的點擊事件處理邏輯) ...
                 const folderSummary = folderElement.querySelector('.folder-summary');
                 let pressTimer = null;
                 let touchMoved = false;
@@ -4832,7 +5162,8 @@ function renderMarkdownWithFormulas(text) {
                     if (pressTimer || !touchMoved) {
                         cancelPress();
                         if (e.target.closest('.folder-options-btn')) return;
-                        const folderItem = e.currentTarget.closest('.folder-item');
+                        // 這裡稍微修改，確保找到正確的 folder-item
+                        const folderItem = e.target.closest('.folder-item'); 
                         const folderObj = folders.find(f => f.id === folderItem.dataset.id);
                         if (folderObj) {
                             folderObj.isOpen = !folderObj.isOpen;
@@ -6162,52 +6493,8 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
                 };
                 headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
             }
-            if (modelId === 'gemini-2.0-flash-preview-image-generation') {
-                url = url.replace('streamGenerateContent', 'generateContent');
-            }
-
             const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
-            
-            if (!response.ok) { 
-                const err = await response.json(); 
-                throw new Error(err.error?.message || 'API 請求失敗'); 
-            }
-
-            // 特殊處理：如果是圖片生成模型，直接解析 JSON 並回傳圖片標籤
-            if (modelId === 'gemini-2.0-flash-preview-image-generation') {
-                const data = await response.json();
-                const parts = data.candidates?.[0]?.content?.parts || [];
-                let resultHtml = '';
-                
-                for (const part of parts) {
-                    // 檢查是否有 inlineData (圖片數據)
-                    if (part.inlineData && part.inlineData.mimeType.startsWith('image/')) {
-                        const base64Data = part.inlineData.data;
-                        const mimeType = part.inlineData.mimeType;
-                        // 建立一個可點擊下載的圖片 HTML
-                        // 我們加入 download-trigger class 來讓下方的腳本識別
-                        resultHtml += `
-                            <div class="generated-image-container my-2">
-                                <img src="data:${mimeType};base64,${base64Data}" 
-                                     class="rounded-lg border border-gray-200 shadow-sm cursor-pointer hover:opacity-90 transition-opacity download-trigger" 
-                                     alt="Gemini Generated Image"
-                                     title="點擊下載圖片"
-                                     onclick="downloadBase64Image('data:${mimeType};base64,${base64Data}')">
-                                <p class="text-xs text-gray-500 mt-1">✨ 點擊圖片即可下載</p>
-                            </div>`;
-                    } else if (part.text) {
-                        resultHtml += part.text + '\n';
-                    }
-                }
-                
-                if (!resultHtml) throw new Error("模型沒有回傳圖片數據。");
-                
-                // 模擬串流回傳給介面 (因為主程式期待串流)
-                onChunk(resultHtml);
-                return resultHtml;
-            }
-
-            // 一般文字模型的標準串流處理 (保持不變)
+            if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'API 請求失敗'); }
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
@@ -7192,17 +7479,53 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
             popover.dataset.targetId = targetButton.id;
             popover.style.top = `${rect.bottom}px`;
             popover.style.left = `${rect.left}px`;
+
+            // --- 修改開始：取得資料夾並決定按鈕文字 ---
+            const folder = folders.find(f => f.id === folderId);
+            // 如果資料夾已經釘選，顯示「取消釘選」，否則顯示「釘選」
+            const pinText = (folder && folder.pinned) 
+                ? (i18n[config.uiLanguage].unpin || '取消釘選') 
+                : (i18n[config.uiLanguage].pin || '釘選');
+
+            // 在 HTML 中插入 pin-folder-btn 按鈕
             popover.innerHTML = `
                 <button data-id="${folderId}" class="rename-folder-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].rename || '重新命名'}</button>
+                <button data-id="${folderId}" class="pin-folder-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${pinText}</button>
                 <button data-id="${folderId}" class="customize-folder-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].customize || '自訂'}</button>
                 <div class="border-t my-1 border-[var(--border-color)]"></div>
                 <button data-id="${folderId}" class="delete-folder-btn w-full text-left px-4 py-2 text-red-600 hover:bg-red-500/10 text-sm">${i18n[config.uiLanguage].deleteFolder || '刪除資料夾'}</button>
             `;
+            // --- 修改結束 ---
+
             document.body.appendChild(popover);
             requestAnimationFrame(() => popover.classList.add('visible'));
-            popover.querySelector('.rename-folder-btn').addEventListener('click', (e) => { showRenameModal(folderId, 'folder', e); popover.remove(); });
-            popover.querySelector('.customize-folder-btn').addEventListener('click', (e) => { showFolderSettingsModal(folderId, e); popover.remove(); });
-            popover.querySelector('.delete-folder-btn').addEventListener('click', (e) => { deleteFolder(folderId, e); popover.remove(); });
+
+            // 綁定各個按鈕的事件
+            popover.querySelector('.rename-folder-btn').addEventListener('click', (e) => { 
+                showRenameModal(folderId, 'folder', e); 
+                popover.remove(); 
+            });
+
+            // --- 修改開始：綁定釘選按鈕事件 ---
+            popover.querySelector('.pin-folder-btn').addEventListener('click', async (e) => { 
+                if(folder) {
+                    folder.pinned = !folder.pinned; // 切換釘選狀態
+                    await saveAppData();            // 儲存變更
+                    renderFolders();                // 重新渲染資料夾列表 (順序會改變)
+                }
+                popover.remove(); 
+            });
+            // --- 修改結束 ---
+
+            popover.querySelector('.customize-folder-btn').addEventListener('click', (e) => { 
+                showFolderSettingsModal(folderId, e); 
+                popover.remove(); 
+            });
+
+            popover.querySelector('.delete-folder-btn').addEventListener('click', (e) => { 
+                deleteFolder(folderId, e); 
+                popover.remove(); 
+            });
         };
         const toggleSelectionMode = () => {
     isSelectionMode = !isSelectionMode;
@@ -10942,28 +11265,6 @@ const FOLDER_TEXT_COLORS = {
                     ALL_ELEMENTS.loginLangMenu.classList.remove('visible');
                 }
             });
-         window.downloadBase64Image = function(base64Data) {
-        const link = document.createElement('a');
-        link.href = base64Data;
-        
-        // 產生一個帶有時間戳的檔名，例如：gemini-image-123456789.png
-        const timestamp = new Date().getTime();
-        link.download = `gemini-image-${timestamp}.png`;
-        
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        // 顯示提示
-        const notificationContainer = document.getElementById('notification-container');
-        if (notificationContainer) {
-            const notification = document.createElement('div');
-            notification.className = 'notification success';
-            notification.textContent = '圖片下載已開始';
-            notificationContainer.appendChild(notification);
-            setTimeout(() => { notification.remove(); }, 3000);
-        }
-    };
     </script>
     <script>
     document.addEventListener('touchstart', function(event) {
