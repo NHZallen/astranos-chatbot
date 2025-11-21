@@ -3555,6 +3555,23 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 </div>
         </div>
     </div>
+        <div id="image-preview-modal" class="modal fixed inset-0 bg-black bg-opacity-95 z-[100] hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <!-- 關閉按鈕 -->
+        <button id="close-preview-btn" class="absolute top-4 right-4 text-white/70 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors z-10">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+        
+        <div class="relative max-w-full max-h-full flex flex-col items-center">
+            <!-- 圖片本體 -->
+            <img id="preview-image-element" src="" alt="Preview" class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl select-none">
+            
+            <!-- 下載按鈕 (懸浮在右下角) -->
+            <button id="download-image-btn" class="mt-4 flex items-center gap-2 px-6 py-3 bg-white text-black rounded-full font-bold shadow-lg hover:bg-gray-200 hover:scale-105 transition-all active:scale-95">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>下載圖片</span>
+            </button>
+        </div>
+    </div>
 
     <script src="./i18n.js"></script>
     <script src="./demo-conversations.js"></script>
@@ -3834,6 +3851,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             aspectRatioBtn: document.getElementById('aspect-ratio-popover-btn'),
             aspectRatioSubmenu: document.getElementById('aspect-ratio-submenu'),
             currentRatioDisplay: document.getElementById('current-ratio-display'),
+            imagePreviewModal: document.getElementById('image-preview-modal'),
+            previewImageElement: document.getElementById('preview-image-element'),
+            downloadImageBtn: document.getElementById('download-image-btn'),
+            closePreviewBtn: document.getElementById('close-preview-btn'),
         };
         function toggleHistorySidebar(show) {
     const { historySidebar, historySidebarOverlay } = ALL_ELEMENTS;
@@ -6172,19 +6193,23 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
 
             // 構建 System Prompt
             let baseInstructionText = '';
+            const langMap = {
+                'zh-TW': '請用繁體中文回覆，除非使用者有特別要求。',
+                'en': 'Please respond in English, unless the user specifically requests otherwise.',
+                'fr': 'Veuillez répondre en français, sauf si l\'utilisateur demande spécifiquement le contraire.'
+            };
+            baseInstructionText = langMap[config.aiDefaultLanguage] || '';
             if (conv.astrasId) {
                 const ast = astras.find(a => a.id === conv.astrasId);
-                if (ast) baseInstructionText = ast.instructions;
+                if (ast) baseInstructionText = `${ast.instructions}\n\n${baseInstructionText}`;
             }
             if (config.isLearningMode) {
-                 // 簡化顯示，請確保您保留了原本這裡完整的學習模式 prompt
-                 const learningModePrompt = `# 序言... (略)`; 
-                 systemInstruction = { parts: [{ text: learningModePrompt }] }; 
+                 const learningModePrompt = `# 序言... (略，保持原樣)`; 
+                 systemInstruction = { parts: [{ text: learningModePrompt }] };
             } else if (baseInstructionText) {
                 systemInstruction = { parts: [{ text: baseInstructionText }] };
             }
             
-            // 記憶功能 Prompt
             let memoryPrompt = '';
             if (config.memoryEnabled1) {
                 const enabledMemories = personalMemories.filter(m => m.enabled).map(m => m.content).join('\n');
@@ -6197,30 +6222,60 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
             }
 
             if (provider === 'gemini') {
-                // Gemini Logic (這裡不需要改，因為 Gemini 圖片模型通常走 OpenRouter 介面)
+                // Gemini 原生邏輯 (不用變)
                 url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?key=${apiKey}`;
                 payload = {
                     contents: cleanGeminiHistory([...historyForApi, currentMessageForApi]),
                     generationConfig: {
                         ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
+                        ...(conv.genConfig.topP !== null && { topP: conv.genConfig.topP }),
+                        ...(conv.genConfig.maxTokens !== null && { maxOutputTokens: conv.genConfig.maxTokens }),
                     }
                 };
                 if (systemInstruction) payload.systemInstruction = systemInstruction;
                 if (conv.isWebSearchEnabled || isWebSearchForced) payload.tools = [{"googleSearch": {}}];
                 headers = { 'Content-Type': 'application/json' };
 
-            } else { // OpenRouter Logic (OpenAI, Claude, Gemini via OpenRouter)
+            } else { // OpenRouter Logic
                 url = 'https://openrouter.ai/api/v1/chat/completions';
-                
                 const messages = [];
-                
-                // ✨ 優化 1: 只有在「非」圖片生成模式下，才加入 System Prompt 和歷史紀錄
-                // 這樣可以避免把 60萬 token 的歷史傳給圖片模型
-                if (category !== 'image_generation') {
-                    if (systemInstruction) messages.push({ role: 'system', content: systemInstruction.parts[0].text });
+
+                // 1. 加入 System Prompt (如果是圖片生成，通常 System Prompt 影響較小，但建議保留)
+                if (systemInstruction) {
+                    messages.push({ role: 'system', content: systemInstruction.parts[0].text });
+                }
+
+                // 2. 處理歷史紀錄 (✨ 這是關鍵修改 ✨)
+                // 如果是圖片生成模型，我們需要過濾掉歷史紀錄中的圖片，只保留文字
+                if (category === 'image_generation') {
+                    // 只取最近 10 則對話，避免太久遠的干擾，也節省 Token
+                    const recentHistory = historyForApi.slice(-10);
                     
-                    // 加入歷史紀錄
-                    historyForApi.forEach(m => {
+                    recentHistory.forEach(m => {
+                        const role = m.role === 'model' ? 'assistant' : m.role;
+                        // 提取純文字內容，忽略 inlineData (圖片)
+                        const textContent = m.parts
+                            .filter(p => p.text) // 只留文字
+                            .map(p => p.text)
+                            .join('\n');
+                        
+                        // 只有當有文字內容時才加入歷史，避免送出空訊息
+                        if (textContent.trim()) {
+                            messages.push({ role, content: textContent });
+                        }
+                    });
+                    
+                    // 加入當前使用者的訊息 (當前訊息如果有參考圖，還是要傳送)
+                    const currentContent = currentMessageForApi.parts.map(p => {
+                        if (p.text) return { type: 'text', text: p.text };
+                        // 這裡允許傳送「參考圖」給模型 (Img2Img)
+                        if (p.inlineData) return { type: 'image_url', image_url: { url: `data:${p.inlineData.mimeType};base64,${p.inlineData.data}` } };
+                    }).filter(Boolean);
+                    messages.push({ role: 'user', content: currentContent });
+
+                } else {
+                    // 一般對話模式：完整保留所有歷史 (包含圖片)
+                    [...historyForApi, currentMessageForApi].forEach(m => {
                         const role = m.role === 'model' ? 'assistant' : m.role;
                         const content = m.parts.map(p => {
                             if (p.text) return { type: 'text', text: p.text };
@@ -6230,29 +6285,22 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
                     });
                 }
 
-                // 加入當前使用者訊息 (圖片生成只會傳這一條)
-                const currentContent = currentMessageForApi.parts.map(p => {
-                    if (p.text) return { type: 'text', text: p.text };
-                    if (p.inlineData) return { type: 'image_url', image_url: { url: `data:${p.inlineData.mimeType};base64,${p.inlineData.data}` } };
-                }).filter(Boolean);
-                messages.push({ role: 'user', content: currentContent });
-
                 payload = {
                     model: modelId,
-                    messages, // 這裡現在對於圖片生成來說，只會包含當前的一句話
+                    messages,
                     stream: !isNonStream,
+                    ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
+                    ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
+                    ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
                 };
 
-                // ✨ 優化 2: 針對圖片生成模型的特殊設定
                 if (category === 'image_generation') {
                     payload.modalities = ['image', 'text'];
                     payload.image_config = { aspect_ratio: currentAspectRatio };
-                    delete payload.plugins; // 圖片生成不需要文件解析插件
-                    
-                    // ✨✨✨ 這裡就是你要的解決方案：只對圖片模型加入 transforms ✨✨✨
+                    delete payload.plugins;
+                    // ✨ 加入 middle-out 壓縮，只對圖片生成啟用，做為第二道防線
                     payload.transforms = ["middle-out"]; 
                 } else {
-                    // 一般對話模型加入文件解析
                     payload.plugins = [{ id: 'file-parser', pdf: { engine: 'mistral-ocr' } }];
                 }
 
@@ -6273,6 +6321,7 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
                         message.images.forEach(img => {
                             const url = img.image_url?.url || img.imageUrl?.url || img.url;
                             if (url) {
+                                // 這裡我們直接輸出 Markdown 圖片
                                 resultText += `\n\n![Generated Image](${url})\n\n`;
                             }
                         });
@@ -10406,6 +10455,37 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             ALL_ELEMENTS.messageList.addEventListener('click', (e) => {
                 const copyBtn = e.target.closest('.copy-content-btn');
                 const deleteBtn = e.target.closest('.delete-message-btn');
+                const clickedImage = e.target.closest('img'); // ✨ 偵測圖片點擊
+
+                // ✨ 新增：圖片預覽邏輯
+                if (clickedImage) {
+                    const src = clickedImage.src;
+                    if (src) {
+                        const modal = ALL_ELEMENTS.imagePreviewModal;
+                        const img = ALL_ELEMENTS.previewImageElement;
+                        const downloadBtn = ALL_ELEMENTS.downloadImageBtn;
+
+                        img.src = src;
+                        modal.classList.remove('hidden');
+                        // 稍微延遲加 opacity 才有淡入效果
+                        requestAnimationFrame(() => modal.classList.remove('opacity-0'));
+
+                        // 綁定當次下載事件
+                        downloadBtn.onclick = () => {
+                            const a = document.createElement('a');
+                            a.href = src;
+                            // 產生一個隨機檔名
+                            a.download = `astra-image-${new Date().getTime()}.png`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            showNotification('圖片下載已開始', 'success');
+                        };
+                    }
+                    return;
+                }
+
+                // 原有的複製與刪除邏輯 (保持不變)
                 if (copyBtn) {
                     const messageItem = copyBtn.closest('.message-item');
                     if (messageItem) {
@@ -10428,6 +10508,24 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
                         const messageIndex = parseInt(messageItem.dataset.messageIndex);
                         handleDeleteMessagePair(messageIndex);
                     }
+                }
+            });
+
+            // ✨ 新增：預覽視窗的關閉事件
+            const closeImagePreview = () => {
+                const modal = ALL_ELEMENTS.imagePreviewModal;
+                modal.classList.add('opacity-0');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    ALL_ELEMENTS.previewImageElement.src = ''; // 清空 src 節省記憶體
+                }, 300);
+            };
+
+            ALL_ELEMENTS.closePreviewBtn.addEventListener('click', closeImagePreview);
+            ALL_ELEMENTS.imagePreviewModal.addEventListener('click', (e) => {
+                // 點擊背景關閉，點擊圖片或按鈕不關閉
+                if (e.target === ALL_ELEMENTS.imagePreviewModal) {
+                    closeImagePreview();
                 }
             });
 
