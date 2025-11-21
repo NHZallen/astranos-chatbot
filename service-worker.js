@@ -1,5 +1,5 @@
 // 【重要】每次更新 PWA 時，請手動增加此版本號！
-const CACHE_NAME = 'astra-chat-cache-v50';
+const CACHE_NAME = 'astra-chat-cache-v51';
 
 // 靜態資源，可以長期快取
 const STATIC_ASSETS = [
@@ -55,6 +55,14 @@ self.addEventListener('activate', event => {
 // Service Worker 攔截網路請求事件
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
+
+  // 【新增修正：API 請求直接放行，不經過 Service Worker】
+  // 如果網址包含 openrouter.ai 或 googleapis.com (Gemini)，直接 return，讓瀏覽器正常處理
+  if (url.hostname.includes('openrouter.ai') || 
+      url.hostname.includes('googleapis.com') ||
+      event.request.method === 'POST') { 
+      return; 
+  }
 
   // 【策略一：核心檔案，網路優先】
   // 如果請求的是 index.html 或 update-logs.js
