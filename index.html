@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AstraChat-15.10.3</title>
+    <title>AstraChat-15.10.4</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3b82f6"/>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -5009,11 +5009,17 @@ function renderMarkdownWithFormulas(text) {
             document.querySelectorAll('#file-options-popover .border-t').forEach(sep => sep.style.display = 'block');
             
             if (provider === 'openrouter') {
-                // 檢查當前 OpenRouter 模型是否支援圖片輸入
-                const supportsVision = OPENROUTER_VISION_MODELS.includes(modelInfo?.id);
+    // 檢查當前 OpenRouter 模型是否支援圖片輸入
+    const supportsVision = OPENROUTER_VISION_MODELS.includes(modelInfo?.id);
 
-                // 無論如何，OpenRouter 模型都先隱藏檔案上傳和網路搜尋
-                [uploadFileBtn, webSearchPopoverBtn].forEach(btn => btn.style.display = 'none');
+    // 1. 修改這裡：只隱藏「網路搜尋」，允許顯示「檔案上傳」
+    [webSearchPopoverBtn].forEach(btn => btn.style.display = 'none');
+    
+    // 2. 確保檔案上傳按鈕是顯示的 (flex)
+    uploadFileBtn.style.display = 'flex';
+
+    // 根據是否支援圖片，決定是否顯示相機和圖片按鈕
+    [cameraBtn, uploadImageBtn].forEach(btn => btn.style.display = supportsVision ? 'flex' : 'none');
                 
                 // 根據是否支援圖片，決定是否顯示相機和圖片按鈕
                 [cameraBtn, uploadImageBtn].forEach(btn => btn.style.display = supportsVision ? 'flex' : 'none');
@@ -5840,13 +5846,14 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
                 userParts.push({ text: userMessage });
             }
             uploadedFiles.forEach(file => {
-                userParts.push({
-                    inlineData: {
-                        mimeType: file.type,
-                        data: file.base64.split(',')[1]
-                    }
-                });
-            });
+    userParts.push({
+        inlineData: {
+            mimeType: file.type,
+            data: file.base64.split(',')[1],
+            name: file.name // ✨ 新增這一行：保存檔名
+        }
+    });
+});
             const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
             addMessageToUI(userMessageObject, conv.messages.length, true);
             conv.lastUpdatedAt = new Date().toISOString();
@@ -6121,31 +6128,48 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
 
                 allMessages.forEach(m => {
                     const role = m.role === 'model' ? 'assistant' : m.role;
-                    const currentModelSupportsVision = OPENROUTER_VISION_MODELS.includes(modelId);
-                    const hasImage = m.parts.some(p => p.inlineData);
+                    
+                    // 檢查是否有非文字的內容 (圖片或檔案)
+                    const hasAttachment = m.parts.some(p => p.inlineData);
 
-                    // 如果是支援圖片的模型，並且訊息中確實有圖片
-                    if (currentModelSupportsVision && hasImage) {
+                    if (hasAttachment) {
                         const content = m.parts.map(part => {
                             if (part.text) {
                                 return { type: 'text', text: part.text };
                             } else if (part.inlineData) {
-                                // 這是核心！將我們的資料格式轉換成 OpenRouter 需要的格式
-                                const dataUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-                                return { type: 'image_url', image_url: { url: dataUrl } };
+                                const mimeType = part.inlineData.mimeType;
+                                const base64Data = part.inlineData.data;
+                                const fullDataUrl = `data:${mimeType};base64,${base64Data}`;
+
+                                // 判斷是圖片還是文件
+                                if (mimeType.startsWith('image/')) {
+                                    return { 
+                                        type: 'image_url', 
+                                        image_url: { url: fullDataUrl } 
+                                    };
+                                } else {
+                                    // ✨ 這裡是新增的：處理 PDF 或其他文件
+                                    return {
+                                        type: 'file',
+                                        file: {
+                                            filename: part.inlineData.name || 'document.pdf', // 使用步驟二存入的檔名
+                                            file_data: fullDataUrl // OpenRouter 需要完整的 Data URI
+                                        }
+                                    };
+                                }
                             }
                             return null;
-                        }).filter(Boolean); // 過濾掉空的部分
+                        }).filter(Boolean);
                         
                         messages.push({ role, content });
                     } else {
-                        // 如果不支援圖片，或這條訊息沒有圖片，就只傳送文字
+                        // 純文字訊息
                         const content = m.parts
                             .filter(p => p.text)
                             .map(p => p.text)
                             .join('\n');
                         
-                        if (content) { // 避免傳送空的訊息
+                        if (content) {
                             messages.push({ role, content });
                         }
                     }
@@ -6153,8 +6177,17 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
 
                 payload = {
                     model: modelId,
-                    messages, // 使用我們剛剛建立的、格式正確的 messages 陣列
+                    messages,
                     stream: true,
+                    // ✨ 新增：啟用 OpenRouter 的檔案解析插件
+                    plugins: [
+                        {
+                            id: 'file-parser',
+                            pdf: {
+                                engine: 'mistral-ocr' // 使用官方推薦的 OCR 引擎
+                            }
+                        }
+                    ],
                     ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
                     ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
                     ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
