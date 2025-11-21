@@ -1289,8 +1289,130 @@ button:not(.btn-primary):active:not(:disabled) {
         background-color: var(--user-bubble-bg);
     }
     .file-preview-item {
-         animation: subtleScaleIn 0.3s ease-out forwards;
-    }
+    position: relative;
+    width: 140px; /* 變寬一點以容納檔名 */
+    height: 140px;
+    background-color: var(--input-field-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: subtleScaleIn 0.3s ease-out forwards;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+/* 圖片/影片/圖示 顯示區域 */
+.preview-media-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background-color: #e5e7eb; /* 灰色底 */
+}
+.dark .preview-media-container {
+    background-color: #374151;
+}
+
+.preview-media-container img, 
+.preview-media-container video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* 填滿容器 */
+}
+
+/* 檔案資訊區域 (檔名) */
+.preview-info-container {
+    height: 2.5rem;
+    padding: 0.25rem 0.5rem;
+    background-color: var(--modal-bg);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+}
+
+.preview-filename {
+    font-size: 0.75rem;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* 太長顯示 ... */
+    width: 100%;
+}
+
+/* 影片秒數標籤 */
+.video-duration-badge {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 500;
+    pointer-events: none;
+}
+
+/* 進度條容器 */
+.upload-progress-overlay {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    backdrop-filter: blur(2px);
+}
+
+/* 進度條本體 */
+.circular-progress {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: conic-gradient(var(--button-primary-bg) var(--progress), #e5e7eb 0deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+.circular-progress::before {
+    content: '';
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: var(--modal-bg);
+}
+.progress-text {
+    position: absolute;
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: var(--text-primary);
+}
+
+/* 刪除按鈕優化 */
+.file-remove-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 24px;
+    height: 24px;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: background-color 0.2s;
+    border: none;
+}
+.file-remove-btn:hover {
+    background-color: #ef4444; /* 紅色 */
+}
     .color-dropdown-container {
         position: relative;
     }
@@ -2526,100 +2648,6 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
   .chat-greeting-message {
     display: none; /* 將它完全隱藏起來，不佔據任何空間 */
   }
-}
-.file-preview-item {
-    width: 120px; /* 讓卡片變寬以容納文字 */
-    height: 120px;
-    display: flex;
-    flex-direction: column;
-    background-color: var(--sidebar-bg);
-    border: 1px solid var(--border-color);
-    position: relative; /* 為了定位刪除按鈕和標籤 */
-}
-
-.file-preview-img-container {
-    width: 100%;
-    height: 80px; /* 圖片區域高度 */
-    position: relative;
-    background-color: #000; /* 影片背景黑底 */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    border-top-left-radius: 0.5rem;
-    border-top-right-radius: 0.5rem;
-}
-
-.file-preview-img-container img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.file-info-container {
-    height: 40px;
-    padding: 4px 8px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    background-color: var(--input-field-bg);
-    border-bottom-left-radius: 0.5rem;
-    border-bottom-right-radius: 0.5rem;
-}
-
-.file-name-text {
-    font-size: 0.75rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis; /* 太長顯示 ... */
-    color: var(--text-primary);
-    text-align: center;
-}
-
-/* 影片時長標籤 */
-.video-duration-badge {
-    position: absolute;
-    bottom: 4px;
-    right: 4px;
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    font-size: 0.6rem;
-    padding: 2px 4px;
-    border-radius: 4px;
-    pointer-events: none;
-}
-
-/* 進度條容器 */
-.upload-progress-container {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 4px;
-    background-color: rgba(0,0,0,0.1);
-    z-index: 5;
-}
-
-/* 進度條本體 */
-.upload-progress-bar {
-    height: 100%;
-    background-color: #3b82f6; /* 藍色 */
-    width: 0%;
-    transition: width 0.2s ease;
-}
-
-/* 載入中的遮罩 */
-.loading-overlay {
-    position: absolute;
-    inset: 0;
-    background-color: rgba(255,255,255,0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 4;
-}
-.dark .loading-overlay {
-    background-color: rgba(0,0,0,0.5);
 }
 </style>
 <script>
@@ -7610,209 +7638,156 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
             });
             return results;
         };
-        const formatDuration = (seconds) => {
-            const m = Math.floor(seconds / 60);
-            const s = Math.floor(seconds % 60);
-            return `${m}:${s.toString().padStart(2, '0')}`;
-        };
-
-        // ✨ 新增工具函數：生成影片縮圖與獲取時長
-        const generateVideoMetadata = (file) => {
-            return new Promise((resolve) => {
-                const video = document.createElement('video');
-                video.preload = 'metadata';
-                video.src = URL.createObjectURL(file);
-                video.muted = true;
-                video.playsInline = true;
-                video.currentTime = 0.1; 
-
-                video.onloadedmetadata = () => {
-                    video.onseeked = () => {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = video.videoWidth;
-                        canvas.height = video.videoHeight;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                        const thumbnail = canvas.toDataURL('image/jpeg', 0.7);
-                        const duration = video.duration;
-                        URL.revokeObjectURL(video.src);
-                        resolve({ thumbnail, duration });
-                    };
-                };
-                
-                video.onerror = () => {
-                    resolve({ thumbnail: null, duration: 0 });
-                };
-            });
-        };
-
-        // ✨ 全新的 renderFilePreviews 函數
         const renderFilePreviews = () => {
-            const { filePreviewContainer } = ALL_ELEMENTS;
-            filePreviewContainer.innerHTML = '';
-            
-            uploadedFiles.forEach(file => {
-                const previewEl = document.createElement('div');
-                previewEl.className = 'file-preview-item rounded-lg overflow-hidden shadow-sm'; 
-                
-                let mediaContent = '';
-                let badgeHTML = '';
+    const { filePreviewContainer } = ALL_ELEMENTS;
+    filePreviewContainer.innerHTML = '';
 
-                // 判斷顯示內容
-                if (file.type.startsWith('image/')) {
-                    const src = file.base64 || ''; 
-                    mediaContent = `<img src="${src}" class="w-full h-full object-cover">`;
-                } else if (file.type.startsWith('video/')) {
-                    const thumb = file.thumbnail || ''; 
-                    mediaContent = thumb 
-                        ? `<img src="${thumb}" class="w-full h-full object-cover">`
-                        : `<div class="w-full h-full flex items-center justify-center bg-black text-gray-500"><svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg></div>`;
-                    
-                    if (file.duration) {
-                        badgeHTML = `<div class="video-duration-badge">${formatDuration(file.duration)}</div>`;
-                    }
-                } else {
-                    // 一般檔案
-                    mediaContent = `<div class="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800">
-                       <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-                    </div>`;
-                }
+    uploadedFiles.forEach(file => {
+        const previewEl = document.createElement('div');
+        previewEl.className = 'file-preview-item';
 
-                // 進度條邏輯
-                let progressHTML = '';
-                if (file.loading) {
-                    progressHTML = `
-                        <div class="loading-overlay"></div>
-                        <div class="upload-progress-container">
-                            <div class="upload-progress-bar" style="width: ${file.progress || 0}%"></div>
-                        </div>
-                    `;
-                }
+        // --- 1. 準備內容 HTML ---
+        let mediaContent = '';
+        let badgeHTML = '';
 
-                previewEl.innerHTML = `
-                    <div class="file-preview-img-container">
-                        ${mediaContent}
-                        ${badgeHTML}
-                        ${progressHTML}
+        // 判斷檔案類型
+        if (file.type.startsWith('image/')) {
+            // 圖片：如果還在讀取中且沒有 base64，顯示佔位符；否則顯示圖片
+            const src = file.base64 || ''; 
+            if (src) {
+                mediaContent = `<img src="${src}" alt="${file.name}">`;
+            } else {
+                // 圖片讀取中顯示圖示
+                mediaContent = `<div class="w-full h-full flex items-center justify-center text-gray-400"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`;
+            }
+        } else if (file.type.startsWith('video/')) {
+            // 影片：顯示縮圖或影片圖示
+            if (file.thumbnail) {
+                mediaContent = `<img src="${file.thumbnail}" alt="${file.name}">`;
+            } else {
+                mediaContent = `<div class="w-full h-full flex items-center justify-center text-gray-400"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></div>`;
+            }
+            // 加上秒數標籤
+            if (file.duration) {
+                badgeHTML = `<div class="video-duration-badge">${formatDuration(file.duration)}</div>`;
+            }
+        } else {
+            // 其他檔案：顯示文件圖示
+            mediaContent = `<div class="w-full h-full flex items-center justify-center text-gray-500">
+               <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            </div>`;
+        }
+
+        // --- 2. 準備進度條 HTML (如果正在載入) ---
+        let progressHTML = '';
+        if (file.isLoading && file.progress < 100) {
+            // 計算 CSS 變數給圓餅圖使用 (0度到360度)
+            const degree = (file.progress / 100) * 360;
+            progressHTML = `
+                <div class="upload-progress-overlay">
+                    <div class="circular-progress" style="--progress: ${degree}deg">
+                        <span class="progress-text">${file.progress}%</span>
                     </div>
-                    <div class="file-info-container">
-                        <div class="file-name-text" title="${file.name}">${file.name}</div>
-                    </div>
-                `;
+                </div>
+            `;
+        }
 
-                const removeBtn = document.createElement('button');
-                removeBtn.className = 'absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 z-10 shadow-md';
-                removeBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
-                removeBtn.onclick = (e) => {
-                    e.stopPropagation(); 
-                    if (file.abortReader) file.abortReader(); 
-                    removeFile(file.id);
-                };
-                previewEl.appendChild(removeBtn);
+        // --- 3. 組合 HTML ---
+        previewEl.innerHTML = `
+            ${progressHTML}
+            <button class="file-remove-btn" title="移除檔案">&times;</button>
+            <div class="preview-media-container">
+                ${mediaContent}
+                ${badgeHTML}
+            </div>
+            <div class="preview-info-container">
+                <div class="preview-filename" title="${file.name}">${file.name}</div>
+            </div>
+        `;
 
-                filePreviewContainer.appendChild(previewEl);
-            });
-            updateInputState();
+        // 綁定刪除事件
+        const removeBtn = previewEl.querySelector('.file-remove-btn');
+        removeBtn.onclick = (e) => {
+            e.stopPropagation(); // 防止觸發其他點擊
+            removeFile(file.id);
         };
 
-        // ✨ 全新的 handleFileSelection 函數
-        const handleFileSelection = (event) => {
-            const files = event.target.files;
-            if (!files || files.length === 0) return;
+        filePreviewContainer.appendChild(previewEl);
+    });
 
-            Array.from(files).forEach(file => {
-                const fileObj = {
-                    id: crypto.randomUUID(),
-                    name: file.name,
-                    type: file.type,
-                    base64: null,
-                    loading: true,
-                    progress: 0,
-                    thumbnail: null,
-                    duration: null,
-                    abortReader: null
-                };
-
-                uploadedFiles.push(fileObj);
-                renderFilePreviews(); 
-
-                const reader = new FileReader();
-                fileObj.abortReader = () => reader.abort();
-
-                reader.onprogress = (e) => {
-                    if (e.lengthComputable) {
-                        const percentLoaded = Math.round((e.loaded / e.total) * 100);
-                        fileObj.progress = percentLoaded;
-                        renderFilePreviews();
-                    }
-                };
-
-                reader.onload = async (e) => {
-                    fileObj.base64 = e.target.result;
-                    fileObj.progress = 100;
-                    
-                    if (file.type.startsWith('video/')) {
-                        try {
-                            const meta = await generateVideoMetadata(file);
-                            fileObj.thumbnail = meta.thumbnail;
-                            fileObj.duration = meta.duration;
-                        } catch (err) {
-                            console.error('Video meta error', err);
-                        }
-                    }
-
-                    fileObj.loading = false;
-                    renderFilePreviews(); 
-                };
-
-                reader.onerror = () => {
-                    fileObj.loading = false;
-                    showNotification(`檔案 ${file.name} 讀取失敗`, 'error');
-                    removeFile(fileObj.id); 
-                };
-
-                reader.readAsDataURL(file);
-            });
-
-            event.target.value = ''; 
-        };
-        const formatDuration = (seconds) => {
-    const m = Math.floor(seconds / 60);
-    const s = Math.floor(seconds % 60);
-    return `${m}:${s.toString().padStart(2, '0')}`;
+    updateInputState();
 };
+        const handleFileSelection = async (event) => {
+    const files = Array.from(event.target.files);
+    if (!files.length) return;
 
-// ✨ 新增：生成影片縮圖與獲取時長
-const generateVideoMetadata = (file) => {
-    return new Promise((resolve) => {
-        const video = document.createElement('video');
-        video.preload = 'metadata';
-        video.src = URL.createObjectURL(file);
-        video.muted = true;
-        video.playsInline = true;
-        video.currentTime = 0.1; //稍微抓取第 0.1 秒，避免全黑畫面
-
-        video.onloadedmetadata = () => {
-            // 影片載入 metadata 後
-            video.onseeked = () => {
-                // 畫面定位完成後截圖
-                const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const thumbnail = canvas.toDataURL('image/jpeg', 0.7);
-                const duration = video.duration;
-                
-                URL.revokeObjectURL(video.src); // 釋放記憶體
-                resolve({ thumbnail, duration });
-            };
+    // 針對每個檔案進行處理
+    for (const file of files) {
+        const fileId = crypto.randomUUID();
+        
+        // 1. 先建立一個「載入中」的物件，放入陣列
+        // progress 設為 0，thumbnail 先設為 null
+        const newFileEntry = {
+            id: fileId,
+            name: file.name,
+            type: file.type,
+            base64: null,      // 還沒讀完
+            progress: 0,       // 進度 0%
+            isLoading: true,   // 標記正在載入
+            thumbnail: null,   // 影片縮圖
+            duration: 0        // 影片長度
         };
         
-        video.onerror = () => {
-            resolve({ thumbnail: null, duration: 0 });
+        uploadedFiles.push(newFileEntry);
+        renderFilePreviews(); // 先畫出進度條 UI
+
+        // 2. 判斷如果是影片，先抓縮圖
+        if (file.type.startsWith('video/')) {
+            try {
+                const videoData = await generateVideoThumbnail(file);
+                const targetFile = uploadedFiles.find(f => f.id === fileId);
+                if (targetFile) {
+                    targetFile.thumbnail = videoData.thumbnail;
+                    targetFile.duration = videoData.duration;
+                }
+            } catch (e) {
+                console.error("無法生成縮圖", e);
+            }
+        }
+
+        // 3. 使用 FileReader 讀取檔案 (包含進度監聽)
+        const reader = new FileReader();
+
+        // 監聽進度事件
+        reader.onprogress = (e) => {
+            if (e.lengthComputable) {
+                const percent = Math.round((e.loaded / e.total) * 100);
+                const targetFile = uploadedFiles.find(f => f.id === fileId);
+                if (targetFile) {
+                    targetFile.progress = percent;
+                    // 這裡我們局部更新 DOM，避免整個列表閃爍 (進階優化)
+                    // 但為了簡單，重新呼叫 renderFilePreviews 也可以
+                    renderFilePreviews(); 
+                }
+            }
         };
-    });
+
+        // 讀取完成
+        reader.onload = (e) => {
+            const targetFile = uploadedFiles.find(f => f.id === fileId);
+            if (targetFile) {
+                targetFile.base64 = e.target.result;
+                targetFile.progress = 100;
+                targetFile.isLoading = false; // 載入完成
+                renderFilePreviews();
+            }
+        };
+
+        // 開始讀取
+        reader.readAsDataURL(file);
+    }
+
+    event.target.value = ''; // 清空 input，允許重複上傳相同檔案
 };
         const removeFile = (fileId) => {
             uploadedFiles = uploadedFiles.filter(f => f.id !== fileId);
@@ -10433,6 +10408,50 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
         console.error('寄送對話紀錄到 Google Apps Script 時發生網路錯誤:', error);
     }
 }
+        const formatDuration = (seconds) => {
+    if (!seconds) return '00:00';
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+};
+
+// 工具：產生影片縮圖與獲取長度
+const generateVideoThumbnail = (file) => {
+    return new Promise((resolve) => {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.src = URL.createObjectURL(file);
+        video.muted = true;
+        video.playsInline = true; // 重要：防止手機全螢幕播放
+
+        // 當影片元數據加載完成（知道長度了）
+        video.onloadedmetadata = () => {
+            // 設定跳轉到第 0.1 秒抓圖
+            video.currentTime = 0.1;
+        };
+
+        // 當影片跳轉完成（畫面出來了）
+        video.onseeked = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const duration = video.duration;
+            const thumbnail = canvas.toDataURL('image/jpeg', 0.7); // 壓縮一下縮圖
+            
+            URL.revokeObjectURL(video.src); // 釋放記憶體
+            resolve({ thumbnail, duration });
+        };
+
+        // 錯誤處理
+        video.onerror = () => {
+            URL.revokeObjectURL(video.src);
+            resolve({ thumbnail: null, duration: 0 });
+        };
+    });
+};
         async function initChatApp() {
             if (window.innerWidth >= 1024) {
         sidebarOpen = true;
