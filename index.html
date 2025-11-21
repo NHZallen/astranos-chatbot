@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AstraChat-16.1.0</title>
+    <title>AstraChat-16.1.1</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3b82f6"/>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -2526,6 +2526,50 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
   .chat-greeting-message {
     display: none; /* 將它完全隱藏起來，不佔據任何空間 */
   }
+}
+.file-list-wrapper {
+    transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+    overflow: hidden;
+    position: relative;
+}
+
+/* 收起狀態：高度限制為一行 (大約是圖片的高度或檔案泡泡的高度) */
+.file-list-wrapper.collapsed {
+    max-height: 5rem; /* 80px，足夠顯示一行檔案或縮圖 */
+}
+/* 針對純圖片或較大內容的微調，如果有圖片，稍微高一點 */
+.file-list-wrapper.collapsed:has(img) {
+    max-height: 12rem; /* 192px */
+}
+
+.file-list-wrapper.expanded {
+    max-height: 1000px; /* 設定一個足夠大的值讓內容展開 */
+}
+
+/* 展開/收起按鈕樣式 */
+.file-toggle-btn {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    background-color: var(--sidebar-bg);
+    border: 1px solid var(--border-color);
+    padding: 2px 8px;
+    border-radius: 9999px;
+    margin-top: 0.5rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s;
+}
+.file-toggle-btn:hover {
+    background-color: var(--hover-bg);
+    color: var(--text-primary);
+}
+.file-toggle-btn svg {
+    transition: transform 0.3s;
+}
+.file-toggle-btn.active svg {
+    transform: rotate(180deg);
 }
 </style>
 <script>
@@ -5668,28 +5712,46 @@ function renderMarkdownWithFormulas(text) {
                     contentHTML += `<div>${isUser ? combinedText.replace(/\n/g, '<br>') : renderMarkdownWithFormulas(combinedText)}</div>`;
                 }
                 if (mediaPartsContent.length > 0) {
-                    let mediaHTML = '<div class="mt-2 flex flex-wrap gap-2">';
+                    // ✨ 修改開始：檔案列表與展開收起邏輯
+                    const fileCount = mediaPartsContent.length;
+                    const THRESHOLD = 3; // 超過 3 個檔案就摺疊
+                    const needsCollapse = fileCount > THRESHOLD;
+                    
+                    // 1. 建立容器開頭，如果有需要折疊，預設加上 collapsed class
+                    let mediaHTML = `<div class="mt-2 file-list-wrapper flex flex-wrap gap-2 ${needsCollapse ? 'collapsed' : ''}" id="file-wrapper-${index}">`;
+                    
                     mediaPartsContent.forEach(media => {
                         const src = `data:${media.mimeType};base64,${media.data}`;
                         if (media.mimeType.startsWith('image/')) {
                             mediaHTML += `<img src="${src}" class="max-w-xs max-h-48 rounded-lg object-cover border border-[var(--border-color)]">`;
                         } else {
-                            // ✨ 修改開始：處理檔名顯示邏輯
                             let displayName = media.name || '檔案';
-                            // 如果檔名超過 5 個字，截取前 5 個字並加上 ...
                             if (displayName.length > 5) {
                                 displayName = displayName.substring(0, 5) + '...';
                             }
-                            // ✨ 修改結束
 
-                            mediaHTML += `<div class="p-2 bg-[var(--hover-bg)] rounded-lg text-sm flex items-center gap-2 border border-[var(--border-color)]" title="${media.name || '檔案'}"> <!-- 加上 title 屬性，滑鼠懸停可見完整名稱 -->
+                            // ✨ 修改點：加入 'text-black dark:text-gray-200' 
+                            // 這會強制淺色模式下文字為純黑，深色模式下為淺灰，不受父層文字顏色影響
+                            mediaHTML += `<div class="p-2 bg-[var(--hover-bg)] rounded-lg text-sm flex items-center gap-2 border border-[var(--border-color)] text-black dark:text-gray-200" title="${media.name || '檔案'}">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
                                 <span>${displayName}</span>
                             </div>`;
                         }
                     });
-                    mediaHTML += '</div>';
+                    mediaHTML += '</div>'; // 關閉列表容器
+
+                    // 2. 如果需要折疊，加入切換按鈕
+                    if (needsCollapse) {
+                        mediaHTML += `
+                            <button class="file-toggle-btn" data-target="file-wrapper-${index}">
+                                <span>展開全部 (${fileCount})</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                            </button>
+                        `;
+                    }
+                    
                     contentHTML += mediaHTML;
+                    // ✨ 修改結束
                 }
                 if (!isUser) {
                     const timeString = formatFullTimestamp(msg.createdAt);
@@ -10332,6 +10394,7 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             ALL_ELEMENTS.messageList.addEventListener('click', (e) => {
                 const copyBtn = e.target.closest('.copy-content-btn');
                 const deleteBtn = e.target.closest('.delete-message-btn');
+                const toggleBtn = e.target.closest('.file-toggle-btn');
                 if (copyBtn) {
                     const messageItem = copyBtn.closest('.message-item');
                     if (messageItem) {
@@ -10353,6 +10416,31 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
                      if (messageItem) {
                         const messageIndex = parseInt(messageItem.dataset.messageIndex);
                         handleDeleteMessagePair(messageIndex);
+                    }
+                }
+                else if (toggleBtn) {
+                    const targetId = toggleBtn.dataset.target;
+                    const wrapper = document.getElementById(targetId);
+                    const textSpan = toggleBtn.querySelector('span');
+                    
+                    if (wrapper) {
+                        const isCollapsed = wrapper.classList.contains('collapsed');
+                        
+                        if (isCollapsed) {
+                            // 展開動作
+                            wrapper.classList.remove('collapsed');
+                            wrapper.classList.add('expanded');
+                            toggleBtn.classList.add('active');
+                            textSpan.textContent = '收起';
+                        } else {
+                            // 收起動作
+                            wrapper.classList.remove('expanded');
+                            wrapper.classList.add('collapsed');
+                            toggleBtn.classList.remove('active');
+                            // 恢復顯示數量
+                            const count = wrapper.children.length; 
+                            textSpan.textContent = `展開全部 (${count})`;
+                        }
                     }
                 }
             });
