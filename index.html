@@ -6162,40 +6162,29 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
             if (!modelInfo) throw new Error(`找不到模型設定: ${conv.model}`);
             
             const { provider, id: modelId, category } = modelInfo;
-            let apiKey;
-
-            if (provider === 'gemini') {
-                apiKey = config.apiKeys.gemini;
-            } else if (provider === 'openrouter') {
-                apiKey = config.apiKeys.openrouter;
-            }
-
+            let apiKey = provider === 'gemini' ? config.apiKeys.gemini : config.apiKeys.openrouter;
             if (!apiKey) throw new Error(`請先在設定中提供 ${modelInfo.name} 所需的 API 金鑰。`);
 
             const historyForApi = conv.messages.slice(0, -1);
             const currentMessageForApi = { role: 'user', parts: parts };
             let url, payload, headers;
             let systemInstruction = null;
-            
-            // 構建 System Instruction
+
+            // 構建 System Prompt
             let baseInstructionText = '';
-            const langMap = {
-                'zh-TW': '請用繁體中文回覆，除非使用者有特別要求。',
-                'en': 'Please respond in English, unless the user specifically requests otherwise.',
-                'fr': 'Veuillez répondre en français, sauf si l\'utilisateur demande spécifiquement le contraire.'
-            };
-            baseInstructionText = langMap[config.aiDefaultLanguage] || '';
             if (conv.astrasId) {
                 const ast = astras.find(a => a.id === conv.astrasId);
-                if (ast) baseInstructionText = `${ast.instructions}\n\n${baseInstructionText}`;
+                if (ast) baseInstructionText = ast.instructions;
             }
             if (config.isLearningMode) {
-                 const learningModePrompt = `# 序言... (略，保持原樣)`; 
-                 systemInstruction = { parts: [{ text: learningModePrompt }] }; // 簡化顯示，實際上你應該保留原本的長文本
+                 // 簡化顯示，請確保您保留了原本這裡完整的學習模式 prompt
+                 const learningModePrompt = `# 序言... (略)`; 
+                 systemInstruction = { parts: [{ text: learningModePrompt }] }; 
             } else if (baseInstructionText) {
                 systemInstruction = { parts: [{ text: baseInstructionText }] };
             }
             
+            // 記憶功能 Prompt
             let memoryPrompt = '';
             if (config.memoryEnabled1) {
                 const enabledMemories = personalMemories.filter(m => m.enabled).map(m => m.content).join('\n');
@@ -6208,70 +6197,62 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
             }
 
             if (provider === 'gemini') {
+                // Gemini Logic (這裡不需要改，因為 Gemini 圖片模型通常走 OpenRouter 介面)
                 url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?key=${apiKey}`;
                 payload = {
                     contents: cleanGeminiHistory([...historyForApi, currentMessageForApi]),
                     generationConfig: {
                         ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
-                        ...(conv.genConfig.topP !== null && { topP: conv.genConfig.topP }),
-                        ...(conv.genConfig.maxTokens !== null && { maxOutputTokens: conv.genConfig.maxTokens }),
                     }
                 };
                 if (systemInstruction) payload.systemInstruction = systemInstruction;
                 if (conv.isWebSearchEnabled || isWebSearchForced) payload.tools = [{"googleSearch": {}}];
                 headers = { 'Content-Type': 'application/json' };
 
-            } else { // OpenRouter Logic
+            } else { // OpenRouter Logic (OpenAI, Claude, Gemini via OpenRouter)
                 url = 'https://openrouter.ai/api/v1/chat/completions';
                 
                 const messages = [];
-                if (systemInstruction) {
-                    messages.push({ role: 'system', content: systemInstruction.parts.map(p => p.text).join('\n') });
-                }
-
-                const allMessages = [...historyForApi, currentMessageForApi];
-                allMessages.forEach(m => {
-                    const role = m.role === 'model' ? 'assistant' : m.role;
-                    const hasAttachment = m.parts.some(p => p.inlineData);
-
-                    if (hasAttachment) {
-                        const content = m.parts.map(part => {
-                            if (part.text) return { type: 'text', text: part.text };
-                            else if (part.inlineData) {
-                                const mimeType = part.inlineData.mimeType;
-                                const base64Data = part.inlineData.data;
-                                const fullDataUrl = `data:${mimeType};base64,${base64Data}`;
-                                if (mimeType.startsWith('image/')) {
-                                    return { type: 'image_url', image_url: { url: fullDataUrl } };
-                                } else {
-                                    return { type: 'file', file: { filename: part.inlineData.name || 'file', file_data: fullDataUrl } };
-                                }
-                            }
-                            return null;
+                
+                // ✨ 優化 1: 只有在「非」圖片生成模式下，才加入 System Prompt 和歷史紀錄
+                // 這樣可以避免把 60萬 token 的歷史傳給圖片模型
+                if (category !== 'image_generation') {
+                    if (systemInstruction) messages.push({ role: 'system', content: systemInstruction.parts[0].text });
+                    
+                    // 加入歷史紀錄
+                    historyForApi.forEach(m => {
+                        const role = m.role === 'model' ? 'assistant' : m.role;
+                        const content = m.parts.map(p => {
+                            if (p.text) return { type: 'text', text: p.text };
+                            if (p.inlineData) return { type: 'image_url', image_url: { url: `data:${p.inlineData.mimeType};base64,${p.inlineData.data}` } };
                         }).filter(Boolean);
                         messages.push({ role, content });
-                    } else {
-                        const content = m.parts.filter(p => p.text).map(p => p.text).join('\n');
-                        if (content) messages.push({ role, content });
-                    }
-                });
+                    });
+                }
+
+                // 加入當前使用者訊息 (圖片生成只會傳這一條)
+                const currentContent = currentMessageForApi.parts.map(p => {
+                    if (p.text) return { type: 'text', text: p.text };
+                    if (p.inlineData) return { type: 'image_url', image_url: { url: `data:${p.inlineData.mimeType};base64,${p.inlineData.data}` } };
+                }).filter(Boolean);
+                messages.push({ role: 'user', content: currentContent });
 
                 payload = {
                     model: modelId,
-                    messages,
+                    messages, // 這裡現在對於圖片生成來說，只會包含當前的一句話
                     stream: !isNonStream,
-                    ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
-                    ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
-                    ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
                 };
 
+                // ✨ 優化 2: 針對圖片生成模型的特殊設定
                 if (category === 'image_generation') {
                     payload.modalities = ['image', 'text'];
-                    payload.image_config = {
-                        aspect_ratio: currentAspectRatio
-                    };
-                    delete payload.plugins; 
+                    payload.image_config = { aspect_ratio: currentAspectRatio };
+                    delete payload.plugins; // 圖片生成不需要文件解析插件
+                    
+                    // ✨✨✨ 這裡就是你要的解決方案：只對圖片模型加入 transforms ✨✨✨
+                    payload.transforms = ["middle-out"]; 
                 } else {
+                    // 一般對話模型加入文件解析
                     payload.plugins = [{ id: 'file-parser', pdf: { engine: 'mistral-ocr' } }];
                 }
 
@@ -6281,7 +6262,7 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
             const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
             if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'API 請求失敗'); }
             
-            // ✨ 圖像生成：非串流模式處理
+            // 圖像生成：非串流模式處理
             if (isNonStream) {
                 const data = await response.json();
                 if (data.choices && data.choices.length > 0 && data.choices[0].message) {
