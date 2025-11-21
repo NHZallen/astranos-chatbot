@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AstraChat-16.2.0</title>
+    <title>AstraChat-16.1.1</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3b82f6"/>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -3442,7 +3442,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             </div>
         </div>
     </div>
-    <input type="file" id="image-video-input" class="hidden" accept="image/*,video/*,audio/*" multiple>
+    <input type="file" id="image-video-input" class="hidden" accept="image/*,video/*" multiple>
     <input type="file" id="file-upload-input" class="hidden" multiple>
     <input type="file" id="wallpaper-upload-input" class="hidden" accept="image/*">
     <input type="file" id="astras-avatar-input" class="hidden" accept="image/*">
@@ -4043,6 +4043,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     // OpenRouter Paid Models (x-ai)
     { id: 'x-ai/grok-4-fast', name: 'Grok 4 Fast', provider: 'openrouter', descriptionKey: 'model_grok_4_fast_desc', category: 'general' },
     { id: 'x-ai/grok-4.1-fast', name: 'Grok 4.1 Fast', provider: 'openrouter', descriptionKey: 'model_grok_4_1_fast_desc', category: 'general' },
+    { id: 'x-ai/grok-4.1-fast:free', name: 'Grok 4.1 Fast', provider: 'openrouter', descriptionKey: 'model_grok_4_1_fast_free_desc', category: 'general' },
     { id: 'x-ai/grok-code-fast-1', name: 'Grok Code Fast 1', provider: 'openrouter', descriptionKey: 'model_grok_code_fast_1_desc', category: 'coding' },
 
     // OpenRouter Paid Models (Qwen)
@@ -4059,6 +4060,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     { id: 'moonshotai/kimi-k2-thinking', name: 'Kimi K2 Thinking', provider: 'openrouter', descriptionKey: 'model_kimi_k2_thinking_desc', category: 'thinking' },
     // OpenRouter Paid Models (Gemini)
     { id: 'google/gemini-3-pro-preview', name: 'Gemini 3 Pro Preview', provider: 'openrouter', descriptionKey: 'model_gemini_3_pro_preview_desc', category: 'general' },
+    { id: 'google/gemini-3-pro-image-preview', name: 'Nano banana pro🍌', provider: 'openrouter', descriptionKey: 'model_gemini_3_pro_image_preview_desc', category: 'image_generation' },
+    { id: 'google/gemini-2.5-flash-image', name: 'Nano banana🍌', provider: 'openrouter', descriptionKey: 'model_gemini_2_5_flash_image_desc', category: 'image_generation' },
 ];
         const CHEAP_MODEL_ID = 'gemini-2.5-flash-lite';
         const OPENROUTER_VISION_MODELS = [
@@ -4073,7 +4076,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     'qwen/qwen3-vl-8b-instruct',
     'nvidia/nemotron-nano-12b-v2-vl:free',
     'qwen/qwen2.5-vl-72b-instruct',
-    'google/gemini-3-pro-preview'
+    'google/gemini-3-pro-preview',
+    'google/gemini-3-pro-image-preview',
+    'google/gemini-2.5-flash-image',
+    'x-ai/grok-4.1-fast:free',
 ];
         const FOLDER_COLORS = {
             black: '#000000',gray: '#808080', red: '#f87171', yellow: '#facc15', green: '#4ade80',
@@ -5543,7 +5549,7 @@ function renderMarkdownWithFormulas(text) {
                                     const categories = [...new Set(companyModels.map(m => m.category || 'general'))];
                                     categoryView.innerHTML = createBackButtonHTML('back', 2);
                                     
-                                    const categoryOrder = ['general', 'image', 'thinking', 'coding'];
+                                    const categoryOrder = ['general', 'image', 'image_generation', 'thinking', 'coding'];
                                     categories.sort((a, b) => categoryOrder.indexOf(a) - categoryOrder.indexOf(b));
 
                                     categoryView.innerHTML += categories.map(cat => {
@@ -6178,41 +6184,17 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
 
                                 // 判斷是圖片還是文件
                                 if (mimeType.startsWith('image/')) {
-                                    // 處理圖片
                                     return { 
                                         type: 'image_url', 
                                         image_url: { url: fullDataUrl } 
                                     };
-                                } else if (mimeType.startsWith('video/')) {
-                                    // ✨ 處理影片 (根據官方文件使用 video_url)
-                                    return {
-                                        type: 'video_url',
-                                        videoUrl: {
-                                            url: fullDataUrl // 這裡需要完整的 data:video/mp4;base64,...
-                                        }
-                                    };
-                                } else if (mimeType.startsWith('audio/')) {
-                                    // ✨ 處理音訊 (根據官方文件使用 input_audio)
-                                    // OpenRouter/Gemini 通常需要格式 (wav, mp3)，我們從 mimeType 提取
-                                    let format = 'wav'; // 預設
-                                    if (mimeType.includes('mp3') || mimeType.includes('mpeg')) format = 'mp3';
-                                    else if (mimeType.includes('wav')) format = 'wav';
-                                    else if (mimeType.includes('aac')) format = 'aac';
-                                    
-                                    return {
-                                        type: 'input_audio',
-                                        inputAudio: {
-                                            data: base64Data, // 注意：這裡只要純 base64，不需要前綴
-                                            format: format
-                                        }
-                                    };
                                 } else {
-                                    // 處理 PDF 或其他文件
+                                    // ✨ 這裡是新增的：處理 PDF 或其他文件
                                     return {
                                         type: 'file',
                                         file: {
-                                            filename: part.inlineData.name || 'document.pdf',
-                                            file_data: fullDataUrl
+                                            filename: part.inlineData.name || 'document.pdf', // 使用步驟二存入的檔名
+                                            file_data: fullDataUrl // OpenRouter 需要完整的 Data URI
                                         }
                                     };
                                 }
@@ -7616,22 +7598,11 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
                 previewEl.className = 'relative w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden file-preview-item';
                 if (file.type.startsWith('image/')) {
                     previewEl.innerHTML = `<img src="${file.base64}" class="w-full h-full object-cover">`;
-                } else if (file.type.startsWith('video/')) {
-                    // 影片預覽
-                    previewEl.innerHTML = `<video src="${file.base64}" class="w-full h-full object-cover" muted></video>
-                                           <div class="absolute bottom-0 right-0 p-1 bg-black/50 text-white text-xs">Video</div>`;
-                } else if (file.type.startsWith('audio/')) {
-                    // 音訊圖示
-                    previewEl.innerHTML = `<div class="w-full h-full flex flex-col items-center justify-center bg-yellow-100 dark:bg-yellow-900">
-                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-600 dark:text-yellow-400"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
-                       <span class="text-[10px] text-yellow-800 dark:text-yellow-200">Audio</span>
-                    </div>`;
                 } else {
                     previewEl.innerHTML = `<div class="w-full h-full flex items-center justify-center">
                        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
                     </div>`;
                 }
-
                 const removeBtn = document.createElement('button');
                 removeBtn.className = 'absolute top-0 right-0 m-1 w-5 h-5 bg-black bg-opacity-50 text-white rounded-full flex items-center justify-center text-xs';
                 removeBtn.innerHTML = '&times;';
