@@ -2546,6 +2546,33 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
         font-weight: 600;
         color: var(--button-primary-bg);
     }
+    #file-options-popover {
+    z-index: 1000 !important; /* 強制最高層級 */
+}
+
+/* 第二層比例選單樣式 */
+#aspect-ratio-submenu {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+#aspect-ratio-submenu .ratio-option {
+    text-align: center;
+    padding: 6px 0;
+    font-size: 0.8rem;
+    border-radius: 4px;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+#aspect-ratio-submenu .ratio-option:hover {
+    background-color: var(--hover-bg);
+}
+
+#aspect-ratio-submenu .ratio-option.active {
+    background-color: var(--button-primary-bg);
+    color: #ffffff;
+}
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -2764,17 +2791,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         </div>
     </div>
     <div class="flex items-center gap-2">
-        <!-- ✨ 新增：圖片比例調整按鈕與選單 -->
-        <div id="aspect-ratio-container" class="relative hidden">
-            <button id="aspect-ratio-btn" class="p-2 rounded-md hover:bg-[var(--hover-bg)] flex items-center gap-1 text-sm font-medium text-[var(--text-secondary)]" title="調整圖片比例">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-                <span id="current-ratio-text">1:1</span>
-            </button>
-            <!-- 比例選擇選單 -->
-            <div id="aspect-ratio-menu" class="popover absolute right-0 top-full mt-2 w-32 rounded-lg border border-[var(--border-color)] bg-[var(--modal-bg)] shadow-lg z-50 hidden flex-col p-1">
-                <!-- 選項會由 JS 動態生成 -->
-            </div>
-        </div>
         <button id="show-prompts-btn" class="p-2 rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 hover:bg-[var(--hover-bg)] hidden" title="顯示後續追問">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M12 21v-1m0-10a4 4 0 100 8 4 4 0 000-8z" /></svg>
     </button>
@@ -2852,6 +2868,15 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     <button id="deep-research-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
         <span data-lang-key="research">研究</span>
+    </button>
+                                        <button id="aspect-ratio-popover-btn" class="w-full text-left px-4 py-2 text-sm hover:bg-[var(--hover-bg)] flex items-center gap-3 hidden relative">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+        <span class="flex-1">圖片比例</span>
+        <span id="current-ratio-display" class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">1:1</span>
+        <!-- 第二層選單 -->
+        <div id="aspect-ratio-submenu" class="absolute left-full bottom-0 ml-2 w-24 bg-[var(--modal-bg)] border border-[var(--border-color)] rounded-lg shadow-xl z-[100] hidden flex-col p-1">
+            <!-- 選項由 JS 生成 -->
+        </div>
     </button>
 </div>
                                 </div>
@@ -3806,9 +3831,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             cancelPlanBtn: document.getElementById('cancel-plan-btn'),
             showPromptsBtn: document.getElementById('show-prompts-btn'), // 新增這行
             aspectRatioContainer: document.getElementById('aspect-ratio-container'),
-            aspectRatioBtn: document.getElementById('aspect-ratio-btn'),
-            aspectRatioMenu: document.getElementById('aspect-ratio-menu'),
-            currentRatioText: document.getElementById('current-ratio-text'),
+            aspectRatioBtn: document.getElementById('aspect-ratio-popover-btn'),
+            aspectRatioSubmenu: document.getElementById('aspect-ratio-submenu'),
+            currentRatioDisplay: document.getElementById('current-ratio-display'),
         };
         function toggleHistorySidebar(show) {
     const { historySidebar, historySidebarOverlay } = ALL_ELEMENTS;
@@ -5042,31 +5067,36 @@ function renderMarkdownWithFormulas(text) {
         };
         
         const updateFunctionButtonsState = () => {
-            const { cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn, aspectRatioContainer } = ALL_ELEMENTS;
+            const { cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn, aspectRatioBtn } = ALL_ELEMENTS;
             const conv = getActiveConversation();
             if (!conv) return;
 
             const modelInfo = MODELS.find(m => m.id === conv.model);
             const provider = modelInfo?.provider;
-            const category = modelInfo?.category; // 取得分類
+            const category = modelInfo?.category;
 
-            // 預設先顯示所有功能按鈕
+            // 1. 重置：先全部顯示，除了比例按鈕先隱藏
             [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn].forEach(btn => btn.style.display = 'flex');
+            aspectRatioBtn.style.display = 'none'; 
+            aspectRatioBtn.classList.add('hidden'); // 確保隱藏
             document.querySelectorAll('#file-options-popover .border-t').forEach(sep => sep.style.display = 'block');
             
-            // ✨ 新增：如果是圖像生成模型，顯示比例調整按鈕
+            // 2. 圖像生成模式邏輯
             if (category === 'image_generation') {
-                aspectRatioContainer.classList.remove('hidden');
-                // 圖像生成模式下，通常不需要上傳圖片或文件（視模型而定，這裡先保守隱藏）
+                // 顯示比例按鈕
+                aspectRatioBtn.style.display = 'flex';
+                aspectRatioBtn.classList.remove('hidden');
+                
+                // 隱藏不相關功能
                 [cameraBtn, uploadImageBtn, uploadFileBtn, webSearchPopoverBtn, learningModeBtn, deepResearchBtn].forEach(btn => btn.style.display = 'none');
-            } else {
-                aspectRatioContainer.classList.add('hidden');
-                ALL_ELEMENTS.aspectRatioMenu.classList.add('hidden');
-            }
-
-            if (provider === 'openrouter' && category !== 'image_generation') {
+                
+                // 隱藏分隔線
+                document.querySelectorAll('#file-options-popover .border-t').forEach(sep => sep.style.display = 'none');
+            } 
+            // 3. OpenRouter 其他模式邏輯
+            else if (provider === 'openrouter') {
                 const supportsVision = OPENROUTER_VISION_MODELS.includes(modelInfo?.id);
-                webSearchPopoverBtn.style.display = 'none'; // OpenRouter 通常不支援連網
+                webSearchPopoverBtn.style.display = 'none';
                 uploadFileBtn.style.display = 'flex';
                 [cameraBtn, uploadImageBtn].forEach(btn => btn.style.display = supportsVision ? 'flex' : 'none');
                 
@@ -5940,66 +5970,78 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
             const contentDiv = loadingMessageDiv.querySelector('.message-content');
             
             try {
+                const modelInfo = MODELS.find(m => m.id === conv.model);
+                const isImageGen = modelInfo?.category === 'image_generation';
+                
                 let fullResponse = '';
                 const finalAiMessage = { role: 'model', parts: [{ text: '' }], createdAt: new Date().toISOString() };
 
-                // 1. 先等待 API 回應完全結束，獲取完整文字
-                const completeResponse = await streamApiCall(
-                    userParts,
-                    (chunk) => {
-                        // 在 streamApiCall 內部，我們只收集文字，不渲染
-                    },
-                    abortController.signal
-                );
+                if (isImageGen) {
+                    // ✨ 圖像生成模式：使用非串流請求，並直接顯示結果
+                    // 顯示「生成中」提示
+                    contentDiv.innerHTML = `<div class="flex items-center gap-2 text-[var(--text-secondary)]">
+                        <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        <span>AI 正在繪圖中，請稍候...</span>
+                    </div>`;
 
-                fullResponse = completeResponse;
-                sendConversationToMail(userMessageObject, fullResponse);
+                    // 呼叫 API (注意：這裡我們需要修改 streamApiCall 讓它支援非串流，稍後步驟會做)
+                    fullResponse = await streamApiCall(
+                        userParts,
+                        () => {}, // 不需要 onChunk
+                        abortController.signal,
+                        false,
+                        true // ✨ 新參數：isNonStream = true
+                    );
 
-                // 2. 將完整的最終訊息保存到對話紀錄中
+                    // 直接渲染圖片，不使用打字機效果
+                    contentDiv.innerHTML = renderMarkdown(fullResponse);
+                    sendConversationToMail(userMessageObject, fullResponse);
+
+                } else {
+                    // ⚡️ 一般模式：維持原本的串流 + 打字機效果
+                    const completeResponse = await streamApiCall(
+                        userParts,
+                        (chunk) => { /* 保持空白，只收集文字 */ },
+                        abortController.signal
+                    );
+                    fullResponse = completeResponse;
+                    sendConversationToMail(userMessageObject, fullResponse);
+
+                    // 啟動打字機
+                    await (async () => {
+                        return new Promise(resolve => {
+                            contentDiv.innerHTML = ''; 
+                            let currentIndex = 0;
+                            const typingSpeed = 15;
+                            function type() {
+                                if (currentIndex < fullResponse.length && !abortController.signal.aborted) {
+                                    const currentText = fullResponse.substring(0, currentIndex + 1);
+                                    contentDiv.innerHTML = renderMarkdown(currentText + '▋');
+                                    let step = currentText.includes('```') ? 5 : 1;
+                                    currentIndex += step;
+                                    const chatContainer = ALL_ELEMENTS.chatContainer;
+                                    if (chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50) {
+                                        chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
+                                    }
+                                    setTimeout(type, typingSpeed);
+                                } else {
+                                    contentDiv.innerHTML = renderMarkdownWithFormulas(fullResponse);
+                                    resolve();
+                                }
+                            }
+                            type();
+                        });
+                    })();
+                }
+
+                // 儲存訊息
                 finalAiMessage.parts = [{ text: fullResponse }];
                 conv.messages.push(finalAiMessage);
                 conv.lastUpdatedAt = new Date().toISOString();
                 await saveAppData();
                 
-                // 3. ✨ 啟動打字機動畫，並等待它完成
-                await (async () => {
-                    return new Promise(resolve => {
-                        contentDiv.innerHTML = ''; // 清空等待樣式
-                        let currentIndex = 0;
-                        const typingSpeed = 15;
-
-                        function type() {
-                            if (currentIndex < fullResponse.length && !abortController.signal.aborted) {
-                                const currentText = fullResponse.substring(0, currentIndex + 1);
-                                contentDiv.innerHTML = renderMarkdown(currentText + '▋');
-
-                                let step = 1;
-                                if (currentText.includes('```')) {
-                                    step = 5;
-                                }
-                                
-                                currentIndex += step;
-
-                                const chatContainer = ALL_ELEMENTS.chatContainer;
-                                const isNearBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 50;
-                                if (isNearBottom) {
-                                    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'auto' });
-                                }
-
-                                setTimeout(type, typingSpeed);
-                            } else {
-                                // 動畫完成或被中止
-                                contentDiv.innerHTML = renderMarkdownWithFormulas(fullResponse); // 最終清理，並渲染公式
-                                resolve(); // ✨ Promise 完成，通知 await
-                            }
-                        }
-                        
-                        type(); // 啟動
-                    });
-                })();
-
-                // 4. ✨ 只有在打字機動畫結束後，才執行後續任務
-                if (!abortController.signal.aborted) {
+                // 後續處理 (追問、記憶等) - 圖像生成通常不需要這些
+                if (!abortController.signal.aborted && !isImageGen) {
                     if(config.enableFollowUp && !config.isLearningMode && !config.isDeepResearchMode) {
                         await generateFollowUpPrompts(userMessage, fullResponse);
                     }
@@ -6114,7 +6156,7 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
             const coverageRatio = score / keywords.length;
             return score * (1 + coverageRatio);
         }
-        async function streamApiCall(parts, onChunk, signal, isWebSearchForced = false) {
+        async function streamApiCall(parts, onChunk, signal, isWebSearchForced = false, isNonStream = false) {
             const conv = getActiveConversation();
             const modelInfo = MODELS.find(m => m.id === conv.model);
             if (!modelInfo) throw new Error(`找不到模型設定: ${conv.model}`);
@@ -6135,11 +6177,7 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
             let url, payload, headers;
             let systemInstruction = null;
             
-            // ... (省略中間 System Instruction 邏輯，這部分不用變，請保留原本的) ...
-            // 為了節省篇幅，請保留原本這裡處理 System Instruction / Memory 的程式碼
-            // 直接跳到 payload 設定的部分
-            
-            // ↓↓↓ 請確保保留您原本 systemInstruction 和 memoryPrompt 的邏輯 ↓↓↓
+            // 構建 System Instruction
             let baseInstructionText = '';
             const langMap = {
                 'zh-TW': '請用繁體中文回覆，除非使用者有特別要求。',
@@ -6152,12 +6190,12 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
                 if (ast) baseInstructionText = `${ast.instructions}\n\n${baseInstructionText}`;
             }
             if (config.isLearningMode) {
-                 // ... (保留原本學習模式 prompt) ...
-                 const learningModePrompt = `# 序言... (略) ...`; 
-                 systemInstruction = { parts: [{ text: learningModePrompt }] };
+                 const learningModePrompt = `# 序言... (略，保持原樣)`; 
+                 systemInstruction = { parts: [{ text: learningModePrompt }] }; // 簡化顯示，實際上你應該保留原本的長文本
             } else if (baseInstructionText) {
                 systemInstruction = { parts: [{ text: baseInstructionText }] };
             }
+            
             let memoryPrompt = '';
             if (config.memoryEnabled1) {
                 const enabledMemories = personalMemories.filter(m => m.enabled).map(m => m.content).join('\n');
@@ -6168,11 +6206,8 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
                 else if (systemInstruction) systemInstruction.parts.push({ text: `\n\n${memoryPrompt}` });
                 else systemInstruction = { parts: [{ text: memoryPrompt }] };
             }
-            // ↑↑↑ 上面這段請確保跟原本檔案一致，不要刪除 ↑↑↑
-
 
             if (provider === 'gemini') {
-                // ... (Gemini 的原本邏輯保持不變) ...
                 url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?key=${apiKey}`;
                 payload = {
                     contents: cleanGeminiHistory([...historyForApi, currentMessageForApi]),
@@ -6186,7 +6221,7 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
                 if (conv.isWebSearchEnabled || isWebSearchForced) payload.tools = [{"googleSearch": {}}];
                 headers = { 'Content-Type': 'application/json' };
 
-            } else { // OpenRouter Logic (這是主要修改的地方)
+            } else { // OpenRouter Logic
                 url = 'https://openrouter.ai/api/v1/chat/completions';
                 
                 const messages = [];
@@ -6224,24 +6259,19 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
                 payload = {
                     model: modelId,
                     messages,
-                    stream: true,
+                    stream: !isNonStream,
                     ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
                     ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
                     ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
                 };
 
-                // ✨✨✨ 圖像生成的核心修改 ✨✨✨
                 if (category === 'image_generation') {
-                    // 1. 強制加入 modalities 參數
                     payload.modalities = ['image', 'text'];
-                    // 2. 加入比例設定
                     payload.image_config = {
-                        aspect_ratio: currentAspectRatio // 使用我們選單選到的變數
+                        aspect_ratio: currentAspectRatio
                     };
-                    // 3. 確保不傳入 plugins (避免干擾)
                     delete payload.plugins; 
                 } else {
-                    // 非圖像生成模型才加入文件解析插件
                     payload.plugins = [{ id: 'file-parser', pdf: { engine: 'mistral-ocr' } }];
                 }
 
@@ -6251,6 +6281,27 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
             const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
             if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'API 請求失敗'); }
             
+            // ✨ 圖像生成：非串流模式處理
+            if (isNonStream) {
+                const data = await response.json();
+                if (data.choices && data.choices.length > 0 && data.choices[0].message) {
+                    const message = data.choices[0].message;
+                    let resultText = message.content || '';
+
+                    if (message.images) {
+                        message.images.forEach(img => {
+                            const url = img.image_url?.url || img.imageUrl?.url || img.url;
+                            if (url) {
+                                resultText += `\n\n![Generated Image](${url})\n\n`;
+                            }
+                        });
+                    }
+                    return resultText;
+                }
+                return ""; 
+            }
+
+            // 一般對話：串流模式處理
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
@@ -6262,7 +6313,6 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
                 buffer += decoder.decode(value, { stream: true });
 
                 if (provider === 'gemini') {
-                    // ... (Gemini 原本的解析邏輯，不用動) ...
                     while (true) {
                         const firstBrace = buffer.indexOf('{');
                         if (firstBrace === -1) break;
@@ -6295,28 +6345,8 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
                             if (data.trim() === '[DONE]') break;
                             try {
                                 const parsed = JSON.parse(data);
-                                
-                                // ✨✨✨ 處理圖片回應 ✨✨✨
-                                // 檢查 delta 中是否有 images
-                                const delta = parsed.choices[0]?.delta;
-                                if (delta?.images) {
-                                    delta.images.forEach((image) => {
-                                        // 將 Base64 圖片轉換為 Markdown 圖片語法
-                                        // 這樣現有的 Markdown 渲染器就會直接顯示它！
-                                        const imageUrl = image.image_url.url; // 這會是 data:image/png;base64,...
-                                        const imageMarkdown = `\n\n![Generated Image](${imageUrl})\n\n`;
-                                        
-                                        fullText += imageMarkdown;
-                                        onChunk(imageMarkdown);
-                                    });
-                                }
-
-                                // 處理一般文字
-                                const textChunk = delta?.content || '';
-                                if (textChunk) {
-                                    fullText += textChunk;
-                                    onChunk(textChunk);
-                                }
+                                const content = parsed.choices[0]?.delta?.content || '';
+                                if (content) { fullText += content; onChunk(content); }
                             } catch (e) { /* Ignore */ }
                         }
                     }
@@ -10267,36 +10297,42 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
     }
 }
         const initAspectRatioMenu = () => {
-            const menu = ALL_ELEMENTS.aspectRatioMenu;
-            menu.innerHTML = ''; // 清空
+            const submenu = ALL_ELEMENTS.aspectRatioSubmenu;
+            const mainBtn = ALL_ELEMENTS.aspectRatioBtn;
+            submenu.innerHTML = ''; 
             
             SUPPORTED_ASPECT_RATIOS.forEach(ratio => {
-                const btn = document.createElement('button');
+                const btn = document.createElement('div'); // 改用 div 避免觸發 form submit
                 btn.className = `ratio-option ${ratio === currentAspectRatio ? 'active' : ''}`;
-                btn.innerHTML = `<span>${ratio}</span> ${ratio === currentAspectRatio ? '✓' : ''}`;
+                btn.textContent = ratio;
                 btn.onclick = (e) => {
                     e.stopPropagation();
                     currentAspectRatio = ratio;
-                    ALL_ELEMENTS.currentRatioText.textContent = ratio;
-                    // 更新選單 UI
-                    menu.querySelectorAll('.ratio-option').forEach(opt => {
-                        opt.classList.remove('active');
-                        opt.innerHTML = `<span>${opt.textContent.replace('✓', '').trim()}</span>`;
-                    });
+                    ALL_ELEMENTS.currentRatioDisplay.textContent = ratio;
+                    
+                    // 更新 UI
+                    submenu.querySelectorAll('.ratio-option').forEach(opt => opt.classList.remove('active'));
                     btn.classList.add('active');
-                    btn.innerHTML = `<span>${ratio}</span> ✓`;
-                    menu.classList.add('hidden'); // 選完關閉
+                    
+                    // 選完後關閉選單，並關閉主 popover
+                    submenu.classList.add('hidden');
+                    ALL_ELEMENTS.fileOptionsPopover.classList.remove('visible');
                 };
-                menu.appendChild(btn);
+                submenu.appendChild(btn);
             });
 
-            // 按鈕點擊事件：切換選單顯示
-            ALL_ELEMENTS.aspectRatioBtn.onclick = (e) => {
+            // 點擊主按鈕時顯示/隱藏子選單
+            mainBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                // 關閉其他 popover
-                closeAllPopovers(); 
-                ALL_ELEMENTS.aspectRatioMenu.classList.toggle('hidden');
-            };
+                // 切換顯示，並移除 hidden class
+                const isHidden = submenu.classList.contains('hidden');
+                // 先隱藏其他可能的子選單（如果有的話）
+                if (isHidden) {
+                    submenu.classList.remove('hidden');
+                } else {
+                    submenu.classList.add('hidden');
+                }
+            });
         };
         async function initChatApp() {
             if (window.innerWidth >= 1024) {
