@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AstraChat-15.11.0</title>
+    <title>AstraChat-15.10.3</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3b82f6"/>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -5009,16 +5009,11 @@ function renderMarkdownWithFormulas(text) {
             document.querySelectorAll('#file-options-popover .border-t').forEach(sep => sep.style.display = 'block');
             
             if (provider === 'openrouter') {
-    // 檢查當前 OpenRouter 模型是否支援圖片輸入
-    const supportsVision = OPENROUTER_VISION_MODELS.includes(modelInfo?.id);
+                // 檢查當前 OpenRouter 模型是否支援圖片輸入
+                const supportsVision = OPENROUTER_VISION_MODELS.includes(modelInfo?.id);
 
-    // 修改：OpenRouter 現在支援檔案處理了，所以只隱藏「網路搜尋」
-    // 我們把 uploadFileBtn 從隱藏列表移除
-    [webSearchPopoverBtn].forEach(btn => btn.style.display = 'none');
-    
-    // 根據是否支援圖片，決定是否顯示相機和圖片按鈕
-    // 注意：uploadFileBtn (檔案按鈕) 因為上面移除了，所以會保持預設的 'flex' (顯示狀態)
-    [cameraBtn, uploadImageBtn].forEach(btn => btn.style.display = supportsVision ? 'flex' : 'none');
+                // 無論如何，OpenRouter 模型都先隱藏檔案上傳和網路搜尋
+                [uploadFileBtn, webSearchPopoverBtn].forEach(btn => btn.style.display = 'none');
                 
                 // 根據是否支援圖片，決定是否顯示相機和圖片按鈕
                 [cameraBtn, uploadImageBtn].forEach(btn => btn.style.display = supportsVision ? 'flex' : 'none');
@@ -5845,14 +5840,13 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
                 userParts.push({ text: userMessage });
             }
             uploadedFiles.forEach(file => {
-    userParts.push({
-        inlineData: {
-            mimeType: file.type,
-            data: file.base64.split(',')[1]
-        },
-        name: file.name // ✨ 新增這一行，保存檔名供 API 使用
-    });
-});
+                userParts.push({
+                    inlineData: {
+                        mimeType: file.type,
+                        data: file.base64.split(',')[1]
+                    }
+                });
+            });
             const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
             addMessageToUI(userMessageObject, conv.messages.length, true);
             conv.lastUpdatedAt = new Date().toISOString();
@@ -6115,7 +6109,6 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
                 }
                 headers = { 'Content-Type': 'application/json' };
             } else {
-                // --- OpenRouter API 請求區塊 ---
                 url = 'https://openrouter.ai/api/v1/chat/completions';
                 
                 const messages = [];
@@ -6128,48 +6121,31 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
 
                 allMessages.forEach(m => {
                     const role = m.role === 'model' ? 'assistant' : m.role;
-                    
-                    // 檢查這則訊息是否有任何非文字的內容 (圖片或檔案)
-                    const hasInlineData = m.parts.some(p => p.inlineData);
+                    const currentModelSupportsVision = OPENROUTER_VISION_MODELS.includes(modelId);
+                    const hasImage = m.parts.some(p => p.inlineData);
 
-                    if (hasInlineData) {
-                        // 如果包含檔案或圖片，我們必須使用 array content 格式
+                    // 如果是支援圖片的模型，並且訊息中確實有圖片
+                    if (currentModelSupportsVision && hasImage) {
                         const content = m.parts.map(part => {
                             if (part.text) {
                                 return { type: 'text', text: part.text };
                             } else if (part.inlineData) {
-                                const mime = part.inlineData.mimeType;
-                                // 這是你的 FileReader 讀取出來的 dataURL，例如 "data:application/pdf;base64,JVBER..."
-                                const dataUrl = `data:${mime};base64,${part.inlineData.data}`;
-                                
-                                if (mime.startsWith('image/')) {
-                                    // 處理圖片 (既有功能)
-                                    return { type: 'image_url', image_url: { url: dataUrl } };
-                                } else {
-                                    // ✨ 新增：處理 PDF 等檔案
-                                    // 根據 OpenRouter 文檔格式
-                                    return { 
-                                        type: 'file', 
-                                        file: { 
-                                            // 如果你的 part 物件沒有儲存檔名，我們給個預設值，不影響解析
-                                            filename: part.name || 'document.pdf', 
-                                            file_data: dataUrl // 直接傳送 base64 dataURL
-                                        } 
-                                    };
-                                }
+                                // 這是核心！將我們的資料格式轉換成 OpenRouter 需要的格式
+                                const dataUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+                                return { type: 'image_url', image_url: { url: dataUrl } };
                             }
                             return null;
-                        }).filter(Boolean);
+                        }).filter(Boolean); // 過濾掉空的部分
                         
                         messages.push({ role, content });
                     } else {
-                        // 如果只是純文字
+                        // 如果不支援圖片，或這條訊息沒有圖片，就只傳送文字
                         const content = m.parts
                             .filter(p => p.text)
                             .map(p => p.text)
                             .join('\n');
                         
-                        if (content) {
+                        if (content) { // 避免傳送空的訊息
                             messages.push({ role, content });
                         }
                     }
@@ -6177,27 +6153,13 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
 
                 payload = {
                     model: modelId,
-                    messages, 
+                    messages, // 使用我們剛剛建立的、格式正確的 messages 陣列
                     stream: true,
-                    // ✨ 新增：加入 plugins 參數以啟用 PDF 解析功能
-                    plugins: [
-                        {
-                            id: 'file-parser',
-                            pdf: {
-                                engine: 'mistral-ocr', // 使用官方推薦的 OCR 引擎
-                            },
-                        },
-                    ],
                     ...(conv.genConfig.temperature !== null && { temperature: conv.genConfig.temperature }),
                     ...(conv.genConfig.topP !== null && { top_p: conv.genConfig.topP }),
                     ...(conv.genConfig.maxTokens !== null && { max_tokens: conv.genConfig.maxTokens }),
                 };
-                headers = { 
-                    'Authorization': `Bearer ${apiKey}`, 
-                    'Content-Type': 'application/json',
-                    'HTTP-Referer': window.location.href, // OpenRouter 建議加上
-                    'X-Title': 'AstraChat' // OpenRouter 建議加上
-                };
+                headers = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
             }
             const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload), signal });
             if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'API 請求失敗'); }
@@ -9848,14 +9810,14 @@ function setupMessageIntersectionObserver() {
             const userParts = [{ text: userMessage }];
             if (hasFiles) {
                 uploadedFiles.forEach(file => {
-    userParts.push({
-        inlineData: {
-            mimeType: file.type,
-            data: file.base64.split(',')[1]
-        }
-    });
-});
-
+                    userParts.push({
+                        inlineData: {
+                            mimeType: file.type,
+                            data: file.base64.split(',')[1]
+                        }
+                    });
+                });
+            }
 
             const userMessageObject = { role: 'user', parts: userParts, createdAt: new Date().toISOString() };
             addMessageToUI(userMessageObject, conv.messages.length, true);
