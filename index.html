@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AstraChat-15.10.4</title>
+    <title>AstraChat-15.11.0</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3b82f6"/>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -6008,10 +6008,36 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
             }
         };
         function cleanGeminiHistory(history) {
-            const cleaned = []; let lastRole = null;
+            const cleaned = []; 
+            let lastRole = null;
+            
             history.forEach(msg => {
-                const sanitizedMsg = { role: msg.role, parts: msg.parts };
+                // ✨ 修正開始：在這裡進行資料清洗
+                // 重新建構 parts，確保只保留 Gemini 接受的欄位 (text, inlineData)
+                // 並且過濾掉 inlineData 中的 name 屬性
+                const sanitizedParts = msg.parts.map(p => {
+                    if (p.inlineData) {
+                        return {
+                            inlineData: {
+                                mimeType: p.inlineData.mimeType,
+                                data: p.inlineData.data
+                                // 關鍵：這裡故意不放入 name，解決 Gemini 報錯問題
+                            }
+                        };
+                    }
+                    // 如果是文字，確保結構單純
+                    if (p.text) {
+                        return { text: p.text };
+                    }
+                    return null;
+                }).filter(Boolean); // 過濾掉可能的空值
+
+                const sanitizedMsg = { role: msg.role, parts: sanitizedParts };
+                // ✨ 修正結束
+
+                // 以下維持原本的邏輯 (過濾空訊息、合併連續 User 訊息)
                 if (sanitizedMsg.role === 'model' && !sanitizedMsg.parts.some(p => (p.text && p.text.trim() !== '') || p.inlineData)) return;
+                
                 if (sanitizedMsg.role === lastRole && lastRole === 'user') {
                     cleaned[cleaned.length - 1].parts.push(...sanitizedMsg.parts);
                 } else {
@@ -6019,6 +6045,7 @@ async function typewriterStream(targetElement, streamApiCallFn, signal) {
                     lastRole = sanitizedMsg.role;
                 }
             });
+            
             if (cleaned.length > 0 && cleaned[0].role !== 'user') cleaned.shift();
             return cleaned;
         }
