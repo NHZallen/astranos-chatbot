@@ -1,5 +1,16 @@
 ﻿const updateLogs = [
          {
+    "version": "16.1.1",
+    "date": "2025-11-21",
+    "content": [
+        "<strong>【模型陣容擴充與未來功能預備】</strong>",
+        "為了提供更多元的 AI 選擇，我們在 16.1.1 版本中引入了具備視覺能力的免費模型，並為即將到來的圖片生成功能做好了介面準備。",
+        "<strong>✨ 本次更新亮點：</strong>",
+        "<ul><li><strong>🚀 新增 Grok 免費視覺模型：</strong> 整合了 <code>x-ai/grok-4.1-fast:free</code> 模型。這是一個支援圖片輸入的高速模型，且完全免費，讓您能更無負擔地體驗多模態 AI 的強大。</li><li><strong>🍌 圖像生成模型介面預裝：</strong> 為了迎接未來的重大功能，我們新增了專屬的「圖像生成」分類，並預先上架了 <strong>Nano banana pro🍌</strong> 與 <strong>Nano banana🍌</strong> 兩個模型選項。</li><li><strong>🚧 功能預告說明：</strong> 請注意，目前的 Nano banana 系列模型僅為<strong>介面選項先行上線</strong>。實際的 AI 圖片生成功能尚未解鎖，目前選用這些模型尚無法產出圖片，請靜待我們在後續版本中為您帶來驚喜！</li></ul>",
+        "我們持續探索 AI 的無限可能，感謝您的耐心等待。<br><br>Astra 開發團隊 敬上"
+    ]
+},
+         {
     "version": "16.1.0",
     "date": "2025-11-21",
     "content": [
@@ -648,6 +659,7 @@
     // 未來的新版本請加在此處最上方
 
 ];
+
 
 
 
