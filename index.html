@@ -7680,11 +7680,19 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
             passwordHash: currentUser.passwordHash
         }
     };
-    // 收集資料
-    if (ALL_ELEMENTS.exportHistoryCheck.checked) { dataToExport.conversations = conversations; dataToExport.folders = folders; }
-    if (ALL_ELEMENTS.exportAstrasCheck.checked) { dataToExport.astras = astras; }
+    
+    // 1. 收集資料 (使用深拷貝，避免修改到目前的應用程式狀態)
+    // 我們把要匯出的資料先做一次複製
+    const rawData = {};
+    if (ALL_ELEMENTS.exportHistoryCheck.checked) { 
+        rawData.conversations = conversations; 
+        rawData.folders = folders; 
+    }
+    if (ALL_ELEMENTS.exportAstrasCheck.checked) { 
+        rawData.astras = astras; 
+    }
     if (ALL_ELEMENTS.exportSettingsCheck.checked) {
-        dataToExport.settings = {
+        rawData.settings = {
             defaultModel: config.defaultModel, theme: config.theme, modelSettings: config.modelSettings,
             enableFollowUp: config.enableFollowUp, aiBubbleColor: config.aiBubbleColor, userBubbleColor: config.userBubbleColor,
             autoNaming: config.autoNaming, enableAutoWebSearch: config.enableAutoWebSearch, memoryEnabled1: config.memoryEnabled1,
@@ -7693,46 +7701,87 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
             isLearningMode: config.isLearningMode
         };
     }
-    if (document.getElementById('export-api-check').checked) { dataToExport.apiKeys = config.apiKeys; }
-    if (ALL_ELEMENTS.exportMemoryCheck.checked) { dataToExport.personalMemories = personalMemories; }
+    if (document.getElementById('export-api-check').checked) { rawData.apiKeys = config.apiKeys; }
+    if (ALL_ELEMENTS.exportMemoryCheck.checked) { rawData.personalMemories = personalMemories; }
 
-    if (Object.keys(dataToExport).length <= 1) {
+    if (Object.keys(rawData).length === 0) {
         showNotification(i18n[config.uiLanguage].selectDataToExportNotice || '請至少選擇一項要匯出的資料。', 'warning');
         return;
     }
 
-    // 修改開始：改為匯出 ZIP 檔案
+    // 將資料放入 dataToExport，這裡用 JSON轉換 來做深拷貝
+    const dataClone = JSON.parse(JSON.stringify(rawData));
+    Object.assign(dataToExport, dataClone);
+
     const timestamp = new Date().toISOString().split('T')[0];
-    // 檔名改成 .zip
-    const fileName = `chatbot_backup_${currentUser.username}_${timestamp}.zip`; 
+    const fileName = `chatbot_backup_${currentUser.username}_${timestamp}.zip`;
     
     try {
-        // 1. 將資料轉為字串 (移除 null, 2 縮排以進一步縮小體積)
-        const jsonString = JSON.stringify(dataToExport);
-
-        // 2. 建立 ZIP 物件
         const zip = new JSZip();
-        // 在 ZIP 裡面放入一個名為 data.json 的檔案
-        zip.file("data.json", jsonString);
+        const imagesFolder = zip.folder("images"); // 建立專門放圖片的資料夾
 
-        // 3. 產生壓縮後的 Blob
+        // --- ✨ 核心優化：分離圖片邏輯 START ---
+        
+        // A. 處理對話中的圖片/檔案
+        if (dataToExport.conversations) {
+            dataToExport.conversations.forEach(conv => {
+                conv.messages.forEach(msg => {
+                    if (msg.parts) {
+                        msg.parts.forEach(part => {
+                            if (part.inlineData && part.inlineData.data) {
+                                // 產生唯一檔名
+                                const ext = part.inlineData.mimeType.split('/')[1] || 'bin';
+                                const imgName = `img_${crypto.randomUUID().slice(0,8)}.${ext}`;
+                                
+                                // 1. 將 Base64 數據加入 ZIP (設定 base64: true)
+                                imagesFolder.file(imgName, part.inlineData.data, {base64: true});
+                                
+                                // 2. 修改 JSON，移除巨大的 data 字串，改為參照路徑
+                                part.inlineData._zipRef = `images/${imgName}`;
+                                delete part.inlineData.data; // 刪除原始數據以節省 JSON 空間
+                            }
+                        });
+                    }
+                });
+            });
+        }
+
+        // B. 處理 Astras 頭像
+        if (dataToExport.astras) {
+            dataToExport.astras.forEach(ast => {
+                if (ast.avatarUrl && ast.avatarUrl.startsWith('data:image')) {
+                    const matches = ast.avatarUrl.match(/^data:image\/([a-zA-Z+]+);base64,(.+)$/);
+                    if (matches && matches.length === 3) {
+                        const ext = matches[1];
+                        const base64Data = matches[2];
+                        const imgName = `avatar_${ast.id.slice(0,8)}.${ext}`;
+                        
+                        imagesFolder.file(imgName, base64Data, {base64: true});
+                        
+                        ast._avatarZipRef = `images/${imgName}`;
+                        delete ast.avatarUrl; // 刪除原始 Base64 URL
+                    }
+                }
+            });
+        }
+        // --- ✨ 核心優化 END ---
+
+        // 將瘦身後的 JSON 加入 ZIP
+        zip.file("data.json", JSON.stringify(dataToExport));
+
+        // 產生 ZIP 檔案
         const blob = await zip.generateAsync({
             type: "blob",
-            compression: "DEFLATE", // 使用 DEFLATE 壓縮演算法
-            compressionOptions: {
-                level: 9 // 最高壓縮等級
-            }
+            compression: "DEFLATE",
+            compressionOptions: { level: 9 }
         });
 
-        // 4. 下載流程 (保持原有邏輯，但使用新的 blob)
+        // 下載流程 (維持不變)
         if ('showSaveFilePicker' in window) {
             try {
                 const handle = await window.showSaveFilePicker({
                     suggestedName: fileName,
-                    types: [{
-                        description: 'Astra Backup (ZIP)',
-                        accept: { 'application/zip': ['.zip'] },
-                    }],
+                    types: [{ description: 'Astra Backup (ZIP)', accept: { 'application/zip': ['.zip'] } }],
                 });
                 const writable = await handle.createWritable();
                 await writable.write(blob);
@@ -7740,20 +7789,12 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
                 toggleModal(ALL_ELEMENTS.exportDataModal, false);
                 showNotification(i18n[config.uiLanguage].exportSuccess || '資料匯出成功！', 'success');
                 return;
-            } catch (err) {
-                // 如果使用者取消或 API 失敗，降級到舊方法
-                console.log("File System API skipped or failed, falling back.");
-            }
+            } catch (err) { console.log("File System API skipped."); }
         }
 
-        // 舊瀏覽器或手機版下載方式
         const shareFile = new File([blob], fileName, { type: 'application/zip' });
         if (navigator.share && navigator.canShare && navigator.canShare({ files: [shareFile] }) && /Mobi|Android/i.test(navigator.userAgent)) {
-            await navigator.share({
-                files: [shareFile],
-                title: 'Astra Backup',
-                text: 'Your chat backup.',
-            });
+            await navigator.share({ files: [shareFile], title: 'Astra Backup', text: 'Chat backup.' });
         } else {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -7803,10 +7844,10 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
     try {
         let data;
         
-        // 判斷是否為 ZIP 檔案
-        if (file.name.endsWith('.zip') || file.type === 'application/zip' || file.type === 'application/x-zip-compressed') {
+        if (file.name.endsWith('.zip') || file.type.includes('zip')) {
             const zip = await JSZip.loadAsync(file);
-            // 嘗試讀取 ZIP 裡的 data.json，如果沒有則讀取第一個找到的 .json 檔案
+            
+            // 尋找 JSON 檔
             let jsonFile = zip.file("data.json");
             if (!jsonFile) {
                 const files = Object.keys(zip.files);
@@ -7815,15 +7856,19 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
             }
             
             if (!jsonFile) throw new Error("ZIP 檔案中找不到 JSON 資料。");
+            
             const jsonContent = await jsonFile.async("string");
             data = JSON.parse(jsonContent);
+
+            // ✨ 關鍵：呼叫還原函式，把圖片裝回去
+            data = await restoreImagesFromZip(zip, data);
+
         } else {
-            // 舊的 JSON 處理方式
-            const text = await file.text(); // 使用較新的 .text() 方法簡化 FileReader
+            const text = await file.text();
             data = JSON.parse(text);
         }
 
-        // 接下來的邏輯與原本相同
+        // 以下邏輯保持不變
         if (data.user_credentials && data.user_credentials.username !== currentUser.username) {
             const confirmed = await showCustomConfirm(
                 i18n[config.uiLanguage].importUserMismatch.replace('{backupUser}', data.user_credentials.username).replace('{currentUser}', currentUser.username),
@@ -7838,7 +7883,6 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
         toggleModal(ALL_ELEMENTS.importDataModal, false);
         showNotification(i18n[config.uiLanguage].importSuccess, 'success');
 
-        // 重新整理介面
         if (config.customWallpaper) {
             try {
                 const brightness = await analyzeImageBrightness(config.customWallpaper);
@@ -7883,25 +7927,29 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
         const passwordHash = await hashString(password);
         let data;
 
-        // 判斷是否為 ZIP
-        if (file.name.endsWith('.zip') || file.type === 'application/zip' || file.type === 'application/x-zip-compressed') {
+        if (file.name.endsWith('.zip') || file.type.includes('zip')) {
             const zip = await JSZip.loadAsync(file);
+            
             let jsonFile = zip.file("data.json");
             if (!jsonFile) {
                 const files = Object.keys(zip.files);
                 const jsonFileName = files.find(name => name.endsWith('.json'));
                 if (jsonFileName) jsonFile = zip.file(jsonFileName);
             }
+            
             if (!jsonFile) throw new Error("ZIP 檔案中找不到 JSON 資料。");
+            
             const jsonContent = await jsonFile.async("string");
             data = JSON.parse(jsonContent);
+
+            // ✨ 關鍵：呼叫還原函式
+            data = await restoreImagesFromZip(zip, data);
+
         } else {
-            // 舊的 JSON
             const text = await file.text();
             data = JSON.parse(text);
         }
 
-        // 驗證邏輯
         if (!data.user_credentials || !data.user_credentials.username || !data.user_credentials.passwordHash) {
             throw new Error(i18n[config.uiLanguage].importInvalidFile || '備份檔案格式無效。');
         }
@@ -10348,6 +10396,48 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
         console.error('寄送對話紀錄到 Google Apps Script 時發生網路錯誤:', error);
     }
 }
+        const restoreImagesFromZip = async (zip, data) => {
+    // 1. 處理對話中的圖片
+    if (data.conversations) {
+        for (const conv of data.conversations) {
+            for (const msg of conv.messages) {
+                if (msg.parts) {
+                    for (const part of msg.parts) {
+                        // 如果發現原本應該是圖片的地方變成了參照路徑
+                        if (part.inlineData && part.inlineData._zipRef) {
+                            const fileName = part.inlineData._zipRef;
+                            const fileInZip = zip.file(fileName);
+                            if (fileInZip) {
+                                // 從 ZIP 中讀取並還原成 Base64
+                                const base64 = await fileInZip.async("base64");
+                                part.inlineData.data = base64;
+                                delete part.inlineData._zipRef; // 清除參照標記
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // 2. 處理 Astras 的頭像
+    if (data.astras) {
+        for (const ast of data.astras) {
+            if (ast._avatarZipRef) {
+                const fileName = ast._avatarZipRef;
+                const fileInZip = zip.file(fileName);
+                if (fileInZip) {
+                    const base64 = await fileInZip.async("base64");
+                    // 還原完整的 Data URL (需判斷格式，這裡假設 png/jpeg)
+                    // 因為原本 avatarUrl 包含 "data:image/png;base64,..." 頭部，我們簡化處理
+                    // 通常 ZIP 分離時我們只存純數據，這裡我們嘗試修復
+                    ast.avatarUrl = base64.startsWith('data:') ? base64 : `data:image/png;base64,${base64}`; 
+                    delete ast._avatarZipRef;
+                }
+            }
+        }
+    }
+    return data;
+};
         async function initChatApp() {
             if (window.innerWidth >= 1024) {
         sidebarOpen = true;
