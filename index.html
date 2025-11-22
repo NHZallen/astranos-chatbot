@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>AstraChat-16.1.1</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3b82f6"/>
@@ -2565,6 +2565,93 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
   .chat-greeting-message {
     display: none; /* 將它完全隱藏起來，不佔據任何空間 */
   }
+}
+        /* =========================================
+   手機版專用修正：全螢幕 App 佈局
+   ========================================= */
+
+/* 1. 鎖定整個網頁的高度，禁止 Body 捲動 */
+html, body {
+    height: 100%; /* 舊瀏覽器備用 */
+    height: 100dvh; /* 使用動態視口高度，解決手機瀏覽器網址列伸縮問題 */
+    overflow: hidden; /* 禁止整個網頁捲動 */
+    margin: 0;
+    padding: 0;
+}
+
+/* 2. 讓 App 容器填滿螢幕，並使用 Flex 佈局 */
+#app-container {
+    position: absolute; /* 確保絕對定位 */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
+    display: flex; /* 啟用 Flexbox */
+    flex-direction: column; /* 垂直排列：Header -> Chat -> Input */
+    overflow: hidden; /* 容器本身不捲動 */
+}
+
+/* 3. 修正 Header (頂部引導欄) */
+#app-container > .relative.flex {
+    /* 這是包著 Sidebar 和 Main 的容器 */
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+}
+
+main.flex-1 {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden; /* 確保 main 不會撐開 */
+}
+
+/* Header 設定 */
+main > header {
+    flex-shrink: 0; /* 禁止 Header 縮小 */
+    /* 加入頂部安全區域 padding，讓內容不會被瀏海擋住，但背景色會延伸 */
+    padding-top: max(0.5rem, env(safe-area-inset-top)); 
+    /* 確保背景色或毛玻璃效果延伸到最頂端 */
+    background-clip: padding-box; 
+    z-index: 50; /* 確保在最上層 */
+}
+
+/* 4. 修正中間聊天區域 (這是唯一可以捲動的地方) */
+#chat-container {
+    flex-grow: 1; /* 佔滿剩餘空間 */
+    overflow-y: auto; /* 允許垂直捲動 */
+    height: 0; /* 關鍵！設為 0 讓 flex-grow 決定高度 */
+    scroll-behavior: smooth;
+    /* 增加底部內距，避免最後一則訊息貼底 */
+    padding-bottom: 1rem; 
+}
+
+/* 5. 修正底部輸入框區域 */
+#input-bar-container {
+    flex-shrink: 0; /* 禁止輸入框縮小 */
+    width: 100%;
+    background-color: var(--input-bar-bg);
+    /* 加入底部安全區域，避免被 iPhone 的 Home Bar 擋住 */
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    z-index: 40;
+}
+
+/* 針對自訂桌布模式的修正 */
+body.custom-wallpaper-active #input-bar-container {
+    background-color: transparent !important;
+}
+
+/* 6. 讓桌布容器真正全螢幕 */
+#wallpaper-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background-size: cover;
+    background-position: center;
 }
 </style>
 <script>
@@ -10465,37 +10552,22 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
                 }
             });
             const handleInputFocus = () => {
-                if (window.visualViewport) {
-                    const smoothScrollToTarget = () => {
-                        const inputBarContainer = document.getElementById('input-bar-container');
-                        if (!inputBarContainer) return;
-
-                        requestAnimationFrame(() => {
-                            const PADDING_BOTTOM = 10;
-                            const inputBarRect = inputBarContainer.getBoundingClientRect();
-                            const viewportHeight = window.visualViewport.height;
-                            const offset = inputBarRect.bottom - viewportHeight + PADDING_BOTTOM;
-
-                            if (offset > 0) {
-                                const newScrollPosition = window.scrollY + offset;
-                                window.scrollTo({
-                                    top: newScrollPosition,
-                                    behavior: 'smooth'
-                                });
-                            }
-                        });
-                    };
-
-                    window.visualViewport.addEventListener('resize', smoothScrollToTarget, { once: true });
-                } else {
-                    setTimeout(() => {
-                        const inputBarContainer = document.getElementById('input-bar-container');
-                        if (inputBarContainer) {
-                            inputBarContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                        }
-                    }, 300);
-                }
-            };
+    // 延遲一下，等待虛擬鍵盤完全彈出
+    setTimeout(() => {
+        const inputBar = document.getElementById('input-bar-container');
+        const messageList = document.getElementById('message-list');
+        
+        if (inputBar) {
+            // 1. 確保輸入框在視圖內
+            inputBar.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+        
+        // 2. 確保最後一則訊息也能被看到
+        if (ALL_ELEMENTS.chatContainer) {
+            ALL_ELEMENTS.chatContainer.scrollTop = ALL_ELEMENTS.chatContainer.scrollHeight;
+        }
+    }, 300); // 300ms 通常足夠等待 iOS 鍵盤動畫完成
+};
 
             ALL_ELEMENTS.messageInput.addEventListener('focus', handleInputFocus);
 
