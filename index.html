@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
     <title>AstraChat-16.1.1</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3b82f6"/>
@@ -2566,92 +2566,61 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     display: none; /* 將它完全隱藏起來，不佔據任何空間 */
   }
 }
-        /* =========================================
-   手機版專用修正：全螢幕 App 佈局
-   ========================================= */
-
-/* 1. 鎖定整個網頁的高度，禁止 Body 捲動 */
-html, body {
-    height: 100%; /* 舊瀏覽器備用 */
-    height: 100dvh; /* 使用動態視口高度，解決手機瀏覽器網址列伸縮問題 */
-    overflow: hidden; /* 禁止整個網頁捲動 */
-    margin: 0;
-    padding: 0;
-}
-
-/* 2. 讓 App 容器填滿螢幕，並使用 Flex 佈局 */
-#app-container {
-    position: absolute; /* 確保絕對定位 */
-    top: 0;
-    left: 0;
+        /* 1. 強制 App 容器佔滿螢幕高度 (包含動態高度 dvh)，並設定安全區域 */
+#app-container, #auth-container {
+    position: fixed;
+    inset: 0;
+    height: 100dvh; /* 使用動態視口高度，解決手機網址列伸縮問題 */
     width: 100%;
-    height: 100%;
-    height: 100dvh;
-    display: flex; /* 啟用 Flexbox */
-    flex-direction: column; /* 垂直排列：Header -> Chat -> Input */
-    overflow: hidden; /* 容器本身不捲動 */
+    overflow: hidden; /* 禁止整個 App 捲動，只讓中間訊息區捲動 */
+    padding-top: env(safe-area-inset-top); /* 關鍵：避開手機瀏海，但背景會延伸 */
+    padding-bottom: env(safe-area-inset-bottom); /* 避開底部橫條 */
+    box-sizing: border-box;
 }
 
-/* 3. 修正 Header (頂部引導欄) */
-#app-container > .relative.flex {
-    /* 這是包著 Sidebar 和 Main 的容器 */
-    height: 100%;
-    width: 100%;
-    overflow: hidden;
-}
-
-main.flex-1 {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    overflow: hidden; /* 確保 main 不會撐開 */
-}
-
-/* Header 設定 */
-main > header {
-    flex-shrink: 0; /* 禁止 Header 縮小 */
-    /* 加入頂部安全區域 padding，讓內容不會被瀏海擋住，但背景色會延伸 */
-    padding-top: max(0.5rem, env(safe-area-inset-top)); 
-    /* 確保背景色或毛玻璃效果延伸到最頂端 */
-    background-clip: padding-box; 
-    z-index: 50; /* 確保在最上層 */
-}
-
-/* 4. 修正中間聊天區域 (這是唯一可以捲動的地方) */
-#chat-container {
-    flex-grow: 1; /* 佔滿剩餘空間 */
-    overflow-y: auto; /* 允許垂直捲動 */
-    height: 0; /* 關鍵！設為 0 讓 flex-grow 決定高度 */
-    scroll-behavior: smooth;
-    /* 增加底部內距，避免最後一則訊息貼底 */
-    padding-bottom: 1rem; 
-}
-
-/* 5. 修正底部輸入框區域 */
-#input-bar-container {
-    flex-shrink: 0; /* 禁止輸入框縮小 */
-    width: 100%;
-    background-color: var(--input-bar-bg);
-    /* 加入底部安全區域，避免被 iPhone 的 Home Bar 擋住 */
-    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
-    z-index: 40;
-}
-
-/* 針對自訂桌布模式的修正 */
-body.custom-wallpaper-active #input-bar-container {
-    background-color: transparent !important;
-}
-
-/* 6. 讓桌布容器真正全螢幕 */
+/* 2. 確保桌布容器是全螢幕且無視安全區域 (這樣圖片才會延伸到最頂端) */
 #wallpaper-container {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
+    right: 0;
+    bottom: 0;
     z-index: -1;
-    background-size: cover;
-    background-position: center;
+    height: 100vh; /* 確保覆蓋所有區域 */
+    width: 100vw;
+}
+
+/* 3. 修正主版面佈局，讓 Header 固定，中間捲動，底部固定 */
+main.flex-1.flex.flex-col {
+    height: 100%; /* 繼承父容器高度 */
+    overflow: hidden; /* 防止外層捲動 */
+}
+
+/* 4. Header 設定：確保它不會被壓縮 */
+main > header {
+    flex-shrink: 0; /* 禁止 Header 縮小 */
+    /* 這裡不需要 sticky，因為外層不會捲動，它會自然待在最上面 */
+}
+
+/* 5. 聊天訊息區域：這是唯一可以捲動的地方 */
+#chat-container {
+    flex: 1; /* 佔據剩餘空間 */
+    overflow-y: auto; /* 允許垂直捲動 */
+    overscroll-behavior: contain; /* 防止滑到底觸發瀏覽器重新整理 */
+    height: 0; /* 配合 flex: 1 讓捲動正常運作 */
+}
+
+/* 6. 輸入框區域：固定在底部，不被壓縮 */
+#input-bar-container {
+    flex-shrink: 0; /* 禁止被壓縮 */
+    background-color: var(--input-bar-bg); /* 確保有背景色，不會透明看到後面 */
+    width: 100%;
+}
+
+/* 7. 修正自訂桌布模式下的輸入框背景，避免鍵盤彈出時看不清 */
+body.custom-wallpaper-active #input-bar-container {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
 }
 </style>
 <script>
@@ -3902,6 +3871,30 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             cancelPlanBtn: document.getElementById('cancel-plan-btn'),
             showPromptsBtn: document.getElementById('show-prompts-btn'), // 新增這行
         };
+        const updateMetaThemeColor = () => {
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) return;
+
+    // 判斷目前是否為自訂桌布模式
+    const isCustomWallpaper = document.body.classList.contains('custom-wallpaper-active');
+    const isDark = document.documentElement.classList.contains('dark');
+
+    let color = '#ffffff'; // 預設淺色背景
+
+    if (isCustomWallpaper) {
+        // 如果是自訂桌布，如果是深色桌布模式就設為黑色，否則白色
+        color = document.body.classList.contains('wallpaper-is-dark') ? '#000000' : '#ffffff';
+    } else {
+        // 一般模式，根據 CSS 變數
+        if (isDark) {
+            color = '#1c1c1c'; // 對應你的 --sidebar-bg (深色)
+        } else {
+            color = '#f7f7f8'; // 對應你的 --sidebar-bg (淺色)
+        }
+    }
+    
+    meta.setAttribute('content', color);
+};
         function toggleHistorySidebar(show) {
     const { historySidebar, historySidebarOverlay } = ALL_ELEMENTS;
     if (show) {
@@ -7055,6 +7048,8 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
                 renderAiBubbleColorDropdown();
                 renderUserBubbleColorDropdown();
             }
+            // ✨ 新增這行：更新狀態列顏色
+            updateMetaThemeColor();
         };
         const updateThemeButtons = () => {
             ALL_ELEMENTS.themeDarkBtn.classList.remove('active');
@@ -8868,6 +8863,8 @@ ${JSON.stringify(potentialMemories, null, 2)}
             }
             setAiBubbleColor();
             setUserBubbleColor();
+            // ✨ 新增這行：更新狀態列顏色
+            updateMetaThemeColor();
         };
         const handleWallpaperUpload = (event) => {
             const file = event.target.files[0];
@@ -10552,22 +10549,26 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
                 }
             });
             const handleInputFocus = () => {
-    // 延遲一下，等待虛擬鍵盤完全彈出
-    setTimeout(() => {
-        const inputBar = document.getElementById('input-bar-container');
-        const messageList = document.getElementById('message-list');
-        
-        if (inputBar) {
-            // 1. 確保輸入框在視圖內
-            inputBar.scrollIntoView({ behavior: 'smooth', block: 'end' });
-        }
-        
-        // 2. 確保最後一則訊息也能被看到
-        if (ALL_ELEMENTS.chatContainer) {
-            ALL_ELEMENTS.chatContainer.scrollTop = ALL_ELEMENTS.chatContainer.scrollHeight;
-        }
-    }, 300); // 300ms 通常足夠等待 iOS 鍵盤動畫完成
-};
+            // 延遲執行，等待鍵盤完全彈出
+            setTimeout(() => {
+                // 嘗試捲動讓輸入框出現
+                const inputContainer = document.getElementById('input-bar-container');
+                if (inputContainer) {
+                    inputContainer.scrollIntoView({ behavior: "smooth", block: "end" });
+                }
+                
+                // 如果有 visualViewport (現代瀏覽器)，做更精準的調整
+                if (window.visualViewport) {
+                    const rect = inputContainer.getBoundingClientRect();
+                    const viewportBottom = window.visualViewport.height + window.visualViewport.offsetTop;
+                    
+                    if (rect.bottom > viewportBottom) {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        inputContainer.scrollIntoView({ behavior: "smooth", block: "end" });
+                    }
+                }
+            }, 300); // 300ms 是為了等待 iOS 鍵盤動畫完成
+        };
 
             ALL_ELEMENTS.messageInput.addEventListener('focus', handleInputFocus);
 
