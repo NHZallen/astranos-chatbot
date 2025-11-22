@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AstraChat-16.3.0</title>
+    <title>AstraChat-16.2.0</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3b82f6"/>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -266,9 +266,6 @@ body.custom-wallpaper-active #history-sidebar h3 {
     display: flex;
     align-items: center;
     gap: 0.25rem;
-    /* ✨ 新增：底部增加邊距，並適配 iPhone 底部橫條區域 */
-    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom)); 
-    padding-top: 0.5rem;
 }
 
 #user-profile-btn {
@@ -4435,45 +4432,6 @@ function renderMarkdownWithFormulas(text) {
     return html;
 }
         const saveConfig = async () => { if (currentUser) await setItem(getConfigKey(), JSON.stringify(config)); };
-        const authenticateUser = async () => {
-            // 檢查瀏覽器是否支援
-            if (!window.PublicKeyCredential) {
-                console.warn("此瀏覽器不支援 WebAuthn，將跳過驗證。");
-                return true; // 如果硬體不支援，為了不卡住功能，預設回傳 true (或你可以改為 false 強制阻擋)
-            }
-
-            try {
-                // 1. 檢查使用者是否已經設定了生物辨識
-                const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-                if (!available) {
-                    // 如果裝置沒有 Face ID/指紋功能，改用簡單確認視窗，或直接通過
-                    // 這裡為了體驗，如果沒硬體就通過，若需嚴格安全可改 return false
-                    return true; 
-                }
-
-                // 2. 建立一個隨機挑戰 (在純前端模式下這只是為了觸發系統 UI)
-                const challenge = new Uint8Array(32);
-                window.crypto.getRandomValues(challenge);
-
-                // 3. 呼叫系統驗證介面
-                await navigator.credentials.get({
-                    publicKey: {
-                        challenge: challenge,
-                        rpId: window.location.hostname, // 限制在當前網域
-                        userVerification: "required",   // ✨ 關鍵：這行會強制要求 Face ID / 密碼
-                        timeout: 60000
-                    }
-                });
-
-                // 如果程式執行到這裡沒報錯，代表驗證成功
-                return true;
-
-            } catch (error) {
-                console.error("驗證失敗或取消:", error);
-                showNotification("驗證失敗或已取消，操作中止。", "error");
-                return false;
-            }
-        };
         const loadConfig = async () => {
             if (!currentUser) return;
             const saved = await getItem(getConfigKey());
@@ -7067,8 +7025,6 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
             }
         };
         const handleDeleteAllData = async () => {
-            const isVerified = await authenticateUser();
-            if (!isVerified) return;
             const confirmation = await showCustomDialog({
                 title: i18n[config.uiLanguage].deleteAllDataTitle || '永久刪除所有資料',
                 message: i18n[config.uiLanguage].deleteAllDataMessage || '此操作將會刪除您所有的對話紀錄、設定、Astras 及 API 金鑰。此動作無法復原。請輸入「DELETE」以確認刪除。',
@@ -7718,8 +7674,6 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
             renderFilePreviews();
         };
         const handleExport = async () => {
-        const isVerified = await authenticateUser();
-            if (!isVerified) return;
     const dataToExport = {
         user_credentials: {
             username: currentUser.username,
@@ -7902,8 +7856,6 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
             await saveConfig();
         };
         const handleImport = async () => {
-        const isVerified = await authenticateUser();
-            if (!isVerified) return;
     const file = ALL_ELEMENTS.importFileInput.files[0];
     if (!file) {
         showNotification(i18n[config.uiLanguage].selectFileError || '請選擇檔案。', 'error');
@@ -7983,8 +7935,6 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
             toggleModal(ALL_ELEMENTS.importDataModalAuth, true);
         };
         const processAuthImport = async () => {
-        const isVerified = await authenticateUser();
-            if (!isVerified) return;
     const username = ALL_ELEMENTS.usernameInput.value.trim();
     const password = ALL_ELEMENTS.passwordInput.value;
     const file = ALL_ELEMENTS.importFileInputAuth.files[0];
@@ -10742,51 +10692,37 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
                 }
             });
             const handleInputFocus = () => {
-            // 如果瀏覽器支援 Visual Viewport API (現代 iOS/Android 都支援)
-            if (window.visualViewport) {
-                const viewportHandler = () => {
-                    const inputBarContainer = document.getElementById('input-bar-container');
-                    if (!inputBarContainer) return;
+                if (window.visualViewport) {
+                    const smoothScrollToTarget = () => {
+                        const inputBarContainer = document.getElementById('input-bar-container');
+                        if (!inputBarContainer) return;
 
-                    requestAnimationFrame(() => {
-                        // 取得輸入框區域的底部位置
-                        const rect = inputBarContainer.getBoundingClientRect();
-                        // 取得當前可視視窗的高度 (扣除鍵盤後的高度)
-                        const viewportHeight = window.visualViewport.height;
-                        // 取得頁面當前的滾動高度
-                        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                        requestAnimationFrame(() => {
+                            const PADDING_BOTTOM = 10;
+                            const inputBarRect = inputBarContainer.getBoundingClientRect();
+                            const viewportHeight = window.visualViewport.height;
+                            const offset = inputBarRect.bottom - viewportHeight + PADDING_BOTTOM;
 
-                        // 計算輸入框底部與視窗底部的距離
-                        // 如果 rect.bottom > viewportHeight，代表輸入框被鍵盤蓋住了
-                        if (rect.bottom > viewportHeight) {
-                            // 計算需要向下滾動多少距離，多加 10px 緩衝
-                            const targetScroll = scrollTop + (rect.bottom - viewportHeight) + 10;
-                            
-                            // 執行滾動
-                            window.scrollTo({
-                                top: targetScroll,
-                                behavior: 'smooth'
-                            });
+                            if (offset > 0) {
+                                const newScrollPosition = window.scrollY + offset;
+                                window.scrollTo({
+                                    top: newScrollPosition,
+                                    behavior: 'smooth'
+                                });
+                            }
+                        });
+                    };
+
+                    window.visualViewport.addEventListener('resize', smoothScrollToTarget, { once: true });
+                } else {
+                    setTimeout(() => {
+                        const inputBarContainer = document.getElementById('input-bar-container');
+                        if (inputBarContainer) {
+                            inputBarContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
                         }
-                    });
-                };
-
-                // 監聽視窗大小改變 (鍵盤彈出/收起)
-                window.visualViewport.addEventListener('resize', viewportHandler);
-                window.visualViewport.addEventListener('scroll', viewportHandler);
-                
-                // 當輸入框失去焦點時，移除監聽器以節省效能
-                ALL_ELEMENTS.messageInput.addEventListener('blur', () => {
-                    window.visualViewport.removeEventListener('resize', viewportHandler);
-                    window.visualViewport.removeEventListener('scroll', viewportHandler);
-                }, { once: true });
-            } else {
-                // 舊版瀏覽器備案
-                setTimeout(() => {
-                    ALL_ELEMENTS.messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }, 300);
-            }
-        };
+                    }, 300);
+                }
+            };
 
             ALL_ELEMENTS.messageInput.addEventListener('focus', handleInputFocus);
 
