@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AstraChat-16.1.1</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3b82f6"/>
@@ -10,6 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
@@ -489,10 +490,6 @@ body.custom-wallpaper-active #attachment-menu .menu-item svg {
         --button-primary-bg: #3b82f6;
         --button-primary-hover-bg: #2563eb;
         --button-primary-text: #ffffff;
-        --sat: env(safe-area-inset-top, 0px);
-        --sab: env(safe-area-inset-bottom, 0px);
-        --sal: env(safe-area-inset-left, 0px);
-        --sar: env(safe-area-inset-right, 0px);
     }
     .dark {
         --chat-bg: #111111;
@@ -2570,47 +2567,6 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     display: none; /* 將它完全隱藏起來，不佔據任何空間 */
   }
 }
-        /* 1. 側邊欄：避開頂部瀏海和底部橫條 */
-#sidebar {
-    padding-top: var(--sat) !important;
-    padding-bottom: var(--sab) !important;
-    padding-left: var(--sal);
-}
-
-/* 2. 主畫面標題：避開頂部瀏海，並確保固定在頂部 */
-main > header {
-    padding-top: max(0.5rem, var(--sat)) !important; /* 取較大值，確保有足夠空間 */
-    padding-left: max(0.5rem, var(--sal));
-    padding-right: max(0.5rem, var(--sar));
-    position: sticky; /* 或者是 fixed，視你的佈局而定，原本是 relative/sticky */
-    top: 0;
-    z-index: 50; /* 提高層級，確保不被蓋住 */
-}
-
-/* 3. 側邊欄按鈕區域：確保在側邊欄底部不會被橫條遮住 */
-#sidebar > .border-t {
-    padding-bottom: calc(0.5rem + var(--sab)) !important;
-}
-
-/* 4. 輸入框區域：避開底部橫條，並處理背景色延伸 */
-#input-bar-container {
-    padding-bottom: max(0.5rem, var(--sab)) !important;
-    padding-left: max(0.5rem, var(--sal));
-    padding-right: max(0.5rem, var(--sar));
-    background-color: var(--chat-bg); /* 確保鍵盤彈起時背景顏色正確 */
-}
-
-/* 5. 關鍵修正：讓 APP 高度適應手機瀏覽器動態高度 (100dvh) */
-/* 這能解決鍵盤彈出時，輸入框被蓋住或標題跑掉的問題 */
-#app-container .relative.flex.h-full {
-    height: 100dvh !important; /* 使用動態視窗高度 */
-    overflow: hidden; /* 防止整體捲動，只讓內部區域捲動 */
-}
-
-/* 6. 修正自訂桌布模式下的側邊欄背景 */
-body.custom-wallpaper-active #sidebar {
-    padding-top: var(--sat) !important;
-}
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -2718,7 +2674,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             </footer>
         </div>
     </div>
-    <div class="relative flex w-full h-[100dvh] bg-[var(--chat-bg)] overflow-hidden">
+    <div id="app-container" class="hidden fixed inset-0">
         <div class="relative flex h-full w-full bg-[var(--chat-bg)]">
             <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 opacity-0"></div>
             <div id="sidebar-open-handle" class="fixed top-0 left-0 h-full z-20" style="width: 20px; touch-action: pan-y;"></div>
@@ -3259,7 +3215,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             <p class="text-sm text-[var(--text-secondary)] mb-4" data-lang-key="importDataDesc">選擇一個之前匯出的 `.json` 檔案。目前的所有資料將會被覆蓋。</p>
             <div class="mb-4">
                 <label for="import-file-input" class="block text-sm font-medium mb-1" data-lang-key="selectFile">選擇檔案</label>
-                <input type="file" id="import-file-input" class="w-full text-sm text-[var(--text-secondary)] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" accept=".json" required>
+                <input type="file" id="import-file-input" class="w-full text-sm text-[var(--text-secondary)] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" accept=".json,.zip" required>
             </div>
             <div class="flex justify-end gap-3">
                 <button id="cancel-import-btn" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]" data-lang-key="cancel">取消</button>
@@ -3273,7 +3229,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         <p class="text-sm text-[var(--text-secondary)] mb-4" data-lang-key="importDataDescAuth">選擇一個之前匯出的 `.json` 檔案。您輸入的帳號密碼將用於驗證備份檔案的所有權。</p>
         <div class="mb-4">
             <label for="import-file-input-auth" class="block text-sm font-medium mb-1" data-lang-key="selectFile">選擇檔案</label>
-            <input type="file" id="import-file-input-auth" class="w-full text-sm text-[var(--text-secondary)] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" accept=".json" required>
+            <input type="file" id="import-file-input-auth" class="w-full text-sm text-[var(--text-secondary)] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" accept=".json,.zip" required>
         </div>
         <div class="flex justify-end gap-3">
             <button id="cancel-import-btn-auth" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]" data-lang-key="cancel">取消</button>
@@ -7718,85 +7674,108 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
             renderFilePreviews();
         };
         const handleExport = async () => {
-            const dataToExport = {
-                user_credentials: {
-                    username: currentUser.username,
-                    passwordHash: currentUser.passwordHash
-                }
-            };
-            if (ALL_ELEMENTS.exportHistoryCheck.checked) { dataToExport.conversations = conversations; dataToExport.folders = folders; }
-            if (ALL_ELEMENTS.exportAstrasCheck.checked) { dataToExport.astras = astras; }
-            if (ALL_ELEMENTS.exportSettingsCheck.checked) {
-                dataToExport.settings = {
-                    defaultModel: config.defaultModel, theme: config.theme, modelSettings: config.modelSettings,
-                    enableFollowUp: config.enableFollowUp, aiBubbleColor: config.aiBubbleColor, userBubbleColor: config.userBubbleColor,
-                    autoNaming: config.autoNaming, enableAutoWebSearch: config.enableAutoWebSearch, memoryEnabled1: config.memoryEnabled1,
-                    enableAutoMemory: config.enableAutoMemory, customWallpaper: config.customWallpaper, wallpaperBrightness: config.wallpaperBrightness,
-                    uiTheme: config.uiTheme, uiLanguage: config.uiLanguage, aiDefaultLanguage: config.aiDefaultLanguage,
-                    isLearningMode: config.isLearningMode
-                };
+    const dataToExport = {
+        user_credentials: {
+            username: currentUser.username,
+            passwordHash: currentUser.passwordHash
+        }
+    };
+    // 收集資料
+    if (ALL_ELEMENTS.exportHistoryCheck.checked) { dataToExport.conversations = conversations; dataToExport.folders = folders; }
+    if (ALL_ELEMENTS.exportAstrasCheck.checked) { dataToExport.astras = astras; }
+    if (ALL_ELEMENTS.exportSettingsCheck.checked) {
+        dataToExport.settings = {
+            defaultModel: config.defaultModel, theme: config.theme, modelSettings: config.modelSettings,
+            enableFollowUp: config.enableFollowUp, aiBubbleColor: config.aiBubbleColor, userBubbleColor: config.userBubbleColor,
+            autoNaming: config.autoNaming, enableAutoWebSearch: config.enableAutoWebSearch, memoryEnabled1: config.memoryEnabled1,
+            enableAutoMemory: config.enableAutoMemory, customWallpaper: config.customWallpaper, wallpaperBrightness: config.wallpaperBrightness,
+            uiTheme: config.uiTheme, uiLanguage: config.uiLanguage, aiDefaultLanguage: config.aiDefaultLanguage,
+            isLearningMode: config.isLearningMode
+        };
+    }
+    if (document.getElementById('export-api-check').checked) { dataToExport.apiKeys = config.apiKeys; }
+    if (ALL_ELEMENTS.exportMemoryCheck.checked) { dataToExport.personalMemories = personalMemories; }
+
+    if (Object.keys(dataToExport).length <= 1) {
+        showNotification(i18n[config.uiLanguage].selectDataToExportNotice || '請至少選擇一項要匯出的資料。', 'warning');
+        return;
+    }
+
+    // 修改開始：改為匯出 ZIP 檔案
+    const timestamp = new Date().toISOString().split('T')[0];
+    // 檔名改成 .zip
+    const fileName = `chatbot_backup_${currentUser.username}_${timestamp}.zip`; 
+    
+    try {
+        // 1. 將資料轉為字串 (移除 null, 2 縮排以進一步縮小體積)
+        const jsonString = JSON.stringify(dataToExport);
+
+        // 2. 建立 ZIP 物件
+        const zip = new JSZip();
+        // 在 ZIP 裡面放入一個名為 data.json 的檔案
+        zip.file("data.json", jsonString);
+
+        // 3. 產生壓縮後的 Blob
+        const blob = await zip.generateAsync({
+            type: "blob",
+            compression: "DEFLATE", // 使用 DEFLATE 壓縮演算法
+            compressionOptions: {
+                level: 9 // 最高壓縮等級
             }
-            if (document.getElementById('export-api-check').checked) { dataToExport.apiKeys = config.apiKeys; }
-            if (ALL_ELEMENTS.exportMemoryCheck.checked) { dataToExport.personalMemories = personalMemories; }
-            if (Object.keys(dataToExport).length <= 1) {
-                showNotification(i18n[config.uiLanguage].selectDataToExportNotice || '請至少選擇一項要匯出的資料。', 'warning');
-                return;
-            }
-            const fileName = `chatbot_backup_${currentUser.username}_${new Date().toISOString().split('T')[0]}.json`;
-            const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+        });
+
+        // 4. 下載流程 (保持原有邏輯，但使用新的 blob)
+        if ('showSaveFilePicker' in window) {
             try {
-                if ('showSaveFilePicker' in window) {
-                    console.log("Attempting export with: File System Access API");
-                    const handle = await window.showSaveFilePicker({
-                        suggestedName: fileName,
-                        types: [{
-                            description: 'JSON Files',
-                            accept: { 'application/json': ['.json'] },
-                        }],
-                    });
-                    const writable = await handle.createWritable();
-                    await writable.write(blob);
-                    await writable.close();
-                    toggleModal(ALL_ELEMENTS.exportDataModal, false);
-                    showNotification(i18n[config.uiLanguage].exportSuccess || '資料匯出成功！', 'success');
-                    return;
-                }
-                const shareFile = new File([blob], fileName, {type: blob.type});
-                if (navigator.share && navigator.canShare && navigator.canShare({ files: [shareFile] })) {
-                    console.log("Attempting export with: Web Share API");
-                    await navigator.share({
-                        files: [shareFile],
-                        title: 'Chatbot Backup',
-                        text: 'Here is your chatbot data backup.',
-                    });
-                    toggleModal(ALL_ELEMENTS.exportDataModal, false);
-                    return;
-                }
-                console.log("Attempting export with: Fallback <a> tag method");
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = fileName;
-                document.body.appendChild(a);
-                a.click();
-                URL.revokeObjectURL(url);
-                document.body.removeChild(a);
+                const handle = await window.showSaveFilePicker({
+                    suggestedName: fileName,
+                    types: [{
+                        description: 'Astra Backup (ZIP)',
+                        accept: { 'application/zip': ['.zip'] },
+                    }],
+                });
+                const writable = await handle.createWritable();
+                await writable.write(blob);
+                await writable.close();
                 toggleModal(ALL_ELEMENTS.exportDataModal, false);
                 showNotification(i18n[config.uiLanguage].exportSuccess || '資料匯出成功！', 'success');
-            } catch (error) {
-                if (error.name !== 'AbortError') {
-                    console.error("Export failed with error:", error);
-                    let errorMessage = i18n[config.uiLanguage].exportFailed || '匯出失敗';
-                    if (error.name === 'SecurityError' || error.message.toLowerCase().includes('permission denied')) {
-                       errorMessage = i18n[config.uiLanguage].exportPermissionError || "瀏覽器阻止了下載。請檢查您的瀏覽器設定，或手動啟用彈出視窗/下載權限。";
-                    }
-                    showNotification(`${errorMessage}: ${error.message}`, 'error');
-                } else {
-                    console.log("Export was cancelled by the user.");
-                }
+                return;
+            } catch (err) {
+                // 如果使用者取消或 API 失敗，降級到舊方法
+                console.log("File System API skipped or failed, falling back.");
             }
-        };
+        }
+
+        // 舊瀏覽器或手機版下載方式
+        const shareFile = new File([blob], fileName, { type: 'application/zip' });
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [shareFile] }) && /Mobi|Android/i.test(navigator.userAgent)) {
+            await navigator.share({
+                files: [shareFile],
+                title: 'Astra Backup',
+                text: 'Your chat backup.',
+            });
+        } else {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        toggleModal(ALL_ELEMENTS.exportDataModal, false);
+        showNotification(i18n[config.uiLanguage].exportSuccess || '資料匯出成功！', 'success');
+
+    } catch (error) {
+        if (error.name !== 'AbortError') {
+            console.error("Export failed:", error);
+            showNotification(`${i18n[config.uiLanguage].exportFailed || '匯出失敗'}: ${error.message}`, 'error');
+        }
+    }
+};
         const performImport = async (data) => {
             if (!currentUser) {
                 throw new Error("無法在沒有登入使用者的情況下匯入資料。");
@@ -7815,112 +7794,149 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
             await saveConfig();
         };
         const handleImport = async () => {
-            const file = ALL_ELEMENTS.importFileInput.files[0];
-            if (!file) {
-                showNotification(i18n[config.uiLanguage].selectFileError || '請選擇檔案。', 'error');
-                return;
+    const file = ALL_ELEMENTS.importFileInput.files[0];
+    if (!file) {
+        showNotification(i18n[config.uiLanguage].selectFileError || '請選擇檔案。', 'error');
+        return;
+    }
+
+    try {
+        let data;
+        
+        // 判斷是否為 ZIP 檔案
+        if (file.name.endsWith('.zip') || file.type === 'application/zip' || file.type === 'application/x-zip-compressed') {
+            const zip = await JSZip.loadAsync(file);
+            // 嘗試讀取 ZIP 裡的 data.json，如果沒有則讀取第一個找到的 .json 檔案
+            let jsonFile = zip.file("data.json");
+            if (!jsonFile) {
+                const files = Object.keys(zip.files);
+                const jsonFileName = files.find(name => name.endsWith('.json'));
+                if (jsonFileName) jsonFile = zip.file(jsonFileName);
             }
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    if (data.user_credentials && data.user_credentials.username !== currentUser.username) {
-                        const confirmed = await showCustomConfirm(
-                            i18n[config.uiLanguage].importUserMismatch.replace('{backupUser}', data.user_credentials.username).replace('{currentUser}', currentUser.username),
-                            i18n[config.uiLanguage].importUserMismatchTitle
-                        );
-                        if (!confirmed) return;
-                    } else {
-                         if (!(await showCustomConfirm(i18n[config.uiLanguage].importOverwriteWarning, i18n[config.uiLanguage].importConfirmation))) return;
-                    }
-                    await performImport(data);
-                    toggleModal(ALL_ELEMENTS.importDataModal, false);
-                    showNotification(i18n[config.uiLanguage].importSuccess, 'success');
-                    if (config.customWallpaper) {
-                        try {
-                            const brightness = await analyzeImageBrightness(config.customWallpaper);
-                            config.wallpaperBrightness = brightness;
-                             if (config.uiTheme.mode === 'adaptive') {
-                                const palette = await getDominantColorPalette(config.customWallpaper);
-                                config.uiTheme.adaptivePalette = palette;
-                                config.uiTheme.adaptiveColor = palette[0] || '#3b82f6';
-                            }
-                            await saveConfig();
-                        } catch (err) { /* keep default */ }
-                    }
-                    applyCustomWallpaper();
-                    applyUiTheme();
-                    setAiBubbleColor();
-                    setUserBubbleColor();
-                    applyLanguage(config.uiLanguage);
-                    setupSettingsModal();
-                    const firstConv = conversations.find(c => !c.archived && !c.deletedAt);
-                    if (firstConv) {
-                        loadChat(firstConv.id);
-                    } else {
-                        startNewChat();
-                    }
-                } catch (error) {
-                    showNotification(`${i18n[config.uiLanguage].importFailed}: ${error.message}`, 'error');
-                    console.error(error);
+            
+            if (!jsonFile) throw new Error("ZIP 檔案中找不到 JSON 資料。");
+            const jsonContent = await jsonFile.async("string");
+            data = JSON.parse(jsonContent);
+        } else {
+            // 舊的 JSON 處理方式
+            const text = await file.text(); // 使用較新的 .text() 方法簡化 FileReader
+            data = JSON.parse(text);
+        }
+
+        // 接下來的邏輯與原本相同
+        if (data.user_credentials && data.user_credentials.username !== currentUser.username) {
+            const confirmed = await showCustomConfirm(
+                i18n[config.uiLanguage].importUserMismatch.replace('{backupUser}', data.user_credentials.username).replace('{currentUser}', currentUser.username),
+                i18n[config.uiLanguage].importUserMismatchTitle
+            );
+            if (!confirmed) return;
+        } else {
+            if (!(await showCustomConfirm(i18n[config.uiLanguage].importOverwriteWarning, i18n[config.uiLanguage].importConfirmation))) return;
+        }
+
+        await performImport(data);
+        toggleModal(ALL_ELEMENTS.importDataModal, false);
+        showNotification(i18n[config.uiLanguage].importSuccess, 'success');
+
+        // 重新整理介面
+        if (config.customWallpaper) {
+            try {
+                const brightness = await analyzeImageBrightness(config.customWallpaper);
+                config.wallpaperBrightness = brightness;
+                if (config.uiTheme.mode === 'adaptive') {
+                    const palette = await getDominantColorPalette(config.customWallpaper);
+                    config.uiTheme.adaptivePalette = palette;
+                    config.uiTheme.adaptiveColor = palette[0] || '#3b82f6';
                 }
-            };
-            reader.readAsText(file);
-        };
+                await saveConfig();
+            } catch (err) { }
+        }
+        applyCustomWallpaper();
+        applyUiTheme();
+        setAiBubbleColor();
+        setUserBubbleColor();
+        applyLanguage(config.uiLanguage);
+        setupSettingsModal();
+        const firstConv = conversations.find(c => !c.archived && !c.deletedAt);
+        if (firstConv) loadChat(firstConv.id);
+        else startNewChat();
+
+    } catch (error) {
+        showNotification(`${i18n[config.uiLanguage].importFailed}: ${error.message}`, 'error');
+        console.error(error);
+    }
+};
         const handleImportOnAuth = () => {
             toggleModal(ALL_ELEMENTS.importDataModalAuth, true);
         };
         const processAuthImport = async () => {
-            const username = ALL_ELEMENTS.usernameInput.value.trim();
-            const password = ALL_ELEMENTS.passwordInput.value;
-            const file = ALL_ELEMENTS.importFileInputAuth.files[0];
+    const username = ALL_ELEMENTS.usernameInput.value.trim();
+    const password = ALL_ELEMENTS.passwordInput.value;
+    const file = ALL_ELEMENTS.importFileInputAuth.files[0];
 
-            if (!file) {
-                showNotification(i18n[config.uiLanguage].selectFileError || '請選擇檔案。', 'error');
-                return;
+    if (!file) {
+        showNotification(i18n[config.uiLanguage].selectFileError || '請選擇檔案。', 'error');
+        return;
+    }
+
+    try {
+        const passwordHash = await hashString(password);
+        let data;
+
+        // 判斷是否為 ZIP
+        if (file.name.endsWith('.zip') || file.type === 'application/zip' || file.type === 'application/x-zip-compressed') {
+            const zip = await JSZip.loadAsync(file);
+            let jsonFile = zip.file("data.json");
+            if (!jsonFile) {
+                const files = Object.keys(zip.files);
+                const jsonFileName = files.find(name => name.endsWith('.json'));
+                if (jsonFileName) jsonFile = zip.file(jsonFileName);
             }
+            if (!jsonFile) throw new Error("ZIP 檔案中找不到 JSON 資料。");
+            const jsonContent = await jsonFile.async("string");
+            data = JSON.parse(jsonContent);
+        } else {
+            // 舊的 JSON
+            const text = await file.text();
+            data = JSON.parse(text);
+        }
 
-            const passwordHash = await hashString(password);
-            const reader = new FileReader();
-            
-            reader.onload = async (event) => {
-                try {
-                    const data = JSON.parse(event.target.result);
-                    if (!data.user_credentials || !data.user_credentials.username || !data.user_credentials.passwordHash) {
-                        throw new Error(i18n[config.uiLanguage].importInvalidFile || '備份檔案格式無效。');
-                    }
-                    if (data.user_credentials.username !== username || data.user_credentials.passwordHash !== passwordHash) {
-                        throw new Error(i18n[config.uiLanguage].importAuthMismatch || '帳號或密碼與備份檔案不符。');
-                    }
+        // 驗證邏輯
+        if (!data.user_credentials || !data.user_credentials.username || !data.user_credentials.passwordHash) {
+            throw new Error(i18n[config.uiLanguage].importInvalidFile || '備份檔案格式無效。');
+        }
+        if (data.user_credentials.username !== username || data.user_credentials.passwordHash !== passwordHash) {
+            throw new Error(i18n[config.uiLanguage].importAuthMismatch || '帳號或密碼與備份檔案不符。');
+        }
 
-                    const userKey = getUserKey(username);
-                    const savedUser = await getItem(userKey);
-                    if (!savedUser) {
-                        await setItem(userKey, JSON.stringify({ username, passwordHash }));
-                    }
-                    currentUser = { username, passwordHash };
-                    await setItem('chat_lastUser', username);
-                    await performImport(data);
+        const userKey = getUserKey(username);
+        const savedUser = await getItem(userKey);
+        if (!savedUser) {
+            await setItem(userKey, JSON.stringify({ username, passwordHash }));
+        }
+        currentUser = { username, passwordHash };
+        await setItem('chat_lastUser', username);
+        
+        await performImport(data);
 
-                    toggleModal(ALL_ELEMENTS.importDataModalAuth, false);
-                    ALL_ELEMENTS.authContainer.classList.add('fade-out');
-                    ALL_ELEMENTS.appContainer.classList.remove('hidden');
-                    requestAnimationFrame(() => {
-                        ALL_ELEMENTS.appContainer.classList.add('visible');
-                    });
-                    ALL_ELEMENTS.authContainer.addEventListener('transitionend', () => {
-                        ALL_ELEMENTS.authContainer.style.display = 'none';
-                    }, { once: true });
+        toggleModal(ALL_ELEMENTS.importDataModalAuth, false);
+        ALL_ELEMENTS.authContainer.classList.add('fade-out');
+        ALL_ELEMENTS.appContainer.classList.remove('hidden');
+        requestAnimationFrame(() => {
+            ALL_ELEMENTS.appContainer.classList.add('visible');
+        });
+        ALL_ELEMENTS.authContainer.addEventListener('transitionend', () => {
+            ALL_ELEMENTS.authContainer.style.display = 'none';
+        }, { once: true });
 
-                    initChatApp();
-                    showNotification(i18n[config.uiLanguage].importSuccess || '匯入成功！', 'success');
-                } catch (error) {
-                    showNotification(`${i18n[config.uiLanguage].importFailed || '匯入失敗'}: ${error.message}`, 'error');
-                    console.error(error);
-                }
-            };
-            reader.readAsText(file);
-        };
+        initChatApp();
+        showNotification(i18n[config.uiLanguage].importSuccess || '匯入成功！', 'success');
+
+    } catch (error) {
+        showNotification(`${i18n[config.uiLanguage].importFailed || '匯入失敗'}: ${error.message}`, 'error');
+        console.error(error);
+    }
+};
         const renderModelManagementUI = () => {
     const container = ALL_ELEMENTS.modelManagementList;
     container.innerHTML = '';
@@ -10510,18 +10526,37 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
                 }
             });
             const handleInputFocus = () => {
-    // 給一點延遲，等待虛擬鍵盤完全彈起
-    setTimeout(() => {
-        // 1. 確保輸入框在視野內 (瀏覽器通常會自動處理，但保險起見)
-        ALL_ELEMENTS.messageInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        
-        // 2. 將聊天內容滾動到底部，確保用戶看到最新訊息
-        ALL_ELEMENTS.chatContainer.scrollTo({
-            top: ALL_ELEMENTS.chatContainer.scrollHeight,
-            behavior: 'smooth'
-        });
-    }, 300);
-};
+                if (window.visualViewport) {
+                    const smoothScrollToTarget = () => {
+                        const inputBarContainer = document.getElementById('input-bar-container');
+                        if (!inputBarContainer) return;
+
+                        requestAnimationFrame(() => {
+                            const PADDING_BOTTOM = 10;
+                            const inputBarRect = inputBarContainer.getBoundingClientRect();
+                            const viewportHeight = window.visualViewport.height;
+                            const offset = inputBarRect.bottom - viewportHeight + PADDING_BOTTOM;
+
+                            if (offset > 0) {
+                                const newScrollPosition = window.scrollY + offset;
+                                window.scrollTo({
+                                    top: newScrollPosition,
+                                    behavior: 'smooth'
+                                });
+                            }
+                        });
+                    };
+
+                    window.visualViewport.addEventListener('resize', smoothScrollToTarget, { once: true });
+                } else {
+                    setTimeout(() => {
+                        const inputBarContainer = document.getElementById('input-bar-container');
+                        if (inputBarContainer) {
+                            inputBarContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                        }
+                    }, 300);
+                }
+            };
 
             ALL_ELEMENTS.messageInput.addEventListener('focus', handleInputFocus);
 
