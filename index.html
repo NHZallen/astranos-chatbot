@@ -7681,8 +7681,7 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
         }
     };
     
-    // 1. 收集資料 (使用深拷貝，避免修改到目前的應用程式狀態)
-    // 我們把要匯出的資料先做一次複製
+    // 1. 收集資料
     const rawData = {};
     if (ALL_ELEMENTS.exportHistoryCheck.checked) { 
         rawData.conversations = conversations; 
@@ -7709,7 +7708,12 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
         return;
     }
 
-    // 將資料放入 dataToExport，這裡用 JSON轉換 來做深拷貝
+    // 顯示處理中的提示，因為壓縮圖片需要一點時間
+    const originalBtnText = ALL_ELEMENTS.confirmExportBtn.textContent;
+    ALL_ELEMENTS.confirmExportBtn.textContent = "正在壓縮圖片...";
+    ALL_ELEMENTS.confirmExportBtn.disabled = true;
+
+    // 深拷貝資料
     const dataClone = JSON.parse(JSON.stringify(rawData));
     Object.assign(dataToExport, dataClone);
 
@@ -7718,65 +7722,82 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
     
     try {
         const zip = new JSZip();
-        const imagesFolder = zip.folder("images"); // 建立專門放圖片的資料夾
+        const imagesFolder = zip.folder("images");
 
-        // --- ✨ 核心優化：分離圖片邏輯 START ---
+        // --- ✨ 終極優化：壓縮並分離圖片 START ---
         
         // A. 處理對話中的圖片/檔案
         if (dataToExport.conversations) {
-            dataToExport.conversations.forEach(conv => {
-                conv.messages.forEach(msg => {
+            // 使用 for...of 迴圈以便使用 await
+            for (const conv of dataToExport.conversations) {
+                for (const msg of conv.messages) {
                     if (msg.parts) {
-                        msg.parts.forEach(part => {
+                        for (const part of msg.parts) {
                             if (part.inlineData && part.inlineData.data) {
-                                // 產生唯一檔名
-                                const ext = part.inlineData.mimeType.split('/')[1] || 'bin';
-                                const imgName = `img_${crypto.randomUUID().slice(0,8)}.${ext}`;
+                                const originalMime = part.inlineData.mimeType;
                                 
-                                // 1. 將 Base64 數據加入 ZIP (設定 base64: true)
-                                imagesFolder.file(imgName, part.inlineData.data, {base64: true});
-                                
-                                // 2. 修改 JSON，移除巨大的 data 字串，改為參照路徑
-                                part.inlineData._zipRef = `images/${imgName}`;
-                                delete part.inlineData.data; // 刪除原始數據以節省 JSON 空間
-                            }
-                        });
-                    }
-                });
-            });
-        }
+                                // 只有圖片才進行壓縮，其他檔案(如PDF)保持原樣
+                                let processed;
+                                if (originalMime.startsWith('image/')) {
+                                    // 呼叫壓縮函式：最大寬度 1920px，品質 60%
+                                    processed = await compressImage(part.inlineData.data, originalMime, 1920, 0.6);
+                                } else {
+                                    processed = {
+                                        data: part.inlineData.data,
+                                        mimeType: originalMime,
+                                        ext: originalMime.split('/')[1] || 'bin'
+                                    };
+                                }
 
-        // B. 處理 Astras 頭像
-        if (dataToExport.astras) {
-            dataToExport.astras.forEach(ast => {
-                if (ast.avatarUrl && ast.avatarUrl.startsWith('data:image')) {
-                    const matches = ast.avatarUrl.match(/^data:image\/([a-zA-Z+]+);base64,(.+)$/);
-                    if (matches && matches.length === 3) {
-                        const ext = matches[1];
-                        const base64Data = matches[2];
-                        const imgName = `avatar_${ast.id.slice(0,8)}.${ext}`;
-                        
-                        imagesFolder.file(imgName, base64Data, {base64: true});
-                        
-                        ast._avatarZipRef = `images/${imgName}`;
-                        delete ast.avatarUrl; // 刪除原始 Base64 URL
+                                const imgName = `img_${crypto.randomUUID().slice(0,8)}.${processed.ext}`;
+                                
+                                // 將處理後的數據加入 ZIP
+                                imagesFolder.file(imgName, processed.data, {base64: true});
+                                
+                                // 更新 JSON 參照
+                                part.inlineData._zipRef = `images/${imgName}`;
+                                part.inlineData.mimeType = processed.mimeType; // 更新類型 (可能變成 jpeg)
+                                delete part.inlineData.data;
+                            }
+                        }
                     }
                 }
-            });
+            }
         }
-        // --- ✨ 核心優化 END ---
 
-        // 將瘦身後的 JSON 加入 ZIP
+        // B. 處理 Astras 頭像 (頭像通常很小，可以直接壓縮成 256px)
+        if (dataToExport.astras) {
+            for (const ast of dataToExport.astras) {
+                if (ast.avatarUrl && ast.avatarUrl.startsWith('data:image')) {
+                    const matches = ast.avatarUrl.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+                    if (matches && matches.length === 3) {
+                        const mimeType = matches[1];
+                        const base64Data = matches[2];
+                        
+                        // 頭像縮小到 256px 即可，品質 0.7
+                        const processed = await compressImage(base64Data, mimeType, 256, 0.7);
+                        
+                        const imgName = `avatar_${ast.id.slice(0,8)}.${processed.ext}`;
+                        imagesFolder.file(imgName, processed.data, {base64: true});
+                        
+                        ast._avatarZipRef = `images/${imgName}`;
+                        delete ast.avatarUrl;
+                    }
+                }
+            }
+        }
+        // --- ✨ 終極優化 END ---
+
+        // 3. JSON 最小化：移除空格 (stringify 的第三個參數設為 0 或不傳)
         zip.file("data.json", JSON.stringify(dataToExport));
 
-        // 產生 ZIP 檔案
         const blob = await zip.generateAsync({
             type: "blob",
             compression: "DEFLATE",
             compressionOptions: { level: 9 }
         });
 
-        // 下載流程 (維持不變)
+        // 下載流程
         if ('showSaveFilePicker' in window) {
             try {
                 const handle = await window.showSaveFilePicker({
@@ -7811,10 +7832,12 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
         showNotification(i18n[config.uiLanguage].exportSuccess || '資料匯出成功！', 'success');
 
     } catch (error) {
-        if (error.name !== 'AbortError') {
-            console.error("Export failed:", error);
-            showNotification(`${i18n[config.uiLanguage].exportFailed || '匯出失敗'}: ${error.message}`, 'error');
-        }
+        console.error("Export failed:", error);
+        showNotification(`${i18n[config.uiLanguage].exportFailed || '匯出失敗'}: ${error.message}`, 'error');
+    } finally {
+        // 恢復按鈕狀態
+        ALL_ELEMENTS.confirmExportBtn.textContent = originalBtnText;
+        ALL_ELEMENTS.confirmExportBtn.disabled = false;
     }
 };
         const performImport = async (data) => {
@@ -10396,6 +10419,48 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
         console.error('寄送對話紀錄到 Google Apps Script 時發生網路錯誤:', error);
     }
 }
+        const compressImage = (base64Data, mimeType, maxWidth = 1920, quality = 0.6) => {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.src = `data:${mimeType};base64,${base64Data}`;
+        
+        img.onload = () => {
+            let width = img.width;
+            let height = img.height;
+
+            // 如果圖片太寬，等比例縮小
+            if (width > maxWidth) {
+                height = Math.round(height * (maxWidth / width));
+                width = maxWidth;
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // 強制轉為 JPEG 進行壓縮 (品質 0.6)
+            // 這樣可以大幅減少檔案大小
+            const newDataUrl = canvas.toDataURL('image/jpeg', quality);
+            resolve({
+                data: newDataUrl.split(',')[1], // 只回傳 Base64 部分
+                mimeType: 'image/jpeg',         // 類型變為 jpeg
+                ext: 'jpg'                      // 副檔名變為 jpg
+            });
+        };
+
+        img.onerror = () => {
+            // 如果轉換失敗，就原樣退回
+            resolve({
+                data: base64Data,
+                mimeType: mimeType,
+                ext: mimeType.split('/')[1] || 'bin'
+            });
+        };
+    });
+};
         const restoreImagesFromZip = async (zip, data) => {
     // 1. 處理對話中的圖片
     if (data.conversations) {
