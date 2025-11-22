@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AstraChat-16.2.0</title>
+    <title>AstraChat-16.3.0</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3b82f6"/>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -7019,12 +7019,20 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
     initChatApp();
 };
         const handleLogout = async () => {
+            // 1. 先跳出原本的確認視窗
             if (await showCustomConfirm(i18n[config.uiLanguage].confirmLogout || '您確定要登出嗎？', i18n[config.uiLanguage].logoutConfirmation || '登出確認')) {
+                
+                // 2. ✨ 加入 Face ID 驗證 ✨
+                const isVerified = await verifyUserWithBiometrics("登出");
+                if (!isVerified) return; // 驗證失敗就中止
+
+                // 3. 驗證通過，執行登出
                 await removeItem('chat_lastUser');
                 window.location.reload();
             }
         };
         const handleDeleteAllData = async () => {
+            // 1. 先跳出原本的文字輸入確認 ("DELETE")
             const confirmation = await showCustomDialog({
                 title: i18n[config.uiLanguage].deleteAllDataTitle || '永久刪除所有資料',
                 message: i18n[config.uiLanguage].deleteAllDataMessage || '此操作將會刪除您所有的對話紀錄、設定、Astras 及 API 金鑰。此動作無法復原。請輸入「DELETE」以確認刪除。',
@@ -7035,7 +7043,12 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
                     { text: i18n[config.uiLanguage].confirmDelete || '確認刪除', class: 'bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700', value: (val) => val }
                 ]
             });
+
             if (confirmation === 'DELETE') {
+                // 2. ✨ 加入 Face ID 驗證 ✨
+                const isVerified = await verifyUserWithBiometrics("清除所有資料");
+                if (!isVerified) return; // 驗證失敗就中止
+
                 try {
                     const idb = await openDB();
                     const tx = idb.transaction(STORE_NAME, 'readwrite');
@@ -7045,6 +7058,11 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
                         req.onsuccess = resolve;
                         req.onerror = reject;
                     });
+                    
+                    // ✨ 清除生物辨識 ID，這樣下次重來時可以重新註冊
+                    // (因為資料都清空了，保留這個 ID 會導致無法驗證)
+                    // 注意：上面的 store.clear() 其實已經清空了，這裡只是邏輯上的確保
+                    
                     showNotification(i18n[config.uiLanguage].deleteAllDataSuccess || '所有資料已成功刪除。頁面即將重新整理。', 'success');
                     setTimeout(() => {
                         window.location.reload();
@@ -7674,6 +7692,8 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
             renderFilePreviews();
         };
         const handleExport = async () => {
+        const isVerified = await verifyUserWithBiometrics("匯出資料");
+            if (!isVerified) return;
     const dataToExport = {
         user_credentials: {
             username: currentUser.username,
@@ -7861,8 +7881,10 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
         showNotification(i18n[config.uiLanguage].selectFileError || '請選擇檔案。', 'error');
         return;
     }
+            const isVerified = await verifyUserWithBiometrics("匯入資料");
+            if (!isVerified) return;
 
-    try {
+            try {
         let data;
         
         if (file.name.endsWith('.zip') || file.type.includes('zip')) {
@@ -10692,37 +10714,16 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
                 }
             });
             const handleInputFocus = () => {
-                if (window.visualViewport) {
-                    const smoothScrollToTarget = () => {
-                        const inputBarContainer = document.getElementById('input-bar-container');
-                        if (!inputBarContainer) return;
-
-                        requestAnimationFrame(() => {
-                            const PADDING_BOTTOM = 10;
-                            const inputBarRect = inputBarContainer.getBoundingClientRect();
-                            const viewportHeight = window.visualViewport.height;
-                            const offset = inputBarRect.bottom - viewportHeight + PADDING_BOTTOM;
-
-                            if (offset > 0) {
-                                const newScrollPosition = window.scrollY + offset;
-                                window.scrollTo({
-                                    top: newScrollPosition,
-                                    behavior: 'smooth'
-                                });
-                            }
-                        });
-                    };
-
-                    window.visualViewport.addEventListener('resize', smoothScrollToTarget, { once: true });
-                } else {
-                    setTimeout(() => {
-                        const inputBarContainer = document.getElementById('input-bar-container');
-                        if (inputBarContainer) {
-                            inputBarContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                        }
-                    }, 300);
+            // 設定 300ms 延遲，等待手機虛擬鍵盤完全彈出
+            setTimeout(() => {
+                const inputBarContainer = document.getElementById('input-bar-container');
+                if (inputBarContainer) {
+                    // block: 'nearest' 會自動判斷，如果它被擋住，就剛好捲動到可見位置
+                    // 這樣就不會飛到太上面，也不會被鍵盤蓋住
+                    inputBarContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }
-            };
+            }, 300);
+        };
 
             ALL_ELEMENTS.messageInput.addEventListener('focus', handleInputFocus);
 
@@ -11240,6 +11241,101 @@ const FOLDER_TEXT_COLORS = {
                     ALL_ELEMENTS.loginLangMenu.classList.remove('visible');
                 }
             });
+         // ==========================================
+    // ✨ 新增：生物辨識驗證 (Face ID / Windows Hello) 工具函式 ✨
+    // ==========================================
+
+    // 1. 將 ArrayBuffer 轉為 Base64 字串 (WebAuthn 需要)
+    const bufferToBase64 = (buffer) => {
+        return btoa(String.fromCharCode(...new Uint8Array(buffer)))
+            .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+    };
+
+    // 2. 將 Base64 字串轉為 ArrayBuffer
+    const base64ToBuffer = (base64) => {
+        const binary = atob(base64.replace(/-/g, "+").replace(/_/g, "/"));
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes.buffer;
+    };
+
+    // 3. 核心驗證函式
+    // actionName: 操作名稱 (例如 "清除資料")，用於顯示提示
+    const verifyUserWithBiometrics = async (actionName) => {
+        // 檢查瀏覽器是否支援
+        if (!window.PublicKeyCredential) {
+            console.warn("此瀏覽器不支援 WebAuthn，跳過生物辨識。");
+            return true; // 不支援則直接通過，避免功能無法使用
+        }
+
+        try {
+            // 檢查是否已經有存過的生物辨識 ID
+            const savedCredId = await getItem('biometric_cred_id');
+
+            // --- 情況 A: 尚未設定過，進行「註冊」 ---
+            if (!savedCredId) {
+                const confirmSetup = await showCustomConfirm(
+                    `為了保護您的安全，執行「${actionName}」需要設定 Face ID 或密碼驗證。\n是否立即設定？`,
+                    "設定生物辨識"
+                );
+                
+                if (!confirmSetup) return false; // 使用者拒絕設定，取消操作
+
+                // 建立註冊選項
+                const publicKey = {
+                    challenge: new Uint8Array(32), // 隨機挑戰碼 (本地模擬)
+                    rp: { name: "Astra Chat" },
+                    user: {
+                        id: new Uint8Array(16),
+                        name: currentUser ? currentUser.username : "User",
+                        displayName: currentUser ? currentUser.username : "User"
+                    },
+                    pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+                    authenticatorSelection: {
+                        authenticatorAttachment: "platform", // 強制使用本機驗證器 (Face ID / Windows Hello)
+                        userVerification: "required"
+                    },
+                    timeout: 60000
+                };
+
+                window.crypto.getRandomValues(publicKey.challenge);
+                window.crypto.getRandomValues(publicKey.user.id);
+
+                // 呼叫瀏覽器 API
+                const credential = await navigator.credentials.create({ publicKey });
+                
+                // 儲存 Credential ID
+                const newCredId = bufferToBase64(credential.rawId);
+                await setItem('biometric_cred_id', newCredId);
+                
+                showNotification("生物辨識設定成功！", "success");
+                return true;
+            }
+
+            // --- 情況 B: 已經設定過，進行「驗證」 ---
+            const publicKey = {
+                challenge: new Uint8Array(32),
+                allowCredentials: [{
+                    id: base64ToBuffer(savedCredId),
+                    type: "public-key"
+                }],
+                userVerification: "required",
+                timeout: 60000
+            };
+            window.crypto.getRandomValues(publicKey.challenge);
+
+            // 呼叫驗證
+            await navigator.credentials.get({ publicKey });
+            return true; // 驗證成功
+
+        } catch (error) {
+            console.error("Biometric error:", error);
+            showNotification(`驗證失敗或取消: ${error.message}`, "error");
+            return false;
+        }
+    };
     </script>
     <script>
     document.addEventListener('touchstart', function(event) {
