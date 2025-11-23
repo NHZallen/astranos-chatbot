@@ -3653,17 +3653,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     新增步驟
                 </button>
             </div>
-            <div id="p2p-sync-modal" class="modal fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-0 z-[100] hidden">
-    <div class="bg-[var(--modal-bg)] w-full h-full flex flex-col">
-        <!-- 頂部導航 -->
-        <div class="p-4 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--sidebar-bg)]">
-            <h2 class="text-xl font-bold flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-                跨裝置同步 (P2P)
-            </h2>
-            <button id="close-p2p-modal-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
-        </div>
-
         <!-- 主要內容區 -->
         <div class="flex-1 p-6 overflow-y-auto flex flex-col items-center justify-center space-y-8">
             
@@ -3740,7 +3729,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 </div>
         </div>
     </div>
-
+   <div id="p2p-sync-modal" class="modal fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-0 z-[100] hidden">
+    <div class="bg-[var(--modal-bg)] w-full h-full flex flex-col">
+        <!-- 頂部導航 -->
+        <div class="p-4 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--sidebar-bg)]">
+            <h2 class="text-xl font-bold flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                跨裝置同步 (P2P)
+            </h2>
+            <button id="close-p2p-modal-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
+        </div>
 
     <script src="./i18n.js"></script>
     <script src="./demo-conversations.js"></script>
@@ -11843,173 +11841,6 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
         submitButton.textContent = originalButtonText;
     }
 });
-            initializeSpotlightEffect();
-            document.querySelectorAll('.sidebar-section-header').forEach(header => {
-                header.addEventListener('click', (e) => {
-                    // 如果點擊的是按鈕，則不觸發折疊
-                    if (e.target.closest('button')) {
-                        return;
-                    }
-                    const section = header.closest('.sidebar-section');
-                    if (section) {
-                        const isOpen = section.dataset.open === 'true';
-                        section.dataset.open = !isOpen;
-                    }
-                });
-            });
-
-
-            // ✨ START: 新增的附件上彈視窗函式與按鈕邏輯
-
-
-            // 這個函式專門用來建立和顯示手機版的上彈視窗
-            const showAttachmentMenu = () => {
-                // 檢查是否已經存在，避免重複建立
-                if (document.getElementById('attachment-menu')) return;
-
-
-                const wrapper = document.getElementById('attachment-menu-wrapper');
-                wrapper.innerHTML = ''; // 清空舊內容
-
-
-                const overlay = document.createElement('div');
-                overlay.id = 'attachment-menu-overlay';
-
-
-                const menu = document.createElement('div');
-                menu.id = 'attachment-menu';
-
-
-                // 取得當前模型資訊
-                const conv = getActiveConversation();
-                const modelInfo = MODELS.find(m => m.id === conv?.model);
-                const provider = modelInfo?.provider;
-
-
-                const allMenuItems = [
-                    { id: 'camera-btn', svg: `<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle>`, textKey: 'camera', originalElement: ALL_ELEMENTS.cameraBtn },
-                    { id: 'upload-image-btn', svg: `<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline>`, textKey: 'image', originalElement: ALL_ELEMENTS.uploadImageBtn },
-                    { id: 'upload-file-btn', svg: `<path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline>`, textKey: 'file', originalElement: ALL_ELEMENTS.uploadFileBtn },
-                    { type: 'divider' },
-                    { id: 'web-search-popover-btn', svg: `<circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>`, textKey: 'search', originalElement: ALL_ELEMENTS.webSearchPopoverBtn },
-                    { id: 'learning-mode-btn', svg: `<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V5H6.5A2.5 2.5 0 0 0 4 7.5v12z"/>`, textKey: 'learning', originalElement: ALL_ELEMENTS.learningModeBtn },
-                    { type: 'divider' },
-                    { id: 'deep-research-btn', svg: `<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>`, textKey: 'research', originalElement: ALL_ELEMENTS.deepResearchBtn }
-                ];
-
-
-                let visibleMenuItems = allMenuItems;
-                if (provider === 'openrouter') {
-    const supportsVision = OPENROUTER_VISION_MODELS.includes(modelInfo?.id);
-    visibleMenuItems = allMenuItems.filter(item => {
-        // OpenRouter 模型總是顯示學習、研究 以及 ✨檔案上傳✨
-        if (item.id === 'learning-mode-btn' || item.id === 'deep-research-btn' || item.id === 'upload-file-btn') return true;
-        
-        // ✨ 修改點：只隱藏「網路搜尋」
-        if (item.id === 'web-search-popover-btn') return false;
-        
-        // 只有支援的模型才顯示相機和圖片
-        if (item.id === 'camera-btn' || item.id === 'upload-image-btn') return supportsVision;
-        
-        // 分隔線邏輯稍後處理
-        return item.type === 'divider';
-    });
-}
-
-
-                let itemsHTML = '';
-                visibleMenuItems.forEach((item, index) => {
-                    if (item.type === 'divider') {
-                        if (index > 0 && index < visibleMenuItems.length - 1 && visibleMenuItems[index - 1].type !== 'divider') {
-                            // 這是用來在視覺上分隔選項的，在手機選單中是透過 CSS 的 border-bottom 實現
-                        }
-                    } else {
-                        itemsHTML += `
-                            <div class="menu-item" data-trigger-id="${item.id}">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${item.svg}</svg>
-                                <span data-lang-key="${item.textKey}">${i18n[config.uiLanguage][item.textKey] || item.textKey}</span>
-                            </div>
-                        `;
-                    }
-                });
-
-
-                menu.innerHTML = `
-                    <div class="menu-header" data-lang-key="attachFile">${i18n[config.uiLanguage].attachFile || '附加檔案'}</div>
-                    <div class="menu-options">${itemsHTML}</div>
-                `;
-                
-                wrapper.appendChild(overlay);
-                wrapper.appendChild(menu);
-
-
-                requestAnimationFrame(() => {
-                    overlay.classList.add('visible');
-                    menu.classList.add('visible');
-                });
-                
-                const closeMenu = () => {
-                    overlay.classList.remove('visible');
-                    menu.classList.remove('visible');
-                    menu.addEventListener('transitionend', () => wrapper.innerHTML = '', { once: true });
-                };
-
-
-                overlay.addEventListener('click', closeMenu);
-
-
-                menu.querySelectorAll('.menu-item').forEach(menuItem => {
-                    menuItem.addEventListener('click', () => {
-                        const triggerId = menuItem.dataset.triggerId;
-                        const originalElement = allMenuItems.find(i => i.id === triggerId)?.originalElement;
-                        if (originalElement) {
-                            originalElement.click();
-                        }
-                        closeMenu();
-                    });
-                });
-            };
-            // 這是新的「附加檔案」按鈕點擊事件
-            ALL_ELEMENTS.addFileBtn.addEventListener('click', (e) => {
-                e.stopPropagation(); // 防止事件冒泡
-                
-                // 判斷螢幕寬度
-                if (window.innerWidth <= 768) { 
-                    // 如果是手機，顯示上彈視窗
-                    showAttachmentMenu();
-                } else { 
-                    // 如果是電腦，維持舊的小視窗
-                    updateFunctionButtonsState();
-                    const popover = ALL_ELEMENTS.fileOptionsPopover;
-                    if (popover.classList.contains('visible')) {
-                        popover.classList.remove('visible');
-                    } else {
-                        closeAllPopovers();
-                        popover.classList.add('visible');
-                    }
-                }
-            });
-
-
-            // ✨ END: 新增的附件上彈視窗函式與按鈕邏輯
-            setupHistorySidebarInteractions(); // 啟用側邊欄的點擊跳轉功能
-    setupHistorySidebarTriggers();   // 啟用側邊欄的滑動和懸停觸發功能
-            ALL_ELEMENTS.showPromptsBtn.addEventListener('click', () => {
-    const container = ALL_ELEMENTS.followUpContainer;
-    
-    // 直接切換容器的顯示/隱藏
-    container.classList.toggle('hidden');
-    
-    // 根據容器「現在」是否可見，來決定按鈕是否為 active (黃色)
-    const isVisible = !container.classList.contains('hidden');
-    ALL_ELEMENTS.showPromptsBtn.classList.toggle('active', isVisible);
-});
-        const followUpContainer = document.getElementById('follow-up-container');
-        if (followUpContainer) {
-            const stopPropagation = (e) => e.stopPropagation();
-            followUpContainer.addEventListener('touchstart', stopPropagation);
-            followUpContainer.addEventListener('touchmove', stopPropagation);
-            followUpContainer.addEventListener('touchend', stopPropagation);
             const p2pModal = document.getElementById('p2p-sync-modal');
     const p2pBtn = document.getElementById('p2p-sync-btn');
     const closeP2pBtn = document.getElementById('close-p2p-modal-btn');
@@ -12196,6 +12027,173 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             showNotification("無法啟動相機: " + err, 'error');
         });
     });
+            initializeSpotlightEffect();
+            document.querySelectorAll('.sidebar-section-header').forEach(header => {
+                header.addEventListener('click', (e) => {
+                    // 如果點擊的是按鈕，則不觸發折疊
+                    if (e.target.closest('button')) {
+                        return;
+                    }
+                    const section = header.closest('.sidebar-section');
+                    if (section) {
+                        const isOpen = section.dataset.open === 'true';
+                        section.dataset.open = !isOpen;
+                    }
+                });
+            });
+
+
+            // ✨ START: 新增的附件上彈視窗函式與按鈕邏輯
+
+
+            // 這個函式專門用來建立和顯示手機版的上彈視窗
+            const showAttachmentMenu = () => {
+                // 檢查是否已經存在，避免重複建立
+                if (document.getElementById('attachment-menu')) return;
+
+
+                const wrapper = document.getElementById('attachment-menu-wrapper');
+                wrapper.innerHTML = ''; // 清空舊內容
+
+
+                const overlay = document.createElement('div');
+                overlay.id = 'attachment-menu-overlay';
+
+
+                const menu = document.createElement('div');
+                menu.id = 'attachment-menu';
+
+
+                // 取得當前模型資訊
+                const conv = getActiveConversation();
+                const modelInfo = MODELS.find(m => m.id === conv?.model);
+                const provider = modelInfo?.provider;
+
+
+                const allMenuItems = [
+                    { id: 'camera-btn', svg: `<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle>`, textKey: 'camera', originalElement: ALL_ELEMENTS.cameraBtn },
+                    { id: 'upload-image-btn', svg: `<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline>`, textKey: 'image', originalElement: ALL_ELEMENTS.uploadImageBtn },
+                    { id: 'upload-file-btn', svg: `<path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline>`, textKey: 'file', originalElement: ALL_ELEMENTS.uploadFileBtn },
+                    { type: 'divider' },
+                    { id: 'web-search-popover-btn', svg: `<circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>`, textKey: 'search', originalElement: ALL_ELEMENTS.webSearchPopoverBtn },
+                    { id: 'learning-mode-btn', svg: `<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V5H6.5A2.5 2.5 0 0 0 4 7.5v12z"/>`, textKey: 'learning', originalElement: ALL_ELEMENTS.learningModeBtn },
+                    { type: 'divider' },
+                    { id: 'deep-research-btn', svg: `<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>`, textKey: 'research', originalElement: ALL_ELEMENTS.deepResearchBtn }
+                ];
+
+
+                let visibleMenuItems = allMenuItems;
+                if (provider === 'openrouter') {
+    const supportsVision = OPENROUTER_VISION_MODELS.includes(modelInfo?.id);
+    visibleMenuItems = allMenuItems.filter(item => {
+        // OpenRouter 模型總是顯示學習、研究 以及 ✨檔案上傳✨
+        if (item.id === 'learning-mode-btn' || item.id === 'deep-research-btn' || item.id === 'upload-file-btn') return true;
+        
+        // ✨ 修改點：只隱藏「網路搜尋」
+        if (item.id === 'web-search-popover-btn') return false;
+        
+        // 只有支援的模型才顯示相機和圖片
+        if (item.id === 'camera-btn' || item.id === 'upload-image-btn') return supportsVision;
+        
+        // 分隔線邏輯稍後處理
+        return item.type === 'divider';
+    });
+}
+
+
+                let itemsHTML = '';
+                visibleMenuItems.forEach((item, index) => {
+                    if (item.type === 'divider') {
+                        if (index > 0 && index < visibleMenuItems.length - 1 && visibleMenuItems[index - 1].type !== 'divider') {
+                            // 這是用來在視覺上分隔選項的，在手機選單中是透過 CSS 的 border-bottom 實現
+                        }
+                    } else {
+                        itemsHTML += `
+                            <div class="menu-item" data-trigger-id="${item.id}">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${item.svg}</svg>
+                                <span data-lang-key="${item.textKey}">${i18n[config.uiLanguage][item.textKey] || item.textKey}</span>
+                            </div>
+                        `;
+                    }
+                });
+
+
+                menu.innerHTML = `
+                    <div class="menu-header" data-lang-key="attachFile">${i18n[config.uiLanguage].attachFile || '附加檔案'}</div>
+                    <div class="menu-options">${itemsHTML}</div>
+                `;
+                
+                wrapper.appendChild(overlay);
+                wrapper.appendChild(menu);
+
+
+                requestAnimationFrame(() => {
+                    overlay.classList.add('visible');
+                    menu.classList.add('visible');
+                });
+                
+                const closeMenu = () => {
+                    overlay.classList.remove('visible');
+                    menu.classList.remove('visible');
+                    menu.addEventListener('transitionend', () => wrapper.innerHTML = '', { once: true });
+                };
+
+
+                overlay.addEventListener('click', closeMenu);
+
+
+                menu.querySelectorAll('.menu-item').forEach(menuItem => {
+                    menuItem.addEventListener('click', () => {
+                        const triggerId = menuItem.dataset.triggerId;
+                        const originalElement = allMenuItems.find(i => i.id === triggerId)?.originalElement;
+                        if (originalElement) {
+                            originalElement.click();
+                        }
+                        closeMenu();
+                    });
+                });
+            };
+            // 這是新的「附加檔案」按鈕點擊事件
+            ALL_ELEMENTS.addFileBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // 防止事件冒泡
+                
+                // 判斷螢幕寬度
+                if (window.innerWidth <= 768) { 
+                    // 如果是手機，顯示上彈視窗
+                    showAttachmentMenu();
+                } else { 
+                    // 如果是電腦，維持舊的小視窗
+                    updateFunctionButtonsState();
+                    const popover = ALL_ELEMENTS.fileOptionsPopover;
+                    if (popover.classList.contains('visible')) {
+                        popover.classList.remove('visible');
+                    } else {
+                        closeAllPopovers();
+                        popover.classList.add('visible');
+                    }
+                }
+            });
+
+
+            // ✨ END: 新增的附件上彈視窗函式與按鈕邏輯
+            setupHistorySidebarInteractions(); // 啟用側邊欄的點擊跳轉功能
+    setupHistorySidebarTriggers();   // 啟用側邊欄的滑動和懸停觸發功能
+            ALL_ELEMENTS.showPromptsBtn.addEventListener('click', () => {
+    const container = ALL_ELEMENTS.followUpContainer;
+    
+    // 直接切換容器的顯示/隱藏
+    container.classList.toggle('hidden');
+    
+    // 根據容器「現在」是否可見，來決定按鈕是否為 active (黃色)
+    const isVisible = !container.classList.contains('hidden');
+    ALL_ELEMENTS.showPromptsBtn.classList.toggle('active', isVisible);
+});
+        const followUpContainer = document.getElementById('follow-up-container');
+        if (followUpContainer) {
+            const stopPropagation = (e) => e.stopPropagation();
+            followUpContainer.addEventListener('touchstart', stopPropagation);
+            followUpContainer.addEventListener('touchmove', stopPropagation);
+            followUpContainer.addEventListener('touchend', stopPropagation);
         }
         }
         const handleDeleteMessagePair = async (index) => {
