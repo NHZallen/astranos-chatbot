@@ -7913,7 +7913,7 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
             const jsonContent = await jsonFile.async("string");
             data = JSON.parse(jsonContent);
 
-            // ✨ 關鍵：呼叫還原函式，把圖片裝回去
+            // 還原圖片附件
             data = await restoreAttachmentsFromZip(zip, data);
 
         } else {
@@ -7921,7 +7921,7 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
             data = JSON.parse(text);
         }
 
-        // 以下邏輯保持不變
+        // 檢查使用者是否相符
         if (data.user_credentials && data.user_credentials.username !== currentUser.username) {
             const confirmed = await showCustomConfirm(
                 i18n[config.uiLanguage].importUserMismatch.replace('{backupUser}', data.user_credentials.username).replace('{currentUser}', currentUser.username),
@@ -7932,31 +7932,17 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
             if (!(await showCustomConfirm(i18n[config.uiLanguage].importOverwriteWarning, i18n[config.uiLanguage].importConfirmation))) return;
         }
 
+        // 執行匯入
         await performImport(data);
+        
+        // 關閉視窗並顯示成功
         toggleModal(ALL_ELEMENTS.importDataModal, false);
         showNotification(i18n[config.uiLanguage].importSuccess, 'success');
 
-        if (config.customWallpaper) {
-            try {
-                const brightness = await analyzeImageBrightness(config.customWallpaper);
-                config.wallpaperBrightness = brightness;
-                if (config.uiTheme.mode === 'adaptive') {
-                    const palette = await getDominantColorPalette(config.customWallpaper);
-                    config.uiTheme.adaptivePalette = palette;
-                    config.uiTheme.adaptiveColor = palette[0] || '#3b82f6';
-                }
-                await saveConfig();
-            } catch (err) { }
-        }
-        applyCustomWallpaper();
-        applyUiTheme();
-        setAiBubbleColor();
-        setUserBubbleColor();
-        applyLanguage(config.uiLanguage);
-        setupSettingsModal();
-        const firstConv = conversations.find(c => !c.archived && !c.deletedAt);
-        if (firstConv) loadChat(firstConv.id);
-        else startNewChat();
+        // ✨ 修正關鍵：匯入後強制重新整理頁面，確保所有資料正確顯示
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
 
     } catch (error) {
         showNotification(`${i18n[config.uiLanguage].importFailed}: ${error.message}`, 'error');
@@ -7992,7 +7978,6 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
             const jsonContent = await jsonFile.async("string");
             data = JSON.parse(jsonContent);
 
-            // ✨ 使用新的還原函式
             data = await restoreAttachmentsFromZip(zip, data);
 
         } else {
@@ -8018,32 +8003,12 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
         await performImport(data);
 
         toggleModal(ALL_ELEMENTS.importDataModalAuth, false);
-        
-        // --- ✨ UI 修復關鍵 START ---
-        // 1. 開始淡出動畫
-        ALL_ELEMENTS.authContainer.classList.add('fade-out');
-        
-        // 2. 顯示主畫面
-        ALL_ELEMENTS.appContainer.classList.remove('hidden');
-        requestAnimationFrame(() => {
-            ALL_ELEMENTS.appContainer.classList.add('visible');
-        });
+        showNotification(i18n[config.uiLanguage].importSuccess || '匯入成功！頁面即將重整...', 'success');
 
-        // 3. 強制隱藏機制：不只依賴 transitionend，雙重保險
-        const hideAuthContainer = () => {
-            ALL_ELEMENTS.authContainer.style.display = 'none'; // 徹底從版面移除
-            ALL_ELEMENTS.authContainer.classList.remove('visible'); // 清除可見標記
-        };
-
-        // 監聽動畫結束
-        ALL_ELEMENTS.authContainer.addEventListener('transitionend', hideAuthContainer, { once: true });
-        
-        // 4. 設定一個 500ms 的計時器作為備案，防止動畫事件沒觸發
-        setTimeout(hideAuthContainer, 500);
-        // --- ✨ UI 修復關鍵 END ---
-
-        initChatApp();
-        showNotification(i18n[config.uiLanguage].importSuccess || '匯入成功！', 'success');
+        // ✨ 修正關鍵：強制重新整理頁面
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
 
     } catch (error) {
         showNotification(`${i18n[config.uiLanguage].importFailed || '匯入失敗'}: ${error.message}`, 'error');
