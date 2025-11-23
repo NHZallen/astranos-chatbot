@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlVjOTgjdwCRYIFDPlSJyGothspOJCINgRdBNPCoCoAPgatCKssVNPfISAc" crossorigin="anonymous"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/mhchem.min.js" integrity="sha384-LiYbuyabPcvZ2wQ2MR2kJyS2N9p/hO3N/15H0/0YxJqT4Lg/ZqD53aQyD+Jz3lM7" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
     body {
     touch-action: manipulation;
@@ -3152,6 +3153,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         <div class="flex flex-col sm:flex-row gap-2">
                             <button id="export-data-btn" class="flex-1 text-center p-2 rounded-md bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-800 font-medium" data-lang-key="exportData">匯出資料</button>
                             <button id="import-data-btn" class="flex-1 text-center p-2 rounded-md bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800 font-medium" data-lang-key="importData">匯入資料</button>
+                            <button id="p2p-sync-btn" class="flex-1 text-center p-2 rounded-md bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-800 font-medium">P2P 同步</button>
                         </div>
                         <button id="open-archived-modal-btn" class="w-full text-left p-2 rounded-md hover:bg-[var(--hover-bg)] font-medium mt-4" data-lang-key="manageArchived">
                             管理已封存的對話
@@ -3333,6 +3335,60 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         </div>
     </div>
 </div>
+    <div id="p2p-sync-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl p-6 w-full max-w-md flex flex-col gap-4">
+            <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-3">
+                <h2 class="text-xl font-bold">裝置間 P2P 同步</h2>
+                <button id="close-p2p-btn" class="p-1 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
+            </div>
+            
+            <p class="text-sm text-[var(--text-secondary)]">請選擇此裝置的角色。保持兩個裝置都開啟此視窗。</p>
+
+            <!-- 角色選擇按鈕 -->
+            <div id="p2p-role-selection" class="grid grid-cols-2 gap-4">
+                <button id="p2p-send-role-btn" class="p-4 rounded-lg border border-[var(--border-color)] hover:bg-[var(--hover-bg)] flex flex-col items-center gap-2 transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2z"/></svg>
+                    <span class="font-bold">我是傳送方</span>
+                    <span class="text-xs text-[var(--text-secondary)]">將資料傳給另一台裝置</span>
+                </button>
+                <button id="p2p-receive-role-btn" class="p-4 rounded-lg border border-[var(--border-color)] hover:bg-[var(--hover-bg)] flex flex-col items-center gap-2 transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-500"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span class="font-bold">我是接收方</span>
+                    <span class="text-xs text-[var(--text-secondary)]">接收來自另一台的資料</span>
+                </button>
+            </div>
+
+            <!-- 傳送方介面 (預設隱藏) -->
+            <div id="p2p-sender-ui" class="hidden flex-col gap-3">
+                <div class="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-md border border-blue-200 dark:border-blue-800">
+                    <p class="text-sm font-bold text-blue-800 dark:text-blue-200 mb-1">您的傳送代碼：</p>
+                    <div class="flex gap-2">
+                        <code id="p2p-my-id-display" class="flex-1 bg-white dark:bg-black p-2 rounded border border-gray-300 font-mono text-lg text-center select-all">正在產生...</code>
+                        <button id="p2p-copy-id-btn" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">複製</button>
+                    </div>
+                    <p class="text-xs text-blue-600 dark:text-blue-400 mt-2">請將此代碼輸入到「接收方」裝置。</p>
+                </div>
+                <div id="p2p-sender-status" class="text-center text-sm text-[var(--text-secondary)] animate-pulse">正在等待連接...</div>
+            </div>
+
+            <!-- 接收方介面 (預設隱藏) -->
+            <div id="p2p-receiver-ui" class="hidden flex-col gap-3">
+                <div>
+                    <label class="block text-sm font-medium mb-1">輸入傳送方代碼：</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="p2p-target-id-input" class="flex-1 p-2 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)]" placeholder="貼上代碼...">
+                        <button id="p2p-connect-btn" class="px-4 py-2 rounded-md btn-primary">連線並接收</button>
+                    </div>
+                </div>
+                <div id="p2p-receiver-status" class="text-center text-sm text-[var(--text-secondary)]"></div>
+            </div>
+            
+            <!-- 進度條 -->
+            <div id="p2p-progress-container" class="hidden w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mt-2">
+                <div id="p2p-progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
     <div id="archived-chats-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
         <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-2xl flex flex-col" style="max-height: 90vh;">
             <div class="p-6 border-b border-[var(--border-color)] flex justify-between items-center">
@@ -10891,6 +10947,270 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
     }
     return data;
 };
+        let peerInstance = null;
+let peerConnection = null;
+
+// 1. 初始化 P2P 介面操作
+function setupP2P() {
+    const p2pBtn = document.getElementById('p2p-sync-btn');
+    const p2pModal = document.getElementById('p2p-sync-modal');
+    const closeBtn = document.getElementById('close-p2p-btn');
+    const sendRoleBtn = document.getElementById('p2p-send-role-btn');
+    const receiveRoleBtn = document.getElementById('p2p-receive-role-btn');
+    const senderUI = document.getElementById('p2p-sender-ui');
+    const receiverUI = document.getElementById('p2p-receiver-ui');
+    const roleSelection = document.getElementById('p2p-role-selection');
+    const connectBtn = document.getElementById('p2p-connect-btn');
+    const copyBtn = document.getElementById('p2p-copy-id-btn');
+
+    // 打開視窗
+    p2pBtn.addEventListener('click', () => {
+        toggleModal(p2pModal, true);
+        resetP2PUI();
+    });
+
+    // 關閉視窗
+    closeBtn.addEventListener('click', () => {
+        toggleModal(p2pModal, false);
+        destroyPeer(); // 關閉視窗時斷開連線以節省資源
+    });
+
+    // 選擇傳送方
+    sendRoleBtn.addEventListener('click', () => {
+        roleSelection.classList.add('hidden');
+        senderUI.classList.remove('hidden');
+        initPeer('sender');
+    });
+
+    // 選擇接收方
+    receiveRoleBtn.addEventListener('click', () => {
+        roleSelection.classList.add('hidden');
+        receiverUI.classList.remove('hidden');
+        initPeer('receiver');
+    });
+
+    // 複製 ID
+    copyBtn.addEventListener('click', () => {
+        const idText = document.getElementById('p2p-my-id-display').textContent;
+        copyTextToClipboard(idText).then(() => {
+            copyBtn.textContent = '已複製';
+            setTimeout(() => copyBtn.textContent = '複製', 2000);
+        });
+    });
+
+    // 執行連線 (接收方)
+    connectBtn.addEventListener('click', () => {
+        const targetId = document.getElementById('p2p-target-id-input').value.trim();
+        if (!targetId) {
+            showNotification('請輸入傳送方代碼', 'error');
+            return;
+        }
+        connectToPeer(targetId);
+    });
+}
+
+// 2. 重置 UI 狀態
+function resetP2PUI() {
+    document.getElementById('p2p-role-selection').classList.remove('hidden');
+    document.getElementById('p2p-sender-ui').classList.add('hidden');
+    document.getElementById('p2p-receiver-ui').classList.add('hidden');
+    document.getElementById('p2p-progress-container').classList.add('hidden');
+    document.getElementById('p2p-sender-status').textContent = '正在等待連接...';
+    document.getElementById('p2p-receiver-status').textContent = '';
+    document.getElementById('p2p-target-id-input').value = '';
+    document.getElementById('p2p-my-id-display').textContent = '正在產生...';
+    destroyPeer();
+}
+
+// 3. 初始化 PeerJS
+function initPeer(role) {
+    if (peerInstance) return;
+
+    // 建立 Peer 物件 (使用免費的公用伺服器)
+    peerInstance = new Peer(null, {
+        debug: 2
+    });
+
+    peerInstance.on('open', (id) => {
+        if (role === 'sender') {
+            document.getElementById('p2p-my-id-display').textContent = id;
+        }
+    });
+
+    peerInstance.on('error', (err) => {
+        console.error('P2P Error:', err);
+        showNotification('P2P 連線錯誤: ' + err.type, 'error');
+    });
+
+    // 當有人連線進來 (主要用於傳送方)
+    peerInstance.on('connection', (conn) => {
+        peerConnection = conn;
+        setupConnectionEvents(conn, role);
+    });
+}
+
+// 4. 接收方主動連線
+function connectToPeer(targetId) {
+    if (!peerInstance) return;
+    const statusEl = document.getElementById('p2p-receiver-status');
+    statusEl.textContent = '正在連線中...';
+    
+    const conn = peerInstance.connect(targetId);
+    peerConnection = conn;
+    setupConnectionEvents(conn, 'receiver');
+}
+
+// 5. 設定連線後的事件處理
+function setupConnectionEvents(conn, role) {
+    conn.on('open', () => {
+        if (role === 'sender') {
+            document.getElementById('p2p-sender-status').textContent = '✅ 裝置已連接！準備傳送資料...';
+            // 連線成功後，自動開始傳送資料
+            setTimeout(startP2PDataTransfer, 500);
+        } else {
+            document.getElementById('p2p-receiver-status').textContent = '✅ 已連接！等待資料傳輸...';
+        }
+    });
+
+    conn.on('data', (data) => {
+        if (role === 'receiver') {
+            handleReceivedData(data);
+        }
+    });
+
+    conn.on('close', () => {
+        showNotification('P2P 連線已斷開', 'warning');
+    });
+}
+
+// 6. 銷毀 Peer 物件
+function destroyPeer() {
+    if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
+    }
+    if (peerInstance) {
+        peerInstance.destroy();
+        peerInstance = null;
+    }
+}
+
+// 7. [傳送方] 準備並傳送資料
+async function startP2PDataTransfer() {
+    if (!peerConnection) return;
+    
+    showNotification('開始打包並傳送資料...', 'info');
+    const progressBar = document.getElementById('p2p-progress-bar');
+    const progressContainer = document.getElementById('p2p-progress-container');
+    progressContainer.classList.remove('hidden');
+    progressBar.style.width = '20%';
+
+    // 準備資料 (複製 handleExport 的邏輯，但不產生 ZIP，只傳 JSON)
+    const dataToExport = {
+        user_credentials: {
+            username: currentUser.username,
+            passwordHash: currentUser.passwordHash
+        },
+        conversations: conversations,
+        folders: folders,
+        astras: astras,
+        settings: {
+            defaultModel: config.defaultModel, theme: config.theme, modelSettings: config.modelSettings,
+            enableFollowUp: config.enableFollowUp, aiBubbleColor: config.aiBubbleColor, userBubbleColor: config.userBubbleColor,
+            autoNaming: config.autoNaming, enableAutoWebSearch: config.enableAutoWebSearch, memoryEnabled1: config.memoryEnabled1,
+            enableAutoMemory: config.enableAutoMemory, customWallpaper: config.customWallpaper, wallpaperBrightness: config.wallpaperBrightness,
+            uiTheme: config.uiTheme, uiLanguage: config.uiLanguage, aiDefaultLanguage: config.aiDefaultLanguage,
+            isLearningMode: config.isLearningMode
+        },
+        apiKeys: config.apiKeys,
+        personalMemories: personalMemories
+    };
+
+    progressBar.style.width = '50%';
+
+    try {
+        // 將物件轉為 JSON 字串
+        const jsonString = JSON.stringify(dataToExport);
+        
+        // 透過 PeerJS 傳送 (WebRTC 會自動分塊，但大檔案建議還是要小心)
+        // 為了簡單起見，我們直接傳送。如果資料包含大量圖片 (Base64)，可能會很大。
+        // 這裡我們做一個簡單的優化：如果資料太大，提示使用者。
+        if (jsonString.length > 10 * 1024 * 1024) { // 10MB 警告
+             showNotification('資料量較大，傳輸可能需要一點時間...', 'warning');
+        }
+
+        peerConnection.send({
+            type: 'full_sync',
+            payload: jsonString
+        });
+
+        progressBar.style.width = '100%';
+        document.getElementById('p2p-sender-status').textContent = '✅ 資料已發送！';
+        showNotification('資料發送完成！', 'success');
+
+    } catch (e) {
+        console.error(e);
+        showNotification('資料打包或傳送失敗', 'error');
+    }
+}
+
+// 8. [接收方] 處理接收到的資料
+async function handleReceivedData(data) {
+    if (data && data.type === 'full_sync') {
+        const progressBar = document.getElementById('p2p-progress-bar');
+        const progressContainer = document.getElementById('p2p-progress-container');
+        progressContainer.classList.remove('hidden');
+        progressBar.style.width = '100%';
+        document.getElementById('p2p-receiver-status').textContent = '📦 正在處理接收到的資料...';
+
+        try {
+            const parsedData = JSON.parse(data.payload);
+            
+            // 使用現有的 performImport 函式來匯入資料
+            // 這保證了邏輯與「匯入資料」功能完全一致
+            
+            // 簡單的驗證
+            if (parsedData.user_credentials && parsedData.user_credentials.username !== currentUser.username) {
+                 const confirmed = await showCustomConfirm(
+                    `接收到的資料屬於使用者 "${parsedData.user_credentials.username}"，而您是 "${currentUser.username}"。確定要覆蓋嗎？`,
+                    '使用者不符'
+                );
+                if (!confirmed) return;
+            } else {
+                if (!(await showCustomConfirm('接收到來自 P2P 的同步資料，確定要覆蓋當前資料嗎？', '同步確認'))) return;
+            }
+
+            await performImport(parsedData);
+            
+            // 重新整理介面
+            if (config.customWallpaper) {
+                try {
+                    const brightness = await analyzeImageBrightness(config.customWallpaper);
+                    config.wallpaperBrightness = brightness;
+                } catch (e) {}
+            }
+            applyCustomWallpaper();
+            applyUiTheme();
+            setAiBubbleColor();
+            setUserBubbleColor();
+            applyLanguage(config.uiLanguage);
+            setupSettingsModal();
+            
+            // 重新載入列表
+            const firstConv = conversations.find(c => !c.archived && !c.deletedAt);
+            if (firstConv) loadChat(firstConv.id);
+            else startNewChat();
+
+            showNotification('P2P 同步成功！', 'success');
+            toggleModal(document.getElementById('p2p-sync-modal'), false);
+            destroyPeer();
+
+        } catch (e) {
+            console.error(e);
+            showNotification('資料處理失敗: ' + e.message, 'error');
+        }
+    }
+}
         async function initChatApp() {
             if (window.innerWidth >= 1024) {
         sidebarOpen = true;
@@ -11205,6 +11525,7 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             ALL_ELEMENTS.trashBatchRestoreBtn.addEventListener('click', handleBatchRestoreFromTrash);
             ALL_ELEMENTS.trashBatchDeleteBtn.addEventListener('click', handleBatchDeleteFromTrash);
             ALL_ELEMENTS.emptyTrashBtn.addEventListener('click', handleEmptyTrash);
+            setupP2P();
             updateFileInputUI();
             startNewChat();
             const initializeSpotlightEffect = () => {
