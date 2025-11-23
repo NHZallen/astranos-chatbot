@@ -1,5 +1,5 @@
 // 【重要】每次更新 PWA 時，請手動增加此版本號！
-const CACHE_NAME = 'astra-chat-cache-v87';
+const CACHE_NAME = 'astra-chat-cache-v90;
 
 // 靜態資源，可以長期快取
 const STATIC_ASSETS = [
@@ -89,39 +89,3 @@ self.addEventListener('fetch', event => {
     })
   );
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
