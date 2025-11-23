@@ -2664,6 +2664,16 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     display: none; /* 將它完全隱藏起來，不佔據任何空間 */
   }
 }
+    #p2p-sync-modal.visible {
+    display: flex !important; /* 強制覆蓋 display: none */
+}
+#p2p-qrcode img {
+    margin: 0 auto;
+}
+/* 修正全螢幕層級 */
+.modal.fixed.inset-0.z-\[100\] {
+    z-index: 100 !important;
+}
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -3158,9 +3168,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         <div class="flex flex-col sm:flex-row gap-2">
                             <button id="export-data-btn" class="flex-1 text-center p-2 rounded-md bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-800 font-medium" data-lang-key="exportData">匯出資料</button>
                             <button id="import-data-btn" class="flex-1 text-center p-2 rounded-md bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800 font-medium" data-lang-key="importData">匯入資料</button>
-                            <button id="p2p-sync-btn" class="w-full text-center p-2 mt-2 rounded-md bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-800 font-medium flex items-center justify-center gap-2">
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-    跨裝置同步</button>
+                            <button id="open-p2p-btn" class="w-full mt-2 text-center p-2 rounded-md bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-800 font-medium flex items-center justify-center gap-2">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+    <span>跨裝置同步</span></button>
                         </div>
                         <button id="open-archived-modal-btn" class="w-full text-left p-2 rounded-md hover:bg-[var(--hover-bg)] font-medium mt-4" data-lang-key="manageArchived">
                             管理已封存的對話
@@ -3653,66 +3663,79 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     新增步驟
                 </button>
             </div>
-        <!-- 主要內容區 -->
-        <div class="flex-1 p-6 overflow-y-auto flex flex-col items-center justify-center space-y-8">
+            <div id="p2p-sync-modal" class="modal fixed inset-0 bg-white dark:bg-gray-900 z-[100] hidden flex-col">
+        <!-- 頂部導航 -->
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white">跨裝置 P2P 同步</h2>
+            <button id="close-p2p-modal-btn" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+
+        <!-- 內容區域 -->
+        <div class="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-center text-center space-y-8">
             
-            <!-- 初始選擇畫面 -->
-            <div id="p2p-initial-view" class="w-full max-w-md space-y-6 text-center">
-                <p class="text-[var(--text-secondary)]">請選擇此裝置的角色：</p>
-                <button id="p2p-send-role-btn" class="w-full p-6 rounded-xl border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-all flex flex-col items-center gap-3">
-                    <svg class="w-12 h-12 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                    <span class="text-lg font-bold text-blue-600 dark:text-blue-400">我要傳送資料 (舊機)</span>
-                    <span class="text-sm text-[var(--text-secondary)]">產生 QR Code 供掃描</span>
-                </button>
-                <button id="p2p-receive-role-btn" class="w-full p-6 rounded-xl border-2 border-green-500 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40 transition-all flex flex-col items-center gap-3">
-                    <svg class="w-12 h-12 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                    <span class="text-lg font-bold text-green-600 dark:text-green-400">我要接收資料 (新機)</span>
-                    <span class="text-sm text-[var(--text-secondary)]">開啟相機掃描 QR Code</span>
-                </button>
+            <!-- 步驟 1: 選擇模式 -->
+            <div id="p2p-step-select" class="w-full max-w-md space-y-6">
+                <p class="text-gray-600 dark:text-gray-300">請選擇此裝置的角色：</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <button id="p2p-role-sender" class="p-6 rounded-xl border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-all flex flex-col items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" class="text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line><polyline points="17 9 12 4 7 9"></polyline><line x1="12" y1="4" x2="12" y2="13"></line></svg>
+                        <span class="font-bold text-lg text-blue-700 dark:text-blue-300">我是舊手機<br>(發送資料)</span>
+                    </button>
+                    <button id="p2p-role-receiver" class="p-6 rounded-xl border-2 border-green-500 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40 transition-all flex flex-col items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" class="text-green-600 dark:text-green-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z"></path><polyline points="12 17 12 11 9 14"></polyline><polyline points="15 14 12 17"></polyline></svg>
+                        <span class="font-bold text-lg text-green-700 dark:text-green-300">我是新手機<br>(接收資料)</span>
+                    </button>
+                </div>
             </div>
 
-            <!-- 發送端畫面 -->
-            <div id="p2p-sender-view" class="hidden w-full max-w-md flex flex-col items-center text-center space-y-6">
-                <div class="bg-white p-4 rounded-xl shadow-lg">
-                    <div id="p2p-qrcode-container"></div>
+            <!-- 發送端介面 (顯示 QR) -->
+            <div id="p2p-sender-ui" class="hidden w-full max-w-md flex flex-col items-center">
+                <h3 class="text-xl font-bold mb-2 text-gray-800 dark:text-white">請用新手機掃描</h3>
+                <p class="text-sm text-gray-500 mb-6">掃描後將自動開始傳輸資料</p>
+                
+                <div class="p-4 bg-white rounded-xl shadow-lg">
+                    <div id="p2p-qrcode" class="w-64 h-64"></div>
                 </div>
-                <div>
-                    <h3 class="text-xl font-bold mb-2">等待連線中...</h3>
-                    <p class="text-[var(--text-secondary)] text-sm">請用另一台裝置掃描此 QR Code</p>
-                </div>
-                <div id="p2p-sender-status" class="w-full hidden">
-                    <div class="flex justify-between text-sm mb-1">
-                        <span>傳送進度</span>
+                
+                <div id="p2p-sender-status" class="mt-6 text-blue-600 font-medium">正在建立連線通道...</div>
+                
+                <!-- 發送進度條 -->
+                <div id="p2p-sender-progress-container" class="w-full mt-6 hidden">
+                    <div class="flex justify-between text-sm mb-1 text-gray-600 dark:text-gray-300">
+                        <span>發送進度</span>
                         <span id="p2p-sender-percent">0%</span>
                     </div>
-                    <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                        <div id="p2p-sender-progress" class="bg-blue-500 h-full transition-all duration-200" style="width: 0%"></div>
+                    <div class="w-full bg-gray-200 rounded-full h-4 dark:bg-gray-700 overflow-hidden">
+                        <div id="p2p-sender-bar" class="bg-blue-500 h-4 rounded-full transition-all duration-200" style="width: 0%"></div>
                     </div>
-                    <p class="text-xs text-[var(--text-secondary)] mt-2 text-center">請勿關閉此視窗...</p>
                 </div>
             </div>
 
-            <!-- 接收端畫面 -->
-            <div id="p2p-receiver-view" class="hidden w-full max-w-md flex flex-col items-center text-center space-y-4">
-                <div id="qr-reader" class="w-full rounded-xl overflow-hidden bg-black" style="min-height: 300px;"></div>
-                <p id="p2p-scanner-instruction" class="text-[var(--text-secondary)]">請將鏡頭對準發送端的 QR Code</p>
+            <!-- 接收端介面 (掃描 QR) -->
+            <div id="p2p-receiver-ui" class="hidden w-full max-w-md flex flex-col items-center">
+                <h3 class="text-xl font-bold mb-2 text-gray-800 dark:text-white">掃描舊手機 QR Code</h3>
                 
-                <div id="p2p-receiver-status" class="w-full hidden">
-                    <h3 class="text-xl font-bold mb-4">正在接收資料...</h3>
-                    <div class="flex justify-between text-sm mb-1">
-                        <span id="p2p-receiver-status-text">下載中</span>
+                <div id="p2p-qr-reader" class="w-full max-w-xs h-64 bg-black rounded-lg overflow-hidden mb-4"></div>
+                
+                <div id="p2p-receiver-status" class="text-green-600 font-medium">正在開啟相機...</div>
+
+                <!-- 接收進度條 -->
+                <div id="p2p-receiver-progress-container" class="w-full mt-6 hidden">
+                    <div class="flex justify-between text-sm mb-1 text-gray-600 dark:text-gray-300">
+                        <span>接收與同步進度</span>
                         <span id="p2p-receiver-percent">0%</span>
                     </div>
-                    <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                        <div id="p2p-receiver-progress" class="bg-green-500 h-full transition-all duration-200" style="width: 0%"></div>
+                    <div class="w-full bg-gray-200 rounded-full h-4 dark:bg-gray-700 overflow-hidden">
+                        <div id="p2p-receiver-bar" class="bg-green-500 h-4 rounded-full transition-all duration-200" style="width: 0%"></div>
                     </div>
-                    <p class="text-xs text-[var(--text-secondary)] mt-2">資料處理需要一些時間，請保持螢幕開啟...</p>
+                    <p class="text-xs text-red-500 mt-2">檔案可能較大，請保持螢幕開啟勿離開。</p>
                 </div>
             </div>
 
         </div>
     </div>
-</div>
             <div id="plan-editor-steps-container" class="p-6 overflow-y-auto scroll-area space-y-4">
                 <!-- 計畫步驟將會動態插入此處 -->
             </div>
@@ -3729,16 +3752,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 </div>
         </div>
     </div>
-   <div id="p2p-sync-modal" class="modal fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-0 z-[100] hidden">
-    <div class="bg-[var(--modal-bg)] w-full h-full flex flex-col">
-        <!-- 頂部導航 -->
-        <div class="p-4 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--sidebar-bg)]">
-            <h2 class="text-xl font-bold flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-                跨裝置同步 (P2P)
-            </h2>
-            <button id="close-p2p-modal-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
-        </div>
+
 
     <script src="./i18n.js"></script>
     <script src="./demo-conversations.js"></script>
@@ -4057,189 +4071,24 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     importProgressBarAuth: document.getElementById('import-progress-bar-auth'),
     importStatusTextAuth: document.getElementById('import-status-text-auth'),
     importPercentageAuth: document.getElementById('import-percentage-auth'),
-            p2pSyncBtn: document.getElementById('p2p-sync-btn'),
-p2pSyncModal: document.getElementById('p2p-sync-modal'),
+            openP2PBtn: document.getElementById('open-p2p-btn'),
+            p2pModal: document.getElementById('p2p-sync-modal'),
+            closeP2PModalBtn: document.getElementById('close-p2p-modal-btn'),
+            p2pStepSelect: document.getElementById('p2p-step-select'),
+            p2pRoleSender: document.getElementById('p2p-role-sender'),
+            p2pRoleReceiver: document.getElementById('p2p-role-receiver'),
+            p2pSenderUI: document.getElementById('p2p-sender-ui'),
+            p2pReceiverUI: document.getElementById('p2p-receiver-ui'),
+            p2pQRCode: document.getElementById('p2p-qrcode'),
+            p2pSenderStatus: document.getElementById('p2p-sender-status'),
+            p2pSenderProgressContainer: document.getElementById('p2p-sender-progress-container'),
+            p2pSenderBar: document.getElementById('p2p-sender-bar'),
+            p2pSenderPercent: document.getElementById('p2p-sender-percent'),
+            p2pReceiverStatus: document.getElementById('p2p-receiver-status'),
+            p2pReceiverProgressContainer: document.getElementById('p2p-receiver-progress-container'),
+            p2pReceiverBar: document.getElementById('p2p-receiver-bar'),
+            p2pReceiverPercent: document.getElementById('p2p-receiver-percent'),
         };
-        async function prepareDataForP2P() {
-    // 收集資料
-    const dataToExport = {
-        user_credentials: {
-            username: currentUser.username,
-            passwordHash: currentUser.passwordHash
-        },
-        conversations: conversations,
-        folders: folders,
-        astras: astras,
-        personalMemories: personalMemories,
-        settings: {
-            defaultModel: config.defaultModel, theme: config.theme, modelSettings: config.modelSettings,
-            enableFollowUp: config.enableFollowUp, aiBubbleColor: config.aiBubbleColor, userBubbleColor: config.userBubbleColor,
-            autoNaming: config.autoNaming, enableAutoWebSearch: config.enableAutoWebSearch, memoryEnabled1: config.memoryEnabled1,
-            enableAutoMemory: config.enableAutoMemory, customWallpaper: config.customWallpaper, wallpaperBrightness: config.wallpaperBrightness,
-            uiTheme: config.uiTheme, uiLanguage: config.uiLanguage, aiDefaultLanguage: config.aiDefaultLanguage,
-            isLearningMode: config.isLearningMode
-        },
-        apiKeys: config.apiKeys
-    };
-
-    const zip = new JSZip();
-    const imagesFolder = zip.folder("images");
-    const filesFolder = zip.folder("files");
-
-    // 處理對話附件
-    if (dataToExport.conversations) {
-        for (const conv of dataToExport.conversations) {
-            for (const msg of conv.messages) {
-                if (msg.parts) {
-                    for (const part of msg.parts) {
-                        if (part.inlineData && part.inlineData.data) {
-                            const originalMime = part.inlineData.mimeType;
-                            if (originalMime.startsWith('image/')) {
-                                const processed = await compressImage(part.inlineData.data, originalMime, 1920, 0.6);
-                                const imgName = `img_${crypto.randomUUID().slice(0,8)}.${processed.ext}`;
-                                imagesFolder.file(imgName, processed.data, {base64: true});
-                                part.inlineData._zipRef = `images/${imgName}`;
-                                part.inlineData.mimeType = processed.mimeType;
-                            } else {
-                                let ext = 'bin';
-                                if (originalMime.includes('pdf')) ext = 'pdf';
-                                else if (originalMime.includes('text')) ext = 'txt';
-                                const fileName = `file_${crypto.randomUUID().slice(0,8)}.${ext}`;
-                                filesFolder.file(fileName, part.inlineData.data, {base64: true});
-                                part.inlineData._zipRef = `files/${fileName}`;
-                            }
-                            delete part.inlineData.data;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // 處理 Astras 頭像
-    if (dataToExport.astras) {
-        for (const ast of dataToExport.astras) {
-            if (ast.avatarUrl && ast.avatarUrl.startsWith('data:image')) {
-                const matches = ast.avatarUrl.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
-                if (matches && matches.length === 3) {
-                    const mimeType = matches[1];
-                    const base64Data = matches[2];
-                    const processed = await compressImage(base64Data, mimeType, 256, 0.7);
-                    const imgName = `avatar_${ast.id.slice(0,8)}.${processed.ext}`;
-                    imagesFolder.file(imgName, processed.data, {base64: true});
-                    ast._avatarZipRef = `images/${imgName}`;
-                    delete ast.avatarUrl;
-                }
-            }
-        }
-    }
-
-    zip.file("data.json", JSON.stringify(dataToExport));
-
-    // 產生 ArrayBuffer (用於傳輸)
-    return await zip.generateAsync({
-        type: "arraybuffer",
-        compression: "DEFLATE",
-        compressionOptions: { level: 6 } // 稍微降低壓縮率以加快速度
-    });
-}
-
-// 2. 處理接收到的資料 (基於 handleImport 的邏輯)
-async function processP2PData(arrayBuffer, updateProgressCallback) {
-    updateProgressCallback(10, "正在解壓縮...");
-    const zip = await JSZip.loadAsync(arrayBuffer);
-    
-    let jsonFile = zip.file("data.json");
-    if (!jsonFile) {
-        const files = Object.keys(zip.files);
-        const jsonFileName = files.find(name => name.endsWith('.json'));
-        if (jsonFileName) jsonFile = zip.file(jsonFileName);
-    }
-    
-    if (!jsonFile) throw new Error("資料損毀：找不到 JSON 檔案");
-    
-    updateProgressCallback(20, "正在解析資料...");
-    const jsonContent = await jsonFile.async("string");
-    const rawData = JSON.parse(jsonContent);
-
-    // P2P 信任模式：我們略過帳號驗證，假設既然掃了 QR Code 就是本人操作
-    // 或者你也可以在這裡加上類似 processAuthImport 的驗證邏輯
-
-    updateProgressCallback(30, "正在還原資料...");
-
-    // 清空現有資料
-    conversations = [];
-    folders = [];
-    astras = [];
-    personalMemories = [];
-
-    // 還原設定
-    if (rawData.settings) Object.assign(config, rawData.settings);
-    if (rawData.apiKeys) config.apiKeys = { ...config.apiKeys, ...rawData.apiKeys };
-
-    // 還原 Astras
-    const astrasToImport = rawData.astras || [];
-    if (astrasToImport.length > 0) {
-        for (let i = 0; i < astrasToImport.length; i++) {
-            const ast = astrasToImport[i];
-            if (ast._avatarZipRef) {
-                try {
-                    const fileInZip = zip.file(ast._avatarZipRef);
-                    if (fileInZip) {
-                        const base64 = await fileInZip.async("base64");
-                        let mime = 'image/png';
-                        if (ast._avatarZipRef.endsWith('.jpg')) mime = 'image/jpeg';
-                        ast.avatarUrl = `data:${mime};base64,${base64}`;
-                        delete ast._avatarZipRef;
-                    }
-                } catch (e) { console.warn("頭像還原失敗", e); }
-            }
-            astras.push(ast);
-            if (i % 5 === 0) updateProgressCallback(30 + (i/astrasToImport.length)*10, "還原 Astras...");
-        }
-    }
-
-    // 還原資料夾與記憶
-    if (rawData.folders) folders = rawData.folders;
-    if (rawData.personalMemories) personalMemories = rawData.personalMemories;
-
-    // 還原對話 (最耗時)
-    const convsToImport = rawData.conversations || [];
-    if (convsToImport.length > 0) {
-        const total = convsToImport.length;
-        for (let i = 0; i < total; i++) {
-            const conv = convsToImport[i];
-            for (const msg of conv.messages) {
-                if (msg.parts) {
-                    for (const part of msg.parts) {
-                        if (part.inlineData && part.inlineData._zipRef) {
-                            try {
-                                const fileInZip = zip.file(part.inlineData._zipRef);
-                                if (fileInZip) {
-                                    const base64 = await fileInZip.async("base64");
-                                    part.inlineData.data = base64;
-                                    delete part.inlineData._zipRef;
-                                }
-                            } catch (e) { console.warn("附件還原失敗", e); }
-                        }
-                    }
-                }
-            }
-            conversations.push(conv);
-            // 讓 UI 喘口氣
-            if (i % 2 === 0) {
-                await new Promise(r => setTimeout(r, 10));
-                updateProgressCallback(40 + (i / total) * 50, `還原對話 (${i}/${total})...`);
-            }
-        }
-    }
-
-    updateProgressCallback(95, "正在儲存...");
-    await saveAppData();
-    await saveConfig();
-    
-    updateProgressCallback(100, "完成！");
-}
         function toggleHistorySidebar(show) {
     const { historySidebar, historySidebarOverlay } = ALL_ELEMENTS;
     if (show) {
@@ -10332,6 +10181,14 @@ ${JSON.stringify(potentialMemories, null, 2)}
     resizeObserver.observe(ALL_ELEMENTS.inputBarContainer);
     // ✨ 我們也不再需要觀察 followUpContainer 的高度變化了
     // resizeObserver.observe(ALL_ELEMENTS.followUpContainer); 
+    ALL_ELEMENTS.openP2PBtn.addEventListener('click', () => {
+                toggleModal(ALL_ELEMENTS.settingsModal, false); // 關閉設定
+                resetP2PUI();
+                toggleModal(ALL_ELEMENTS.p2pModal, true);
+            });
+            ALL_ELEMENTS.closeP2PModalBtn.addEventListener('click', closeP2PModal);
+            ALL_ELEMENTS.p2pRoleSender.addEventListener('click', startP2PSender);
+            ALL_ELEMENTS.p2pRoleReceiver.addEventListener('click', startP2PReceiver);
     updateButtonPosition();
 };
         const showUpdateHistory = () => {
@@ -11395,6 +11252,326 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
         };
     });
 };
+        let peerInstance = null;
+let peerConnection = null;
+let html5QrCodeScanner = null;
+const CHUNK_SIZE = 16 * 1024; // 16KB chunks for safe transmission
+
+// 重置 P2P UI 狀態
+function resetP2PUI() {
+    const { p2pStepSelect, p2pSenderUI, p2pReceiverUI } = ALL_ELEMENTS;
+    p2pStepSelect.classList.remove('hidden');
+    p2pSenderUI.classList.add('hidden');
+    p2pReceiverUI.classList.add('hidden');
+    
+    // 清理舊連線
+    if (peerInstance) { peerInstance.destroy(); peerInstance = null; }
+    if (html5QrCodeScanner) { html5QrCodeScanner.clear(); html5QrCodeScanner = null; }
+    
+    // 重置進度條
+    updateP2PProgress('sender', 0, '等待連線...');
+    updateP2PProgress('receiver', 0, '等待掃描...');
+}
+
+function closeP2PModal() {
+    resetP2PUI();
+    toggleModal(ALL_ELEMENTS.p2pModal, false);
+}
+
+function updateP2PProgress(role, percent, statusText) {
+    const bar = ALL_ELEMENTS[`p2p${role.charAt(0).toUpperCase() + role.slice(1)}Bar`];
+    const text = ALL_ELEMENTS[`p2p${role.charAt(0).toUpperCase() + role.slice(1)}Percent`];
+    const status = ALL_ELEMENTS[`p2p${role.charAt(0).toUpperCase() + role.slice(1)}Status`];
+    const container = ALL_ELEMENTS[`p2p${role.charAt(0).toUpperCase() + role.slice(1)}ProgressContainer`];
+
+    if (bar) bar.style.width = `${percent}%`;
+    if (text) text.textContent = `${Math.round(percent)}%`;
+    if (status && statusText) status.textContent = statusText;
+    
+    if (percent > 0 && percent < 100) {
+        container.classList.remove('hidden');
+    }
+}
+
+// --- 發送端邏輯 (舊手機) ---
+async function startP2PSender() {
+    ALL_ELEMENTS.p2pStepSelect.classList.add('hidden');
+    ALL_ELEMENTS.p2pSenderUI.classList.remove('hidden');
+    
+    // 1. 初始化 Peer
+    peerInstance = new Peer(null, { debug: 2 });
+
+    peerInstance.on('open', (id) => {
+        ALL_ELEMENTS.p2pSenderStatus.textContent = "等待新手機掃描...";
+        ALL_ELEMENTS.p2pQRCode.innerHTML = '';
+        new QRCode(ALL_ELEMENTS.p2pQRCode, {
+            text: JSON.stringify({ type: 'astra-sync', peerId: id, user: currentUser.username }),
+            width: 256,
+            height: 256
+        });
+    });
+
+    peerInstance.on('connection', (conn) => {
+        peerConnection = conn;
+        ALL_ELEMENTS.p2pSenderStatus.textContent = "已連線！準備傳輸資料...";
+        
+        conn.on('open', async () => {
+            await performP2PExport(conn);
+        });
+    });
+    
+    peerInstance.on('error', (err) => {
+        console.error(err);
+        ALL_ELEMENTS.p2pSenderStatus.textContent = "連線錯誤: " + err.type;
+        ALL_ELEMENTS.p2pSenderStatus.classList.add('text-red-500');
+    });
+}
+
+// 執行 P2P 資料打包與發送
+async function performP2PExport(conn) {
+    try {
+        ALL_ELEMENTS.p2pSenderStatus.textContent = "正在打包資料 (壓縮中)...";
+        
+        // 1. 準備資料 (重複使用 export 邏輯)
+        const dataToExport = {
+            user_credentials: { username: currentUser.username, passwordHash: currentUser.passwordHash },
+            conversations, folders, astras, personalMemories,
+            settings: { ...config }, apiKeys: config.apiKeys
+        };
+
+        const zip = new JSZip();
+        const imagesFolder = zip.folder("images");
+        const filesFolder = zip.folder("files");
+
+        // 處理對話附件 (這段邏輯與 export 相同)
+        if (dataToExport.conversations) {
+            for (const conv of dataToExport.conversations) {
+                for (const msg of conv.messages) {
+                    if (msg.parts) {
+                        for (const part of msg.parts) {
+                            if (part.inlineData && part.inlineData.data) {
+                                const originalMime = part.inlineData.mimeType;
+                                if (originalMime.startsWith('image/')) {
+                                    const processed = await compressImage(part.inlineData.data, originalMime, 1920, 0.6);
+                                    const imgName = `img_${crypto.randomUUID().slice(0,8)}.${processed.ext}`;
+                                    imagesFolder.file(imgName, processed.data, {base64: true});
+                                    part.inlineData._zipRef = `images/${imgName}`;
+                                    part.inlineData.mimeType = processed.mimeType;
+                                } else {
+                                    let ext = 'bin';
+                                    // 簡單判斷副檔名
+                                    if (originalMime.includes('pdf')) ext = 'pdf';
+                                    else if (originalMime.includes('text')) ext = 'txt';
+                                    const fileName = `file_${crypto.randomUUID().slice(0,8)}.${ext}`;
+                                    filesFolder.file(fileName, part.inlineData.data, {base64: true});
+                                    part.inlineData._zipRef = `files/${fileName}`;
+                                }
+                                delete part.inlineData.data;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // 處理 Astras 頭像
+        if (dataToExport.astras) {
+            for (const ast of dataToExport.astras) {
+                if (ast.avatarUrl && ast.avatarUrl.startsWith('data:image')) {
+                    const matches = ast.avatarUrl.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+                    if (matches && matches.length === 3) {
+                        const processed = await compressImage(matches[2], matches[1], 256, 0.7);
+                        const imgName = `avatar_${ast.id.slice(0,8)}.${processed.ext}`;
+                        imagesFolder.file(imgName, processed.data, {base64: true});
+                        ast._avatarZipRef = `images/${imgName}`;
+                        delete ast.avatarUrl;
+                    }
+                }
+            }
+        }
+
+        zip.file("data.json", JSON.stringify(dataToExport));
+        const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE" });
+        const arrayBuffer = await blob.arrayBuffer();
+        
+        // 2. 開始發送
+        const totalSize = arrayBuffer.byteLength;
+        ALL_ELEMENTS.p2pSenderStatus.textContent = `開始傳輸 (${(totalSize/1024/1024).toFixed(2)} MB)...`;
+        
+        // 先傳送 Metadata
+        conn.send({ type: 'metadata', size: totalSize });
+
+        let offset = 0;
+        while (offset < totalSize) {
+            const chunk = arrayBuffer.slice(offset, offset + CHUNK_SIZE);
+            conn.send({ type: 'chunk', data: chunk });
+            offset += chunk.byteLength;
+            
+            // 更新進度
+            const percent = (offset / totalSize) * 100;
+            updateP2PProgress('sender', percent, `正在傳送... ${Math.round(percent)}%`);
+            
+            // 稍微讓出主線程，防止 UI 卡死
+            if (offset % (CHUNK_SIZE * 10) === 0) await new Promise(r => setTimeout(r, 10));
+        }
+
+        conn.send({ type: 'end' });
+        ALL_ELEMENTS.p2pSenderStatus.textContent = "傳送完成！請在接收端確認。";
+        updateP2PProgress('sender', 100, '傳送完成');
+
+    } catch (err) {
+        console.error(err);
+        ALL_ELEMENTS.p2pSenderStatus.textContent = "打包失敗: " + err.message;
+    }
+}
+
+// --- 接收端邏輯 (新手機) ---
+async function startP2PReceiver() {
+    ALL_ELEMENTS.p2pStepSelect.classList.add('hidden');
+    ALL_ELEMENTS.p2pReceiverUI.classList.remove('hidden');
+    
+    // 1. 啟動掃碼器
+    const onScanSuccess = (decodedText, decodedResult) => {
+        try {
+            const data = JSON.parse(decodedText);
+            if (data.type === 'astra-sync' && data.peerId) {
+                // 停止掃描
+                html5QrCodeScanner.clear();
+                connectToPeer(data.peerId);
+            }
+        } catch (e) {
+            console.log("非 Astra QR Code", e);
+        }
+    };
+
+    html5QrCodeScanner = new Html5QrcodeScanner("p2p-qr-reader", { fps: 10, qrbox: 250 });
+    html5QrCodeScanner.render(onScanSuccess);
+}
+
+function connectToPeer(targetPeerId) {
+    ALL_ELEMENTS.p2pReceiverStatus.textContent = "正在連線至舊手機...";
+    peerInstance = new Peer(null, { debug: 2 });
+    
+    peerInstance.on('open', (id) => {
+        const conn = peerInstance.connect(targetPeerId);
+        
+        let receivedSize = 0;
+        let totalSize = 0;
+        let receivedChunks = [];
+
+        conn.on('open', () => {
+            ALL_ELEMENTS.p2pReceiverStatus.textContent = "已連線，等待資料...";
+        });
+
+        conn.on('data', async (data) => {
+            if (data.type === 'metadata') {
+                totalSize = data.size;
+                receivedChunks = [];
+                receivedSize = 0;
+                ALL_ELEMENTS.p2pReceiverStatus.textContent = `開始接收 (${(totalSize/1024/1024).toFixed(2)} MB)...`;
+            } else if (data.type === 'chunk') {
+                receivedChunks.push(data.data);
+                receivedSize += data.data.byteLength;
+                
+                const percent = (receivedSize / totalSize) * 100;
+                updateP2PProgress('receiver', percent, `接收中... ${Math.round(percent)}%`);
+            } else if (data.type === 'end') {
+                ALL_ELEMENTS.p2pReceiverStatus.textContent = "傳輸完成，正在解壓縮與處理...";
+                updateP2PProgress('receiver', 100, '處理資料中...');
+                
+                // 組裝 Blob
+                const fileBlob = new Blob(receivedChunks, { type: 'application/zip' });
+                await processP2PImport(fileBlob);
+            }
+        });
+        
+        conn.on('error', (err) => {
+             ALL_ELEMENTS.p2pReceiverStatus.textContent = "傳輸中斷: " + err;
+             ALL_ELEMENTS.p2pReceiverStatus.classList.add('text-red-500');
+        });
+    });
+}
+
+// 處理 P2P 接收到的 Blob (類似 import 邏輯)
+async function processP2PImport(blob) {
+    try {
+        const zip = await JSZip.loadAsync(blob);
+        let jsonFile = zip.file("data.json");
+        
+        if (!jsonFile) throw new Error("無效的備份檔案 (找不到 data.json)");
+        
+        const jsonContent = await jsonFile.async("string");
+        const rawData = JSON.parse(jsonContent);
+
+        // 驗證 (這裡因為是掃碼 P2P，通常視為授權操作，但為了安全可保留用戶名檢查)
+        // 這裡簡化流程：假設掃碼即授權，直接覆蓋 (或詢問)
+        // 為了避免新手卡在 Prompt，我們直接自動執行匯入，並在最後通知
+        
+        ALL_ELEMENTS.p2pReceiverStatus.textContent = "正在還原資料庫...";
+
+        // 清空並匯入
+        conversations = [];
+        folders = [];
+        astras = [];
+        personalMemories = [];
+
+        // 還原邏輯 (與 Import 相同)
+        if (rawData.settings) Object.assign(config, rawData.settings);
+        if (rawData.apiKeys) config.apiKeys = { ...config.apiKeys, ...rawData.apiKeys };
+        if (rawData.folders) folders = rawData.folders;
+        if (rawData.personalMemories) personalMemories = rawData.personalMemories;
+
+        // Astras 還原
+        if (rawData.astras) {
+            for (const ast of rawData.astras) {
+                if (ast._avatarZipRef) {
+                    const f = zip.file(ast._avatarZipRef);
+                    if (f) {
+                        const base64 = await f.async("base64");
+                        let mime = ast._avatarZipRef.endsWith('png') ? 'image/png' : 'image/jpeg';
+                        ast.avatarUrl = `data:${mime};base64,${base64}`;
+                    }
+                }
+                astras.push(ast);
+            }
+        }
+
+        // 對話還原 (包含附件)
+        if (rawData.conversations) {
+            for (const conv of rawData.conversations) {
+                for (const msg of conv.messages) {
+                    if (msg.parts) {
+                        for (const part of msg.parts) {
+                            if (part.inlineData && part.inlineData._zipRef) {
+                                const f = zip.file(part.inlineData._zipRef);
+                                if (f) {
+                                    part.inlineData.data = await f.async("base64");
+                                    delete part.inlineData._zipRef;
+                                }
+                            }
+                        }
+                    }
+                }
+                conversations.push(conv);
+            }
+        }
+
+        await saveAppData();
+        await saveConfig();
+        
+        ALL_ELEMENTS.p2pReceiverStatus.textContent = "同步成功！即將重新整理...";
+        ALL_ELEMENTS.p2pReceiverStatus.classList.add('text-green-600');
+        
+        setTimeout(() => {
+            window.location.reload();
+        }, 2000);
+
+    } catch (err) {
+        console.error(err);
+        ALL_ELEMENTS.p2pReceiverStatus.textContent = "處理資料失敗: " + err.message;
+        ALL_ELEMENTS.p2pReceiverStatus.classList.add('text-red-500');
+    }
+}
         async function initChatApp() {
             if (window.innerWidth >= 1024) {
         sidebarOpen = true;
@@ -11841,192 +12018,6 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
         submitButton.textContent = originalButtonText;
     }
 });
-            const p2pModal = document.getElementById('p2p-sync-modal');
-    const p2pBtn = document.getElementById('p2p-sync-btn');
-    const closeP2pBtn = document.getElementById('close-p2p-modal-btn');
-    const sendRoleBtn = document.getElementById('p2p-send-role-btn');
-    const receiveRoleBtn = document.getElementById('p2p-receive-role-btn');
-    
-    let peer = null;
-    let html5QrCode = null;
-    let connection = null;
-
-    // 開啟 P2P 視窗
-    p2pBtn.addEventListener('click', () => {
-        // 重置 UI 狀態
-        document.getElementById('p2p-initial-view').classList.remove('hidden');
-        document.getElementById('p2p-sender-view').classList.add('hidden');
-        document.getElementById('p2p-receiver-view').classList.add('hidden');
-        toggleModal(p2pModal, true);
-        closeAllPopovers(); // 關閉設定選單
-    });
-
-    // 關閉 P2P 視窗並清理資源
-    const closeP2P = () => {
-        toggleModal(p2pModal, false);
-        if (peer) { peer.destroy(); peer = null; }
-        if (html5QrCode) { 
-            html5QrCode.stop().catch(err => console.warn(err)); 
-            html5QrCode = null; 
-        }
-        connection = null;
-    };
-    closeP2pBtn.addEventListener('click', closeP2P);
-
-    // --- 角色：發送端 (舊機) ---
-    sendRoleBtn.addEventListener('click', async () => {
-        document.getElementById('p2p-initial-view').classList.add('hidden');
-        document.getElementById('p2p-sender-view').classList.remove('hidden');
-        
-        // 1. 初始化 Peer
-        peer = new Peer(); // 自動連線到 PeerJS 的免費雲端 Server
-        
-        peer.on('open', (id) => {
-            // 2. 產生 QR Code
-            const qrContainer = document.getElementById('p2p-qrcode-container');
-            qrContainer.innerHTML = '';
-            new QRCode(qrContainer, {
-                text: id, // QR Code 內容就是 Peer ID
-                width: 200,
-                height: 200
-            });
-        });
-
-        peer.on('connection', (conn) => {
-            // 3. 當接收端連上時
-            connection = conn;
-            const statusDiv = document.getElementById('p2p-sender-status');
-            const progressBar = document.getElementById('p2p-sender-progress');
-            const percentText = document.getElementById('p2p-sender-percent');
-            
-            statusDiv.classList.remove('hidden');
-            document.querySelector('#p2p-sender-view h3').textContent = "已連線，準備傳送...";
-            document.getElementById('p2p-qrcode-container').classList.add('hidden'); // 隱藏 QR Code
-
-            conn.on('open', async () => {
-                try {
-                    // 4. 準備資料
-                    const arrayBuffer = await prepareDataForP2P();
-                    const totalSize = arrayBuffer.byteLength;
-                    
-                    // 5. 切塊傳輸 (Chunking)
-                    // WebRTC 建議每個 Chunk 不超過 16KB-64KB，這裡設 64KB
-                    const CHUNK_SIZE = 64 * 1024; 
-                    const totalChunks = Math.ceil(totalSize / CHUNK_SIZE);
-                    
-                    // 先傳送 Metadata (告訴對方檔案多大)
-                    conn.send({ type: 'meta', size: totalSize, chunks: totalChunks });
-
-                    // 開始串流傳送
-                    for (let i = 0; i < totalChunks; i++) {
-                        const start = i * CHUNK_SIZE;
-                        const end = Math.min(start + CHUNK_SIZE, totalSize);
-                        const chunk = arrayBuffer.slice(start, end);
-                        
-                        conn.send({ type: 'chunk', data: chunk });
-                        
-                        // 更新進度條
-                        const percent = Math.round(((i + 1) / totalChunks) * 100);
-                        progressBar.style.width = `${percent}%`;
-                        percentText.textContent = `${percent}%`;
-                        
-                        // 稍微暫停一下，避免塞爆傳輸通道導致斷線
-                        if (i % 10 === 0) await new Promise(r => setTimeout(r, 5));
-                    }
-
-                    conn.send({ type: 'end' });
-                    showNotification('傳送完成！', 'success');
-                    
-                } catch (err) {
-                    console.error(err);
-                    showNotification('傳送失敗: ' + err.message, 'error');
-                }
-            });
-        });
-    });
-
-    // --- 角色：接收端 (新機) ---
-    receiveRoleBtn.addEventListener('click', () => {
-        document.getElementById('p2p-initial-view').classList.add('hidden');
-        document.getElementById('p2p-receiver-view').classList.remove('hidden');
-        
-        // 1. 啟動 QR Code 掃描器
-        html5QrCode = new Html5Qrcode("qr-reader");
-        const qrConfig = { fps: 10, qrbox: { width: 250, height: 250 } };
-        
-        html5QrCode.start({ facingMode: "environment" }, qrConfig, (decodedText) => {
-            // 2. 掃描成功，取得 Peer ID
-            html5QrCode.stop();
-            document.getElementById('qr-reader').classList.add('hidden');
-            document.getElementById('p2p-scanner-instruction').textContent = "正在連線...";
-            
-            // 3. 連線到發送端
-            peer = new Peer();
-            peer.on('open', () => {
-                const conn = peer.connect(decodedText); // decodedText 就是發送端的 ID
-                
-                const statusDiv = document.getElementById('p2p-receiver-status');
-                const progressBar = document.getElementById('p2p-receiver-progress');
-                const percentText = document.getElementById('p2p-receiver-percent');
-                const statusText = document.getElementById('p2p-receiver-status-text');
-                
-                statusDiv.classList.remove('hidden');
-                
-                let receivedChunks = [];
-                let receivedSize = 0;
-                let totalSize = 0;
-
-                conn.on('data', async (data) => {
-                    if (data.type === 'meta') {
-                        // 收到 Metadata
-                        totalSize = data.size;
-                        receivedChunks = [];
-                        receivedSize = 0;
-                        statusText.textContent = "開始接收...";
-                    } 
-                    else if (data.type === 'chunk') {
-                        // 收到資料塊
-                        receivedChunks.push(data.data);
-                        receivedSize += data.data.byteLength;
-                        
-                        const percent = Math.round((receivedSize / totalSize) * 100);
-                        progressBar.style.width = `${percent}%`;
-                        percentText.textContent = `${percent}%`;
-                    } 
-                    else if (data.type === 'end') {
-                        // 接收完成，開始重組與處理
-                        statusText.textContent = "接收完成，正在處理...";
-                        
-                        // 將所有小塊組合成一個大 Blob
-                        const fullBlob = new Blob(receivedChunks);
-                        const arrayBuffer = await fullBlob.arrayBuffer();
-                        
-                        try {
-                            await processP2PData(arrayBuffer, (p, text) => {
-                                progressBar.style.width = `${p}%`;
-                                percentText.textContent = `${Math.round(p)}%`;
-                                statusText.textContent = text;
-                            });
-                            
-                            showNotification('同步成功！即將重新整理...', 'success');
-                            setTimeout(() => window.location.reload(), 2000);
-                        } catch (err) {
-                            console.error(err);
-                            showNotification('資料處理失敗: ' + err.message, 'error');
-                        }
-                    }
-                });
-                
-                conn.on('error', (err) => {
-                    showNotification('連線錯誤: ' + err, 'error');
-                });
-            });
-        }, (errorMessage) => {
-            // 掃描錯誤忽略，持續掃描
-        }).catch(err => {
-            showNotification("無法啟動相機: " + err, 'error');
-        });
-    });
             initializeSpotlightEffect();
             document.querySelectorAll('.sidebar-section-header').forEach(header => {
                 header.addEventListener('click', (e) => {
