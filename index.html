@@ -2887,7 +2887,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             </main>
         </div>
     </div>
-    <div id="store-container" class="hidden fixed inset-0 lg:left-72 lg:w-[calc(100%-18rem)] h-full w-full flex flex-col bg-[var(--chat-bg)] z-30 lg:border-l border-[var(--border-color)]">
+    <div id="store-container" class="hidden h-screen w-full flex flex-col bg-[var(--chat-bg)]">
+        <header class="relative z-10 p-2 md:p-4 flex items-center border-b border-[var(--border-color)]">
             <button id="back-to-chat-btn" class="p-2 rounded-md hover:bg-[var(--hover-bg)] mr-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
             </button>
@@ -2907,9 +2908,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             </div>
         </main>
     </div>
-    <div id="settings-modal" class="modal hidden fixed inset-0 lg:left-72 lg:w-[calc(100%-18rem)] bg-black bg-opacity-60 lg:bg-transparent flex items-center justify-center p-0 z-50 transition-colors duration-300">
-    <!-- 內層：加上 border-l 讓左邊有條線區隔側邊欄，並確保背景色正確 -->
-    <div class="bg-[var(--modal-bg)] lg:border-l border-[var(--border-color)] rounded-none w-full h-full flex flex-col" style="max-height: 100vh;">
+    <div id="settings-modal" class="modal hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-0 z-50">
+    <div class="bg-[var(--modal-bg)] rounded-none w-full h-full flex flex-col" style="max-height: 100vh;">
             <div class="p-6 border-b border-[var(--border-color)] flex justify-between items-center">
                 <h2 class="text-2xl font-bold" data-lang-key="settings">設定</h2>
                 <button id="logout-btn" title="登出" class="p-2 rounded-md hover:bg-[var(--active-bg)] text-[var(--text-secondary)]" data-lang-key-title="logout">
@@ -3288,8 +3288,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             </div>
         </div>
     </div>
-    <div id="search-modal" class="modal hidden fixed inset-0 lg:left-72 lg:w-[calc(100%-18rem)] bg-black bg-opacity-60 lg:bg-transparent flex items-center justify-center p-0 z-50 transition-colors duration-300">
-    <div class="bg-[var(--modal-bg)] lg:border-l border-[var(--border-color)] rounded-none w-full h-full flex flex-col" style="max-height: 100vh;">
+    <div id="search-modal" class="modal hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-0 z-50">
+    <div class="bg-[var(--modal-bg)] rounded-none w-full h-full flex flex-col" style="max-height: 100vh;">
             <div class="p-4 border-b border-[var(--border-color)] flex justify-between items-center">
                 <h2 class="text-xl font-bold" data-lang-key="searchConversations">搜尋對話</h2>
                 <button id="close-search-modal-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
@@ -3384,8 +3384,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             </div>
         </div>
     </div>
-    <div id="data-dashboard-modal" class="modal fixed inset-0 lg:left-72 lg:w-[calc(100%-18rem)] bg-black bg-opacity-60 lg:bg-transparent flex items-center justify-center p-0 z-50 transition-colors duration-300">
-    <div class="bg-[var(--modal-bg)] lg:border-l border-[var(--border-color)] rounded-none w-full h-full flex flex-col" style="height: 100vh;">
+    <div id="data-dashboard-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-0 z-50">
+    <div class="bg-[var(--modal-bg)] rounded-none w-full h-full flex flex-col" style="height: 100vh;">
             <div class="p-6 border-b border-[var(--border-color)] flex justify-between items-center">
                 <h2 class="text-2xl font-bold" data-lang-key="dashboard">個人數據面板</h2>
                 <button id="close-dashboard-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
@@ -4560,7 +4560,6 @@ function renderMarkdownWithFormulas(text) {
             renderFollowUpPrompts([]);
         };
         const loadChat = (id) => {
-            closeAllFeatures();
             if (messageObserver) {
         messageObserver.disconnect();
     }
@@ -8238,19 +8237,6 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
         }
     }
 }
-        function closeAllFeatures() {
-    // 關閉設定
-    toggleModal(ALL_ELEMENTS.settingsModal, false);
-    // 關閉搜尋
-    toggleModal(ALL_ELEMENTS.searchModal, false);
-    ALL_ELEMENTS.openSearchBtn.classList.remove('active');
-    // 關閉數據面板
-    toggleModal(ALL_ELEMENTS.dataDashboardModal, false);
-    // 關閉商店 (使用原本的 closeStore 邏輯)
-    closeStore();
-    // 關閉歷史紀錄側邊欄 (如果是從功能頁切換回聊天，這個通常也要關)
-    toggleHistorySidebar(false);
-}
         function closeAllPopovers() {
             document.querySelectorAll('.popover.visible').forEach(popover => {
                 popover.classList.remove('visible');
@@ -8996,41 +8982,31 @@ ${JSON.stringify(potentialMemories, null, 2)}
             showNotification(i18n[config.uiLanguage].defaultAppearanceRestored, 'success');
         };
         const openStore = () => {
-    // 只有在手機版 (螢幕小於 1024px) 才隱藏主介面
-    if (window.innerWidth < 1024) {
-        ALL_ELEMENTS.appContainer.classList.remove('visible');
-        ALL_ELEMENTS.appContainer.classList.add('hidden'); // 手機版隱藏，避免雙捲軸
-    }
-    
-    ALL_ELEMENTS.storeContainer.classList.remove('hidden');
-    requestAnimationFrame(() => {
-        ALL_ELEMENTS.storeContainer.classList.add('visible');
-    });
-
-    // 移除原本強制隱藏 appContainer 的監聽器邏輯，因為電腦版需要它顯示
-    currentStoreCategory = '全部';
+            ALL_ELEMENTS.appContainer.classList.remove('visible');
+            ALL_ELEMENTS.storeContainer.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                ALL_ELEMENTS.storeContainer.classList.add('visible');
+            });
+            ALL_ELEMENTS.appContainer.addEventListener('transitionend', () => {
+                ALL_ELEMENTS.appContainer.classList.add('hidden');
+            }, { once: true });
+            currentStoreCategory = '全部';
     const mainContent = document.querySelector('#store-main-content');
     if (mainContent) {
         mainContent.scrollTop = 0;
     }
-    renderStore();
-};
+            renderStore();
+        };
         const closeStore = () => {
-    ALL_ELEMENTS.storeContainer.classList.remove('visible');
-    
-    // 無論如何都確保主介面是顯示的
-    ALL_ELEMENTS.appContainer.classList.remove('hidden');
-    requestAnimationFrame(() => {
-        ALL_ELEMENTS.appContainer.classList.add('visible');
-    });
-
-    ALL_ELEMENTS.storeContainer.addEventListener('transitionend', () => {
-        // 只有當它真的看不見時才加上 hidden
-        if (!ALL_ELEMENTS.storeContainer.classList.contains('visible')) {
-            ALL_ELEMENTS.storeContainer.classList.add('hidden');
-        }
-    }, { once: true });
-};
+            ALL_ELEMENTS.storeContainer.classList.remove('visible');
+            ALL_ELEMENTS.appContainer.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                ALL_ELEMENTS.appContainer.classList.add('visible');
+            });
+            ALL_ELEMENTS.storeContainer.addEventListener('transitionend', () => {
+                ALL_ELEMENTS.storeContainer.classList.add('hidden');
+            }, { once: true });
+        };
         const renderStore = () => {
             const mainContent = document.querySelector('#store-main-content');
     if (mainContent) {
@@ -10561,7 +10537,6 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             ALL_ELEMENTS.newChatBtn.addEventListener('click', () => startNewChat());
             ALL_ELEMENTS.newChatBtnHeader.addEventListener('click', () => startNewChat()); // ✨ 新增這一行
             ALL_ELEMENTS.openSearchBtn.addEventListener('click', () => {
-                closeAllFeatures();
                 toggleModal(ALL_ELEMENTS.searchModal, true);
                 ALL_ELEMENTS.openSearchBtn.classList.add('active'); // <-- ✨ 加上這一行
                 ALL_ELEMENTS.modalSearchInput.value = '';
@@ -10603,11 +10578,7 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             const closeTrashView = () => toggleModal(ALL_ELEMENTS.trashViewModal, false);
             ALL_ELEMENTS.closeTrashViewModalBtn.addEventListener('click', closeTrashView);
             ALL_ELEMENTS.trashViewCloseBtn.addEventListener('click', closeTrashView);
-            ALL_ELEMENTS.settingsBtn.addEventListener('click', () => { 
-    closeAllFeatures(); // ✨ 新增
-    setupSettingsModal(); 
-    toggleModal(ALL_ELEMENTS.settingsModal, true); 
-});
+            ALL_ELEMENTS.settingsBtn.addEventListener('click', () => { setupSettingsModal(); toggleModal(ALL_ELEMENTS.settingsModal, true); });
             ALL_ELEMENTS.closeSettingsBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.settingsModal, false));
             ALL_ELEMENTS.saveSettingsBtn.addEventListener('click', saveSettings);
             ALL_ELEMENTS.themeLightBtn.addEventListener('click', () => setTheme('light'));
@@ -10628,10 +10599,7 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             ALL_ELEMENTS.cancelImportBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.importDataModal, false));
             ALL_ELEMENTS.confirmImportBtn.addEventListener('click', handleImport);
             ALL_ELEMENTS.logoutBtn.addEventListener('click', handleLogout);
-            ALL_ELEMENTS.userProfileBtn.addEventListener('click', () => {
-    closeAllFeatures(); // ✨ 新增
-    openDashboard();
-});
+            ALL_ELEMENTS.userProfileBtn.addEventListener('click', openDashboard);
             ALL_ELEMENTS.closeDashboardBtn.addEventListener('click', () => toggleModal(ALL_ELEMENTS.dataDashboardModal, false));
             ALL_ELEMENTS.messageList.addEventListener('click', (e) => {
                 const copyBtn = e.target.closest('.copy-content-btn');
@@ -10834,10 +10802,7 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
                 config.uiLanguage = e.target.value;
                 applyLanguage(config.uiLanguage);
             });
-            ALL_ELEMENTS.openStoreBtn.addEventListener('click', () => {
-    closeAllFeatures(); // ✨ 新增
-    openStore();
-});
+            ALL_ELEMENTS.openStoreBtn.addEventListener('click', openStore);
             ALL_ELEMENTS.backToChatBtn.addEventListener('click', closeStore);
             ALL_ELEMENTS.astrasAvatarInput.addEventListener('change', handleAvatarUpload);
             ALL_ELEMENTS.confirmAvatarCropBtn.addEventListener('click', handleConfirmAvatarCrop);
