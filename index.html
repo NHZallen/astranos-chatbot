@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AstraChat-16.3.0</title>
+    <title>AstraChat-16.4.0</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3b82f6"/>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -16,6 +16,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlVjOTgjdwCRYIFDPlSJyGothspOJCINgRdBNPCoCoAPgatCKssVNPfISAc" crossorigin="anonymous"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/mhchem.min.js" integrity="sha384-LiYbuyabPcvZ2wQ2MR2kJyS2N9p/hO3N/15H0/0YxJqT4Lg/ZqD53aQyD+Jz3lM7" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
     body {
     touch-action: manipulation;
@@ -3056,6 +3059,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         <div class="flex flex-col sm:flex-row gap-2">
                             <button id="export-data-btn" class="flex-1 text-center p-2 rounded-md bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-800 font-medium" data-lang-key="exportData">匯出資料</button>
                             <button id="import-data-btn" class="flex-1 text-center p-2 rounded-md bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800 font-medium" data-lang-key="importData">匯入資料</button>
+                            <button id="p2p-sync-btn" class="flex-1 text-center p-2 rounded-md bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-800 font-medium">跨裝置同步</button>
                         </div>
                         <button id="open-archived-modal-btn" class="w-full text-left p-2 rounded-md hover:bg-[var(--hover-bg)] font-medium mt-4" data-lang-key="manageArchived">
                             管理已封存的對話
@@ -3513,6 +3517,31 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     </div>
 </div>
     <div id="mobile-context-menu-wrapper"></div>
+        <div id="sync-modal" class="modal hidden fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[60] p-4">
+    <div class="bg-[var(--modal-bg)] p-6 rounded-lg w-full max-w-md flex flex-col shadow-2xl border border-[var(--border-color)]">
+        <h3 class="text-xl font-bold mb-4 text-center">跨裝置同步 (P2P)</h3>
+        
+        <div class="flex justify-center gap-2 mb-6 bg-[var(--hover-bg)] p-1 rounded-lg">
+            <button id="btn-show-export" class="flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors bg-[var(--button-primary-bg)] text-[var(--button-primary-text)]">我是舊裝置 (匯出)</button>
+            <button id="btn-show-import" class="flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors hover:bg-[var(--active-bg)]">我是新裝置 (接收)</button>
+        </div>
+
+        <!-- 匯出區塊 -->
+        <div id="sync-export-section" class="flex flex-col items-center">
+            <p class="text-sm text-[var(--text-secondary)] mb-4">請用新裝置掃描此 QR Code 以同步資料</p>
+            <div id="qrcode-container" class="p-4 bg-white rounded-lg mb-4"></div>
+            <p id="peer-status" class="text-blue-500 font-mono text-xs animate-pulse">正在建立安全連線...</p>
+        </div>
+
+        <!-- 匯入區塊 -->
+        <div id="sync-import-section" class="hidden flex flex-col items-center w-full">
+            <div id="reader" class="w-full overflow-hidden rounded-lg border border-[var(--border-color)] bg-black"></div>
+            <p class="text-sm text-[var(--text-secondary)] mt-4">請對準舊裝置的 QR Code</p>
+        </div>
+
+        <button id="close-sync-modal-btn" class="mt-6 py-2 w-full rounded-md border border-[var(--border-color)] hover:bg-[var(--hover-bg)]">關閉</button>
+    </div>
+</div>
         <div id="attachment-menu-wrapper"></div>
     
     <!-- ✨ 新增：互動式計畫編輯器 Modal -->
@@ -4215,6 +4244,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         let isTrashSelectionMode = false;
         let selectedTrashIds = new Set();
         let originalMemorySettings = {}; // ✨ 新增：用於儲存原始記憶設定
+        let peer = null;
+        let conn = null;
+        let html5QrCode = null;
         const DB_NAME = 'ChatAppDB';
         const STORE_NAME = 'keyValue';
         let db;
@@ -9891,6 +9923,148 @@ function setupMessageIntersectionObserver() {
                 remove: () => card.remove()
             };
         }
+        function initSyncFeature() {
+    const syncModal = document.getElementById('sync-modal');
+    const btnExport = document.getElementById('btn-show-export');
+    const btnImport = document.getElementById('btn-show-import');
+    const closeBtn = document.getElementById('close-sync-modal-btn');
+    const exportSection = document.getElementById('sync-export-section');
+    const importSection = document.getElementById('sync-import-section');
+    const p2pBtn = document.getElementById('p2p-sync-btn');
+
+    // 綁定打開按鈕
+    if(p2pBtn) {
+        p2pBtn.addEventListener('click', () => {
+            toggleModal(syncModal, true);
+            showExportUI(); // 預設顯示匯出
+        });
+    }
+
+    // 綁定關閉按鈕
+    closeBtn.addEventListener('click', () => {
+        toggleModal(syncModal, false);
+        cleanupSync();
+    });
+
+    // 切換分頁
+    btnExport.addEventListener('click', () => {
+        showExportUI();
+        btnExport.classList.add('bg-[var(--button-primary-bg)]', 'text-[var(--button-primary-text)]');
+        btnExport.classList.remove('hover:bg-[var(--active-bg)]');
+        btnImport.classList.remove('bg-[var(--button-primary-bg)]', 'text-[var(--button-primary-text)]');
+        btnImport.classList.add('hover:bg-[var(--active-bg)]');
+    });
+
+    btnImport.addEventListener('click', () => {
+        showImportUI();
+        btnImport.classList.add('bg-[var(--button-primary-bg)]', 'text-[var(--button-primary-text)]');
+        btnImport.classList.remove('hover:bg-[var(--active-bg)]');
+        btnExport.classList.remove('bg-[var(--button-primary-bg)]', 'text-[var(--button-primary-text)]');
+        btnExport.classList.add('hover:bg-[var(--active-bg)]');
+    });
+
+    function cleanupSync() {
+        if (peer) { peer.destroy(); peer = null; }
+        if (html5QrCode) { 
+            html5QrCode.stop().catch(() => {}); 
+            html5QrCode = null; 
+        }
+        document.getElementById('qrcode-container').innerHTML = '';
+        document.getElementById('peer-status').innerText = '準備中...';
+    }
+
+    function showExportUI() {
+        cleanupSync(); // 先清理舊狀態
+        exportSection.classList.remove('hidden');
+        importSection.classList.add('hidden');
+        
+        document.getElementById('peer-status').innerText = '正在連接伺服器生成 ID...';
+        
+        peer = new Peer(); 
+
+        peer.on('open', function(id) {
+            document.getElementById('peer-status').innerText = '連線 ID 生成完畢，等待新裝置掃描...';
+            document.getElementById('qrcode-container').innerHTML = '';
+            new QRCode(document.getElementById("qrcode-container"), {
+                text: JSON.stringify({ type: 'astra-sync', peerId: id }),
+                width: 180,
+                height: 180
+            });
+        });
+
+        peer.on('connection', function(connection) {
+            conn = connection;
+            document.getElementById('peer-status').innerText = '新裝置已連線！準備傳送資料...';
+
+            conn.on('open', function() {
+                const syncData = {
+                    conversations: conversations,
+                    folders: folders,
+                    astras: astras,
+                    personalMemories: personalMemories,
+                    settings: config
+                };
+                conn.send(syncData);
+                document.getElementById('peer-status').innerText = '✅ 資料發送完成！';
+                showNotification('資料已成功發送至新裝置', 'success');
+            });
+        });
+    }
+
+    function showImportUI() {
+        cleanupSync();
+        exportSection.classList.add('hidden');
+        importSection.classList.remove('hidden');
+
+        html5QrCode = new Html5Qrcode("reader");
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        
+        html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
+            try {
+                const data = JSON.parse(decodedText);
+                if (data.type === 'astra-sync' && data.peerId) {
+                    html5QrCode.stop().then(() => {
+                        document.getElementById('reader').innerHTML = '<p class="text-center p-4 text-green-500">掃描成功！正在連線...</p>';
+                        connectToPeer(data.peerId);
+                    });
+                }
+            } catch (e) { console.log("非同步碼"); }
+        }).catch(err => {
+            document.getElementById('reader').innerHTML = '<p class="text-red-500 text-center p-4">無法啟動相機，請確認權限。</p>';
+        });
+    }
+
+    function connectToPeer(targetPeerId) {
+        peer = new Peer();
+        peer.on('open', function(id) {
+            conn = peer.connect(targetPeerId);
+            conn.on('open', function() {
+                showNotification('已連線，正在接收資料...', 'info');
+            });
+            conn.on('data', async function(receivedData) {
+                if (confirm("收到來自舊裝置的資料，確定要覆蓋當前紀錄嗎？(此操作無法復原)")) {
+                    conversations = receivedData.conversations || [];
+                    folders = receivedData.folders || [];
+                    astras = receivedData.astras || [];
+                    personalMemories = receivedData.personalMemories || [];
+                    
+                    // 合併設定 (保留 API Key)
+                    const oldApiKeys = config.apiKeys;
+                    config = { ...config, ...receivedData.settings };
+                    // 如果新裝置沒 Key，舊裝置有 Key，就用舊的；反之保留新裝置的
+                    if (!config.apiKeys.gemini && oldApiKeys.gemini) config.apiKeys.gemini = oldApiKeys.gemini;
+                    if (!config.apiKeys.openrouter && oldApiKeys.openrouter) config.apiKeys.openrouter = oldApiKeys.openrouter;
+
+                    await saveAppData();
+                    await saveConfig();
+                    
+                    alert("同步成功！頁面將重新整理。");
+                    window.location.reload();
+                }
+            });
+        });
+    }
+}
         
         // ✨ 新增：處理互動式計畫的核心邏輯
         function showInteractivePlanEditor(initialPlan) {
@@ -11157,6 +11331,7 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             ALL_ELEMENTS.authContainer.style.display = 'none';
             ALL_ELEMENTS.appContainer.classList.remove('hidden');
             ALL_ELEMENTS.appContainer.classList.add('visible');
+            initSyncFeature();
 
             // 4. 最後，呼叫 initChatApp，此時它知道所有資料都已準備就緒
             initChatApp();
