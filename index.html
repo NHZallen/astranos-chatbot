@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AstraChat-16.3.0</title>
+    <title>AstraChat-16.2.0</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3b82f6"/>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -16,9 +16,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlVjOTgjdwCRYIFDPlSJyGothspOJCINgRdBNPCoCoAPgatCKssVNPfISAc" crossorigin="anonymous"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/mhchem.min.js" integrity="sha384-LiYbuyabPcvZ2wQ2MR2kJyS2N9p/hO3N/15H0/0YxJqT4Lg/ZqD53aQyD+Jz3lM7" crossorigin="anonymous"></script>
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
     body {
     touch-action: manipulation;
@@ -3155,7 +3155,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         <div class="flex flex-col sm:flex-row gap-2">
                             <button id="export-data-btn" class="flex-1 text-center p-2 rounded-md bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-800 font-medium" data-lang-key="exportData">匯出資料</button>
                             <button id="import-data-btn" class="flex-1 text-center p-2 rounded-md bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800 font-medium" data-lang-key="importData">匯入資料</button>
-                            <button id="p2p-sync-btn" class="w-full mt-2 text-center p-2 rounded-md bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-800 font-medium">跨裝置掃碼同步 (P2P)</button>
+                            <button id="open-sync-modal-btn" class="w-full mt-2 text-center p-2 rounded-md bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-800 font-medium">跨裝置同步</button>
                         </div>
                         <button id="open-archived-modal-btn" class="w-full text-left p-2 rounded-md hover:bg-[var(--hover-bg)] font-medium mt-4" data-lang-key="manageArchived">
                             管理已封存的對話
@@ -3613,44 +3613,31 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     </div>
 </div>
     <div id="mobile-context-menu-wrapper"></div>
-        <div id="p2p-sync-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[60]">
-        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-md flex flex-col overflow-hidden" style="max-height: 90vh;">
-            <div class="p-4 border-b border-[var(--border-color)] flex justify-between items-center">
-                <h2 class="text-xl font-bold">跨裝置同步</h2>
-                <button id="close-p2p-sync-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
-            </div>
-            <div class="p-6 overflow-y-auto">
-                <!-- 步驟 1: 選擇角色 -->
-                <div id="p2p-step-1" class="space-y-4">
-                    <p class="text-sm text-[var(--text-secondary)]">請選擇此裝置的角色：</p>
-                    <button id="p2p-role-sender" class="w-full p-4 rounded-lg border-2 border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex flex-col items-center gap-2 transition-colors">
-                        <span class="text-2xl">📤</span>
-                        <span class="font-bold">我是舊裝置 (發送資料)</span>
-                        <span class="text-xs text-[var(--text-secondary)]">產生 QR Code 供掃描</span>
-                    </button>
-                    <button id="p2p-role-receiver" class="w-full p-4 rounded-lg border-2 border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 flex flex-col items-center gap-2 transition-colors">
-                        <span class="text-2xl">📥</span>
-                        <span class="font-bold">我是新裝置 (接收資料)</span>
-                        <span class="text-xs text-[var(--text-secondary)]">掃描 QR Code 接收資料</span>
-                    </button>
-                </div>
+        <div id="p2p-sync-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-md flex flex-col" style="max-height: 90vh;">
+        <div class="p-4 border-b border-[var(--border-color)] flex justify-between items-center">
+            <h2 class="text-xl font-bold">跨裝置同步</h2>
+            <button id="close-sync-modal-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
+        </div>
+        
+        <div class="p-4 flex gap-2 border-b border-[var(--border-color)]">
+            <button id="sync-tab-send" class="flex-1 py-2 rounded-md bg-[var(--button-primary-bg)] text-[var(--button-primary-text)] font-medium transition-all">我是舊手機 (發送)</button>
+            <button id="sync-tab-receive" class="flex-1 py-2 rounded-md bg-[var(--hover-bg)] text-[var(--text-secondary)] font-medium transition-all">我是新手機 (接收)</button>
+        </div>
 
-                <!-- 步驟 2: 發送端介面 -->
-                <div id="p2p-step-sender" class="hidden flex flex-col items-center text-center space-y-4">
-                    <p class="text-sm font-medium text-blue-600 dark:text-blue-400 animate-pulse">正在建立連線通道...</p>
-                    <div id="qrcode-container" class="p-2 bg-white rounded-lg"></div>
-                    <p class="text-xs text-[var(--text-secondary)]">請使用新裝置掃描此 QR Code。<br>連線成功後將自動開始傳輸。</p>
-                    <div id="p2p-sender-status" class="text-sm font-bold mt-2"></div>
-                </div>
+        <div id="sync-content-send" class="p-6 flex flex-col items-center justify-center space-y-4">
+            <p class="text-sm text-[var(--text-secondary)] text-center">請使用新裝置掃描此 QR Code 以接收資料。<br>連線建立後將自動開始傳輸。</p>
+            <div id="qrcode-container" class="bg-white p-2 rounded-lg"></div>
+            <p id="p2p-status-send" class="text-sm font-bold text-blue-600 h-6"></p>
+        </div>
 
-                <!-- 步驟 2: 接收端介面 -->
-                <div id="p2p-step-receiver" class="hidden flex flex-col items-center space-y-4">
-                    <div id="qr-reader" style="width: 100%;" class="rounded-lg overflow-hidden bg-black"></div>
-                    <p id="p2p-receiver-status" class="text-sm text-[var(--text-secondary)]">請允許相機權限以掃描舊裝置的 QR Code</p>
-                </div>
-            </div>
+        <div id="sync-content-receive" class="p-4 flex flex-col space-y-4 hidden">
+            <p class="text-sm text-[var(--text-secondary)] text-center">請掃描舊裝置上的 QR Code。</p>
+            <div id="qr-reader" style="width: 100%;" class="rounded-lg overflow-hidden"></div>
+            <p id="p2p-status-receive" class="text-sm font-bold text-center text-blue-600 h-6"></p>
         </div>
     </div>
+</div>
         <div id="attachment-menu-wrapper"></div>
     
     <!-- ✨ 新增：互動式計畫編輯器 Modal -->
@@ -10933,6 +10920,199 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
     }
     return data;
 };
+        const syncElements = {
+    modal: document.getElementById('p2p-sync-modal'),
+    openBtn: document.getElementById('open-sync-modal-btn'),
+    closeBtn: document.getElementById('close-sync-modal-btn'),
+    tabSend: document.getElementById('sync-tab-send'),
+    tabReceive: document.getElementById('sync-tab-receive'),
+    contentSend: document.getElementById('sync-content-send'),
+    contentReceive: document.getElementById('sync-content-receive'),
+    qrContainer: document.getElementById('qrcode-container'),
+    statusSend: document.getElementById('p2p-status-send'),
+    statusReceive: document.getElementById('p2p-status-receive')
+};
+
+let peerInstance = null;
+let html5QrCode = null;
+
+// 初始化同步視窗事件
+if (syncElements.openBtn) {
+    syncElements.openBtn.addEventListener('click', () => {
+        toggleModal(syncElements.modal, true);
+        activateTab('send'); // 預設開啟發送分頁
+    });
+}
+
+if (syncElements.closeBtn) {
+    syncElements.closeBtn.addEventListener('click', () => {
+        closeSyncModal();
+    });
+}
+
+syncElements.tabSend.addEventListener('click', () => activateTab('send'));
+syncElements.tabReceive.addEventListener('click', () => activateTab('receive'));
+
+function closeSyncModal() {
+    toggleModal(syncElements.modal, false);
+    stopP2P(); // 關閉視窗時停止所有連線和相機
+}
+
+// 切換分頁邏輯
+function activateTab(mode) {
+    stopP2P(); // 切換前先重置
+
+    if (mode === 'send') {
+        syncElements.tabSend.classList.add('bg-[var(--button-primary-bg)]', 'text-[var(--button-primary-text)]');
+        syncElements.tabSend.classList.remove('bg-[var(--hover-bg)]', 'text-[var(--text-secondary)]');
+        syncElements.tabReceive.classList.remove('bg-[var(--button-primary-bg)]', 'text-[var(--button-primary-text)]');
+        syncElements.tabReceive.classList.add('bg-[var(--hover-bg)]', 'text-[var(--text-secondary)]');
+        
+        syncElements.contentSend.classList.remove('hidden');
+        syncElements.contentReceive.classList.add('hidden');
+        
+        startSenderMode();
+    } else {
+        syncElements.tabReceive.classList.add('bg-[var(--button-primary-bg)]', 'text-[var(--button-primary-text)]');
+        syncElements.tabReceive.classList.remove('bg-[var(--hover-bg)]', 'text-[var(--text-secondary)]');
+        syncElements.tabSend.classList.remove('bg-[var(--button-primary-bg)]', 'text-[var(--button-primary-text)]');
+        syncElements.tabSend.classList.add('bg-[var(--hover-bg)]', 'text-[var(--text-secondary)]');
+        
+        syncElements.contentReceive.classList.remove('hidden');
+        syncElements.contentSend.classList.add('hidden');
+        
+        startReceiverMode();
+    }
+}
+
+// 停止 P2P 和相機
+async function stopP2P() {
+    if (peerInstance) {
+        peerInstance.destroy();
+        peerInstance = null;
+    }
+    if (html5QrCode) {
+        try {
+            await html5QrCode.stop();
+        } catch (e) {}
+        html5QrCode.clear();
+        html5QrCode = null;
+    }
+    syncElements.qrContainer.innerHTML = '';
+    syncElements.statusSend.textContent = '';
+    syncElements.statusReceive.textContent = '';
+}
+
+// --- 發送端邏輯 (舊手機) ---
+function startSenderMode() {
+    syncElements.statusSend.textContent = '正在初始化 P2P ID...';
+    
+    // 建立 Peer 物件
+    peerInstance = new Peer();
+
+    peerInstance.on('open', (id) => {
+        syncElements.statusSend.textContent = '等待連線中...';
+        syncElements.qrContainer.innerHTML = '';
+        // 產生 QR Code
+        new QRCode(syncElements.qrContainer, {
+            text: id,
+            width: 180,
+            height: 180
+        });
+    });
+
+    peerInstance.on('connection', (conn) => {
+        syncElements.statusSend.textContent = '已連線！準備傳送資料...';
+        
+        conn.on('open', async () => {
+            // 準備要傳送的資料 (與匯出功能相同的資料結構)
+            const dataToExport = {
+                conversations,
+                folders,
+                astras,
+                personalMemories,
+                settings: config,
+                user_credentials: {
+                    username: currentUser.username,
+                    passwordHash: currentUser.passwordHash
+                }
+            };
+
+            syncElements.statusSend.textContent = '正在傳送資料...';
+            conn.send(dataToExport);
+            
+            // 稍微延遲後顯示完成
+            setTimeout(() => {
+                syncElements.statusSend.textContent = '傳送完成！';
+                showNotification('資料已發送至新裝置', 'success');
+            }, 1000);
+        });
+    });
+
+    peerInstance.on('error', (err) => {
+        console.error(err);
+        syncElements.statusSend.textContent = '發生錯誤，請重試。';
+    });
+}
+
+// --- 接收端邏輯 (新手機) ---
+function startReceiverMode() {
+    syncElements.statusReceive.textContent = '請允許相機權限以掃描 QR Code';
+    
+    html5QrCode = new Html5Qrcode("qr-reader");
+    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+    
+    html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, (errorMessage) => {
+        // 掃描中的錯誤可以忽略
+    }).catch(err => {
+        syncElements.statusReceive.textContent = '無法啟動相機';
+    });
+}
+
+function onScanSuccess(decodedText, decodedResult) {
+    // 掃描成功，停止相機
+    html5QrCode.stop().then(() => {
+        html5QrCode.clear();
+        connectToHost(decodedText);
+    });
+}
+
+function connectToHost(hostId) {
+    syncElements.statusReceive.textContent = '正在連線至舊裝置...';
+    
+    peerInstance = new Peer();
+    
+    peerInstance.on('open', () => {
+        const conn = peerInstance.connect(hostId);
+        
+        conn.on('open', () => {
+            syncElements.statusReceive.textContent = '連線成功！等待資料...';
+        });
+
+        conn.on('data', async (data) => {
+            syncElements.statusReceive.textContent = '接收資料中...';
+            try {
+                // 使用既有的匯入邏輯 (performImport 函式在原本的程式碼中已經有了)
+                await performImport(data);
+                
+                syncElements.statusReceive.textContent = '同步完成！即將重整...';
+                showNotification('同步成功！頁面即將重新整理', 'success');
+                
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } catch (error) {
+                console.error(error);
+                syncElements.statusReceive.textContent = '匯入資料失敗: ' + error.message;
+            }
+        });
+    });
+
+    peerInstance.on('error', (err) => {
+        console.error(err);
+        syncElements.statusReceive.textContent = '連線錯誤，請確認網路狀態';
+    });
+}
         async function initChatApp() {
             if (window.innerWidth >= 1024) {
         sidebarOpen = true;
@@ -11707,338 +11887,51 @@ const FOLDER_TEXT_COLORS = {
             });
     </script>
     <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // 1. 綁定介面元素
-        const p2pElements = {
-            syncBtn: document.getElementById('p2p-sync-btn'),
-            modal: document.getElementById('p2p-sync-modal'),
-            closeBtn: document.getElementById('close-p2p-sync-btn'),
-            step1: document.getElementById('p2p-step-1'),
-            stepSender: document.getElementById('p2p-step-sender'),
-            stepReceiver: document.getElementById('p2p-step-receiver'),
-            btnSender: document.getElementById('p2p-role-sender'),
-            btnReceiver: document.getElementById('p2p-role-receiver'),
-            qrContainer: document.getElementById('qrcode-container'),
-            statusSender: document.getElementById('p2p-sender-status'),
-            statusReceiver: document.getElementById('p2p-receiver-status'),
-            qrReaderDiv: document.getElementById('qr-reader')
-        };
-
-        let peer = null;
-        let conn = null;
-        let html5QrCode = null;
-
-        // 2. 按鈕事件監聽
-        p2pElements.syncBtn?.addEventListener('click', () => {
-            resetP2PInterface();
-            if(typeof toggleModal === 'function') {
-                toggleModal(p2pElements.modal, true);
-            } else {
-                p2pElements.modal.classList.remove('hidden');
-                setTimeout(() => p2pElements.modal.classList.add('visible'), 10);
+    document.addEventListener('touchstart', function(event) {
+        if (event.touches.length > 1) {
+            event.preventDefault();
+        }
+    }, { passive: false });
+    var lastTouchEnd = 0;
+    document.addEventListener('touchend', function(event) {
+        var now = (new Date()).getTime();
+        if (now - lastTouchEnd <= 300) {
+            event.preventDefault();
+        }
+        lastTouchEnd = now;
+    }, false);
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./service-worker.js')
+            .then(registration => {
+              console.log('Service Worker 註冊成功:', registration);
+            })
+            .catch(error => {
+              console.log('Service Worker 註冊失敗:', error);
+            });
+        });
+        let isUpdateNotificationShown = false; // 防止重複顯示
+    navigator.serviceWorker.addEventListener('message', event => {
+      // 檢查是否是我們定義的更新訊息
+      if (event.data && event.data.type === 'NEW_VERSION_ACTIVATED' && !isUpdateNotificationShown) {
+        isUpdateNotificationShown = true;
+        console.log('接收到來自 Service Worker 的新版本通知！');
+        // 顯示一個提示，告訴使用者新版本已可用，並建議重新整理
+        showCustomDialog({
+            title: '應用程式已更新！',
+            message: 'Astra 已更新至最新版本，重新整理頁面即可體驗新功能。',
+            buttons: [
+                { text: '稍後再說', class: 'bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]', value: () => false },
+                { text: '立即重新整理', class: 'px-4 py-2 rounded-md btn-primary', value: () => true }
+            ]
+        }).then(shouldReload => {
+            if (shouldReload) {
+                window.location.reload();
             }
         });
-
-        p2pElements.closeBtn?.addEventListener('click', closeP2P);
-
-        p2pElements.btnSender?.addEventListener('click', () => {
-            p2pElements.step1.classList.add('hidden');
-            p2pElements.stepSender.classList.remove('hidden');
-            initHost();
-        });
-
-        p2pElements.btnReceiver?.addEventListener('click', () => {
-            p2pElements.step1.classList.add('hidden');
-            p2pElements.stepReceiver.classList.remove('hidden');
-            initClientScanner();
-        });
-
-        // 3. 介面控制函式
-        function resetP2PInterface() {
-            p2pElements.step1.classList.remove('hidden');
-            p2pElements.stepSender.classList.add('hidden');
-            p2pElements.stepReceiver.classList.add('hidden');
-            p2pElements.qrContainer.innerHTML = '';
-            p2pElements.statusSender.textContent = '';
-            p2pElements.statusReceiver.textContent = '正在初始化相機...';
-            cleanupPeer();
-        }
-
-        function closeP2P() {
-            if(typeof toggleModal === 'function') {
-                toggleModal(p2pElements.modal, false);
-            } else {
-                p2pElements.modal.classList.remove('visible');
-                setTimeout(() => p2pElements.modal.classList.add('hidden'), 300);
-            }
-            cleanupPeer();
-            if (html5QrCode) {
-                html5QrCode.stop().then(() => html5QrCode.clear()).catch(err => console.error(err));
-                html5QrCode = null;
-            }
-        }
-
-        function cleanupPeer() {
-            if (conn) { conn.close(); conn = null; }
-            if (peer) { peer.destroy(); peer = null; }
-        }
-
-        // 4. 舊裝置 (發送端) 邏輯
-        function initHost() {
-            peer = new Peer(); 
-
-            peer.on('open', (id) => {
-                new QRCode(p2pElements.qrContainer, {
-                    text: id,
-                    width: 200,
-                    height: 200
-                });
-                p2pElements.stepSender.querySelector('.animate-pulse').textContent = '等待掃描中...';
-            });
-
-            peer.on('connection', (connection) => {
-                conn = connection;
-                p2pElements.statusSender.textContent = '裝置已連接！正在壓縮並打包資料...';
-                p2pElements.statusSender.className = 'text-sm font-bold mt-2 text-green-600';
-
-                conn.on('open', async () => {
-                    await sendDataZip();
-                });
-            });
-
-            peer.on('error', (err) => {
-                p2pElements.statusSender.textContent = '連線錯誤: ' + err.type;
-                p2pElements.statusSender.className = 'text-sm font-bold mt-2 text-red-600';
-            });
-        }
-
-        // ✨ 新的壓縮傳送邏輯 (核心修改)
-        async function sendDataZip() {
-            try {
-                p2pElements.statusSender.textContent = '正在壓縮圖片與檔案... (這可能需要一點時間)';
-                
-                // 準備基礎資料
-                const dataToExport = {
-                    user_credentials: currentUser ? {
-                        username: currentUser.username,
-                        passwordHash: currentUser.passwordHash
-                    } : null,
-                    conversations: JSON.parse(JSON.stringify(conversations)), // 深拷貝避免修改原資料
-                    folders: folders,
-                    astras: JSON.parse(JSON.stringify(astras)),
-                    personalMemories: personalMemories,
-                    settings: { ...config },
-                    apiKeys: config.apiKeys
-                };
-
-                const zip = new JSZip();
-                const imagesFolder = zip.folder("images");
-                const filesFolder = zip.folder("files");
-
-                // A. 處理對話中的附件 (類似 handleExport)
-                if (dataToExport.conversations) {
-                    for (const conv of dataToExport.conversations) {
-                        for (const msg of conv.messages) {
-                            if (msg.parts) {
-                                for (const part of msg.parts) {
-                                    if (part.inlineData && part.inlineData.data) {
-                                        const originalMime = part.inlineData.mimeType;
-                                        
-                                        // 圖片處理：壓縮轉 JPG
-                                        if (originalMime.startsWith('image/')) {
-                                            // 呼叫主程式中的 compressImage
-                                            const processed = await compressImage(part.inlineData.data, originalMime, 1280, 0.6); // P2P 可以壓得稍微小一點加速傳輸
-                                            const imgName = `img_${crypto.randomUUID().slice(0,8)}.${processed.ext}`;
-                                            
-                                            imagesFolder.file(imgName, processed.data, {base64: true});
-                                            
-                                            part.inlineData._zipRef = `images/${imgName}`;
-                                            part.inlineData.mimeType = processed.mimeType;
-                                        } else {
-                                            // 其他檔案：直接存入 zip
-                                            let ext = 'bin';
-                                            if (originalMime.includes('pdf')) ext = 'pdf';
-                                            else if (originalMime.includes('text')) ext = 'txt';
-                                            
-                                            const fileName = `file_${crypto.randomUUID().slice(0,8)}.${ext}`;
-                                            filesFolder.file(fileName, part.inlineData.data, {base64: true});
-                                            part.inlineData._zipRef = `files/${fileName}`;
-                                        }
-                                        // 刪除原始 Base64 以減小 JSON 大小
-                                        delete part.inlineData.data;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // B. 處理 Astras 頭像
-                if (dataToExport.astras) {
-                    for (const ast of dataToExport.astras) {
-                        if (ast.avatarUrl && ast.avatarUrl.startsWith('data:image')) {
-                            const matches = ast.avatarUrl.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
-                            if (matches && matches.length === 3) {
-                                const mimeType = matches[1];
-                                const base64Data = matches[2];
-                                // 頭像可以壓小一點
-                                const processed = await compressImage(base64Data, mimeType, 128, 0.7);
-                                const imgName = `avatar_${ast.id.slice(0,8)}.${processed.ext}`;
-                                
-                                imagesFolder.file(imgName, processed.data, {base64: true});
-                                ast._avatarZipRef = `images/${imgName}`;
-                                delete ast.avatarUrl;
-                            }
-                        }
-                    }
-                }
-
-                // 加入 JSON 資料
-                zip.file("data.json", JSON.stringify(dataToExport));
-
-                p2pElements.statusSender.textContent = '壓縮完成，正在傳送...';
-
-                // 產生二進位檔案 (ArrayBuffer)
-                const content = await zip.generateAsync({
-                    type: "arraybuffer",
-                    compression: "DEFLATE",
-                    compressionOptions: { level: 6 } // 6 是平衡速度與壓縮率
-                });
-
-                // 透過 PeerJS 傳送二進位檔案
-                conn.send(content);
-                
-                p2pElements.statusSender.textContent = '✅ 資料已發送！請等待接收端處理...';
-                
-                setTimeout(() => {
-                    closeP2P();
-                    if(typeof showNotification === 'function') showNotification('同步完成 (發送端)', 'success');
-                }, 3000);
-
-            } catch (err) {
-                console.error("P2P 打包失敗:", err);
-                p2pElements.statusSender.textContent = '打包失敗: ' + err.message;
-            }
-        }
-
-        // 5. 新裝置 (接收端) 邏輯
-        function initClientScanner() {
-            html5QrCode = new Html5Qrcode("qr-reader");
-            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-            
-            html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
-                html5QrCode.stop().then(() => {
-                    html5QrCode.clear();
-                    p2pElements.statusReceiver.textContent = '掃描成功！連線中...';
-                    connectToPeer(decodedText);
-                }).catch(err => console.error(err));
-            }, (errorMessage) => {}).catch(err => {
-                p2pElements.statusReceiver.textContent = '無法啟動相機 (請確認網址是 https 或 localhost)';
-                p2pElements.statusReceiver.classList.add('text-red-500');
-            });
-        }
-
-        function connectToPeer(hostId) {
-            peer = new Peer();
-            
-            peer.on('open', () => {
-                conn = peer.connect(hostId);
-
-                conn.on('open', () => {
-                    p2pElements.statusReceiver.textContent = '連線成功！等待接收壓縮檔...';
-                    p2pElements.statusReceiver.className = 'text-sm font-bold mt-2 text-green-600';
-                });
-
-                conn.on('data', async (data) => {
-                    p2pElements.statusReceiver.textContent = '正在接收並解壓縮...';
-                    await handleReceivedZip(data);
-                });
-            });
-
-            peer.on('error', (err) => {
-                p2pElements.statusReceiver.textContent = '連線失敗: ' + err.type;
-            });
-        }
-
-        // ✨ 新的解壓縮處理邏輯
-        async function handleReceivedZip(data) {
-            try {
-                // 檢查收到的資料是不是 ArrayBuffer (二進位)
-                if (!(data instanceof ArrayBuffer)) {
-                    // 為了相容舊版，如果收到的是字串物件
-                    if (typeof data === 'object') { 
-                        // 這裡可以放舊的處理邏輯，但既然你都換新了，這裡我們直接視為錯誤或警告
-                        console.warn("收到非二進位資料，可能是舊版傳輸格式");
-                    }
-                }
-
-                // 使用 JSZip 解壓縮
-                const zip = await JSZip.loadAsync(data);
-                
-                // 讀取 data.json
-                const jsonFile = zip.file("data.json");
-                if (!jsonFile) throw new Error("壓縮檔中找不到 data.json");
-                
-                const jsonContent = await jsonFile.async("string");
-                let parsedData = JSON.parse(jsonContent);
-
-                p2pElements.statusReceiver.textContent = '正在還原圖片與檔案...';
-
-                // 呼叫主程式已有的 restoreAttachmentsFromZip 函式來還原圖片
-                // 注意：restoreAttachmentsFromZip 需要在全域範圍可訪問
-                if (typeof restoreAttachmentsFromZip === 'function') {
-                    parsedData = await restoreAttachmentsFromZip(zip, parsedData);
-                } else {
-                    console.warn("找不到還原函式，圖片可能無法顯示");
-                }
-
-                // --- 以下是更新資料庫的邏輯 (與原本相同) ---
-                
-                // 檢查使用者 (選擇性)
-                if (currentUser && parsedData.user_credentials && parsedData.user_credentials.username !== currentUser.username) {
-                    if(!confirm(`資料使用者 "${parsedData.user_credentials.username}" 與目前 "${currentUser.username}" 不同，確定覆蓋？`)) {
-                        closeP2P();
-                        return;
-                    }
-                }
-
-                // 更新 User
-                if (parsedData.user_credentials) {
-                    currentUser = parsedData.user_credentials;
-                    if(typeof setItem === 'function') {
-                        await setItem('chatUser_' + currentUser.username, JSON.stringify(currentUser));
-                        await setItem('chat_lastUser', currentUser.username);
-                    }
-                }
-
-                // 更新變數
-                if(parsedData.conversations) conversations = parsedData.conversations;
-                if(parsedData.folders) folders = parsedData.folders;
-                if(parsedData.astras) astras = parsedData.astras;
-                if(parsedData.personalMemories) personalMemories = parsedData.personalMemories;
-                
-                // 存檔
-                if(typeof saveAppData === 'function') await saveAppData();
-
-                // 更新設定
-                if (parsedData.settings) {
-                    Object.assign(config, parsedData.settings);
-                    if(typeof saveConfig === 'function') await saveConfig();
-                }
-
-                p2pElements.statusReceiver.textContent = '✅ 同步成功！頁面即將重新整理...';
-                
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
-
-            } catch (e) {
-                console.error(e);
-                p2pElements.statusReceiver.textContent = '解壓縮/匯入失敗: ' + e.message;
-                p2pElements.statusReceiver.classList.add('text-red-600');
-            }
-        }
+      }
     });
+      }
 </script>
 </body>
 </html>
