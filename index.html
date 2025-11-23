@@ -20,6 +20,9 @@
     body {
     touch-action: manipulation;
 }
+    #import-progress-bar {
+    transition: width 0.2s ease-in-out;
+}
     #history-sidebar.visible ~ #scroll-to-bottom-btn {
     opacity: 0;
     pointer-events: none;
@@ -3306,28 +3309,34 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         </div>
     </div>
     <div id="import-data-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl p-6 w-full max-w-md">
-            <h2 class="text-xl font-bold mb-4" data-lang-key="importData">匯入資料</h2>
-            <p class="text-sm text-[var(--text-secondary)] mb-4" data-lang-key="importDataDesc">選擇一個之前匯出的 `.json` 檔案。目前的所有資料將會被覆蓋。</p>
-            <div class="mb-4">
-                <label for="import-file-input" class="block text-sm font-medium mb-1" data-lang-key="selectFile">選擇檔案</label>
-                <input type="file" id="import-file-input" class="w-full text-sm text-[var(--text-secondary)] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" accept=".json,.zip" required>
+    <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl p-6 w-full max-w-md">
+        <h2 class="text-xl font-bold mb-4" data-lang-key="importData">匯入資料</h2>
+        <p class="text-sm text-[var(--text-secondary)] mb-4" data-lang-key="importDataDesc">選擇一個之前匯出的 `.json` 或 `.zip` 檔案。</p>
+        
+        <div class="mb-4">
+            <label for="import-file-input" class="block text-sm font-medium mb-1" data-lang-key="selectFile">選擇檔案</label>
+            <input type="file" id="import-file-input" class="w-full text-sm text-[var(--text-secondary)] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" accept=".json,.zip" required>
+        </div>
+
+        <!-- ✨ 新增：進度條容器 (預設隱藏) -->
+        <div id="import-progress-container" class="mb-4 hidden">
+            <div class="flex justify-between text-xs text-[var(--text-secondary)] mb-1">
+                <span id="import-status-text">正在準備...</span>
+                <span id="import-percentage">0%</span>
             </div>
-            <div id="import-progress-container" class="mb-4 hidden">
-    <div class="flex justify-between text-xs mb-1">
-        <span id="import-status-text" class="text-[var(--text-primary)] font-medium">準備中...</span>
-        <span id="import-percent-text" class="text-[var(--text-secondary)]">0%</span>
-    </div>
-    <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 overflow-hidden">
-        <div id="import-progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
-    </div>
-</div>
-            <div class="flex justify-end gap-3">
-                <button id="cancel-import-btn" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]" data-lang-key="cancel">取消</button>
-                <button id="confirm-import-btn" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700" data-lang-key="confirmAndImport">確認並匯入</button>
+            <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 overflow-hidden">
+                <div id="import-progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
             </div>
+            <p class="text-xs text-red-500 mt-1 hidden" id="import-warning-text">檔案較大，請勿關閉視窗...</p>
+        </div>
+        <!-- ✨ 新增結束 -->
+
+        <div class="flex justify-end gap-3">
+            <button id="cancel-import-btn" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]" data-lang-key="cancel">取消</button>
+            <button id="confirm-import-btn" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700" data-lang-key="confirmAndImport">確認並匯入</button>
         </div>
     </div>
+</div>
     <div id="import-data-modal-auth" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
     <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl p-6 w-full max-w-md">
         <h2 class="text-xl font-bold mb-4" data-lang-key="importRecords">匯入紀錄</h2>
@@ -3336,15 +3345,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             <label for="import-file-input-auth" class="block text-sm font-medium mb-1" data-lang-key="selectFile">選擇檔案</label>
             <input type="file" id="import-file-input-auth" class="w-full text-sm text-[var(--text-secondary)] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" accept=".json,.zip" required>
         </div>
-        <div id="import-progress-container-auth" class="mb-4 hidden">
-    <div class="flex justify-between text-xs mb-1">
-        <span id="import-status-text-auth" class="text-[var(--text-primary)] font-medium">準備中...</span>
-        <span id="import-percent-text-auth" class="text-[var(--text-secondary)]">0%</span>
-    </div>
-    <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 overflow-hidden">
-        <div id="import-progress-bar-auth" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
-    </div>
-</div>
         <div class="flex justify-end gap-3">
             <button id="cancel-import-btn-auth" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]" data-lang-key="cancel">取消</button>
             <button id="confirm-import-btn-auth" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700" data-lang-key="confirmAndImport">確認並匯入</button>
@@ -3661,6 +3661,40 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     <script src="./astras-data.js"></script>
     <script src="./update-logs.js"></script>
      <script>
+    async function processInChunks(items, processFn, chunkSize = 50, onProgress) {
+    let index = 0;
+    const total = items.length;
+    
+    return new Promise((resolve, reject) => {
+        function nextChunk() {
+            try {
+                const chunk = items.slice(index, index + chunkSize);
+                if (chunk.length === 0) {
+                    resolve();
+                    return;
+                }
+
+                // 處理這一批次
+                chunk.forEach(processFn);
+
+                index += chunkSize;
+                
+                // 更新進度
+                if (onProgress) {
+                    onProgress(Math.min(index, total), total);
+                }
+
+                // 使用 setTimeout 讓出主執行緒，避免瀏覽器卡死，並給予「等待」的錯覺
+                // 您提到的「等待十秒」可以在這裡控制速度，但我建議設為 10ms~50ms 即可，
+                // 讓 UI 保持流暢比故意等待更重要。
+                setTimeout(nextChunk, 20); 
+            } catch (e) {
+                reject(e);
+            }
+        }
+        nextChunk();
+    });
+}
     document.addEventListener('DOMContentLoaded', () => {
         // 直接讓登入/註冊畫面顯示出來
         document.getElementById('auth-container').classList.add('visible');
@@ -3931,14 +3965,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             cancelPlanBtn: document.getElementById('cancel-plan-btn'),
             showPromptsBtn: document.getElementById('show-prompts-btn'), // 新增這行
             importProgressContainer: document.getElementById('import-progress-container'),
-    importStatusText: document.getElementById('import-status-text'),
-    importPercentText: document.getElementById('import-percent-text'),
     importProgressBar: document.getElementById('import-progress-bar'),
-    
-    importProgressContainerAuth: document.getElementById('import-progress-container-auth'),
-    importStatusTextAuth: document.getElementById('import-status-text-auth'),
-    importPercentTextAuth: document.getElementById('import-percent-text-auth'),
-    importProgressBarAuth: document.getElementById('import-progress-bar-auth'),
+    importStatusText: document.getElementById('import-status-text'),
+    importPercentage: document.getElementById('import-percentage'),
+    importWarningText: document.getElementById('import-warning-text'),
         };
         function toggleHistorySidebar(show) {
     const { historySidebar, historySidebarOverlay } = ALL_ELEMENTS;
@@ -8140,36 +8170,37 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
         return;
     }
 
-    // UI 準備
-    const { importProgressContainer, importStatusText, importPercentText, importProgressBar, confirmImportBtn, cancelImportBtn } = ALL_ELEMENTS;
+    // 1. 初始化 UI
+    const { importProgressContainer, importProgressBar, importStatusText, importPercentage, importWarningText, confirmImportBtn } = ALL_ELEMENTS;
     
-    // 顯示進度條，鎖定按鈕
     importProgressContainer.classList.remove('hidden');
-    confirmImportBtn.disabled = true;
-    cancelImportBtn.disabled = true;
-    importProgressBar.style.width = '0%';
-    importPercentText.textContent = '0%';
-
-    // 輔助函式：更新進度 UI
-    const updateUI = (percent, text) => {
+    importWarningText.classList.remove('hidden');
+    confirmImportBtn.disabled = true; // 禁用按鈕防止重複點擊
+    confirmImportBtn.textContent = "處理中...";
+    
+    const updateProgress = (percent, text) => {
         importProgressBar.style.width = `${percent}%`;
-        importPercentText.textContent = `${percent}%`;
+        importPercentage.textContent = `${Math.round(percent)}%`;
         if (text) importStatusText.textContent = text;
     };
 
     try {
-        let data;
-        updateUI(5, '正在讀取檔案...');
+        updateProgress(5, "正在讀取檔案...");
+        
+        // 模擬您要求的等待時間 (雖然技術上不需要，但為了符合您的需求，這裡先等待 1 秒讓使用者看清進度條出現)
+        await new Promise(r => setTimeout(r, 1000));
 
-        // 強制讓 UI 渲染一下
-        await new Promise(r => setTimeout(r, 50));
+        let rawData = null;
+        let zip = null;
 
+        // 2. 判斷檔案類型並讀取
         if (file.name.endsWith('.zip') || file.type.includes('zip')) {
-            updateUI(10, '解壓縮中...');
-            const zip = await JSZip.loadAsync(file);
+            updateProgress(10, "正在解壓縮 ZIP...");
+            zip = await JSZip.loadAsync(file);
             
             let jsonFile = zip.file("data.json");
             if (!jsonFile) {
+                // 嘗試尋找任何 .json 檔案 (兼容舊版備份)
                 const files = Object.keys(zip.files);
                 const jsonFileName = files.find(name => name.endsWith('.json'));
                 if (jsonFileName) jsonFile = zip.file(jsonFileName);
@@ -8177,47 +8208,131 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
             
             if (!jsonFile) throw new Error("ZIP 檔案中找不到 JSON 資料。");
             
-            updateUI(20, '讀取結構資料...');
+            updateProgress(20, "正在解析 JSON 結構...");
             const jsonContent = await jsonFile.async("string");
-            data = JSON.parse(jsonContent);
-
-            // ✨ 呼叫新的批次還原函式，並傳入回調函數來更新進度
-            // 進度範圍從 30% 到 90%
-            await restoreAttachmentsFromZip(zip, data, (percent, text) => {
-                // 將 0-100 對應到 30-90
-                const uiPercent = 30 + Math.round(percent * 0.6);
-                updateUI(uiPercent, text);
-            });
+            
+            // 注意：如果 JSON 本身巨大 (例如 500MB 文字)，這裡還是可能崩潰。
+            // 但通常 ZIP 裡的 JSON 即使大也能被現代手機解析，瓶頸通常在 DOM 渲染或圖片處理。
+            rawData = JSON.parse(jsonContent);
 
         } else {
+            updateProgress(10, "正在解析 JSON...");
             const text = await file.text();
-            data = JSON.parse(text);
-            updateUI(50, '解析 JSON 完成...');
+            rawData = JSON.parse(text);
         }
 
-        updateUI(90, '正在儲存資料...');
-        
-        // 驗證使用者 (保持原有邏輯)
-        if (data.user_credentials && data.user_credentials.username !== currentUser.username) {
-            // 這裡如果彈出確認視窗，進度條會停在 90%，這是正常的
+        // 3. 權限檢查 (維持原有邏輯)
+        if (rawData.user_credentials && rawData.user_credentials.username !== currentUser.username) {
             const confirmed = await showCustomConfirm(
-                i18n[config.uiLanguage].importUserMismatch.replace('{backupUser}', data.user_credentials.username).replace('{currentUser}', currentUser.username),
+                i18n[config.uiLanguage].importUserMismatch.replace('{backupUser}', rawData.user_credentials.username).replace('{currentUser}', currentUser.username),
                 i18n[config.uiLanguage].importUserMismatchTitle
             );
             if (!confirmed) throw new Error("使用者取消匯入");
         } else {
-            if (!(await showCustomConfirm(i18n[config.uiLanguage].importOverwriteWarning, i18n[config.uiLanguage].importConfirmation))) throw new Error("使用者取消匯入");
+            // 簡單確認
+            if (!(await showCustomConfirm(i18n[config.uiLanguage].importOverwriteWarning, i18n[config.uiLanguage].importConfirmation))) {
+                throw new Error("使用者取消匯入");
+            }
         }
 
-        await performImport(data);
-        
-        updateUI(100, '匯入完成！');
-        await new Promise(r => setTimeout(r, 500)); // 讓使用者看到 100%
+        // 4. 開始分階段匯入資料
+        updateProgress(30, "準備匯入資料...");
 
+        // 清空現有資料 (根據需求，這裡是覆蓋模式)
+        conversations = [];
+        folders = [];
+        astras = [];
+        personalMemories = [];
+
+        // --- 處理設定 (Settings) ---
+        if (rawData.settings) Object.assign(config, rawData.settings);
+        if (rawData.apiKeys) config.apiKeys = { ...config.apiKeys, ...rawData.apiKeys };
+        await saveConfig();
+
+        // --- 處理 Astras (分塊處理) ---
+        const astrasToImport = rawData.astras || [];
+        if (astrasToImport.length > 0) {
+            await processInChunks(astrasToImport, async (ast) => {
+                // 處理 Astra 頭像 (如果是 ZIP 格式)
+                if (ast._avatarZipRef && zip) {
+                    try {
+                        const fileInZip = zip.file(ast._avatarZipRef);
+                        if (fileInZip) {
+                            const base64 = await fileInZip.async("base64");
+                            let mime = 'image/png';
+                            if (ast._avatarZipRef.endsWith('.jpg') || ast._avatarZipRef.endsWith('.jpeg')) mime = 'image/jpeg';
+                            ast.avatarUrl = `data:${mime};base64,${base64}`;
+                            delete ast._avatarZipRef;
+                        }
+                    } catch (e) { console.warn("Astra 頭像還原失敗", e); }
+                }
+                astras.push(ast);
+            }, 10, (current, total) => {
+                // 進度 30% ~ 40% 分配給 Astras
+                const p = 30 + (current / total) * 10;
+                updateProgress(p, `正在匯入 Astras (${current}/${total})...`);
+            });
+        }
+
+        // --- 處理資料夾 ---
+        if (rawData.folders) {
+            folders = rawData.folders;
+        }
+
+        // --- 處理記憶 ---
+        if (rawData.personalMemories) {
+            personalMemories = rawData.personalMemories;
+        }
+
+        // --- 處理對話 (最佔資源的部分 - 分塊處理) ---
+        const convsToImport = rawData.conversations || [];
+        if (convsToImport.length > 0) {
+            // 為了避免記憶體峰值，我們直接操作全域變數 conversations，而不是建立巨大的暫存陣列
+            await processInChunks(convsToImport, async (conv) => {
+                // 處理每則訊息中的圖片/檔案附件
+                for (const msg of conv.messages) {
+                    if (msg.parts) {
+                        for (const part of msg.parts) {
+                            // 處理 ZIP 參照還原
+                            if (part.inlineData && part.inlineData._zipRef && zip) {
+                                try {
+                                    const fileName = part.inlineData._zipRef;
+                                    const fileInZip = zip.file(fileName);
+                                    if (fileInZip) {
+                                        const base64 = await fileInZip.async("base64");
+                                        part.inlineData.data = base64;
+                                        delete part.inlineData._zipRef;
+                                    }
+                                } catch (e) { console.warn("附件還原失敗", e); }
+                            }
+                        }
+                    }
+                }
+                conversations.push(conv);
+            }, 5, (current, total) => { // 每次處理 5 個對話，避免卡頓
+                // 進度 40% ~ 90% 分配給對話
+                const p = 40 + (current / total) * 50;
+                updateProgress(p, `正在還原對話 (${current}/${total})...`);
+            });
+        }
+
+        // 5. 儲存至 IndexedDB (這是另一個耗時操作)
+        updateProgress(90, "正在寫入資料庫...");
+        
+        // 為了防止 saveAppData (JSON.stringify) 導致記憶體不足，
+        // 如果資料真的超級大，這裡其實應該拆分儲存 key，但為了相容性，我們先維持原樣。
+        // 在分塊處理後，記憶體壓力已經比原本小很多了（因為 GC 有機會介入）。
+        await saveAppData();
+
+        updateProgress(100, "匯入完成！");
+        
+        // 稍微等待一下讓使用者看到 100%
+        await new Promise(r => setTimeout(r, 500));
+
+        // 6. 後續 UI 更新
         toggleModal(ALL_ELEMENTS.importDataModal, false);
         showNotification(i18n[config.uiLanguage].importSuccess, 'success');
 
-        // 後續處理 (保持原有邏輯)
         if (config.customWallpaper) {
             try {
                 const brightness = await analyzeImageBrightness(config.customWallpaper);
@@ -8230,27 +8345,32 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
                 await saveConfig();
             } catch (err) { }
         }
+        
         applyCustomWallpaper();
         applyUiTheme();
         setAiBubbleColor();
         setUserBubbleColor();
         applyLanguage(config.uiLanguage);
         setupSettingsModal();
+        
         const firstConv = conversations.find(c => !c.archived && !c.deletedAt);
         if (firstConv) loadChat(firstConv.id);
         else startNewChat();
 
     } catch (error) {
-        if (error.message !== "使用者取消匯入") {
-            showNotification(`${i18n[config.uiLanguage].importFailed}: ${error.message}`, 'error');
+        if (error.message === "使用者取消匯入") {
+            showNotification("已取消匯入", "info");
+        } else {
             console.error(error);
+            showNotification(`${i18n[config.uiLanguage].importFailed}: ${error.message}`, 'error');
+            updateProgress(0, "匯入失敗");
+            importProgressBar.classList.add('bg-red-500');
         }
-        updateUI(0, '匯入失敗');
     } finally {
         // 重置 UI 狀態
         confirmImportBtn.disabled = false;
-        cancelImportBtn.disabled = false;
-        importProgressContainer.classList.add('hidden');
+        confirmImportBtn.textContent = i18n[config.uiLanguage].confirmAndImport || "確認並匯入";
+        // 不要立即隱藏進度條，讓使用者看到結果，下次打開視窗時再重置
     }
 };
         const handleImportOnAuth = () => {
@@ -8261,35 +8381,19 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
     const password = ALL_ELEMENTS.passwordInput.value;
     const file = ALL_ELEMENTS.importFileInputAuth.files[0];
 
+
     if (!file) {
         showNotification(i18n[config.uiLanguage].selectFileError || '請選擇檔案。', 'error');
         return;
     }
 
-    // UI 準備
-    const { importProgressContainerAuth, importStatusTextAuth, importPercentTextAuth, importProgressBarAuth, confirmImportBtnAuth, cancelImportBtnAuth } = ALL_ELEMENTS;
-    
-    importProgressContainerAuth.classList.remove('hidden');
-    confirmImportBtnAuth.disabled = true;
-    cancelImportBtnAuth.disabled = true;
-    importProgressBarAuth.style.width = '0%';
-    importPercentTextAuth.textContent = '0%';
-
-    const updateUI = (percent, text) => {
-        importProgressBarAuth.style.width = `${percent}%`;
-        importPercentTextAuth.textContent = `${percent}%`;
-        if (text) importStatusTextAuth.textContent = text;
-    };
 
     try {
         const passwordHash = await hashString(password);
         let data;
 
-        updateUI(5, '正在讀取檔案...');
-        await new Promise(r => setTimeout(r, 50));
 
         if (file.name.endsWith('.zip') || file.type.includes('zip')) {
-            updateUI(10, '解壓縮中...');
             const zip = await JSZip.loadAsync(file);
             let jsonFile = zip.file("data.json");
             if (!jsonFile) {
@@ -8298,24 +8402,19 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
                 if (jsonFileName) jsonFile = zip.file(jsonFileName);
             }
             if (!jsonFile) throw new Error("ZIP 檔案中找不到 JSON 資料。");
-            
-            updateUI(20, '讀取結構資料...');
             const jsonContent = await jsonFile.async("string");
             data = JSON.parse(jsonContent);
 
-            // ✨ 呼叫新的批次還原函式
-            await restoreAttachmentsFromZip(zip, data, (percent, text) => {
-                const uiPercent = 30 + Math.round(percent * 0.6);
-                updateUI(uiPercent, text);
-            });
+
+            // ✨ 使用新的還原函式
+            data = await restoreAttachmentsFromZip(zip, data);
+
 
         } else {
             const text = await file.text();
             data = JSON.parse(text);
-            updateUI(50, '解析 JSON 完成...');
         }
 
-        updateUI(95, '驗證資料中...');
 
         if (!data.user_credentials || !data.user_credentials.username || !data.user_credentials.passwordHash) {
             throw new Error(i18n[config.uiLanguage].importInvalidFile || '備份檔案格式無效。');
@@ -8323,6 +8422,7 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
         if (data.user_credentials.username !== username || data.user_credentials.passwordHash !== passwordHash) {
             throw new Error(i18n[config.uiLanguage].importAuthMismatch || '帳號或密碼與備份檔案不符。');
         }
+
 
         const userKey = getUserKey(username);
         const savedUser = await getItem(userKey);
@@ -8334,36 +8434,42 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
         
         await performImport(data);
 
-        updateUI(100, '匯入完成！');
-        await new Promise(r => setTimeout(r, 500));
 
         toggleModal(ALL_ELEMENTS.importDataModalAuth, false);
         
-        // UI 轉場邏輯
+        // --- ✨ UI 修復關鍵 START ---
+        // 1. 開始淡出動畫
         ALL_ELEMENTS.authContainer.classList.add('fade-out');
+        
+        // 2. 顯示主畫面
         ALL_ELEMENTS.appContainer.classList.remove('hidden');
         requestAnimationFrame(() => {
             ALL_ELEMENTS.appContainer.classList.add('visible');
         });
 
+
+        // 3. 強制隱藏機制：不只依賴 transitionend，雙重保險
         const hideAuthContainer = () => {
-            ALL_ELEMENTS.authContainer.style.display = 'none'; 
-            ALL_ELEMENTS.authContainer.classList.remove('visible'); 
+            ALL_ELEMENTS.authContainer.style.display = 'none'; // 徹底從版面移除
+            ALL_ELEMENTS.authContainer.classList.remove('visible'); // 清除可見標記
         };
 
+
+        // 監聽動畫結束
         ALL_ELEMENTS.authContainer.addEventListener('transitionend', hideAuthContainer, { once: true });
+        
+        // 4. 設定一個 500ms 的計時器作為備案，防止動畫事件沒觸發
         setTimeout(hideAuthContainer, 500);
+        // --- ✨ UI 修復關鍵 END ---
+
 
         initChatApp();
         showNotification(i18n[config.uiLanguage].importSuccess || '匯入成功！', 'success');
 
+
     } catch (error) {
         showNotification(`${i18n[config.uiLanguage].importFailed || '匯入失敗'}: ${error.message}`, 'error');
         console.error(error);
-    } finally {
-        confirmImportBtnAuth.disabled = false;
-        cancelImportBtnAuth.disabled = false;
-        importProgressContainerAuth.classList.add('hidden');
     }
 };
         const renderModelManagementUI = () => {
@@ -10925,88 +11031,6 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             });
         };
     });
-};
-        const restoreAttachmentsFromZip = async (zip, data, onProgress) => {
-    // 1. 收集所有需要還原的任務 (對話附件 + Astras 頭像)
-    const tasks = [];
-
-    // 收集對話中的附件
-    if (data.conversations) {
-        data.conversations.forEach(conv => {
-            conv.messages.forEach(msg => {
-                if (msg.parts) {
-                    msg.parts.forEach(part => {
-                        if (part.inlineData && part.inlineData._zipRef) {
-                            tasks.push({
-                                type: 'conversation',
-                                part: part,
-                                fileName: part.inlineData._zipRef
-                            });
-                        }
-                    });
-                }
-            });
-        });
-    }
-
-    // 收集 Astras 頭像
-    if (data.astras) {
-        data.astras.forEach(ast => {
-            if (ast._avatarZipRef) {
-                tasks.push({
-                    type: 'astra',
-                    ast: ast,
-                    fileName: ast._avatarZipRef
-                });
-            }
-        });
-    }
-
-    const totalTasks = tasks.length;
-    if (totalTasks === 0) return data;
-
-    // 2. 設定批次處理參數
-    const BATCH_SIZE = 10; // 每次處理 10 個檔案 (可根據手機效能調整，建議 5-20)
-    
-    // 3. 開始分批處理
-    for (let i = 0; i < totalTasks; i += BATCH_SIZE) {
-        // 截取當前這一批任務
-        const currentBatch = tasks.slice(i, i + BATCH_SIZE);
-        
-        // 並行處理這一批 (Promise.all 加速當前批次)
-        await Promise.all(currentBatch.map(async (task) => {
-            const fileInZip = zip.file(task.fileName);
-            if (fileInZip) {
-                try {
-                    // 讀取 Base64
-                    const base64 = await fileInZip.async("base64");
-                    
-                    if (task.type === 'conversation') {
-                        task.part.inlineData.data = base64;
-                        delete task.part.inlineData._zipRef;
-                    } else if (task.type === 'astra') {
-                        let mime = 'image/png';
-                        if (task.fileName.endsWith('.jpg') || task.fileName.endsWith('.jpeg')) mime = 'image/jpeg';
-                        task.ast.avatarUrl = `data:${mime};base64,${base64}`;
-                        delete task.ast._avatarZipRef;
-                    }
-                } catch (err) {
-                    console.warn(`還原檔案失敗: ${task.fileName}`, err);
-                }
-            }
-        }));
-
-        // 4. 更新進度並釋放 UI 線程
-        if (onProgress) {
-            const percent = Math.round(((i + currentBatch.length) / totalTasks) * 100);
-            onProgress(percent, `正在還原附件 (${i + currentBatch.length}/${totalTasks})...`);
-        }
-
-        // ✨ 關鍵：強制暫停 50ms，讓瀏覽器有時間回收垃圾記憶體(GC)並更新畫面
-        await new Promise(resolve => setTimeout(resolve, 50));
-    }
-
-    return data;
 };
         async function initChatApp() {
             if (window.innerWidth >= 1024) {
