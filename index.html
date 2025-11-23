@@ -11707,52 +11707,7 @@ const FOLDER_TEXT_COLORS = {
             });
     </script>
     <script>
-    document.addEventListener('touchstart', function(event) {
-        if (event.touches.length > 1) {
-            event.preventDefault();
-        }
-    }, { passive: false });
-    var lastTouchEnd = 0;
-    document.addEventListener('touchend', function(event) {
-        var now = (new Date()).getTime();
-        if (now - lastTouchEnd <= 300) {
-            event.preventDefault();
-        }
-        lastTouchEnd = now;
-    }, false);
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./service-worker.js')
-            .then(registration => {
-              console.log('Service Worker 註冊成功:', registration);
-            })
-            .catch(error => {
-              console.log('Service Worker 註冊失敗:', error);
-            });
-        });
-        let isUpdateNotificationShown = false; // 防止重複顯示
-    navigator.serviceWorker.addEventListener('message', event => {
-      // 檢查是否是我們定義的更新訊息
-      if (event.data && event.data.type === 'NEW_VERSION_ACTIVATED' && !isUpdateNotificationShown) {
-        isUpdateNotificationShown = true;
-        console.log('接收到來自 Service Worker 的新版本通知！');
-        // 顯示一個提示，告訴使用者新版本已可用，並建議重新整理
-        showCustomDialog({
-            title: '應用程式已更新！',
-            message: 'Astra 已更新至最新版本，重新整理頁面即可體驗新功能。',
-            buttons: [
-                { text: '稍後再說', class: 'bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)]', value: () => false },
-                { text: '立即重新整理', class: 'px-4 py-2 rounded-md btn-primary', value: () => true }
-            ]
-        }).then(shouldReload => {
-            if (shouldReload) {
-                window.location.reload();
-            }
-        });
-      }
-    });
-      }
-        document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', () => {
         // 1. 綁定介面元素
         const p2pElements = {
             syncBtn: document.getElementById('p2p-sync-btn'),
@@ -11776,11 +11731,9 @@ const FOLDER_TEXT_COLORS = {
         // 2. 按鈕事件監聽
         p2pElements.syncBtn?.addEventListener('click', () => {
             resetP2PInterface();
-            // 顯示 Modal (使用現有的 toggleModal 函式)
             if(typeof toggleModal === 'function') {
                 toggleModal(p2pElements.modal, true);
             } else {
-                // 備用方案，如果找不到 toggleModal
                 p2pElements.modal.classList.remove('hidden');
                 setTimeout(() => p2pElements.modal.classList.add('visible'), 10);
             }
@@ -11832,10 +11785,9 @@ const FOLDER_TEXT_COLORS = {
 
         // 4. 舊裝置 (發送端) 邏輯
         function initHost() {
-            peer = new Peer(); // 初始化 PeerJS
+            peer = new Peer(); 
 
             peer.on('open', (id) => {
-                // 產生 QR Code
                 new QRCode(p2pElements.qrContainer, {
                     text: id,
                     width: 200,
@@ -11846,11 +11798,11 @@ const FOLDER_TEXT_COLORS = {
 
             peer.on('connection', (connection) => {
                 conn = connection;
-                p2pElements.statusSender.textContent = '新裝置已連線！正在傳送資料...';
+                p2pElements.statusSender.textContent = '裝置已連接！正在壓縮並打包資料...';
                 p2pElements.statusSender.className = 'text-sm font-bold mt-2 text-green-600';
 
                 conn.on('open', async () => {
-                    await sendData();
+                    await sendDataZip();
                 });
             });
 
@@ -11860,30 +11812,113 @@ const FOLDER_TEXT_COLORS = {
             });
         }
 
-        async function sendData() {
-            // 收集資料 (參考 export 邏輯)
-            const dataToExport = {
-                user_credentials: currentUser ? {
-                    username: currentUser.username,
-                    passwordHash: currentUser.passwordHash
-                } : null,
-                conversations: conversations,
-                folders: folders,
-                astras: astras,
-                personalMemories: personalMemories,
-                settings: {
-                    ...config // 包含所有設定
-                }
-            };
+        // ✨ 新的壓縮傳送邏輯 (核心修改)
+        async function sendDataZip() {
+            try {
+                p2pElements.statusSender.textContent = '正在壓縮圖片與檔案... (這可能需要一點時間)';
+                
+                // 準備基礎資料
+                const dataToExport = {
+                    user_credentials: currentUser ? {
+                        username: currentUser.username,
+                        passwordHash: currentUser.passwordHash
+                    } : null,
+                    conversations: JSON.parse(JSON.stringify(conversations)), // 深拷貝避免修改原資料
+                    folders: folders,
+                    astras: JSON.parse(JSON.stringify(astras)),
+                    personalMemories: personalMemories,
+                    settings: { ...config },
+                    apiKeys: config.apiKeys
+                };
 
-            // 發送
-            conn.send(dataToExport);
-            
-            p2pElements.statusSender.textContent = '✅ 資料已發送！請檢查新裝置。';
-            setTimeout(() => {
-                closeP2P();
-                if(typeof showNotification === 'function') showNotification('同步完成！', 'success');
-            }, 3000);
+                const zip = new JSZip();
+                const imagesFolder = zip.folder("images");
+                const filesFolder = zip.folder("files");
+
+                // A. 處理對話中的附件 (類似 handleExport)
+                if (dataToExport.conversations) {
+                    for (const conv of dataToExport.conversations) {
+                        for (const msg of conv.messages) {
+                            if (msg.parts) {
+                                for (const part of msg.parts) {
+                                    if (part.inlineData && part.inlineData.data) {
+                                        const originalMime = part.inlineData.mimeType;
+                                        
+                                        // 圖片處理：壓縮轉 JPG
+                                        if (originalMime.startsWith('image/')) {
+                                            // 呼叫主程式中的 compressImage
+                                            const processed = await compressImage(part.inlineData.data, originalMime, 1280, 0.6); // P2P 可以壓得稍微小一點加速傳輸
+                                            const imgName = `img_${crypto.randomUUID().slice(0,8)}.${processed.ext}`;
+                                            
+                                            imagesFolder.file(imgName, processed.data, {base64: true});
+                                            
+                                            part.inlineData._zipRef = `images/${imgName}`;
+                                            part.inlineData.mimeType = processed.mimeType;
+                                        } else {
+                                            // 其他檔案：直接存入 zip
+                                            let ext = 'bin';
+                                            if (originalMime.includes('pdf')) ext = 'pdf';
+                                            else if (originalMime.includes('text')) ext = 'txt';
+                                            
+                                            const fileName = `file_${crypto.randomUUID().slice(0,8)}.${ext}`;
+                                            filesFolder.file(fileName, part.inlineData.data, {base64: true});
+                                            part.inlineData._zipRef = `files/${fileName}`;
+                                        }
+                                        // 刪除原始 Base64 以減小 JSON 大小
+                                        delete part.inlineData.data;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // B. 處理 Astras 頭像
+                if (dataToExport.astras) {
+                    for (const ast of dataToExport.astras) {
+                        if (ast.avatarUrl && ast.avatarUrl.startsWith('data:image')) {
+                            const matches = ast.avatarUrl.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+                            if (matches && matches.length === 3) {
+                                const mimeType = matches[1];
+                                const base64Data = matches[2];
+                                // 頭像可以壓小一點
+                                const processed = await compressImage(base64Data, mimeType, 128, 0.7);
+                                const imgName = `avatar_${ast.id.slice(0,8)}.${processed.ext}`;
+                                
+                                imagesFolder.file(imgName, processed.data, {base64: true});
+                                ast._avatarZipRef = `images/${imgName}`;
+                                delete ast.avatarUrl;
+                            }
+                        }
+                    }
+                }
+
+                // 加入 JSON 資料
+                zip.file("data.json", JSON.stringify(dataToExport));
+
+                p2pElements.statusSender.textContent = '壓縮完成，正在傳送...';
+
+                // 產生二進位檔案 (ArrayBuffer)
+                const content = await zip.generateAsync({
+                    type: "arraybuffer",
+                    compression: "DEFLATE",
+                    compressionOptions: { level: 6 } // 6 是平衡速度與壓縮率
+                });
+
+                // 透過 PeerJS 傳送二進位檔案
+                conn.send(content);
+                
+                p2pElements.statusSender.textContent = '✅ 資料已發送！請等待接收端處理...';
+                
+                setTimeout(() => {
+                    closeP2P();
+                    if(typeof showNotification === 'function') showNotification('同步完成 (發送端)', 'success');
+                }, 3000);
+
+            } catch (err) {
+                console.error("P2P 打包失敗:", err);
+                p2pElements.statusSender.textContent = '打包失敗: ' + err.message;
+            }
         }
 
         // 5. 新裝置 (接收端) 邏輯
@@ -11891,17 +11926,13 @@ const FOLDER_TEXT_COLORS = {
             html5QrCode = new Html5Qrcode("qr-reader");
             const config = { fps: 10, qrbox: { width: 250, height: 250 } };
             
-            // 開啟後鏡頭
             html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
-                // 掃描成功
                 html5QrCode.stop().then(() => {
                     html5QrCode.clear();
                     p2pElements.statusReceiver.textContent = '掃描成功！連線中...';
                     connectToPeer(decodedText);
                 }).catch(err => console.error(err));
-            }, (errorMessage) => {
-                // 掃描中，不用處理錯誤
-            }).catch(err => {
+            }, (errorMessage) => {}).catch(err => {
                 p2pElements.statusReceiver.textContent = '無法啟動相機 (請確認網址是 https 或 localhost)';
                 p2pElements.statusReceiver.classList.add('text-red-500');
             });
@@ -11914,13 +11945,13 @@ const FOLDER_TEXT_COLORS = {
                 conn = peer.connect(hostId);
 
                 conn.on('open', () => {
-                    p2pElements.statusReceiver.textContent = '連線成功！等待接收資料...';
+                    p2pElements.statusReceiver.textContent = '連線成功！等待接收壓縮檔...';
                     p2pElements.statusReceiver.className = 'text-sm font-bold mt-2 text-green-600';
                 });
 
                 conn.on('data', async (data) => {
-                    p2pElements.statusReceiver.textContent = '正在匯入資料...';
-                    await handleReceivedData(data);
+                    p2pElements.statusReceiver.textContent = '正在接收並解壓縮...';
+                    await handleReceivedZip(data);
                 });
             });
 
@@ -11929,30 +11960,69 @@ const FOLDER_TEXT_COLORS = {
             });
         }
 
-        async function handleReceivedData(data) {
+        // ✨ 新的解壓縮處理邏輯
+        async function handleReceivedZip(data) {
             try {
-                // 如果有使用者資料，則更新
-                if (data.user_credentials) {
-                    currentUser = data.user_credentials;
-                    // 假設有 getItem/setItem 函式 (這是你的 app 裡的)
+                // 檢查收到的資料是不是 ArrayBuffer (二進位)
+                if (!(data instanceof ArrayBuffer)) {
+                    // 為了相容舊版，如果收到的是字串物件
+                    if (typeof data === 'object') { 
+                        // 這裡可以放舊的處理邏輯，但既然你都換新了，這裡我們直接視為錯誤或警告
+                        console.warn("收到非二進位資料，可能是舊版傳輸格式");
+                    }
+                }
+
+                // 使用 JSZip 解壓縮
+                const zip = await JSZip.loadAsync(data);
+                
+                // 讀取 data.json
+                const jsonFile = zip.file("data.json");
+                if (!jsonFile) throw new Error("壓縮檔中找不到 data.json");
+                
+                const jsonContent = await jsonFile.async("string");
+                let parsedData = JSON.parse(jsonContent);
+
+                p2pElements.statusReceiver.textContent = '正在還原圖片與檔案...';
+
+                // 呼叫主程式已有的 restoreAttachmentsFromZip 函式來還原圖片
+                // 注意：restoreAttachmentsFromZip 需要在全域範圍可訪問
+                if (typeof restoreAttachmentsFromZip === 'function') {
+                    parsedData = await restoreAttachmentsFromZip(zip, parsedData);
+                } else {
+                    console.warn("找不到還原函式，圖片可能無法顯示");
+                }
+
+                // --- 以下是更新資料庫的邏輯 (與原本相同) ---
+                
+                // 檢查使用者 (選擇性)
+                if (currentUser && parsedData.user_credentials && parsedData.user_credentials.username !== currentUser.username) {
+                    if(!confirm(`資料使用者 "${parsedData.user_credentials.username}" 與目前 "${currentUser.username}" 不同，確定覆蓋？`)) {
+                        closeP2P();
+                        return;
+                    }
+                }
+
+                // 更新 User
+                if (parsedData.user_credentials) {
+                    currentUser = parsedData.user_credentials;
                     if(typeof setItem === 'function') {
                         await setItem('chatUser_' + currentUser.username, JSON.stringify(currentUser));
                         await setItem('chat_lastUser', currentUser.username);
                     }
                 }
 
-                // 更新變數 (這些是你的 app 全域變數)
-                if(data.conversations) conversations = data.conversations;
-                if(data.folders) folders = data.folders;
-                if(data.astras) astras = data.astras;
-                if(data.personalMemories) personalMemories = data.personalMemories;
+                // 更新變數
+                if(parsedData.conversations) conversations = parsedData.conversations;
+                if(parsedData.folders) folders = parsedData.folders;
+                if(parsedData.astras) astras = parsedData.astras;
+                if(parsedData.personalMemories) personalMemories = parsedData.personalMemories;
                 
-                // 寫入資料庫
+                // 存檔
                 if(typeof saveAppData === 'function') await saveAppData();
 
                 // 更新設定
-                if (data.settings) {
-                    Object.assign(config, data.settings);
+                if (parsedData.settings) {
+                    Object.assign(config, parsedData.settings);
                     if(typeof saveConfig === 'function') await saveConfig();
                 }
 
@@ -11964,7 +12034,7 @@ const FOLDER_TEXT_COLORS = {
 
             } catch (e) {
                 console.error(e);
-                p2pElements.statusReceiver.textContent = '匯入失敗: ' + e.message;
+                p2pElements.statusReceiver.textContent = '解壓縮/匯入失敗: ' + e.message;
                 p2pElements.statusReceiver.classList.add('text-red-600');
             }
         }
