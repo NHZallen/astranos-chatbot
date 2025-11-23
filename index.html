@@ -3743,14 +3743,81 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 </div>
         </div>
     </div>
-    <div id="p2p-sync-modal" class="modal fixed inset-0 bg-white dark:bg-gray-900 z-[100] hidden flex-col">
-        <!-- 頂部導航 -->
-        <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-white">跨裝置 P2P 同步</h2>
-            <button id="close-p2p-modal-btn" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
+    <div id="p2p-sync-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[100] hidden">
+        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-md flex flex-col max-h-[90vh] overflow-hidden">
+            <!-- 頂部導航 -->
+            <div class="p-4 border-b border-[var(--border-color)] flex justify-between items-center flex-shrink-0">
+                <h2 class="text-xl font-bold">跨裝置 P2P 同步</h2>
+                <button id="close-p2p-modal-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-[var(--text-secondary)]">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+
+            <!-- 內容區域 -->
+            <div class="flex-1 overflow-y-auto p-6 flex flex-col items-center scroll-area">
+                
+                <!-- 步驟 1: 選擇模式 -->
+                <div id="p2p-step-select" class="w-full space-y-6 text-center">
+                    <p class="text-[var(--text-secondary)]">請選擇此裝置的角色：</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button id="p2p-role-sender" class="p-4 rounded-xl border border-blue-500 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-all flex flex-col items-center gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" class="text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line><polyline points="17 9 12 4 7 9"></polyline><line x1="12" y1="4" x2="12" y2="13"></line></svg>
+                            <span class="font-bold text-base text-blue-700 dark:text-blue-300">我是舊手機<br>(發送資料)</span>
+                        </button>
+                        <button id="p2p-role-receiver" class="p-4 rounded-xl border border-green-500 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40 transition-all flex flex-col items-center gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" class="text-green-600 dark:text-green-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z"></path><polyline points="12 17 12 11 9 14"></polyline><polyline points="15 14 12 17"></polyline></svg>
+                            <span class="font-bold text-base text-green-700 dark:text-green-300">我是新手機<br>(接收資料)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 發送端介面 (顯示 QR) -->
+                <div id="p2p-sender-ui" class="hidden w-full flex flex-col items-center text-center">
+                    <h3 class="text-lg font-bold mb-2">請用新手機掃描</h3>
+                    <p class="text-sm text-[var(--text-secondary)] mb-4">掃描後將自動開始傳輸資料</p>
+                    
+                    <div class="p-2 bg-white rounded-lg shadow-sm border border-gray-200 inline-block">
+                        <div id="p2p-qrcode" class="w-64 h-64"></div>
+                    </div>
+                    
+                    <div id="p2p-sender-status" class="mt-4 text-blue-600 font-medium text-sm">正在建立連線通道...</div>
+                    
+                    <!-- 發送進度條 -->
+                    <div id="p2p-sender-progress-container" class="w-full mt-4 hidden">
+                        <div class="flex justify-between text-xs mb-1 text-[var(--text-secondary)]">
+                            <span>發送進度</span>
+                            <span id="p2p-sender-percent">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 overflow-hidden">
+                            <div id="p2p-sender-bar" class="bg-blue-500 h-2.5 rounded-full transition-all duration-200" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 接收端介面 (掃描 QR) -->
+                <div id="p2p-receiver-ui" class="hidden w-full flex flex-col items-center text-center">
+                    <h3 class="text-lg font-bold mb-2">掃描舊手機 QR Code</h3>
+                    
+                    <div id="p2p-qr-reader" class="w-full h-64 bg-black rounded-lg overflow-hidden mb-4"></div>
+                    
+                    <div id="p2p-receiver-status" class="text-green-600 font-medium text-sm">正在開啟相機...</div>
+
+                    <!-- 接收進度條 -->
+                    <div id="p2p-receiver-progress-container" class="w-full mt-4 hidden">
+                        <div class="flex justify-between text-xs mb-1 text-[var(--text-secondary)]">
+                            <span>接收與同步進度</span>
+                            <span id="p2p-receiver-percent">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 overflow-hidden">
+                            <div id="p2p-receiver-bar" class="bg-green-500 h-2.5 rounded-full transition-all duration-200" style="width: 0%"></div>
+                        </div>
+                        <p class="text-xs text-red-500 mt-2">檔案可能較大，請保持螢幕開啟勿離開。</p>
+                    </div>
+                </div>
+
+            </div>
         </div>
+    </div>
 
     <script src="./i18n.js"></script>
     <script src="./demo-conversations.js"></script>
