@@ -16,6 +16,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlVjOTgjdwCRYIFDPlSJyGothspOJCINgRdBNPCoCoAPgatCKssVNPfISAc" crossorigin="anonymous"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/mhchem.min.js" integrity="sha384-LiYbuyabPcvZ2wQ2MR2kJyS2N9p/hO3N/15H0/0YxJqT4Lg/ZqD53aQyD+Jz3lM7" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
     body {
     touch-action: manipulation;
@@ -3004,8 +3007,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             </div>
         </main>
     </div>
-    <div id="settings-modal" class="modal hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-0 z-50">
-    <div class="bg-[var(--modal-bg)] rounded-none w-full h-full flex flex-col" style="max-height: 100vh;">
+    <div id="settings-modal" class="modal hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
+        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-2xl flex flex-col" style="max-height: 90vh;">
             <div class="p-6 border-b border-[var(--border-color)] flex justify-between items-center">
                 <h2 class="text-2xl font-bold" data-lang-key="settings">設定</h2>
                 <button id="logout-btn" title="登出" class="p-2 rounded-md hover:bg-[var(--active-bg)] text-[var(--text-secondary)]" data-lang-key-title="logout">
@@ -3152,6 +3155,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         <div class="flex flex-col sm:flex-row gap-2">
                             <button id="export-data-btn" class="flex-1 text-center p-2 rounded-md bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-800 font-medium" data-lang-key="exportData">匯出資料</button>
                             <button id="import-data-btn" class="flex-1 text-center p-2 rounded-md bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800 font-medium" data-lang-key="importData">匯入資料</button>
+                            <button id="p2p-sync-btn" class="w-full mt-2 text-center p-2 rounded-md bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-800 font-medium">跨裝置掃碼同步 (P2P)</button>
                         </div>
                         <button id="open-archived-modal-btn" class="w-full text-left p-2 rounded-md hover:bg-[var(--hover-bg)] font-medium mt-4" data-lang-key="manageArchived">
                             管理已封存的對話
@@ -3384,8 +3388,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             </div>
         </div>
     </div>
-    <div id="search-modal" class="modal hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-0 z-50">
-    <div class="bg-[var(--modal-bg)] rounded-none w-full h-full flex flex-col" style="max-height: 100vh;">
+    <div id="search-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
+        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-2xl flex flex-col" style="max-height: 90vh;">
             <div class="p-4 border-b border-[var(--border-color)] flex justify-between items-center">
                 <h2 class="text-xl font-bold" data-lang-key="searchConversations">搜尋對話</h2>
                 <button id="close-search-modal-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
@@ -3480,8 +3484,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             </div>
         </div>
     </div>
-    <div id="data-dashboard-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-0 z-50">
-    <div class="bg-[var(--modal-bg)] rounded-none w-full h-full flex flex-col" style="height: 100vh;">
+    <div id="data-dashboard-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
+        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-4xl flex flex-col" style="height: 90vh;">
             <div class="p-6 border-b border-[var(--border-color)] flex justify-between items-center">
                 <h2 class="text-2xl font-bold" data-lang-key="dashboard">個人數據面板</h2>
                 <button id="close-dashboard-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
@@ -3609,6 +3613,44 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     </div>
 </div>
     <div id="mobile-context-menu-wrapper"></div>
+        <div id="p2p-sync-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[60]">
+        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-md flex flex-col overflow-hidden" style="max-height: 90vh;">
+            <div class="p-4 border-b border-[var(--border-color)] flex justify-between items-center">
+                <h2 class="text-xl font-bold">跨裝置同步</h2>
+                <button id="close-p2p-sync-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto">
+                <!-- 步驟 1: 選擇角色 -->
+                <div id="p2p-step-1" class="space-y-4">
+                    <p class="text-sm text-[var(--text-secondary)]">請選擇此裝置的角色：</p>
+                    <button id="p2p-role-sender" class="w-full p-4 rounded-lg border-2 border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex flex-col items-center gap-2 transition-colors">
+                        <span class="text-2xl">📤</span>
+                        <span class="font-bold">我是舊裝置 (發送資料)</span>
+                        <span class="text-xs text-[var(--text-secondary)]">產生 QR Code 供掃描</span>
+                    </button>
+                    <button id="p2p-role-receiver" class="w-full p-4 rounded-lg border-2 border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 flex flex-col items-center gap-2 transition-colors">
+                        <span class="text-2xl">📥</span>
+                        <span class="font-bold">我是新裝置 (接收資料)</span>
+                        <span class="text-xs text-[var(--text-secondary)]">掃描 QR Code 接收資料</span>
+                    </button>
+                </div>
+
+                <!-- 步驟 2: 發送端介面 -->
+                <div id="p2p-step-sender" class="hidden flex flex-col items-center text-center space-y-4">
+                    <p class="text-sm font-medium text-blue-600 dark:text-blue-400 animate-pulse">正在建立連線通道...</p>
+                    <div id="qrcode-container" class="p-2 bg-white rounded-lg"></div>
+                    <p class="text-xs text-[var(--text-secondary)]">請使用新裝置掃描此 QR Code。<br>連線成功後將自動開始傳輸。</p>
+                    <div id="p2p-sender-status" class="text-sm font-bold mt-2"></div>
+                </div>
+
+                <!-- 步驟 2: 接收端介面 -->
+                <div id="p2p-step-receiver" class="hidden flex flex-col items-center space-y-4">
+                    <div id="qr-reader" style="width: 100%;" class="rounded-lg overflow-hidden bg-black"></div>
+                    <p id="p2p-receiver-status" class="text-sm text-[var(--text-secondary)]">請允許相機權限以掃描舊裝置的 QR Code</p>
+                </div>
+            </div>
+        </div>
+    </div>
         <div id="attachment-menu-wrapper"></div>
     
     <!-- ✨ 新增：互動式計畫編輯器 Modal -->
@@ -11710,6 +11752,224 @@ const FOLDER_TEXT_COLORS = {
       }
     });
       }
+</script>
+        document.addEventListener('DOMContentLoaded', () => {
+        // 1. 綁定介面元素
+        const p2pElements = {
+            syncBtn: document.getElementById('p2p-sync-btn'),
+            modal: document.getElementById('p2p-sync-modal'),
+            closeBtn: document.getElementById('close-p2p-sync-btn'),
+            step1: document.getElementById('p2p-step-1'),
+            stepSender: document.getElementById('p2p-step-sender'),
+            stepReceiver: document.getElementById('p2p-step-receiver'),
+            btnSender: document.getElementById('p2p-role-sender'),
+            btnReceiver: document.getElementById('p2p-role-receiver'),
+            qrContainer: document.getElementById('qrcode-container'),
+            statusSender: document.getElementById('p2p-sender-status'),
+            statusReceiver: document.getElementById('p2p-receiver-status'),
+            qrReaderDiv: document.getElementById('qr-reader')
+        };
+
+        let peer = null;
+        let conn = null;
+        let html5QrCode = null;
+
+        // 2. 按鈕事件監聽
+        p2pElements.syncBtn?.addEventListener('click', () => {
+            resetP2PInterface();
+            // 顯示 Modal (使用現有的 toggleModal 函式)
+            if(typeof toggleModal === 'function') {
+                toggleModal(p2pElements.modal, true);
+            } else {
+                // 備用方案，如果找不到 toggleModal
+                p2pElements.modal.classList.remove('hidden');
+                setTimeout(() => p2pElements.modal.classList.add('visible'), 10);
+            }
+        });
+
+        p2pElements.closeBtn?.addEventListener('click', closeP2P);
+
+        p2pElements.btnSender?.addEventListener('click', () => {
+            p2pElements.step1.classList.add('hidden');
+            p2pElements.stepSender.classList.remove('hidden');
+            initHost();
+        });
+
+        p2pElements.btnReceiver?.addEventListener('click', () => {
+            p2pElements.step1.classList.add('hidden');
+            p2pElements.stepReceiver.classList.remove('hidden');
+            initClientScanner();
+        });
+
+        // 3. 介面控制函式
+        function resetP2PInterface() {
+            p2pElements.step1.classList.remove('hidden');
+            p2pElements.stepSender.classList.add('hidden');
+            p2pElements.stepReceiver.classList.add('hidden');
+            p2pElements.qrContainer.innerHTML = '';
+            p2pElements.statusSender.textContent = '';
+            p2pElements.statusReceiver.textContent = '正在初始化相機...';
+            cleanupPeer();
+        }
+
+        function closeP2P() {
+            if(typeof toggleModal === 'function') {
+                toggleModal(p2pElements.modal, false);
+            } else {
+                p2pElements.modal.classList.remove('visible');
+                setTimeout(() => p2pElements.modal.classList.add('hidden'), 300);
+            }
+            cleanupPeer();
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => html5QrCode.clear()).catch(err => console.error(err));
+                html5QrCode = null;
+            }
+        }
+
+        function cleanupPeer() {
+            if (conn) { conn.close(); conn = null; }
+            if (peer) { peer.destroy(); peer = null; }
+        }
+
+        // 4. 舊裝置 (發送端) 邏輯
+        function initHost() {
+            peer = new Peer(); // 初始化 PeerJS
+
+            peer.on('open', (id) => {
+                // 產生 QR Code
+                new QRCode(p2pElements.qrContainer, {
+                    text: id,
+                    width: 200,
+                    height: 200
+                });
+                p2pElements.stepSender.querySelector('.animate-pulse').textContent = '等待掃描中...';
+            });
+
+            peer.on('connection', (connection) => {
+                conn = connection;
+                p2pElements.statusSender.textContent = '新裝置已連線！正在傳送資料...';
+                p2pElements.statusSender.className = 'text-sm font-bold mt-2 text-green-600';
+
+                conn.on('open', async () => {
+                    await sendData();
+                });
+            });
+
+            peer.on('error', (err) => {
+                p2pElements.statusSender.textContent = '連線錯誤: ' + err.type;
+                p2pElements.statusSender.className = 'text-sm font-bold mt-2 text-red-600';
+            });
+        }
+
+        async function sendData() {
+            // 收集資料 (參考 export 邏輯)
+            const dataToExport = {
+                user_credentials: currentUser ? {
+                    username: currentUser.username,
+                    passwordHash: currentUser.passwordHash
+                } : null,
+                conversations: conversations,
+                folders: folders,
+                astras: astras,
+                personalMemories: personalMemories,
+                settings: {
+                    ...config // 包含所有設定
+                }
+            };
+
+            // 發送
+            conn.send(dataToExport);
+            
+            p2pElements.statusSender.textContent = '✅ 資料已發送！請檢查新裝置。';
+            setTimeout(() => {
+                closeP2P();
+                if(typeof showNotification === 'function') showNotification('同步完成！', 'success');
+            }, 3000);
+        }
+
+        // 5. 新裝置 (接收端) 邏輯
+        function initClientScanner() {
+            html5QrCode = new Html5Qrcode("qr-reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+            
+            // 開啟後鏡頭
+            html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
+                // 掃描成功
+                html5QrCode.stop().then(() => {
+                    html5QrCode.clear();
+                    p2pElements.statusReceiver.textContent = '掃描成功！連線中...';
+                    connectToPeer(decodedText);
+                }).catch(err => console.error(err));
+            }, (errorMessage) => {
+                // 掃描中，不用處理錯誤
+            }).catch(err => {
+                p2pElements.statusReceiver.textContent = '無法啟動相機 (請確認網址是 https 或 localhost)';
+                p2pElements.statusReceiver.classList.add('text-red-500');
+            });
+        }
+
+        function connectToPeer(hostId) {
+            peer = new Peer();
+            
+            peer.on('open', () => {
+                conn = peer.connect(hostId);
+
+                conn.on('open', () => {
+                    p2pElements.statusReceiver.textContent = '連線成功！等待接收資料...';
+                    p2pElements.statusReceiver.className = 'text-sm font-bold mt-2 text-green-600';
+                });
+
+                conn.on('data', async (data) => {
+                    p2pElements.statusReceiver.textContent = '正在匯入資料...';
+                    await handleReceivedData(data);
+                });
+            });
+
+            peer.on('error', (err) => {
+                p2pElements.statusReceiver.textContent = '連線失敗: ' + err.type;
+            });
+        }
+
+        async function handleReceivedData(data) {
+            try {
+                // 如果有使用者資料，則更新
+                if (data.user_credentials) {
+                    currentUser = data.user_credentials;
+                    // 假設有 getItem/setItem 函式 (這是你的 app 裡的)
+                    if(typeof setItem === 'function') {
+                        await setItem('chatUser_' + currentUser.username, JSON.stringify(currentUser));
+                        await setItem('chat_lastUser', currentUser.username);
+                    }
+                }
+
+                // 更新變數 (這些是你的 app 全域變數)
+                if(data.conversations) conversations = data.conversations;
+                if(data.folders) folders = data.folders;
+                if(data.astras) astras = data.astras;
+                if(data.personalMemories) personalMemories = data.personalMemories;
+                
+                // 寫入資料庫
+                if(typeof saveAppData === 'function') await saveAppData();
+
+                // 更新設定
+                if (data.settings) {
+                    Object.assign(config, data.settings);
+                    if(typeof saveConfig === 'function') await saveConfig();
+                }
+
+                p2pElements.statusReceiver.textContent = '✅ 同步成功！頁面即將重新整理...';
+                
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+
+            } catch (e) {
+                console.error(e);
+                p2pElements.statusReceiver.textContent = '匯入失敗: ' + e.message;
+                p2pElements.statusReceiver.classList.add('text-red-600');
+            }
+        }
+    });
 </script>
 </body>
 </html>
