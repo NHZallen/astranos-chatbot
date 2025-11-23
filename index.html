@@ -16,9 +16,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlVjOTgjdwCRYIFDPlSJyGothspOJCINgRdBNPCoCoAPgatCKssVNPfISAc" crossorigin="anonymous"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/mhchem.min.js" integrity="sha384-LiYbuyabPcvZ2wQ2MR2kJyS2N9p/hO3N/15H0/0YxJqT4Lg/ZqD53aQyD+Jz3lM7" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
     body {
     touch-action: manipulation;
@@ -3155,7 +3152,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         <div class="flex flex-col sm:flex-row gap-2">
                             <button id="export-data-btn" class="flex-1 text-center p-2 rounded-md bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-800 font-medium" data-lang-key="exportData">匯出資料</button>
                             <button id="import-data-btn" class="flex-1 text-center p-2 rounded-md bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800 font-medium" data-lang-key="importData">匯入資料</button>
-                            <button id="open-sync-modal-btn" class="w-full mt-2 text-center p-2 rounded-md bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-800 font-medium">跨裝置同步</button>
                         </div>
                         <button id="open-archived-modal-btn" class="w-full text-left p-2 rounded-md hover:bg-[var(--hover-bg)] font-medium mt-4" data-lang-key="manageArchived">
                             管理已封存的對話
@@ -3613,31 +3609,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     </div>
 </div>
     <div id="mobile-context-menu-wrapper"></div>
-        <div id="p2p-sync-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 hidden">
-    <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl w-full max-w-md flex flex-col" style="max-height: 90vh;">
-        <div class="p-4 border-b border-[var(--border-color)] flex justify-between items-center">
-            <h2 class="text-xl font-bold">跨裝置同步</h2>
-            <button id="close-sync-modal-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-2xl leading-none">&times;</button>
-        </div>
-        
-        <div class="p-4 flex gap-2 border-b border-[var(--border-color)]">
-            <button id="sync-tab-send" class="flex-1 py-2 rounded-md bg-[var(--button-primary-bg)] text-[var(--button-primary-text)] font-medium transition-all">我是舊手機 (發送)</button>
-            <button id="sync-tab-receive" class="flex-1 py-2 rounded-md bg-[var(--hover-bg)] text-[var(--text-secondary)] font-medium transition-all">我是新手機 (接收)</button>
-        </div>
-
-        <div id="sync-content-send" class="p-6 flex flex-col items-center justify-center space-y-4">
-            <p class="text-sm text-[var(--text-secondary)] text-center">請使用新裝置掃描此 QR Code 以接收資料。<br>連線建立後將自動開始傳輸。</p>
-            <div id="qrcode-container" class="bg-white p-2 rounded-lg"></div>
-            <p id="p2p-status-send" class="text-sm font-bold text-blue-600 h-6"></p>
-        </div>
-
-        <div id="sync-content-receive" class="p-4 flex flex-col space-y-4 hidden">
-            <p class="text-sm text-[var(--text-secondary)] text-center">請掃描舊裝置上的 QR Code。</p>
-            <div id="qr-reader" style="width: 100%;" class="rounded-lg overflow-hidden"></div>
-            <p id="p2p-status-receive" class="text-sm font-bold text-center text-blue-600 h-6"></p>
-        </div>
-    </div>
-</div>
         <div id="attachment-menu-wrapper"></div>
     
     <!-- ✨ 新增：互動式計畫編輯器 Modal -->
@@ -10920,199 +10891,6 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
     }
     return data;
 };
-        const syncElements = {
-    modal: document.getElementById('p2p-sync-modal'),
-    openBtn: document.getElementById('open-sync-modal-btn'),
-    closeBtn: document.getElementById('close-sync-modal-btn'),
-    tabSend: document.getElementById('sync-tab-send'),
-    tabReceive: document.getElementById('sync-tab-receive'),
-    contentSend: document.getElementById('sync-content-send'),
-    contentReceive: document.getElementById('sync-content-receive'),
-    qrContainer: document.getElementById('qrcode-container'),
-    statusSend: document.getElementById('p2p-status-send'),
-    statusReceive: document.getElementById('p2p-status-receive')
-};
-
-let peerInstance = null;
-let html5QrCode = null;
-
-// 初始化同步視窗事件
-if (syncElements.openBtn) {
-    syncElements.openBtn.addEventListener('click', () => {
-        toggleModal(syncElements.modal, true);
-        activateTab('send'); // 預設開啟發送分頁
-    });
-}
-
-if (syncElements.closeBtn) {
-    syncElements.closeBtn.addEventListener('click', () => {
-        closeSyncModal();
-    });
-}
-
-syncElements.tabSend.addEventListener('click', () => activateTab('send'));
-syncElements.tabReceive.addEventListener('click', () => activateTab('receive'));
-
-function closeSyncModal() {
-    toggleModal(syncElements.modal, false);
-    stopP2P(); // 關閉視窗時停止所有連線和相機
-}
-
-// 切換分頁邏輯
-function activateTab(mode) {
-    stopP2P(); // 切換前先重置
-
-    if (mode === 'send') {
-        syncElements.tabSend.classList.add('bg-[var(--button-primary-bg)]', 'text-[var(--button-primary-text)]');
-        syncElements.tabSend.classList.remove('bg-[var(--hover-bg)]', 'text-[var(--text-secondary)]');
-        syncElements.tabReceive.classList.remove('bg-[var(--button-primary-bg)]', 'text-[var(--button-primary-text)]');
-        syncElements.tabReceive.classList.add('bg-[var(--hover-bg)]', 'text-[var(--text-secondary)]');
-        
-        syncElements.contentSend.classList.remove('hidden');
-        syncElements.contentReceive.classList.add('hidden');
-        
-        startSenderMode();
-    } else {
-        syncElements.tabReceive.classList.add('bg-[var(--button-primary-bg)]', 'text-[var(--button-primary-text)]');
-        syncElements.tabReceive.classList.remove('bg-[var(--hover-bg)]', 'text-[var(--text-secondary)]');
-        syncElements.tabSend.classList.remove('bg-[var(--button-primary-bg)]', 'text-[var(--button-primary-text)]');
-        syncElements.tabSend.classList.add('bg-[var(--hover-bg)]', 'text-[var(--text-secondary)]');
-        
-        syncElements.contentReceive.classList.remove('hidden');
-        syncElements.contentSend.classList.add('hidden');
-        
-        startReceiverMode();
-    }
-}
-
-// 停止 P2P 和相機
-async function stopP2P() {
-    if (peerInstance) {
-        peerInstance.destroy();
-        peerInstance = null;
-    }
-    if (html5QrCode) {
-        try {
-            await html5QrCode.stop();
-        } catch (e) {}
-        html5QrCode.clear();
-        html5QrCode = null;
-    }
-    syncElements.qrContainer.innerHTML = '';
-    syncElements.statusSend.textContent = '';
-    syncElements.statusReceive.textContent = '';
-}
-
-// --- 發送端邏輯 (舊手機) ---
-function startSenderMode() {
-    syncElements.statusSend.textContent = '正在初始化 P2P ID...';
-    
-    // 建立 Peer 物件
-    peerInstance = new Peer();
-
-    peerInstance.on('open', (id) => {
-        syncElements.statusSend.textContent = '等待連線中...';
-        syncElements.qrContainer.innerHTML = '';
-        // 產生 QR Code
-        new QRCode(syncElements.qrContainer, {
-            text: id,
-            width: 180,
-            height: 180
-        });
-    });
-
-    peerInstance.on('connection', (conn) => {
-        syncElements.statusSend.textContent = '已連線！準備傳送資料...';
-        
-        conn.on('open', async () => {
-            // 準備要傳送的資料 (與匯出功能相同的資料結構)
-            const dataToExport = {
-                conversations,
-                folders,
-                astras,
-                personalMemories,
-                settings: config,
-                user_credentials: {
-                    username: currentUser.username,
-                    passwordHash: currentUser.passwordHash
-                }
-            };
-
-            syncElements.statusSend.textContent = '正在傳送資料...';
-            conn.send(dataToExport);
-            
-            // 稍微延遲後顯示完成
-            setTimeout(() => {
-                syncElements.statusSend.textContent = '傳送完成！';
-                showNotification('資料已發送至新裝置', 'success');
-            }, 1000);
-        });
-    });
-
-    peerInstance.on('error', (err) => {
-        console.error(err);
-        syncElements.statusSend.textContent = '發生錯誤，請重試。';
-    });
-}
-
-// --- 接收端邏輯 (新手機) ---
-function startReceiverMode() {
-    syncElements.statusReceive.textContent = '請允許相機權限以掃描 QR Code';
-    
-    html5QrCode = new Html5Qrcode("qr-reader");
-    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-    
-    html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, (errorMessage) => {
-        // 掃描中的錯誤可以忽略
-    }).catch(err => {
-        syncElements.statusReceive.textContent = '無法啟動相機';
-    });
-}
-
-function onScanSuccess(decodedText, decodedResult) {
-    // 掃描成功，停止相機
-    html5QrCode.stop().then(() => {
-        html5QrCode.clear();
-        connectToHost(decodedText);
-    });
-}
-
-function connectToHost(hostId) {
-    syncElements.statusReceive.textContent = '正在連線至舊裝置...';
-    
-    peerInstance = new Peer();
-    
-    peerInstance.on('open', () => {
-        const conn = peerInstance.connect(hostId);
-        
-        conn.on('open', () => {
-            syncElements.statusReceive.textContent = '連線成功！等待資料...';
-        });
-
-        conn.on('data', async (data) => {
-            syncElements.statusReceive.textContent = '接收資料中...';
-            try {
-                // 使用既有的匯入邏輯 (performImport 函式在原本的程式碼中已經有了)
-                await performImport(data);
-                
-                syncElements.statusReceive.textContent = '同步完成！即將重整...';
-                showNotification('同步成功！頁面即將重新整理', 'success');
-                
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
-            } catch (error) {
-                console.error(error);
-                syncElements.statusReceive.textContent = '匯入資料失敗: ' + error.message;
-            }
-        });
-    });
-
-    peerInstance.on('error', (err) => {
-        console.error(err);
-        syncElements.statusReceive.textContent = '連線錯誤，請確認網路狀態';
-    });
-}
         async function initChatApp() {
             if (window.innerWidth >= 1024) {
         sidebarOpen = true;
