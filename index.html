@@ -16,6 +16,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlVjOTgjdwCRYIFDPlSJyGothspOJCINgRdBNPCoCoAPgatCKssVNPfISAc" crossorigin="anonymous"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/mhchem.min.js" integrity="sha384-LiYbuyabPcvZ2wQ2MR2kJyS2N9p/hO3N/15H0/0YxJqT4Lg/ZqD53aQyD+Jz3lM7" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
     body {
     touch-action: manipulation;
@@ -2661,6 +2664,24 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     display: none; /* 將它完全隱藏起來，不佔據任何空間 */
   }
 }
+        #p2p-qrcode-container img {
+        display: block;
+        margin: 0 auto;
+    }
+    .p2p-select-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        border-bottom: 1px solid var(--border-color);
+        cursor: pointer;
+    }
+    .p2p-select-item:last-child {
+        border-bottom: none;
+    }
+    .p2p-select-item:hover {
+        background-color: var(--hover-bg);
+    }
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -2798,6 +2819,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 <button id="open-store-btn" class="section-action-btn" title="Astras 商店" data-lang-key-title="astrasStore">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
                 </button>
+                <button id="share-astras-btn" class="section-action-btn" title="P2P 分享 Astras" style="margin-right: 2px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                </button>
                 <button id="new-astras-btn" class="section-action-btn" title="新增 Astras" data-lang-key-title="addAstras">
                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                 </button>
@@ -2817,6 +2841,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 <span data-lang-key="folders">資料夾</span>
             </div>
             <div class="actions-group">
+                <button id="share-folders-btn" class="section-action-btn" title="P2P 分享資料夾" style="margin-right: 2px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                </button>
                 <button id="new-folder-btn" class="section-action-btn" title="新增資料夾" data-lang-key-title="addFolder">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                 </button>
@@ -3635,6 +3662,72 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         </div>
     </div>
 </div>
+        <div id="p2p-share-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl p-6 w-full max-w-md flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center mb-4 border-b border-[var(--border-color)] pb-2">
+                <h2 id="p2p-modal-title" class="text-xl font-bold">P2P 分享</h2>
+                <button id="close-p2p-modal-btn" class="p-1 rounded-full hover:bg-[var(--hover-bg)]">&times;</button>
+            </div>
+            
+            <div id="p2p-content-area" class="flex-1 overflow-y-auto scroll-area">
+                <!-- 步驟 1: 選擇角色 -->
+                <div id="p2p-step-role" class="space-y-4">
+                    <p class="text-sm text-[var(--text-secondary)]">請選擇您的角色：</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button id="p2p-role-sender" class="p-4 rounded-lg border-2 border-[var(--border-color)] hover:border-blue-500 flex flex-col items-center gap-2 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                            <span class="font-bold">我要傳送</span>
+                        </button>
+                        <button id="p2p-role-receiver" class="p-4 rounded-lg border-2 border-[var(--border-color)] hover:border-green-500 flex flex-col items-center gap-2 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            <span class="font-bold">我要接收</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 步驟 2 (傳送方): 選擇項目 -->
+                <div id="p2p-step-select" class="hidden space-y-4">
+                    <p class="text-sm text-[var(--text-secondary)]">請選擇要傳送的項目：</p>
+                    <div id="p2p-item-list" class="space-y-2 max-h-60 overflow-y-auto border border-[var(--border-color)] rounded-md p-2">
+                        <!-- 動態填入項目 -->
+                    </div>
+                    <button id="p2p-confirm-selection-btn" class="w-full btn-primary py-2 rounded-md">確認並產生代碼</button>
+                </div>
+
+                <!-- 步驟 3 (傳送方): 顯示代碼與等待 -->
+                <div id="p2p-step-wait" class="hidden flex flex-col items-center space-y-4">
+                    <div id="p2p-qrcode-container" class="bg-white p-2 rounded-lg"></div>
+                    <div class="text-center">
+                        <p class="text-sm text-[var(--text-secondary)]">分享代碼 (5碼)</p>
+                        <p id="p2p-share-code" class="text-3xl font-mono font-bold tracking-widest text-blue-600 my-2">-----</p>
+                    </div>
+                    <p class="text-xs text-[var(--text-secondary)] animate-pulse">等待接收方連線...</p>
+                </div>
+
+                <!-- 步驟 2 (接收方): 輸入代碼或掃碼 -->
+                <div id="p2p-step-connect" class="hidden space-y-4">
+                    <div id="p2p-reader" class="w-full bg-black rounded-lg overflow-hidden hidden"></div>
+                    <button id="p2p-start-scan-btn" class="w-full py-2 rounded-md bg-[var(--hover-bg)] flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path></svg>
+                        掃描 QR Code
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="p2p-code-input" class="flex-1 p-2 border border-[var(--border-color)] rounded-md text-center font-mono uppercase" placeholder="輸入5碼代碼" maxlength="5">
+                        <button id="p2p-connect-btn" class="btn-primary px-4 py-2 rounded-md">連線</button>
+                    </div>
+                </div>
+
+                <!-- 步驟 4: 傳輸進度 (雙方共用) -->
+                <div id="p2p-step-progress" class="hidden space-y-4">
+                    <p id="p2p-status-text" class="text-center font-medium">正在準備...</p>
+                    <div class="w-full bg-gray-200 rounded-full h-4 dark:bg-gray-700 overflow-hidden">
+                        <div id="p2p-progress-bar" class="bg-blue-600 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <p id="p2p-percentage" class="text-center text-sm text-[var(--text-secondary)]">0%</p>
+                </div>
+            </div>
+        </div>
+    </div>
     <div id="mobile-context-menu-wrapper"></div>
         <div id="attachment-menu-wrapper"></div>
     
@@ -11733,6 +11826,417 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
 
 
             // ✨ END: 新增的附件上彈視窗函式與按鈕邏輯
+            // ==========================================
+    // ✨ P2P 分享功能 (PeerJS Implementation)
+    // ==========================================
+
+    let p2pPeer = null;
+    let p2pConn = null;
+    let p2pType = null; // 'astras' or 'folders'
+    let p2pMode = null; // 'sender' or 'receiver'
+    let html5QrcodeScanner = null;
+
+    const CHUNK_SIZE = 16 * 1024; // 16KB chunks for safe transmission
+
+    // 初始化 P2P 模組
+    function initP2P(type) {
+        p2pType = type; // 'astras' or 'folders'
+        resetP2PUI();
+        document.getElementById('p2p-modal-title').textContent = `P2P 分享 ${type === 'astras' ? 'Astras' : '資料夾'}`;
+        toggleModal(document.getElementById('p2p-share-modal'), true);
+    }
+
+    function resetP2PUI() {
+        document.getElementById('p2p-step-role').classList.remove('hidden');
+        document.getElementById('p2p-step-select').classList.add('hidden');
+        document.getElementById('p2p-step-wait').classList.add('hidden');
+        document.getElementById('p2p-step-connect').classList.add('hidden');
+        document.getElementById('p2p-step-progress').classList.add('hidden');
+        document.getElementById('p2p-reader').classList.add('hidden'); // 隱藏掃描器
+        
+        if (html5QrcodeScanner) {
+            html5QrcodeScanner.stop().catch(err => console.error("Failed to stop scanner", err));
+            html5QrcodeScanner = null;
+        }
+        if (p2pPeer) {
+            p2pPeer.destroy();
+            p2pPeer = null;
+        }
+    }
+
+    // 產生 5 碼隨機代碼 (排除易混淆字元 I, O, 0, 1)
+    function generateP2PCode() {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let result = '';
+        for (let i = 0; i < 5; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    }
+
+    // 顯示選擇清單 (僅限傳送者)
+    function showP2PSelection() {
+        document.getElementById('p2p-step-role').classList.add('hidden');
+        document.getElementById('p2p-step-select').classList.remove('hidden');
+        const list = document.getElementById('p2p-item-list');
+        list.innerHTML = '';
+
+        let items = [];
+        if (p2pType === 'astras') {
+            // 僅限自訂 Astras (沒有 officialId)
+            items = astras.filter(a => !a.officialId);
+        } else {
+            items = folders;
+        }
+
+        if (items.length === 0) {
+            list.innerHTML = '<p class="text-center text-[var(--text-secondary)] p-4">沒有可分享的項目。</p>';
+            document.getElementById('p2p-confirm-selection-btn').disabled = true;
+            return;
+        } else {
+            document.getElementById('p2p-confirm-selection-btn').disabled = false;
+        }
+
+        items.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'p2p-select-item';
+            div.innerHTML = `
+                <input type="checkbox" class="p2p-item-checkbox w-4 h-4" value="${item.id}">
+                <span class="truncate flex-1">${item.name}</span>
+            `;
+            list.appendChild(div);
+        });
+    }
+
+    // 啟動傳送方
+    async function startP2PSender() {
+        const checkboxes = document.querySelectorAll('.p2p-item-checkbox:checked');
+        if (checkboxes.length === 0) {
+            showNotification('請至少選擇一個項目', 'warning');
+            return;
+        }
+
+        const selectedIds = Array.from(checkboxes).map(cb => cb.value);
+        
+        // 準備資料
+        document.getElementById('p2p-step-select').classList.add('hidden');
+        document.getElementById('p2p-step-wait').classList.remove('hidden');
+        
+        const code = generateP2PCode();
+        const peerId = `astra-p2p-${code}`; // 在 PeerJS 伺服器上的實際 ID
+
+        document.getElementById('p2p-share-code').textContent = code;
+        
+        // 產生 QR Code
+        const qrContainer = document.getElementById('p2p-qrcode-container');
+        qrContainer.innerHTML = '';
+        new QRCode(qrContainer, {
+            text: code, // 只需要存代碼，接收方自己組裝 prefix
+            width: 180,
+            height: 180
+        });
+
+        // 初始化 Peer
+        p2pPeer = new Peer(peerId);
+
+        p2pPeer.on('open', (id) => {
+            console.log('My peer ID is: ' + id);
+        });
+
+        p2pPeer.on('connection', (conn) => {
+            p2pConn = conn;
+            setupSenderConnection(selectedIds);
+        });
+
+        p2pPeer.on('error', (err) => {
+            console.error(err);
+            if (err.type === 'unavailable-id') {
+                // 極低機率碰撞，重新產生
+                p2pPeer.destroy();
+                startP2PSender(); 
+            } else {
+                showNotification(`P2P 錯誤: ${err.type}`, 'error');
+            }
+        });
+    }
+
+    // 處理傳送邏輯
+    async function setupSenderConnection(selectedIds) {
+        document.getElementById('p2p-step-wait').classList.add('hidden');
+        document.getElementById('p2p-step-progress').classList.remove('hidden');
+        updateP2PProgress(0, "正在打包資料...");
+
+        // 打包資料
+        const zip = new JSZip();
+        
+        if (p2pType === 'astras') {
+            const selectedAstras = astras.filter(a => selectedIds.includes(a.id));
+            // 處理 Astras 的圖片
+            for (const ast of selectedAstras) {
+                // 深拷貝以免修改原始資料
+                const astraCopy = JSON.parse(JSON.stringify(ast));
+                if (astraCopy.avatarUrl && astraCopy.avatarUrl.startsWith('data:image')) {
+                     // 簡單處理：直接放 JSON，因為 JSZip 處理大量 Base64 也還行
+                     // 若要優化可分離圖片，但這裡求穩
+                }
+                zip.file(`astra_${ast.id}.json`, JSON.stringify(astraCopy));
+            }
+        } else {
+            // 處理資料夾與對話
+            const selectedFolders = folders.filter(f => selectedIds.includes(f.id));
+            const folderConvs = [];
+            
+            // 收集資料夾內的所有對話 ID
+            selectedFolders.forEach(f => {
+                if(f.conversationIds) {
+                    f.conversationIds.forEach(cid => {
+                        const c = conversations.find(conv => conv.id === cid);
+                        if(c && !c.deletedAt) folderConvs.push(c);
+                    });
+                }
+            });
+
+            zip.file('folders.json', JSON.stringify(selectedFolders));
+            zip.file('conversations.json', JSON.stringify(folderConvs));
+        }
+
+        const blob = await zip.generateAsync({ type: "blob" });
+        const arrayBuffer = await blob.arrayBuffer();
+        
+        // 開始傳送
+        p2pConn.on('open', () => {
+            // 1. 傳送 Metadata
+            p2pConn.send({
+                type: 'meta',
+                size: arrayBuffer.byteLength,
+                dataType: p2pType
+            });
+
+            // 2. 傳送 Chunks
+            const totalSize = arrayBuffer.byteLength;
+            let offset = 0;
+
+            function sendNextChunk() {
+                if (offset >= totalSize) {
+                    p2pConn.send({ type: 'end' });
+                    updateP2PProgress(100, "傳送完成！");
+                    return;
+                }
+
+                const chunk = arrayBuffer.slice(offset, offset + CHUNK_SIZE);
+                p2pConn.send({
+                    type: 'chunk',
+                    data: chunk,
+                    offset: offset
+                });
+
+                offset += chunk.byteLength;
+                const percent = (offset / totalSize) * 100;
+                updateP2PProgress(percent, `正在傳送... ${Math.round(percent)}%`);
+                
+                // 使用 setTimeout 避免阻塞 UI
+                setTimeout(sendNextChunk, 5); // 小延遲
+            }
+
+            sendNextChunk();
+        });
+    }
+
+    // 啟動接收方介面
+    function startP2PReceiverUI() {
+        document.getElementById('p2p-step-role').classList.add('hidden');
+        document.getElementById('p2p-step-connect').classList.remove('hidden');
+        document.getElementById('p2p-code-input').value = '';
+        document.getElementById('p2p-code-input').focus();
+    }
+
+    // 執行接收連線
+    function connectToSender(code) {
+        const peerId = `astra-p2p-${code.toUpperCase()}`;
+        
+        p2pPeer = new Peer(); // 自動產生 ID，因為我們是接收端
+        
+        document.getElementById('p2p-step-connect').classList.add('hidden');
+        document.getElementById('p2p-step-progress').classList.remove('hidden');
+        updateP2PProgress(5, "正在連線...");
+
+        p2pPeer.on('open', () => {
+            p2pConn = p2pPeer.connect(peerId);
+            setupReceiverConnection();
+        });
+
+        p2pPeer.on('error', (err) => {
+            console.error(err);
+            showNotification("連線失敗，請檢查代碼", "error");
+            resetP2PUI();
+            startP2PReceiverUI();
+        });
+    }
+
+    // 處理接收邏輯
+    function setupReceiverConnection() {
+        let receivedBuffer = [];
+        let receivedSize = 0;
+        let totalSize = 0;
+        let dataType = '';
+
+        p2pConn.on('open', () => {
+            updateP2PProgress(10, "已連線，等待資料...");
+        });
+
+        p2pConn.on('data', async (data) => {
+            if (data.type === 'meta') {
+                totalSize = data.size;
+                dataType = data.dataType;
+                receivedBuffer = [];
+                receivedSize = 0;
+                updateP2PProgress(10, "開始接收...");
+            } else if (data.type === 'chunk') {
+                receivedBuffer.push(data.data); // 收集 ArrayBuffer
+                receivedSize += data.data.byteLength;
+                const percent = (receivedSize / totalSize) * 100;
+                updateP2PProgress(percent, `正在接收... ${Math.round(percent)}%`);
+            } else if (data.type === 'end') {
+                updateP2PProgress(100, "接收完成，正在解壓縮...");
+                await processReceivedData(receivedBuffer, dataType);
+            }
+        });
+        
+        // 如果連線斷開
+        p2pConn.on('close', () => {
+             if(receivedSize < totalSize && totalSize > 0) {
+                 showNotification("傳輸中斷", "error");
+             }
+        });
+    }
+
+    async function processReceivedData(buffers, type) {
+        try {
+            const blob = new Blob(buffers);
+            const zip = await JSZip.loadAsync(blob);
+            
+            if (type === 'astras') {
+                let count = 0;
+                const files = Object.keys(zip.files);
+                for (const filename of files) {
+                    if (filename.startsWith('astra_') && filename.endsWith('.json')) {
+                        const content = await zip.file(filename).async("string");
+                        const astraData = JSON.parse(content);
+                        
+                        // 檢查重複：如果 id 已存在，生成新 id
+                        if (astras.some(a => a.id === astraData.id)) {
+                            astraData.id = crypto.randomUUID();
+                            astraData.name += " (匯入)";
+                        }
+                        // 確保它是自訂的
+                        astraData.officialId = null;
+                        
+                        astras.unshift(astraData);
+                        count++;
+                    }
+                }
+                showNotification(`成功接收 ${count} 個 Astras！`, 'success');
+                renderAstras();
+            } else {
+                // 資料夾
+                const foldersContent = await zip.file('folders.json').async("string");
+                const convsContent = await zip.file('conversations.json').async("string");
+                
+                const importedFolders = JSON.parse(foldersContent);
+                const importedConvs = JSON.parse(convsContent);
+                
+                // ID 對照表 (舊 ID -> 新 ID)
+                const idMap = {};
+
+                // 1. 先處理對話，並賦予新 ID
+                importedConvs.forEach(conv => {
+                    const oldId = conv.id;
+                    const newId = crypto.randomUUID();
+                    idMap[oldId] = newId;
+                    conv.id = newId;
+                    
+                    // 清除舊的 folderId，稍後重設
+                    conv.folderId = null; 
+                    
+                    // 檢查 Astras 依賴
+                    if(conv.astrasId && !astras.find(a => a.id === conv.astrasId)) {
+                        conv.astrasId = null; // 如果本地沒有該 Astra，就移除關聯
+                    }
+                    
+                    conversations.unshift(conv);
+                });
+
+                // 2. 處理資料夾
+                importedFolders.forEach(folder => {
+                    // 如果資料夾名稱重複，加後綴
+                    let folderName = folder.name;
+                    if(folders.some(f => f.name === folderName)) {
+                        folderName += " (分享)";
+                    }
+                    
+                    const newFolderId = createNewFolder(folderName);
+                    const newFolder = folders.find(f => f.id === newFolderId);
+                    
+                    // 還原屬性
+                    newFolder.color = folder.color;
+                    newFolder.icon = folder.icon;
+                    newFolder.textColor = folder.textColor;
+
+                    // 連結對話
+                    folder.conversationIds.forEach(oldConvId => {
+                        const newConvId = idMap[oldConvId];
+                        if(newConvId) {
+                            moveConversationToFolder(newConvId, newFolderId);
+                        }
+                    });
+                });
+                
+                showNotification(`成功接收 ${importedFolders.length} 個資料夾與 ${importedConvs.length} 則對話！`, 'success');
+                renderAll();
+            }
+
+            await saveAppData();
+            setTimeout(() => {
+                toggleModal(document.getElementById('p2p-share-modal'), false);
+            }, 1500);
+
+        } catch (e) {
+            console.error(e);
+            showNotification("資料解析失敗", "error");
+        }
+    }
+
+    function updateP2PProgress(percent, text) {
+        document.getElementById('p2p-progress-bar').style.width = `${percent}%`;
+        document.getElementById('p2p-percentage').textContent = `${Math.round(percent)}%`;
+        if (text) document.getElementById('p2p-status-text').textContent = text;
+    }
+
+    // 啟動 QR Code 掃描器
+    function startQRScanner() {
+        const readerElem = document.getElementById('p2p-reader');
+        readerElem.classList.remove('hidden');
+        
+        html5QrcodeScanner = new Html5Qrcode("p2p-reader");
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        
+        html5QrcodeScanner.start({ facingMode: "environment" }, config, (decodedText) => {
+            // 掃描成功
+            // 假設 QR code 內容就是 5 碼代碼
+            // 簡單過濾：只取最後 5 碼 (如果使用者不小心加入前綴)
+            let code = decodedText.trim();
+            if (code.length > 5) code = code.slice(-5);
+            
+            document.getElementById('p2p-code-input').value = code;
+            html5QrcodeScanner.stop().then(() => {
+                readerElem.classList.add('hidden');
+                connectToSender(code);
+            });
+        }).catch(err => {
+            console.error(err);
+            showNotification("無法啟動相機", "error");
+        });
+    }
             setupHistorySidebarInteractions(); // 啟用側邊欄的點擊跳轉功能
     setupHistorySidebarTriggers();   // 啟用側邊欄的滑動和懸停觸發功能
             ALL_ELEMENTS.showPromptsBtn.addEventListener('click', () => {
@@ -11752,6 +12256,50 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             followUpContainer.addEventListener('touchmove', stopPropagation);
             followUpContainer.addEventListener('touchend', stopPropagation);
         }
+            ALL_ELEMENTS.shareAstrasBtn = document.getElementById('share-astras-btn');
+        ALL_ELEMENTS.shareFoldersBtn = document.getElementById('share-folders-btn');
+        
+        ALL_ELEMENTS.shareAstrasBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            initP2P('astras');
+        });
+        
+        ALL_ELEMENTS.shareFoldersBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            initP2P('folders');
+        });
+
+        document.getElementById('close-p2p-modal-btn').addEventListener('click', () => {
+            toggleModal(document.getElementById('p2p-share-modal'), false);
+            resetP2PUI();
+        });
+
+        document.getElementById('p2p-role-sender').addEventListener('click', () => {
+            p2pMode = 'sender';
+            showP2PSelection();
+        });
+
+        document.getElementById('p2p-role-receiver').addEventListener('click', () => {
+            p2pMode = 'receiver';
+            startP2PReceiverUI();
+        });
+
+        document.getElementById('p2p-confirm-selection-btn').addEventListener('click', () => {
+            startP2PSender();
+        });
+
+        document.getElementById('p2p-connect-btn').addEventListener('click', () => {
+            const code = document.getElementById('p2p-code-input').value.trim();
+            if (code.length !== 5) {
+                showNotification("請輸入正確的 5 碼代碼", "warning");
+                return;
+            }
+            connectToSender(code);
+        });
+
+        document.getElementById('p2p-start-scan-btn').addEventListener('click', () => {
+            startQRScanner();
+        });
         }
         const handleDeleteMessagePair = async (index) => {
             const confirmed = await showCustomDialog({
