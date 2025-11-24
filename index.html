@@ -7671,10 +7671,6 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
             popover.innerHTML = `
                 <button data-id="${folderId}" class="rename-folder-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].rename || '重新命名'}</button>
                 <button data-id="${folderId}" class="customize-folder-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].customize || '自訂'}</button>
-                <button data-id="${folderId}" class="share-folder-p2p-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-                    P2P 分享
-                </button>
                 <div class="border-t my-1 border-[var(--border-color)]"></div>
                 <button data-id="${folderId}" class="delete-folder-btn w-full text-left px-4 py-2 text-red-600 hover:bg-red-500/10 text-sm">${i18n[config.uiLanguage].deleteFolder || '刪除資料夾'}</button>
             `;
@@ -7682,13 +7678,6 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
             requestAnimationFrame(() => popover.classList.add('visible'));
             popover.querySelector('.rename-folder-btn').addEventListener('click', (e) => { showRenameModal(folderId, 'folder', e); popover.remove(); });
             popover.querySelector('.customize-folder-btn').addEventListener('click', (e) => { showFolderSettingsModal(folderId, e); popover.remove(); });
-            const p2pBtn = popover.querySelector('.share-folder-p2p-btn');
-            if (p2pBtn) {
-                p2pBtn.addEventListener('click', (e) => {
-                    popover.remove();
-                    shareSingleItemP2P('folders', folderId);
-                });
-            }
             popover.querySelector('.delete-folder-btn').addEventListener('click', (e) => { deleteFolder(folderId, e); popover.remove(); });
         };
         const toggleSelectionMode = () => {
@@ -9994,10 +9983,8 @@ ${JSON.stringify(potentialMemories, null, 2)}
                         </svg>
                         <span>${i18n[config.uiLanguage].customize || '自訂'}</span>
                     </div>
-                    <div class="menu-item" data-action="share-folder-p2p">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" /></svg>
-                        <span>P2P 分享</span>
-                    </div>
+
+
                     <div class="menu-item delete" data-action="delete-folder">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.134-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.067-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
                         <span>${i18n[config.uiLanguage].deleteFolder || '刪除資料夾'}</span>
@@ -10051,9 +10038,6 @@ ${JSON.stringify(potentialMemories, null, 2)}
                             break;
                         case 'customize-folder':
                             showFolderSettingsModal(folderId, e);
-                            break;
-                            case 'share-folder-p2p':
-                            shareSingleItemP2P('folders', folderId);
                             break;
                         case 'delete-folder':
                             deleteFolder(folderId, e);
@@ -11932,45 +11916,23 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             list.appendChild(div);
         });
     }
-            function shareSingleItemP2P(type, id) {
-        p2pType = type; // 'astras' or 'folders'
-        p2pMode = 'sender';
-        
-        resetP2PUI();
-        
-        const titlePrefix = type === 'astras' ? 'Astras' : '資料夾';
-        const item = type === 'astras' ? astras.find(a => a.id === id) : folders.find(f => f.id === id);
-        const itemName = item ? item.name : '';
-
-        document.getElementById('p2p-modal-title').textContent = `P2P 分享 - ${itemName}`;
-        toggleModal(document.getElementById('p2p-share-modal'), true);
-
-        // 直接隱藏角色選擇頁，並啟動傳送流程
-        document.getElementById('p2p-step-role').classList.add('hidden');
-        startP2PSender([id]); // 傳入單一 ID 陣列
-    }
 
     // 啟動傳送方
-    async function startP2PSender(preSelectedIds = null) {
-        let selectedIds = preSelectedIds;
-
-        // 如果沒有預選 ID，則從 UI 的勾選框獲取
-        if (!selectedIds) {
-            const checkboxes = document.querySelectorAll('.p2p-item-checkbox:checked');
-            if (checkboxes.length === 0) {
-                showNotification('請至少選擇一個項目', 'warning');
-                return;
-            }
-            selectedIds = Array.from(checkboxes).map(cb => cb.value);
+    async function startP2PSender() {
+        const checkboxes = document.querySelectorAll('.p2p-item-checkbox:checked');
+        if (checkboxes.length === 0) {
+            showNotification('請至少選擇一個項目', 'warning');
+            return;
         }
+
+        const selectedIds = Array.from(checkboxes).map(cb => cb.value);
         
-        // 準備介面
-        document.getElementById('p2p-step-role').classList.add('hidden'); // 隱藏角色選擇
-        document.getElementById('p2p-step-select').classList.add('hidden'); // 隱藏清單選擇
-        document.getElementById('p2p-step-wait').classList.remove('hidden'); // 顯示 QR Code
+        // 準備資料
+        document.getElementById('p2p-step-select').classList.add('hidden');
+        document.getElementById('p2p-step-wait').classList.remove('hidden');
         
         const code = generateP2PCode();
-        const peerId = `astra-p2p-${code}`;
+        const peerId = `astra-p2p-${code}`; // 在 PeerJS 伺服器上的實際 ID
 
         document.getElementById('p2p-share-code').textContent = code;
         
@@ -11978,13 +11940,12 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
         const qrContainer = document.getElementById('p2p-qrcode-container');
         qrContainer.innerHTML = '';
         new QRCode(qrContainer, {
-            text: code,
+            text: code, // 只需要存代碼，接收方自己組裝 prefix
             width: 180,
             height: 180
         });
 
         // 初始化 Peer
-        if (p2pPeer) p2pPeer.destroy(); // 確保舊的連線已關閉
         p2pPeer = new Peer(peerId);
 
         p2pPeer.on('open', (id) => {
@@ -11999,8 +11960,9 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
         p2pPeer.on('error', (err) => {
             console.error(err);
             if (err.type === 'unavailable-id') {
+                // 極低機率碰撞，重新產生
                 p2pPeer.destroy();
-                startP2PSender(selectedIds); // 遞迴重試時也要帶上 ID
+                startP2PSender(); 
             } else {
                 showNotification(`P2P 錯誤: ${err.type}`, 'error');
             }
