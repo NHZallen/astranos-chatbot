@@ -3663,7 +3663,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         </div>
     </div>
 </div>
-        <div id="p2p-share-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-start pt-32 md:items-center md:pt-0 justify-center p-4 z-50 hidden">
+        <div id="p2p-share-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 hidden">
         <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl p-6 w-full max-w-md flex flex-col max-h-[90vh]">
             <div class="flex justify-between items-center mb-4 border-b border-[var(--border-color)] pb-2">
                 <h2 id="p2p-modal-title" class="text-xl font-bold">P2P 分享</h2>
@@ -3712,10 +3712,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path></svg>
                         掃描 QR Code
                     </button>
-                    <div class="flex items-center gap-2 p-1">
-                        <input type="text" id="p2p-code-input" class="flex-1 p-2 border border-[var(--border-color)] rounded-md text-center font-mono uppercase focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="輸入5碼代碼" maxlength="5">
-                        <button id="p2p-connect-btn" class="btn-primary px-4 py-2 rounded-md">連線</button>
-                    </div>
+                    <div class="flex items-center gap-2 p-1 mt-2"> <!-- 加上 p-1 防止高光被切，加上 mt-2 調整間距 -->
+    <input type="text" id="p2p-code-input" class="flex-1 p-2 border border-[var(--border-color)] rounded-md text-center font-mono uppercase focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="輸入5碼代碼" maxlength="5">
+    <button id="p2p-connect-btn" class="btn-primary px-4 py-2 rounded-md flex-shrink-0">連線</button>
+</div>
                 </div>
 
                 <!-- 步驟 4: 傳輸進度 (雙方共用) -->
@@ -7310,13 +7310,30 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
                             <span>${i18n[config.uiLanguage].moveToFolder || '移至資料夾'}</span>
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                         </button>
-                        <div class="absolute left-full top-0 w-48 rounded-lg border border-[var(--border-color)] bg-[var(--modal-bg)] hidden group-hover:block">
-                            ${folders.map(f => `<button data-folder-id="${f.id}" class="move-to-folder-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${f.name}</button>`).join('')}
-                                <div class="border-t my-1 border-[var(--border-color)]"></div>
-                                <button class="new-folder-from-menu-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].createNewFolder || '建立新資料夾'}</button>
-                            </div>
+                        <!-- 子選單 -->
+                        <div class="absolute left-full top-0 w-48 rounded-lg border border-[var(--border-color)] bg-[var(--modal-bg)] hidden group-hover:block shadow-lg" style="max-height: 300px; overflow-y: auto;">
+                            ${folders.map(f => {
+                                // ✨ 新增：這裡加入讀取圖示與顏色的邏輯
+                                const svgPath = FOLDER_SVGS[f.icon] || FOLDER_SVGS['default'];
+                                const iconColor = FOLDER_COLORS[f.color] || FOLDER_COLORS.gray;
+                                return `
+                                <button data-folder-id="${f.id}" class="move-to-folder-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm flex items-center gap-2">
+                                    <span style="color: ${iconColor}; width: 16px; height: 16px; display: flex; align-items: center;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            ${svgPath}
+                                        </svg>
+                                    </span>
+                                    <span class="truncate">${f.name}</span>
+                                </button>`;
+                            }).join('')}
+                            <div class="border-t my-1 border-[var(--border-color)]"></div>
+                            <button class="new-folder-from-menu-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                ${i18n[config.uiLanguage].createNewFolder || '建立新資料夾'}
+                            </button>
                         </div>
-                    `;
+                    </div>
+                `;
             popover.innerHTML = `
                 <button data-id="${convId}" class="rename-conv-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${i18n[config.uiLanguage].rename || '重新命名'}</button>
                 <button data-id="${convId}" class="pin-btn w-full text-left px-4 py-2 hover:bg-[var(--hover-bg)] text-sm">${pinText}</button>
@@ -7766,23 +7783,9 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
             `;
             folders.forEach(folder => {
                 const btn = document.createElement('button');
-                btn.className = 'w-full text-left p-2 rounded-md hover:bg-[var(--hover-bg)] flex items-center gap-2'; // 加入 flex 排版
+                btn.className = 'w-full text-left p-2 rounded-md hover:bg-[var(--hover-bg)]';
                 btn.dataset.folderId = folder.id;
-                
-                // 取得圖示路徑與顏色
-                const svgPath = FOLDER_SVGS[folder.icon] || FOLDER_SVGS['default'];
-                const iconColor = FOLDER_COLORS[folder.color] || FOLDER_COLORS.gray;
-                const textColor = FOLDER_TEXT_COLORS[folder.textColor] || FOLDER_TEXT_COLORS.gray;
-
-                // 組合 HTML：圖示 + 名稱
-                btn.innerHTML = `
-                    <span style="color: ${iconColor};" class="flex-shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            ${svgPath}
-                        </svg>
-                    </span>
-                    <span style="color: ${textColor};" class="truncate">${folder.name}</span>
-                `;
+                btn.textContent = folder.name;
                 container.appendChild(btn);
             });
             const newFolderOption = document.createElement('button');
