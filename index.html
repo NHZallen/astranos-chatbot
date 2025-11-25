@@ -3663,12 +3663,143 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         </div>
     </div>
 </div>
-        <div id="p2p-share-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-[var(--modal-bg)] p-6 w-full h-full flex flex-col">
-            <div class="flex justify-between items-center mb-4 border-b border-[var(--border-color)] pb-2">
-                <h2 id="p2p-modal-title" class="text-xl font-bold">P2P 分享</h2>
-                <button id="close-p2p-modal-btn" class="p-1 rounded-full hover:bg-[var(--hover-bg)]">&times;</button>
+        <div id="p2p-share-modal" class="modal fixed inset-0 bg-[var(--modal-bg)] z-[60] hidden flex flex-col">
+    <!-- 頂部導航列 -->
+    <div class="flex justify-between items-center p-4 border-b border-[var(--border-color)] bg-[var(--sidebar-bg)]">
+        <h2 id="p2p-modal-title" class="text-xl font-bold">P2P 分享</h2>
+        <button id="close-p2p-modal-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+    </div>
+    
+    <!-- 主要內容區域 (置中顯示) -->
+    <div id="p2p-content-area" class="flex-1 overflow-y-auto scroll-area flex flex-col items-center justify-center p-4 md:p-8">
+        
+        <!-- 步驟 1: 選擇角色 (增加大圖示) -->
+        <div id="p2p-step-role" class="space-y-8 w-full max-w-2xl text-center">
+            <div class="mb-8">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-24 h-24 mx-auto text-blue-500 mb-4 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                <h3 class="text-2xl font-bold mb-2">即時 P2P 傳輸</h3>
+                <p class="text-[var(--text-secondary)]">無需伺服器中轉，直接將資料傳送給附近的裝置。</p>
             </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <button id="p2p-role-sender" class="group p-8 rounded-2xl border-2 border-[var(--border-color)] hover:border-blue-500 bg-[var(--input-field-bg)] hover:bg-blue-50 dark:hover:bg-blue-900/20 flex flex-col items-center gap-4 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg">
+                    <div class="p-4 rounded-full bg-blue-100 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </div>
+                    <div>
+                        <span class="block text-xl font-bold mb-1">我要傳送</span>
+                        <span class="text-sm text-[var(--text-secondary)]">產生代碼或 QR Code</span>
+                    </div>
+                </button>
+                <button id="p2p-role-receiver" class="group p-8 rounded-2xl border-2 border-[var(--border-color)] hover:border-green-500 bg-[var(--input-field-bg)] hover:bg-green-50 dark:hover:bg-green-900/20 flex flex-col items-center gap-4 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg">
+                    <div class="p-4 rounded-full bg-green-100 text-green-600 group-hover:bg-green-600 group-hover:text-white transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    </div>
+                    <div>
+                        <span class="block text-xl font-bold mb-1">我要接收</span>
+                        <span class="text-sm text-[var(--text-secondary)]">掃描或輸入代碼</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <!-- 步驟 2 (傳送方): 選擇項目 -->
+        <div id="p2p-step-select" class="hidden space-y-6 w-full max-w-md">
+            <div class="text-center">
+                <h3 class="text-xl font-bold">選擇項目</h3>
+                <p class="text-sm text-[var(--text-secondary)]">請勾選您想要分享的內容</p>
+            </div>
+            <div id="p2p-item-list" class="space-y-2 max-h-[50vh] overflow-y-auto border border-[var(--border-color)] rounded-xl p-4 bg-[var(--sidebar-bg)] shadow-inner">
+                <!-- 動態填入項目 -->
+            </div>
+            <button id="p2p-confirm-selection-btn" class="w-full btn-primary py-3 rounded-xl text-lg font-medium shadow-lg transform active:scale-95 transition-transform">確認並產生代碼</button>
+        </div>
+
+        <!-- 步驟 3 (傳送方): 顯示代碼與等待 (放大顯示) -->
+        <div id="p2p-step-wait" class="hidden flex flex-col items-center space-y-8 w-full max-w-lg">
+            <div class="text-center space-y-2">
+                <h3 class="text-2xl font-bold">等待連線中...</h3>
+                <p class="text-[var(--text-secondary)]">請接收方掃描此 QR Code 或輸入下方代碼</p>
+            </div>
+            
+            <div id="p2p-qrcode-container" class="bg-white p-4 rounded-2xl shadow-xl border-4 border-white ring-2 ring-blue-100"></div>
+            
+            <div class="text-center bg-[var(--hover-bg)] p-6 rounded-2xl w-full">
+                <p class="text-sm text-[var(--text-secondary)] uppercase tracking-wider mb-2">分享代碼</p>
+                <p id="p2p-share-code" class="text-5xl font-mono font-bold tracking-[0.2em] text-blue-600 select-all">-----</p>
+            </div>
+            <div class="flex items-center gap-2 text-sm text-[var(--text-secondary)] animate-pulse">
+                <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                正在偵測接收裝置...
+            </div>
+        </div>
+
+        <!-- 步驟 2 (接收方): 輸入代碼或掃碼 -->
+        <div id="p2p-step-connect" class="hidden space-y-8 w-full max-w-md">
+            <div class="text-center">
+                <h3 class="text-2xl font-bold mb-2">建立連線</h3>
+                <p class="text-[var(--text-secondary)]">輸入對方的代碼以開始傳輸</p>
+            </div>
+
+            <div id="p2p-reader" class="w-full bg-black rounded-2xl overflow-hidden hidden border-4 border-blue-500 shadow-2xl"></div>
+            
+            <button id="p2p-start-scan-btn" class="w-full py-4 rounded-xl bg-[var(--hover-bg)] hover:bg-[var(--active-bg)] flex items-center justify-center gap-3 transition-colors border border-[var(--border-color)]">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path></svg>
+                <span class="text-lg font-medium">掃描 QR Code</span>
+            </button>
+            
+            <div class="relative">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-[var(--border-color)]"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                    <span class="px-2 bg-[var(--modal-bg)] text-[var(--text-secondary)]">或</span>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-4">
+                <input type="text" id="p2p-code-input" class="w-full p-4 border-2 border-[var(--border-color)] rounded-xl text-center font-mono text-3xl uppercase focus:border-blue-500 focus:outline-none transition-colors bg-[var(--input-field-bg)]" placeholder="輸入5碼代碼" maxlength="5">
+                <button id="p2p-connect-btn" class="btn-primary py-3 rounded-xl text-lg shadow-lg">連線</button>
+            </div>
+        </div>
+
+        <!-- 步驟 4: 傳輸進度 (雙方共用) - 這裡增加了大圖示和完成提示 -->
+        <div id="p2p-step-progress" class="hidden space-y-8 w-full max-w-md text-center">
+            <div id="p2p-progress-icon-container" class="relative w-32 h-32 mx-auto">
+                <!-- 傳輸中動畫圖示 -->
+                <div class="absolute inset-0 border-4 border-[var(--hover-bg)] rounded-full"></div>
+                <div id="p2p-spinner" class="absolute inset-0 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
+                <div class="absolute inset-0 flex items-center justify-center text-blue-500">
+                    <svg id="p2p-status-icon" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                </div>
+            </div>
+
+            <div>
+                <h3 id="p2p-status-title" class="text-2xl font-bold mb-2">資料傳輸中...</h3>
+                <p id="p2p-status-text" class="text-[var(--text-secondary)]">正在建立安全通道</p>
+            </div>
+
+            <div class="w-full bg-gray-200 rounded-full h-6 dark:bg-gray-700 overflow-hidden shadow-inner">
+                <div id="p2p-progress-bar" class="bg-blue-600 h-6 rounded-full transition-all duration-300 flex items-center justify-end pr-2" style="width: 0%">
+                    <span class="text-xs text-white font-bold leading-none opacity-0 transition-opacity" id="p2p-bar-text"></span>
+                </div>
+            </div>
+            
+            <p id="p2p-percentage" class="text-4xl font-mono font-bold text-blue-600">0%</p>
+            
+            <div id="p2p-tips" class="mt-8 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg text-sm text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800/50">
+                <span class="font-bold">💡 提示：</span> 請保持此頁面開啟，直到傳輸完全結束。
+            </div>
+            
+            <!-- 完成後的關閉按鈕 (預設隱藏) -->
+            <button id="p2p-finish-close-btn" class="hidden w-full py-3 rounded-xl btn-primary text-lg mt-4">
+                關閉頁面
+            </button>
+        </div>
+    </div>
+</div>
             
             <div id="p2p-content-area" class="flex-1 overflow-y-auto scroll-area">
                 <!-- 步驟 1: 選擇角色 -->
@@ -11862,6 +11993,23 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
         document.getElementById('p2p-step-connect').classList.add('hidden');
         document.getElementById('p2p-step-progress').classList.add('hidden');
         document.getElementById('p2p-reader').classList.add('hidden'); // 隱藏掃描器
+        const spinner = document.getElementById('p2p-spinner');
+        if(spinner) {
+            spinner.classList.add('animate-spin', 'border-t-transparent');
+            spinner.classList.remove('border-green-500');
+        }
+        
+        const statusIconContainer = document.getElementById('p2p-status-icon')?.parentElement;
+        if(statusIconContainer) {
+            statusIconContainer.classList.add('text-blue-500');
+            statusIconContainer.classList.remove('text-green-500');
+            // 還原成箭頭圖示
+            document.getElementById('p2p-status-icon').innerHTML = '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line>';
+        }
+
+        document.getElementById('p2p-tips')?.classList.remove('hidden');
+        document.getElementById('p2p-finish-close-btn')?.classList.add('hidden');
+        document.getElementById('p2p-status-title').textContent = "資料傳輸中...";
         
         if (html5QrcodeScanner) {
             html5QrcodeScanner.stop().catch(err => console.error("Failed to stop scanner", err));
@@ -12028,7 +12176,9 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             function sendNextChunk() {
                 if (offset >= totalSize) {
                     p2pConn.send({ type: 'end' });
-                    updateP2PProgress(100, "傳送完畢請關閉此頁面");
+                    updateP2PProgress(100, "傳送完畢請關閉此頁面"); // 修改這裡的文字
+                    // ✨ 新增：切換到完成狀態的視覺效果
+                    showP2PCompleteState("傳送成功");
                     return;
                 }
 
@@ -12108,6 +12258,9 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             } else if (data.type === 'end') {
                 updateP2PProgress(100, "接收完成，正在解壓縮...");
                 await processReceivedData(receivedBuffer, dataType);
+                // ✨ 新增：處理完資料後更新文字
+                updateP2PProgress(100, "接收完畢請關閉此頁面"); 
+                showP2PCompleteState("接收成功");
             }
         });
         
@@ -12205,7 +12358,9 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             }
 
             await saveAppData();
-updateP2PProgress(100, "接收完畢請關閉此頁面");
+            setTimeout(() => {
+                toggleModal(document.getElementById('p2p-share-modal'), false);
+            }, 1500);
 
         } catch (e) {
             console.error(e);
@@ -12217,6 +12372,30 @@ updateP2PProgress(100, "接收完畢請關閉此頁面");
         document.getElementById('p2p-progress-bar').style.width = `${percent}%`;
         document.getElementById('p2p-percentage').textContent = `${Math.round(percent)}%`;
         if (text) document.getElementById('p2p-status-text').textContent = text;
+    }
+        function showP2PCompleteState(titleText) {
+        // 停止轉圈圈動畫
+        document.getElementById('p2p-spinner').classList.remove('animate-spin', 'border-t-transparent');
+        document.getElementById('p2p-spinner').classList.add('border-green-500'); // 變成綠色圈圈
+        
+        // 將中間的圖示改成勾勾
+        document.getElementById('p2p-status-icon').innerHTML = '<polyline points="20 6 9 17 4 12"></polyline>';
+        document.getElementById('p2p-status-icon').parentElement.classList.remove('text-blue-500');
+        document.getElementById('p2p-status-icon').parentElement.classList.add('text-green-500');
+
+        // 更新標題
+        document.getElementById('p2p-status-title').textContent = titleText;
+        
+        // 隱藏提示框
+        document.getElementById('p2p-tips').classList.add('hidden');
+        
+        // 顯示大的關閉按鈕
+        const closeBtn = document.getElementById('p2p-finish-close-btn');
+        closeBtn.classList.remove('hidden');
+        closeBtn.onclick = () => {
+            toggleModal(document.getElementById('p2p-share-modal'), false);
+            resetP2PUI();
+        };
     }
 
     // 啟動 QR Code 掃描器
