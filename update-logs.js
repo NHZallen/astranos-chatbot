@@ -1,5 +1,16 @@
 ﻿const updateLogs = [
          {
+    "version": "16.4.1",
+    "date": "2025-11-28",
+    "content": [
+        "<strong>【模型陣容再進化，視覺與程式碼雙重升級】</strong>",
+        "為了提供更精準、更強大的 AI 體驗，16.4.1 版本大幅重整了模型資料庫。我們引入了針對程式開發與高階視覺辨識的頂尖模型，同時優化了現有模型的價格結構，並移除了過時選項，讓您的每一次對話都更具效益。",
+        "<strong>✨ 本次更新亮點：</strong>",
+        "<ul><li><strong>🚀 頂尖模型強勢登場：</strong> 新增 <strong>OpenAI GPT-5.1 Codex</strong> 與 <strong>Claude 4.5 Opus</strong>，全面支援圖像輸入，為程式開發與複雜推理任務提供最強後援。同時加入 <strong>Qwen3 Next 80B</strong> 與 <strong>Qwen3 VL 30B</strong>，豐富您的模型選擇。</li><li><strong>💰 更具競爭力的價格：</strong> 大幅調降 <strong>Qwen3 235B</strong> 的使用費率（降至 $0.07/$0.46），並新增免費模型 <strong>TNG R1T Chimera</strong>，讓您能以更低成本享受高效能 AI。</li><li><strong>🧹 列表最佳化與修正：</strong> 移除舊版及冗餘模型（如 GPT-oss, Nano系列, 舊版 Qwen VL 等），並更新 Gemini 2.5 Flash Lite Preview 價格資訊，讓選擇更直覺、資訊更透明。</li></ul>",
+        "探索未知，智在必得。<br><br>Astra 開發團隊 敬上"
+    ]
+},
+         {
     "version": "16.4.0",
     "date": "2025-11-23",
     "content": [
@@ -692,6 +703,7 @@
     // 未來的新版本請加在此處最上方
 
 ];
+
 
 
 
