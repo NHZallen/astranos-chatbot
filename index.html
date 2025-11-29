@@ -2683,6 +2683,54 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     .p2p-select-item:hover {
         background-color: var(--hover-bg);
     }
+        /* 詳細模型選擇器樣式 */
+.model-list-row {
+    display: grid;
+    grid-template-columns: 60px 1fr auto;
+    gap: 1rem;
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.2s ease;
+    align-items: center;
+    cursor: pointer;
+}
+.model-list-row:hover { background-color: var(--hover-bg); }
+.model-list-row:last-child { border-bottom: none; }
+.model-icon-large {
+    width: 3rem; height: 3rem; border-radius: 0.75rem;
+    background-color: var(--hover-bg); display: flex; align-items: center; justify-content: center;
+    font-size: 1.25rem; font-weight: bold; color: var(--text-primary); border: 1px solid var(--border-color);
+}
+.model-info-main h3 {
+    font-size: 1.1rem; font-weight: 600; color: var(--text-primary);
+    margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.5rem;
+}
+.model-provider-badge {
+    font-size: 0.75rem; padding: 2px 8px; border-radius: 99px;
+    background-color: var(--active-bg); color: var(--text-secondary); font-weight: 500;
+}
+.model-desc-detail {
+    color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5; margin-bottom: 0.5rem;
+}
+.model-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.model-tag {
+    font-size: 0.75rem; color: var(--button-primary-bg); background-color: rgba(59, 130, 246, 0.1);
+    padding: 2px 8px; border-radius: 6px;
+}
+.select-model-btn-large {
+    padding: 0.5rem 1.25rem; border-radius: 99px; font-weight: 600; font-size: 0.9rem;
+    background-color: transparent; border: 1px solid var(--border-color); color: var(--text-primary);
+    transition: all 0.2s; white-space: nowrap;
+}
+.model-list-row.active .select-model-btn-large,
+.model-list-row:hover .select-model-btn-large {
+    background-color: var(--button-primary-bg); color: var(--button-primary-text); border-color: transparent;
+}
+@media (max-width: 640px) {
+    .model-list-row { grid-template-columns: 1fr; gap: 0.75rem; padding: 1rem; }
+    .model-icon-large { display: none; }
+    .select-model-btn-large { width: 100%; text-align: center; margin-top: 0.5rem; }
+}
 </style>
 <script>
 window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
@@ -3173,6 +3221,23 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                                 <input type="password" id="openrouter-api-key-input-all" class="w-full p-2 border border-[var(--border-color)] rounded-md bg-[var(--input-field-bg)]" placeholder="sk-or-..." data-lang-key-placeholder="openRouterApiPlaceholder">
                             </div>
                         </div>
+                        <h3 class="text-lg font-semibold mb-3">模型選單樣式</h3>
+<div class="flex gap-4 mb-6">
+    <label class="flex-1 cursor-pointer">
+        <input type="radio" name="model-menu-style" value="concise" class="hidden peer">
+        <div class="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--input-field-bg)] peer-checked:border-blue-500 peer-checked:bg-blue-50 dark:peer-checked:bg-blue-900/20 transition-all text-center">
+            <div class="font-semibold mb-1">簡潔</div>
+            <div class="text-xs text-[var(--text-secondary)]">彈出式選單</div>
+        </div>
+    </label>
+    <label class="flex-1 cursor-pointer">
+        <input type="radio" name="model-menu-style" value="detailed" class="hidden peer">
+        <div class="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--input-field-bg)] peer-checked:border-blue-500 peer-checked:bg-blue-50 dark:peer-checked:bg-blue-900/20 transition-all text-center">
+            <div class="font-semibold mb-1">詳盡</div>
+            <div class="text-xs text-[var(--text-secondary)]">全螢幕詳細介紹</div>
+        </div>
+    </label>
+</div>
                         <h3 class="text-lg font-semibold mb-3 mt-6" data-lang-key="modelListManagement">模型清單管理</h3>
                         <p class="text-sm text-[var(--text-secondary)] mb-3" data-lang-key="modelListManagementDesc">點擊箭頭以排序、點擊眼睛以隱藏/顯示、點擊圓圈以設定預設模型。</p>
                         <div id="model-management-list" class="space-y-2">
@@ -3730,6 +3795,22 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         </div>
     </div>
     <div id="mobile-context-menu-wrapper"></div>
+        <!-- 全螢幕詳細模型選擇器 -->
+    <div id="detailed-model-modal" class="modal fixed inset-0 bg-[var(--chat-bg)] z-[60] flex flex-col hidden">
+        <header class="p-4 border-b border-[var(--border-color)] bg-[var(--sidebar-bg)] flex items-center justify-between shadow-sm sticky top-0 z-10">
+            <div class="flex items-center gap-4 flex-1">
+                <button id="close-detailed-model-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)]">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                </button>
+                <div class="relative flex-1 max-w-xl">
+                    <input type="text" id="detailed-model-search" placeholder="搜尋模型..." class="w-full pl-4 pr-4 py-2.5 rounded-full bg-[var(--input-field-bg)] border border-[var(--border-color)] focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all">
+                </div>
+            </div>
+        </header>
+        <div class="flex-1 overflow-hidden flex">
+            <div class="flex-1 overflow-y-auto scroll-area p-4 md:p-8" id="detailed-model-list-container"></div>
+        </div>
+    </div>
         <div id="attachment-menu-wrapper"></div>
     
     <!-- ✨ 新增：互動式計畫編輯器 Modal -->
@@ -3762,6 +3843,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     <script src="./i18n.js"></script>
     <script src="./demo-conversations.js"></script>
     <script src="./astras-data.js"></script>
+    <script src="model-details.js"></script>
     <script src="./update-logs.js"></script>
      <script>
     async function processInChunks(items, processFn, chunkSize = 50, onProgress) {
@@ -4471,6 +4553,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             isLearningMode: false,
             isDeepResearchMode: false, // ✨ 新增狀態
             deepResearchQueryCount: 0, // ✨ 新增這一行，0 代表自動
+            modelMenuStyle: 'concise',
         };
         let itemToRename = { id: null, type: null };
         let folderToCustomize = null;
@@ -5993,17 +6076,10 @@ function renderMarkdownWithFormulas(text) {
     });
 
 
-    document.getElementById('current-model-btn').addEventListener('click', () => {
-        const isVisible = popover.classList.toggle('visible');
-        if (isVisible) {
-            navigateToView(0);
-        } else {
-            // ✨✨✨ 核心修正 2：關閉時，同時重置內外兩個容器的高度 ✨✨✨
-            popover.style.height = ''; 
-            viewsContainer.style.height = '';
-        }
+    document.getElementById('current-model-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        openModelSelector();
     });
-};
         const addMessageToUI = (msg, index, shouldSave = true, shouldScroll = true) => {
             const conv = getActiveConversation();
             if (shouldSave) {
@@ -7073,6 +7149,8 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
             renderUserBubbleColorDropdown();
             renderUiColorOptions();
             renderTrash();
+            const styleRadio = document.querySelector(`input[name="model-menu-style"][value="${config.modelMenuStyle || 'concise'}"]`);
+            if (styleRadio) styleRadio.checked = true;
             const slider = document.getElementById('deep-research-query-count-slider');
             const label = document.getElementById('deep-research-query-count-label');
 
@@ -7111,6 +7189,7 @@ submitButtonIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24"
             config.uiLanguage = ALL_ELEMENTS.uiLanguageSelect.value;
             config.aiDefaultLanguage = ALL_ELEMENTS.aiLanguageSelect.value;
             config.enableUpdateNotifications = ALL_ELEMENTS.enableUpdateNotificationsToggle.checked;
+            config.modelMenuStyle = document.querySelector('input[name="model-menu-style"]:checked')?.value || 'concise';
             const queryCountSlider = document.getElementById('deep-research-query-count-slider');
             if (queryCountSlider) {
                 config.deepResearchQueryCount = parseInt(queryCountSlider.value);
@@ -11222,6 +11301,90 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
             });
         };
     });
+        // --- 新增：詳盡模型選擇器邏輯 ---
+const openModelSelector = () => {
+    if (config.modelMenuStyle === 'detailed') {
+        const detailedModelModal = document.getElementById('detailed-model-modal');
+        renderDetailedModelList();
+        toggleModal(detailedModelModal, true);
+        setTimeout(() => document.getElementById('detailed-model-search').focus(), 100);
+    } else {
+        const popover = document.getElementById('model-options-popover');
+        const isVisible = popover.classList.toggle('visible');
+        if (isVisible) {
+            const viewsContainer = document.getElementById('model-views-container');
+            if(viewsContainer) viewsContainer.style.transform = 'translateX(0)';
+        } else {
+            popover.style.height = '';
+            const viewsContainer = document.getElementById('model-views-container');
+            if(viewsContainer) viewsContainer.style.height = '';
+        }
+    }
+};
+
+const renderDetailedModelList = (filterText = '') => {
+    const container = document.getElementById('detailed-model-list-container');
+    container.innerHTML = '';
+    const conv = getActiveConversation();
+    const currentModelId = conv ? conv.model : config.defaultModel;
+    
+    let displayModels = [...MODELS];
+    if (filterText) {
+        const lowerFilter = filterText.toLowerCase();
+        displayModels = displayModels.filter(m => 
+            m.name.toLowerCase().includes(lowerFilter) || m.provider.toLowerCase().includes(lowerFilter)
+        );
+    }
+
+    if (displayModels.length === 0) {
+        container.innerHTML = `<div class="text-center text-[var(--text-secondary)] mt-10">找不到符合的模型</div>`;
+        return;
+    }
+
+    displayModels.forEach(model => {
+        const details = (typeof MODEL_DETAILS !== 'undefined' && MODEL_DETAILS[model.id]) ? MODEL_DETAILS[model.id] : {
+            description: "暫無詳細介紹。", features: [], bestFor: "通用"
+        };
+        const isActive = model.id === currentModelId;
+        const tagsHTML = details.features.map(f => `<span class="model-tag">${f}</span>`).join('');
+        
+        const row = document.createElement('div');
+        row.className = `model-list-row ${isActive ? 'active' : ''}`;
+        row.innerHTML = `
+            <div class="model-icon-large">${model.name.charAt(0)}</div>
+            <div class="model-info-main">
+                <h3>${model.name} <span class="model-provider-badge">${model.provider}</span></h3>
+                <div class="model-desc-detail">${details.description}</div>
+                <div class="text-xs text-[var(--text-secondary)] mb-1"><strong>適用：</strong>${details.bestFor}</div>
+                <div class="model-tags">${tagsHTML}</div>
+            </div>
+            <button class="select-model-btn-large">${isActive ? '使用中' : '選擇'}</button>
+        `;
+        row.addEventListener('click', () => handleDetailedModelSelect(model.id));
+        container.appendChild(row);
+    });
+};
+
+const handleDetailedModelSelect = async (modelId) => {
+    const conv = getActiveConversation();
+    if (!conv || conv.archived) return;
+    const newModelInfo = MODELS.find(m => m.id === modelId);
+    if (newModelInfo) {
+        conv.model = newModelInfo.id;
+        conv.provider = newModelInfo.provider;
+        config.lastUsedModel = modelId;
+        if (config.isDeepResearchMode && newModelInfo.provider !== 'gemini' && typeof toggleDeepResearchMode === 'function') {
+            toggleDeepResearchMode();
+        }
+        await saveAppData(); await saveConfig();
+        renderAll();
+        toggleModal(document.getElementById('detailed-model-modal'), false);
+        showNotification(`已切換至 ${newModelInfo.name}`, 'success');
+    }
+};
+
+document.getElementById('close-detailed-model-btn').addEventListener('click', () => toggleModal(document.getElementById('detailed-model-modal'), false));
+document.getElementById('detailed-model-search').addEventListener('input', (e) => renderDetailedModelList(e.target.value.trim()));
 };
         async function initChatApp() {
             if (window.innerWidth >= 1024) {
