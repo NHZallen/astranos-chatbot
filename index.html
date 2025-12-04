@@ -2683,103 +2683,21 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     .p2p-select-item:hover {
         background-color: var(--hover-bg);
     }
-        /* ✨ Astra Music 專用樣式 */
-        /* --- ✨ 新增：Astra Music 底部導航與資料庫樣式 --- */
-.music-bottom-nav {
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    background-color: var(--sidebar-bg);
-    border-top: 1px solid var(--border-color);
-    padding: 8px 0;
-    flex-shrink: 0;
-}
-
-.music-nav-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    color: var(--text-secondary);
-    font-size: 10px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    width: 100%;
-}
-
-.music-nav-item.active {
-    color: var(--button-primary-bg);
-}
-
-.music-nav-item svg {
-    width: 24px;
-    height: 24px;
-}
-
-/* 播放列表網格 (資料庫頁面) */
-.playlist-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); /* 手機版一排約3個 */
-    gap: 16px;
-    padding: 16px;
-}
-
-.playlist-card {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    cursor: pointer;
-}
-
-.playlist-card-cover {
-    width: 100%;
-    aspect-ratio: 1 / 1; /* 正方形 */
-    background-color: var(--hover-bg);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--border-color);
-    overflow: hidden;
-}
-
-.playlist-card-cover img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.playlist-card-name {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.create-playlist-card {
-    border: 2px dashed var(--border-color);
-    color: var(--text-secondary);
-}
-
-.create-playlist-card:hover {
-    border-color: var(--button-primary-bg);
-    color: var(--button-primary-bg);
-}
+        /* ✨ Astra Music 專用樣式 (v2 - 包含更多選項菜單) */
 .music-list-item {
     display: flex;
     align-items: center;
     padding: 12px 16px;
     cursor: pointer;
     transition: background-color 0.2s;
+    position: relative; /* 為了定位 */
+    user-select: none; /* 防止長按選取文字 */
 }
 .music-list-item:hover {
     background-color: var(--hover-bg);
 }
 .music-list-item.playing {
-    background-color: rgba(59, 130, 246, 0.1); /* 淡淡的藍色 */
+    background-color: rgba(59, 130, 246, 0.1);
 }
 .music-list-item.playing .music-title {
     color: var(--button-primary-bg);
@@ -2806,6 +2724,9 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     overflow: hidden;
     text-overflow: ellipsis;
     color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 .music-artist {
     font-size: 13px;
@@ -2815,16 +2736,79 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     overflow: hidden;
     text-overflow: ellipsis;
 }
-.music-action-btn {
+/* 電腦版的三點按鈕 */
+.music-more-btn {
     padding: 8px;
     color: var(--text-secondary);
-    opacity: 0; /* 預設隱藏 */
-    transition: opacity 0.2s;
+    border-radius: 50%;
+    transition: all 0.2s;
+    margin-left: 4px;
+    display: none; /* 手機版隱藏 */
 }
-.music-list-item:hover .music-action-btn {
-    opacity: 1; /* 滑鼠懸停時顯示 */
+.music-more-btn:hover {
+    background-color: rgba(0,0,0,0.1);
+    color: var(--text-primary);
 }
-/* 當播放器顯示時，往下推聊天視窗，避免被遮住 (Optional) */
+/* 只有在 hover 列表項目或它是 active 狀態時才顯示 (電腦版邏輯) */
+@media (min-width: 768px) {
+    .music-list-item:hover .music-more-btn {
+        display: block;
+    }
+}
+/* 已按讚的愛心圖示 */
+.liked-icon {
+    color: #ef4444; /* 紅色 */
+    font-size: 12px;
+}
+
+/* 彈出式選單 (Context Menu) */
+#music-context-menu {
+    position: fixed;
+    background: var(--modal-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    z-index: 100;
+    min-width: 200px;
+    overflow: hidden;
+    transform: scale(0.95);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+}
+#music-context-menu.visible {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+}
+.music-context-item {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-primary);
+    transition: background 0.2s;
+}
+.music-context-item:hover {
+    background-color: var(--hover-bg);
+}
+.music-context-item svg {
+    width: 18px;
+    height: 18px;
+    color: var(--text-secondary);
+}
+.music-context-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+    font-weight: bold;
+    font-size: 13px;
+    color: var(--text-secondary);
+    background: var(--sidebar-bg);
+}
+
+/* 當播放器顯示時，往下推聊天視窗 */
 body.music-player-visible #app-container {
     padding-top: 64px; 
 }
@@ -3278,6 +3262,20 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     </div>
     <!-- 隱藏的檔案輸入框 -->
     <input type="file" id="music-file-input" class="hidden" accept="audio/*" multiple>
+    <div id="music-context-menu" class="hidden">
+        <!-- 內容由 JS 動態生成 -->
+    </div>
+
+    <!-- ✨ 新增：選擇播放列表的 Modal -->
+    <div id="playlist-select-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[70] hidden">
+        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl p-6 w-full max-w-xs flex flex-col max-h-[60vh]">
+            <h3 class="text-lg font-bold mb-4">加入播放列表</h3>
+            <div id="playlist-select-list" class="flex-1 overflow-y-auto scroll-area space-y-2 mb-4">
+                <!-- 列表由 JS 生成 -->
+            </div>
+            <button id="close-playlist-select-btn" class="bg-[var(--hover-bg)] px-4 py-2 rounded-md hover:bg-[var(--active-bg)] text-sm">取消</button>
+        </div>
+    </div>
     <div id="store-container" class="hidden h-screen w-full flex flex-col bg-[var(--chat-bg)]">
         <header class="relative z-10 p-2 md:p-4 flex items-center border-b border-[var(--border-color)]">
             <button id="back-to-chat-btn" class="p-2 rounded-md hover:bg-[var(--hover-bg)] mr-2">
@@ -4108,16 +4106,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         });
         // ==========================================
-    // ✨ Astra Music 核心邏輯 START (v3.0 - With Library)
+    // ✨ Astra Music 核心邏輯 START (v4.0 - Extended Features)
     // ==========================================
     
-    // 1. 初始化變數
     const GITHUB_BASE_URL = "https://cdn.jsdelivr.net/gh/NHZallen/astranos-chatbot@main/music/";
     
-    // 全域歌曲庫 (所有歌曲都在這)
+    // 全域歌曲庫
     let musicLibrary = [
         { title: "PSYCHO", artist: "BABYMONSTER", file: "song1.mp3", cover: null },
-        // ... 其他歌曲
     ];
 
     // 初始化：加上 ID 與網址
@@ -4127,16 +4123,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         url: track.file.startsWith('http') || track.file.startsWith('blob') ? track.file : GITHUB_BASE_URL + track.file
     }));
 
-    let currentPlaylist = [...musicLibrary]; // 目前「播放中」的清單
+    let currentPlaylist = [...musicLibrary];
     let currentMusicIndex = 0;
     let isMusicPlaying = false;
-    let currentTab = 'home'; // 'home', 'discover', 'library'
+    let currentTab = 'home';
 
     const audioEl = document.getElementById('global-audio-element');
     const playerBar = document.getElementById('music-player-bar');
     const musicStoreEl = document.getElementById('music-store-container');
     
-    // 2. 介面控制元件
+    // 介面控制元件
     const openMusicStoreBtnSidebar = document.getElementById('open-music-store-btn-sidebar');
     const musicP2PBtnSidebar = document.getElementById('music-p2p-btn-sidebar');
     const musicUploadBtnSidebar = document.getElementById('music-upload-btn-sidebar');
@@ -4144,12 +4140,14 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     const musicSearchInput = document.getElementById('music-search-input');
     const musicFileInput = document.getElementById('music-file-input');
     
-    // 視圖容器
+    // 視圖與選單元件
     const viewHome = document.getElementById('music-view-home');
     const viewDiscover = document.getElementById('music-view-discover');
     const viewLibrary = document.getElementById('music-view-library');
     const viewDetail = document.getElementById('music-view-playlist-detail');
     const navItems = document.querySelectorAll('.music-nav-item');
+    const musicContextMenu = document.getElementById('music-context-menu');
+    const playlistSelectModal = document.getElementById('playlist-select-modal');
 
     // --- 分頁切換邏輯 ---
     navItems.forEach(btn => {
@@ -4161,29 +4159,236 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
     function switchTab(tab) {
         currentTab = tab;
-        
-        // 更新按鈕狀態
-        navItems.forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.tab === tab);
-        });
+        navItems.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
 
-        // 隱藏所有視圖
         viewHome.classList.add('hidden');
         viewDiscover.classList.add('hidden');
         viewLibrary.classList.add('hidden');
-        viewDetail.classList.add('hidden'); // 離開時關閉詳情
+        viewDetail.classList.add('hidden');
 
-        // 顯示目標視圖
         if (tab === 'home') {
             viewHome.classList.remove('hidden');
-            renderMusicList(musicLibrary, 'music-list-ul'); // 首頁顯示所有歌
+            renderMusicList(musicLibrary, 'music-list-ul'); 
         } else if (tab === 'discover') {
+            // ✨ 新發現：顯示所有歌曲，但反轉順序 (最新的在上面)
             viewDiscover.classList.remove('hidden');
-            // 這裡可以做隨機推薦邏輯
+            const discoveryList = [...musicLibrary].reverse(); // 複製並反轉
+            document.getElementById('discover-content').innerHTML = '<ul id="discover-list-ul" class="divide-y divide-[var(--border-color)]"></ul>';
+            renderMusicList(discoveryList, 'discover-list-ul');
         } else if (tab === 'library') {
             viewLibrary.classList.remove('hidden');
-            renderPlaylistLibrary(); // 渲染播放列表網格
+            renderPlaylistLibrary();
         }
+    }
+
+    // --- 核心渲染邏輯 (包含長按與三點選單) ---
+    function renderMusicList(playlist, containerId) {
+        const listContainer = document.getElementById(containerId);
+        listContainer.innerHTML = '';
+
+        if (playlist.length === 0) {
+            listContainer.innerHTML = `<div class="p-8 text-center text-[var(--text-secondary)]">沒有歌曲</div>`;
+            return;
+        }
+
+        // 取得「喜愛的歌曲」列表以便比對
+        const likedPlaylist = userPlaylists.find(p => p.id === 'liked-songs');
+        const likedIds = new Set(likedPlaylist ? likedPlaylist.songs.map(s => s.id) : []);
+
+        playlist.forEach((track, index) => {
+            const li = document.createElement('li');
+            const isPlaying = track.id === (currentPlaylist[currentMusicIndex]?.id);
+            const isLiked = likedIds.has(track.id);
+
+            li.className = `music-list-item ${isPlaying ? 'playing' : ''}`;
+            
+            // 構建 HTML (包含愛心圖示與三點按鈕)
+            li.innerHTML = `
+                <img src="${track.cover || 'https://via.placeholder.com/48/3b82f6/ffffff?text=♪'}" class="music-cover">
+                <div class="music-info">
+                    <span class="music-title">
+                        ${track.title}
+                        ${isLiked ? '<svg class="liked-icon w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>' : ''}
+                    </span>
+                    <span class="music-artist">${track.artist}</span>
+                </div>
+                <!-- 電腦版三點按鈕 -->
+                <button class="music-more-btn" title="更多選項">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                </button>
+            `;
+            
+            // 1. 點擊播放邏輯
+            li.addEventListener('click', (e) => {
+                // 如果點擊的是三點按鈕，不播放
+                if (e.target.closest('.music-more-btn')) return;
+                
+                currentPlaylist = playlist;
+                playMusic(index);
+            });
+
+            // 2. 電腦版：三點按鈕點擊事件
+            const moreBtn = li.querySelector('.music-more-btn');
+            moreBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showMusicContextMenu(track, e.clientX, e.clientY);
+            });
+
+            // 3. 手機版：長按事件
+            let pressTimer;
+            li.addEventListener('touchstart', (e) => {
+                // 如果點擊的是按鈕，不觸發長按
+                if (e.target.closest('button')) return;
+                
+                pressTimer = setTimeout(() => {
+                    // 觸發震動 (若支援)
+                    if (navigator.vibrate) navigator.vibrate(50);
+                    // 取得觸控位置
+                    const touch = e.touches[0];
+                    showMusicContextMenu(track, touch.clientX, touch.clientY);
+                }, 600); // 600ms 長按
+            }, { passive: true });
+
+            li.addEventListener('touchend', () => clearTimeout(pressTimer));
+            li.addEventListener('touchmove', () => clearTimeout(pressTimer));
+
+            listContainer.appendChild(li);
+        });
+    }
+
+    // --- 選單功能邏輯 ---
+    function showMusicContextMenu(track, x, y) {
+        // 確保已有「喜愛的歌曲」列表
+        let likedPlaylist = userPlaylists.find(p => p.id === 'liked-songs');
+        const isLiked = likedPlaylist && likedPlaylist.songs.some(s => s.id === track.id);
+
+        musicContextMenu.innerHTML = `
+            <div class="music-context-header text-sm text-gray-500 px-4 py-2 border-b border-[var(--border-color)]">${track.title}</div>
+            <div class="music-context-item" id="ctx-like">
+                <svg viewBox="0 0 24 24" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" class="${isLiked ? 'text-red-500' : ''}"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                <span>${isLiked ? '取消喜愛' : '加入喜愛的歌曲'}</span>
+            </div>
+            <div class="music-context-item" id="ctx-add-playlist">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>加入播放列表...</span>
+            </div>
+        `;
+
+        // 顯示選單
+        musicContextMenu.classList.remove('hidden');
+        requestAnimationFrame(() => musicContextMenu.classList.add('visible'));
+
+        // 計算位置 (防止超出螢幕)
+        const rect = musicContextMenu.getBoundingClientRect();
+        let posX = x;
+        let posY = y;
+
+        if (posX + rect.width > window.innerWidth) posX = window.innerWidth - rect.width - 10;
+        if (posY + rect.height > window.innerHeight) posY = window.innerHeight - rect.height - 10;
+
+        musicContextMenu.style.left = `${posX}px`;
+        musicContextMenu.style.top = `${posY}px`;
+
+        // 綁定事件
+        document.getElementById('ctx-like').onclick = () => {
+            toggleLike(track);
+            closeContextMenu();
+        };
+        document.getElementById('ctx-add-playlist').onclick = () => {
+            showPlaylistSelectModal(track);
+            closeContextMenu();
+        };
+
+        // 點擊外部關閉
+        const closeHandler = (e) => {
+            if (!musicContextMenu.contains(e.target)) {
+                closeContextMenu();
+                document.removeEventListener('click', closeHandler);
+                document.removeEventListener('touchstart', closeHandler);
+            }
+        };
+        // 延遲綁定，避免當次點擊觸發關閉
+        setTimeout(() => {
+            document.addEventListener('click', closeHandler);
+            document.addEventListener('touchstart', closeHandler);
+        }, 100);
+    }
+
+    function closeContextMenu() {
+        musicContextMenu.classList.remove('visible');
+        setTimeout(() => musicContextMenu.classList.add('hidden'), 200);
+    }
+
+    // --- 資料操作邏輯 ---
+
+    async function toggleLike(track) {
+        let likedPlaylist = userPlaylists.find(p => p.id === 'liked-songs');
+        if (!likedPlaylist) {
+            likedPlaylist = { id: 'liked-songs', name: '喜愛的歌曲', songs: [] };
+            userPlaylists.unshift(likedPlaylist); // 放在最前面
+        }
+
+        const index = likedPlaylist.songs.findIndex(s => s.id === track.id);
+        if (index > -1) {
+            likedPlaylist.songs.splice(index, 1); // 移除
+            showNotification(`已從「喜愛的歌曲」移除`, 'info');
+        } else {
+            likedPlaylist.songs.unshift(track); // 加入
+            showNotification(`已加入「喜愛的歌曲」`, 'success');
+        }
+
+        await saveAppData();
+        // 重新渲染當前列表以更新愛心狀態
+        if (currentTab === 'home') renderMusicList(musicLibrary, 'music-list-ul');
+        else if (currentTab === 'discover') switchTab('discover'); // 重新觸發 discover 渲染
+    }
+
+    function showPlaylistSelectModal(track) {
+        const modal = document.getElementById('playlist-select-modal');
+        const list = document.getElementById('playlist-select-list');
+        const closeBtn = document.getElementById('close-playlist-select-btn');
+        
+        list.innerHTML = '';
+
+        // 1. 建立新列表選項
+        const createBtn = document.createElement('button');
+        createBtn.className = 'w-full text-left p-3 rounded hover:bg-[var(--hover-bg)] border-b border-[var(--border-color)] flex items-center gap-2 text-blue-500 font-bold';
+        createBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> 建立新列表`;
+        createBtn.onclick = async () => {
+            const name = await showCustomPrompt("請輸入新列表名稱", "建立播放列表");
+            if (name) {
+                const newPlaylist = { id: crypto.randomUUID(), name: name, songs: [track] };
+                userPlaylists.push(newPlaylist);
+                await saveAppData();
+                showNotification(`已建立「${name}」並加入歌曲`, 'success');
+                modal.classList.add('hidden');
+            }
+        };
+        list.appendChild(createBtn);
+
+        // 2. 現有列表選項
+        userPlaylists.forEach(p => {
+            // 不顯示「喜愛的歌曲」在選單中 (通常愛心按鈕處理了)
+            if (p.id === 'liked-songs') return;
+
+            const btn = document.createElement('button');
+            btn.className = 'w-full text-left p-3 rounded hover:bg-[var(--hover-bg)] truncate';
+            btn.textContent = p.name;
+            btn.onclick = async () => {
+                if (!p.songs.some(s => s.id === track.id)) {
+                    p.songs.push(track);
+                    await saveAppData();
+                    showNotification(`已加入「${p.name}」`, 'success');
+                } else {
+                    showNotification(`歌曲已在「${p.name}」中`, 'warning');
+                }
+                modal.classList.add('hidden');
+            };
+            list.appendChild(btn);
+        });
+
+        modal.classList.remove('hidden');
+        closeBtn.onclick = () => modal.classList.add('hidden');
     }
 
     // --- 資料庫 (播放列表) 邏輯 ---
@@ -4192,7 +4397,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         const grid = document.getElementById('playlist-grid');
         grid.innerHTML = '';
 
-        // 1. 「新增播放列表」卡片
+        // 1. 確保「喜愛的歌曲」存在
+        if (!userPlaylists.some(p => p.id === 'liked-songs')) {
+            userPlaylists.unshift({ id: 'liked-songs', name: '喜愛的歌曲', songs: [] });
+        }
+
+        // 2. 「新增播放列表」卡片
         const createCard = document.createElement('div');
         createCard.className = 'playlist-card';
         createCard.innerHTML = `
@@ -4204,15 +4414,21 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         createCard.addEventListener('click', createNewPlaylist);
         grid.appendChild(createCard);
 
-        // 2. 渲染使用者的播放列表
+        // 3. 渲染列表
         if (userPlaylists) {
             userPlaylists.forEach(playlist => {
                 const card = document.createElement('div');
                 card.className = 'playlist-card';
-                // 如果列表有歌，用第一首當封面，否則用預設圖
+                
+                // 喜愛的歌曲顯示愛心圖
+                let defaultIcon = `<svg class="text-gray-400" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+                if (playlist.id === 'liked-songs') {
+                    defaultIcon = `<svg class="text-red-500" width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`;
+                }
+
                 const coverImg = playlist.songs.length > 0 && playlist.songs[0].cover 
                     ? `<img src="${playlist.songs[0].cover}">` 
-                    : `<svg class="text-gray-400" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+                    : defaultIcon;
                 
                 card.innerHTML = `
                     <div class="playlist-card-cover">
@@ -4232,7 +4448,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             const newPlaylist = {
                 id: crypto.randomUUID(),
                 name: name,
-                songs: [] // 初始為空，未來可加入歌曲
+                songs: []
             };
             userPlaylists.push(newPlaylist);
             await saveAppData();
@@ -4242,29 +4458,62 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     }
 
     function openPlaylistDetail(playlist) {
-        viewLibrary.classList.add('hidden'); // 暫時隱藏網格
-        viewDetail.classList.remove('hidden'); // 顯示詳情頁
+        viewLibrary.classList.add('hidden');
+        viewDetail.classList.remove('hidden');
         
         document.getElementById('detail-playlist-title').textContent = playlist.name;
-        
-        // 渲染列表內的歌曲
         const detailList = document.getElementById('detail-playlist-ul');
+        
         if (playlist.songs.length === 0) {
-            detailList.innerHTML = `<div class="p-8 text-center text-[var(--text-secondary)]">此列表是空的<br><span class="text-xs">您可以從首頁將歌曲加入此列表(功能開發中)</span></div>`;
+            detailList.innerHTML = `<div class="p-8 text-center text-[var(--text-secondary)]">此列表是空的</div>`;
         } else {
-            renderMusicList(playlist.songs, 'detail-playlist-ul');
+            // 重用 renderMusicList，但這裡要特別注意：
+            // 在詳情頁點擊播放，應該只播放該列表的歌
+            // 所以我們需要傳入一個 callback 或修改 render 邏輯
+            // 為了簡單，我們直接呼叫 render，但在 click 事件中判斷上下文
+            
+            // 暫時先手動渲染以綁定特定播放清單
+            detailList.innerHTML = '';
+            playlist.songs.forEach((track, index) => {
+                const li = document.createElement('li');
+                const isPlaying = track.id === (currentPlaylist[currentMusicIndex]?.id);
+                li.className = `music-list-item ${isPlaying ? 'playing' : ''}`;
+                li.innerHTML = `
+                    <img src="${track.cover || 'https://via.placeholder.com/48/3b82f6/ffffff?text=♪'}" class="music-cover">
+                    <div class="music-info">
+                        <span class="music-title">${track.title}</span>
+                        <span class="music-artist">${track.artist}</span>
+                    </div>
+                    <button class="music-action-btn hover:text-[var(--button-primary-bg)]">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M8 5v14l11-7z"/></svg>
+                    </button>
+                `;
+                // 綁定長按/右鍵
+                li.addEventListener('touchstart', (e) => {
+                    if (e.target.closest('button')) return;
+                    setTimeout(() => {
+                         if (navigator.vibrate) navigator.vibrate(50);
+                         showMusicContextMenu(track, e.touches[0].clientX, e.touches[0].clientY);
+                    }, 600);
+                }, {passive: true});
+                
+                li.addEventListener('click', () => {
+                    currentPlaylist = playlist.songs; // 播放清單變成這個列表
+                    playMusic(index);
+                });
+                detailList.appendChild(li);
+            });
         }
 
-        // 綁定返回按鈕
         document.getElementById('back-to-library-btn').onclick = () => {
             viewDetail.classList.add('hidden');
             viewLibrary.classList.remove('hidden');
+            renderPlaylistLibrary(); // 重新渲染以更新封面
         };
     }
 
-    // --- 播放器與其他通用邏輯 ---
+    // --- 播放器與其他通用邏輯 (保持不變) ---
 
-    // 雙擊切換播放器
     document.addEventListener('dblclick', (e) => {
         if (e.target.closest('input') || e.target.closest('button') || e.target.closest('textarea')) return;
         if (playerBar) {
@@ -4277,11 +4526,10 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         }
     });
 
-    // 側邊欄按鈕
     if(openMusicStoreBtnSidebar) {
         openMusicStoreBtnSidebar.addEventListener('click', (e) => {
             e.stopPropagation();
-            switchTab('home'); // 預設打開首頁
+            switchTab('home');
             musicStoreEl.classList.remove('hidden');
             toggleSidebar(false);
         });
@@ -4309,7 +4557,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
     if(musicSearchInput) {
         musicSearchInput.addEventListener('input', (e) => {
-            if (currentTab !== 'home') switchTab('home'); // 搜尋時跳回首頁
+            if (currentTab !== 'home') switchTab('home'); 
             const query = e.target.value.toLowerCase();
             const filtered = musicLibrary.filter(track => 
                 track.title.toLowerCase().includes(query) || 
@@ -4319,45 +4567,8 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         });
     }
 
-    // 通用列表渲染 (可指定容器 ID)
-    function renderMusicList(playlist, containerId) {
-        const listContainer = document.getElementById(containerId);
-        listContainer.innerHTML = '';
-
-        if (playlist.length === 0) {
-            listContainer.innerHTML = `<div class="p-8 text-center text-[var(--text-secondary)]">沒有歌曲</div>`;
-            return;
-        }
-
-        playlist.forEach((track, index) => {
-            const li = document.createElement('li');
-            // 檢查是否正在播放此首 (比對 ID)
-            const isPlaying = track.id === (currentPlaylist[currentMusicIndex]?.id);
-            li.className = `music-list-item ${isPlaying ? 'playing' : ''}`;
-            li.innerHTML = `
-                <img src="${track.cover || 'https://via.placeholder.com/48/3b82f6/ffffff?text=♪'}" class="music-cover">
-                <div class="music-info">
-                    <span class="music-title">${track.title}</span>
-                    <span class="music-artist">${track.artist}</span>
-                </div>
-                <button class="music-action-btn hover:text-[var(--button-primary-bg)]">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M8 5v14l11-7z"/></svg>
-                </button>
-            `;
-            
-            li.addEventListener('click', () => {
-                // 如果是在不同列表點擊，切換目前的播放清單
-                currentPlaylist = playlist;
-                playMusic(index);
-            });
-            listContainer.appendChild(li);
-        });
-    }
-
-    // 播放功能 (同前)
     function playMusic(index) {
         if (index < 0 || index >= currentPlaylist.length) return;
-        
         currentMusicIndex = index;
         const track = currentPlaylist[index];
         
@@ -4376,9 +4587,11 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         playerBar.classList.remove('hidden');
         document.body.classList.add('music-player-visible');
         
-        // 重新渲染列表以更新高亮狀態 (只更新當前顯示的列表)
         if (currentTab === 'home') renderMusicList(musicLibrary, 'music-list-ul');
-        // if (currentTab === 'library') ... (如果正在詳情頁也要更新)
+        else if (currentTab === 'discover') {
+            const discoveryList = [...musicLibrary].reverse();
+            renderMusicList(discoveryList, 'discover-list-ul');
+        }
     }
 
     function togglePlayPause() {
@@ -4416,18 +4629,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         } else {
             playIcon.innerHTML = `<polygon points="5 3 19 12 5 21 5 3"></polygon>`;
         }
-
-        // 更新列表高亮 (只處理 DOM 上存在的)
-        const items = document.querySelectorAll('.music-list-item');
-        items.forEach(item => {
-            // 這裡簡單用標題比對，理想是用 ID，但在 DOM 上我們沒存 ID
-            // 為了效能與簡潔，暫時重新渲染列表是最快更新 UI 的方式，如 playMusic 中所示
-        });
-        
-        // 為了確保列表高亮正確，再次呼叫渲染 (只針對可見的列表)
-        if (!musicStoreEl.classList.contains('hidden')) {
-             if (currentTab === 'home') renderMusicList(musicLibrary, 'music-list-ul');
-        }
+        // 簡單更新介面高亮 (實際應用可能需要更精確的 DOM 操作，這裡依賴下次渲染)
     }
 
     function setupMediaSession(track) {
@@ -4450,7 +4652,6 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     document.getElementById('player-prev-btn').addEventListener('click', playPrev);
     audioEl.addEventListener('ended', playNext);
 
-    // 上傳功能
     musicFileInput.addEventListener('change', (e) => {
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
