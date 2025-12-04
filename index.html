@@ -2684,6 +2684,7 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
         background-color: var(--hover-bg);
     }
         /* ✨ Astra Music 專用樣式 */
+        
 .music-list-item {
     display: flex;
     align-items: center;
@@ -2862,6 +2863,65 @@ body.custom-wallpaper-active.wallpaper-is-dark #interactive-plan-modal .plan-edi
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+    #music-store-container, 
+#music-player-bar, 
+#music-context-menu-popover, /* 這是我們等下要加的電腦版選單 */
+.music-list-item,
+.playlist-card,
+#add-to-playlist-modal {
+    -webkit-user-select: none !important; /* Safari/Chrome */
+    -moz-user-select: none !important;    /* Firefox */
+    -ms-user-select: none !important;     /* IE/Edge */
+    user-select: none !important;         /* 標準語法 */
+}
+
+/* 2. 電腦版專用的右鍵選單 (Popover) 樣式 */
+#music-context-menu-popover {
+    position: fixed;
+    background-color: var(--modal-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    z-index: 100;
+    width: 200px;
+    opacity: 0;
+    transform: scale(0.95);
+    transition: opacity 0.1s ease-out, transform 0.1s ease-out;
+    pointer-events: none; /* 隱藏時不可點 */
+}
+
+#music-context-menu-popover.visible {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+}
+
+#music-context-menu-popover .menu-item {
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    transition: background-color 0.2s;
+}
+
+#music-context-menu-popover .menu-item:hover {
+    background-color: var(--hover-bg);
+}
+
+#music-context-menu-popover .menu-item svg {
+    width: 18px;
+    height: 18px;
+    color: var(--text-secondary);
+}
+
+/* 確保加入列表的彈窗列表有最大高度，超過可滾動 */
+#playlist-selection-list {
+    max-height: 50vh; 
+    overflow-y: auto;
 }
 </style>
 <script>
@@ -3938,14 +3998,18 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     <input type="file" id="astras-avatar-input" class="hidden" accept="image/*">
     <div id="astras-proposal-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
     <div id="add-to-playlist-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[70] hidden">
-        <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl p-6 w-full max-w-sm flex flex-col" style="max-height: 80vh;">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold">加入播放列表</h2>
-                <button id="close-add-playlist-modal" class="p-1 rounded-full hover:bg-[var(--hover-bg)]">&times;</button>
-            </div>
-            <div id="playlist-selection-list" class="add-to-playlist-list flex-1 overflow-y-auto scroll-area space-y-1">
-                <!-- JS 動態填充 -->
-            </div>
+    <div class="bg-[var(--modal-bg)] rounded-lg shadow-xl p-6 w-full max-w-sm flex flex-col" style="max-height: 80vh;">
+        <div class="flex justify-between items-center mb-4 border-b border-[var(--border-color)] pb-2">
+            <h2 class="text-xl font-bold">加入播放列表</h2>
+            <button id="close-add-playlist-modal" class="p-1 rounded-full hover:bg-[var(--hover-bg)]">&times;</button>
+        </div>
+        
+        <!-- 這裡將顯示「新建列表」按鈕和「現有列表」 -->
+        <div id="playlist-selection-list" class="flex-1 overflow-y-auto scroll-area space-y-1">
+            <!-- JS 會動態填充內容 -->
+        </div>
+    </div>
+</div>
             <div class="mt-4 pt-3 border-t border-[var(--border-color)]">
                 <button id="create-new-playlist-from-modal" class="w-full py-2 flex items-center justify-center gap-2 text-blue-500 font-medium hover:bg-[var(--hover-bg)] rounded-md">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -4314,137 +4378,218 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 
     // --- 選單與延伸功能邏輯 ---
 
+    // 1. 顯示音樂選單 (電腦版用 Popover，手機版用底部滑出)
     function showMusicContextMenu(track, targetBtn = null) {
         targetTrackForMenu = track; // 暫存當前操作的歌曲
 
+        const isDesktop = window.matchMedia("(min-width: 768px)").matches;
+        
+        // 判斷是否已收藏
         const favList = userPlaylists.find(p => p.id === 'favorites');
         const isLiked = favList && favList.songs.some(s => s.id === track.id);
-
-        // 使用既有的 mobile-context-menu 結構
-        const existingMenu = document.getElementById('mobile-context-menu-wrapper');
-        if (existingMenu) existingMenu.remove();
-
-        const menuWrapper = document.createElement('div');
-        menuWrapper.id = 'mobile-context-menu-wrapper';
-        const overlay = document.createElement('div');
-        overlay.id = 'mobile-context-menu-overlay';
-        const menu = document.createElement('div');
-        menu.id = 'mobile-context-menu';
-
-        // 選單內容
         const likeText = isLiked ? "取消喜愛" : "加入喜愛";
-        const likeIcon = isLiked 
-            ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" class="text-red-500"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`
-            : `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`;
+        const likeIconColor = isLiked ? "text-red-500" : "text-[var(--text-secondary)]";
+        const likeFill = isLiked ? "currentColor" : "none";
 
-        menu.innerHTML = `
-            <div class="menu-header">${track.title}</div>
-            <div class="menu-options">
-                <div class="menu-item" data-action="like">
-                    ${likeIcon}
-                    <span>${likeText}</span>
-                </div>
-                <div class="menu-item" data-action="add-playlist">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                    <span>加入播放列表</span>
-                </div>
+        // 選單項目的 HTML 內容
+        const menuContent = `
+            <div class="menu-item" data-action="like">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="${likeFill}" stroke="currentColor" stroke-width="2" class="${likeIconColor}"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                <span>${likeText}</span>
             </div>
+            <div class="menu-item" data-action="add-playlist">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>加入播放列表</span>
+            </div>
+            <!-- 可以加更多選項，如下載或刪除 -->
         `;
 
-        menuWrapper.appendChild(overlay);
-        menuWrapper.appendChild(menu);
-        document.body.appendChild(menuWrapper);
+        if (isDesktop && targetBtn) {
+            // === 電腦版：顯示在按鈕旁邊的小視窗 (Popover) ===
+            
+            // 移除舊的 popover (如果有的話)
+            const existingPopover = document.getElementById('music-context-menu-popover');
+            if (existingPopover) existingPopover.remove();
 
-        // 顯示動畫
-        requestAnimationFrame(() => {
-            overlay.classList.add('visible');
-            menu.classList.add('visible');
-        });
+            const popover = document.createElement('div');
+            popover.id = 'music-context-menu-popover';
+            popover.innerHTML = menuContent;
+            document.body.appendChild(popover);
 
-        // 事件監聽
-        const closeMenu = () => {
-            overlay.classList.remove('visible');
-            menu.classList.remove('visible');
-            menu.addEventListener('transitionend', () => menuWrapper.remove(), { once: true });
-        };
-        overlay.addEventListener('click', closeMenu);
-        
-        menu.addEventListener('click', (e) => {
-            const item = e.target.closest('.menu-item');
-            if (!item) return;
-            const action = item.dataset.action;
-            closeMenu();
+            // 計算位置
+            const rect = targetBtn.getBoundingClientRect();
+            const popoverHeight = 100; // 預估高度
+            const spaceBelow = window.innerHeight - rect.bottom;
 
-            if (action === 'like') {
-                toggleLikeMusic(track);
-            } else if (action === 'add-playlist') {
-                openAddToPlaylistModal(track);
+            // 如果下方空間不足，就顯示在上方
+            if (spaceBelow < popoverHeight) {
+                popover.style.bottom = `${window.innerHeight - rect.top}px`;
+                popover.style.transformOrigin = 'bottom right';
+            } else {
+                popover.style.top = `${rect.bottom}px`;
+                popover.style.transformOrigin = 'top right';
             }
-        });
-    }
+            // 向左對齊按鈕右側
+            popover.style.left = `${rect.right - 200}px`; 
 
-    async function toggleLikeMusic(track) {
-        let favList = userPlaylists.find(p => p.id === 'favorites');
-        // 雙重確認，以防萬一
-        if (!favList) {
-            await initMusicData();
-            favList = userPlaylists.find(p => p.id === 'favorites');
-        }
+            // 顯示動畫
+            requestAnimationFrame(() => popover.classList.add('visible'));
 
-        const existingIndex = favList.songs.findIndex(s => s.id === track.id);
-        if (existingIndex >= 0) {
-            favList.songs.splice(existingIndex, 1); // 移除
-            showNotification("已從喜愛的歌曲中移除", "info");
+            // 點擊事件處理
+            const handlePopoverClick = (e) => {
+                const item = e.target.closest('.menu-item');
+                if (item) {
+                    const action = item.dataset.action;
+                    if (action === 'like') toggleLikeMusic(track);
+                    if (action === 'add-playlist') openAddToPlaylistModal(track);
+                }
+                // 無論點哪裡都關閉
+                popover.classList.remove('visible');
+                setTimeout(() => popover.remove(), 200);
+                document.removeEventListener('click', handlePopoverClick);
+            };
+
+            // 延遲綁定點擊，避免觸發按鈕本身的點擊
+            setTimeout(() => {
+                document.addEventListener('click', handlePopoverClick);
+            }, 0);
+
         } else {
-            favList.songs.unshift(track); // 加入到最前
-            showNotification("已加入喜愛的歌曲", "success");
+            // === 手機版：原本的底部滑出選單 (Bottom Sheet) ===
+            
+            const existingMenu = document.getElementById('mobile-context-menu-wrapper');
+            if (existingMenu) existingMenu.remove();
+
+            const menuWrapper = document.createElement('div');
+            menuWrapper.id = 'mobile-context-menu-wrapper';
+            menuWrapper.innerHTML = `
+                <div id="mobile-context-menu-overlay"></div>
+                <div id="mobile-context-menu">
+                    <div class="menu-header">${track.title}</div>
+                    <div class="menu-options">${menuContent}</div>
+                </div>
+            `;
+            document.body.appendChild(menuWrapper);
+
+            const overlay = menuWrapper.querySelector('#mobile-context-menu-overlay');
+            const menu = menuWrapper.querySelector('#mobile-context-menu');
+
+            requestAnimationFrame(() => {
+                overlay.classList.add('visible');
+                menu.classList.add('visible');
+            });
+
+            const closeMenu = () => {
+                overlay.classList.remove('visible');
+                menu.classList.remove('visible');
+                menu.addEventListener('transitionend', () => menuWrapper.remove(), { once: true });
+            };
+
+            overlay.addEventListener('click', closeMenu);
+            menu.addEventListener('click', (e) => {
+                const item = e.target.closest('.menu-item');
+                if (!item) return;
+                const action = item.dataset.action;
+                closeMenu();
+                if (action === 'like') toggleLikeMusic(track);
+                if (action === 'add-playlist') openAddToPlaylistModal(track);
+            });
         }
-        
-        await saveAppData();
-        // 重新渲染當前畫面以更新愛心狀態
-        if (currentTab === 'home') renderMusicList([...musicLibrary].reverse(), 'music-list-ul');
-        else if (currentTab === 'library') renderPlaylistLibrary();
     }
 
+    // 2. 開啟「加入播放列表」彈窗 (修復後：包含新建與選擇)
     function openAddToPlaylistModal(track) {
+        targetTrackForMenu = track; // 確保目標歌曲正確
         const listContainer = document.getElementById('playlist-selection-list');
-        listContainer.innerHTML = '';
-        
-        // 過濾掉系統列表 (如喜愛的歌曲)，通常只讓使用者加到自建列表
-        // 如果你想讓使用者也能手動選 "喜愛的歌曲"，可以移除 filter
-        const writablePlaylists = userPlaylists.filter(p => !p.isSystem);
+        listContainer.innerHTML = ''; // 清空
+
+        // A. 第一個選項：建立新播放列表
+        const createNewBtn = document.createElement('div');
+        createNewBtn.className = 'add-to-playlist-item flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-[var(--hover-bg)] mb-2 border-b border-[var(--border-color)]';
+        createNewBtn.innerHTML = `
+            <div class="flex items-center justify-center w-10 h-10 rounded-md bg-[var(--hover-bg)] text-blue-500">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </div>
+            <span class="font-bold text-blue-600">建立新播放列表...</span>
+        `;
+        createNewBtn.onclick = async () => {
+            // 關閉當前彈窗
+            toggleModal(document.getElementById('add-to-playlist-modal'), false);
+            
+            // 跳出輸入框
+            const name = await showCustomPrompt("請輸入新播放列表名稱", "建立列表");
+            if (name) {
+                const newPlaylist = {
+                    id: crypto.randomUUID(),
+                    name: name,
+                    songs: [targetTrackForMenu], // 直接加入這首歌
+                    cover: null,
+                    isSystem: false
+                };
+                userPlaylists.push(newPlaylist);
+                await saveAppData();
+                showNotification(`已建立「${name}」並加入歌曲`, "success");
+                
+                // 如果在資料庫頁面，重新渲染
+                if(currentTab === 'library') renderPlaylistLibrary();
+            }
+        };
+        listContainer.appendChild(createNewBtn);
+
+        // B. 列出所有現有列表 (排除系統預設如 'favorites' 如果你想限制的話，這裡我設為全部顯示)
+        // 通常我們不讓使用者手動加到「系統產生」的列表，除非是「喜愛」
+        const writablePlaylists = userPlaylists.filter(p => !p.isSystem || p.id === 'favorites');
 
         if (writablePlaylists.length === 0) {
-            listContainer.innerHTML = `<p class="text-center text-sm text-[var(--text-secondary)] py-4">沒有自訂列表</p>`;
+            const emptyMsg = document.createElement('p');
+            emptyMsg.className = "text-center text-sm text-[var(--text-secondary)] py-2";
+            emptyMsg.textContent = "沒有其他列表";
+            listContainer.appendChild(emptyMsg);
+        } else {
+            writablePlaylists.forEach(playlist => {
+                const item = document.createElement('div');
+                item.className = 'add-to-playlist-item flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-[var(--hover-bg)]';
+                
+                // 封面圖
+                let coverHtml = '';
+                if (playlist.id === 'favorites') {
+                    coverHtml = `<div class="w-10 h-10 rounded-md bg-red-100 flex items-center justify-center text-red-500"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></div>`;
+                } else if (playlist.songs.length > 0 && playlist.songs[0].cover) {
+                    coverHtml = `<img src="${playlist.songs[0].cover}" class="w-10 h-10 rounded-md object-cover">`;
+                } else {
+                    coverHtml = `<div class="w-10 h-10 rounded-md bg-[var(--hover-bg)] flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>`;
+                }
+
+                // 檢查歌曲是否已在列表
+                const isAlreadyAdded = playlist.songs.some(s => s.id === track.id);
+                const statusText = isAlreadyAdded ? `<span class="text-xs text-[var(--text-secondary)]">已加入</span>` : "";
+
+                item.innerHTML = `
+                    ${coverHtml}
+                    <div class="flex-1 min-w-0">
+                        <div class="font-medium truncate">${playlist.name}</div>
+                        <div class="text-xs text-[var(--text-secondary)]">${playlist.songs.length} 首歌曲</div>
+                    </div>
+                    ${statusText}
+                `;
+
+                item.onclick = async () => {
+                    if (isAlreadyAdded) {
+                        showNotification("歌曲已在此列表中", "info");
+                    } else {
+                        playlist.songs.push(track);
+                        await saveAppData();
+                        showNotification(`已加入「${playlist.name}」`, "success");
+                        toggleModal(document.getElementById('add-to-playlist-modal'), false);
+                        if(currentTab === 'library') renderPlaylistLibrary();
+                    }
+                };
+                listContainer.appendChild(item);
+            });
         }
 
-        writablePlaylists.forEach(playlist => {
-            const div = document.createElement('div');
-            div.className = 'add-to-playlist-item';
-            const coverImg = playlist.songs.length > 0 && playlist.songs[0].cover 
-                ? `<img src="${playlist.songs[0].cover}">` 
-                : `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
-            
-            div.innerHTML = `
-                <div class="add-to-playlist-cover">${coverImg}</div>
-                <span class="text-sm font-medium">${playlist.name}</span>
-                <span class="text-xs text-[var(--text-secondary)] ml-auto">${playlist.songs.length} 首</span>
-            `;
-            div.onclick = async () => {
-                // 檢查是否已存在
-                if (playlist.songs.some(s => s.id === track.id)) {
-                    showNotification("歌曲已在列表中", "warning");
-                } else {
-                    playlist.songs.push(track);
-                    await saveAppData();
-                    showNotification(`已加入 "${playlist.name}"`, "success");
-                    toggleModal(addToPlaylistModal, false);
-                }
-            };
-            listContainer.appendChild(div);
-        });
-
-        toggleModal(addToPlaylistModal, true);
+        // 開啟彈窗
+        toggleModal(document.getElementById('add-to-playlist-modal'), true);
     }
 
     // 彈窗內的新建列表按鈕
