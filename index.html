@@ -2869,18 +2869,32 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
 </button>
 </div>
                 <div class="flex-1 overflow-y-auto px-2 scroll-area">
-                    <div class="sidebar-section" data-section="music" data-open="true">
-        <header class="sidebar-section-header" id="open-music-store-btn">
+                    <!-- ✨ 新增：Astra Music 區塊 (功能移至此處) -->
+    <div class="sidebar-section" data-section="music" data-open="true">
+        <header class="sidebar-section-header">
             <div class="title-group">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                <svg class="section-toggle-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 <span>Astra Music</span>
             </div>
             <div class="actions-group">
-                <div class="playing-indicator-mini hidden" id="sidebar-music-indicator">
-                    <span class="animate-pulse text-xs text-green-500">播放中...</span>
-                </div>
+                <!-- 1. 進入商店按鈕 (音樂圖示) -->
+                <button id="open-music-store-btn-sidebar" class="section-action-btn" title="開啟 Astra Music 商店">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                </button>
+                <!-- 2. P2P 分享按鈕 -->
+                <button id="music-p2p-btn-sidebar" class="section-action-btn" title="P2P 分享音樂">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                </button>
+                <!-- 3. 上傳按鈕 -->
+                <button id="music-upload-btn-sidebar" class="section-action-btn" title="上傳音樂">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </button>
             </div>
         </header>
+        <!-- 這裡可以留空，或者未來放最近播放列表 -->
+        <div class="sidebar-section-content">
+            <div id="music-sidebar-list" class="flex-1 space-y-1"></div>
+        </div>
     </div>
     
     <!-- Astras 區塊 -->
@@ -3089,7 +3103,9 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         </div>
     </div>
         <!-- ✨ 新增：全域音樂播放器 (固定頂部) -->
-    <div id="music-player-bar" class="fixed top-0 left-0 right-0 h-16 bg-[var(--sidebar-bg)] border-b border-[var(--border-color)] z-[60] flex items-center justify-between px-4 shadow-md hidden transform transition-transform duration-300">
+    <!-- ✨ 修改後：全域音樂播放器 (移除關閉按鈕，靠雙擊顯示/隱藏) -->
+    <!-- 注意：預設加上 hidden，且 pointer-events-auto 確保可點擊 -->
+    <div id="music-player-bar" class="fixed top-0 left-0 right-0 h-16 bg-[var(--sidebar-bg)] border-b border-[var(--border-color)] z-[60] flex items-center justify-between px-4 shadow-md hidden transform transition-transform duration-300 select-none">
         <div class="flex items-center gap-3 overflow-hidden flex-1">
             <img id="player-cover" src="https://via.placeholder.com/40" class="w-10 h-10 rounded-md object-cover bg-gray-200">
             <div class="flex flex-col overflow-hidden">
@@ -3103,12 +3119,12 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                 <svg id="play-icon-svg" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
             </button>
             <button id="player-next-btn" class="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg></button>
-            <button id="player-close-btn" class="ml-2 p-2 text-gray-400 hover:text-red-500"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            <!-- 這裡移除了 X 按鈕，改用雙擊控制 -->
         </div>
-        <audio id="global-audio-element" preload="none"></audio> <!-- 隱藏的音訊核心 -->
+        <audio id="global-audio-element" preload="none"></audio>
     </div>
 
-    <!-- ✨ 新增：Astra Music 獨立商店介面 -->
+    <!-- ✨ 修改後：Astra Music 獨立商店介面 (移除右上角功能按鈕) -->
     <div id="music-store-container" class="hidden h-screen w-full flex flex-col bg-[var(--chat-bg)] fixed inset-0 z-50">
         <header class="relative z-10 p-2 md:p-4 flex items-center border-b border-[var(--border-color)] bg-[var(--sidebar-bg)]">
             <button id="close-music-store-btn" class="p-2 rounded-md hover:bg-[var(--hover-bg)] mr-2">
@@ -3119,28 +3135,18 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     <input type="text" id="music-search-input" placeholder="搜尋音樂..." class="w-full pl-9 pr-4 py-1.5 rounded-full bg-[var(--input-field-bg)] border border-[var(--border-color)] text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 text-[var(--text-secondary)]" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 </div>
-                <div class="flex gap-2">
-                    <button id="music-p2p-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-[var(--text-secondary)]" title="P2P 分享音樂">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-                    </button>
-                    <button id="music-upload-btn" class="p-2 rounded-full hover:bg-[var(--hover-bg)] text-[var(--text-secondary)]" title="上傳音樂 (+)">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                    </button>
-                </div>
+                <!-- 功能按鈕已移至側邊欄，此處留白或移除 -->
             </div>
         </header>
         
         <main id="music-list-content" class="flex-1 overflow-y-auto scroll-area p-0">
-            <!-- 音樂列表將會在這裡產生 -->
-            <ul id="music-list-ul" class="divide-y divide-[var(--border-color)]">
-                <!-- Javascript 會動態填入內容 -->
-            </ul>
+            <ul id="music-list-ul" class="divide-y divide-[var(--border-color)]"></ul>
         </main>
         
         <!-- 底部留白給播放器 -->
         <div class="h-20 w-full flex-shrink-0"></div>
     </div>
-    <!-- 隱藏的檔案輸入框 (for music upload) -->
+    <!-- 隱藏的檔案輸入框 -->
     <input type="file" id="music-file-input" class="hidden" accept="audio/*" multiple>
     <div id="store-container" class="hidden h-screen w-full flex flex-col bg-[var(--chat-bg)]">
         <header class="relative z-10 p-2 md:p-4 flex items-center border-b border-[var(--border-color)]">
@@ -3972,19 +3978,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             }
         });
         // ==========================================
-    // ✨ Astra Music 核心邏輯 START
+    // ✨ Astra Music 核心邏輯 START (v2.0)
     // ==========================================
     
     // 1. 初始化變數與 GitHub 音樂清單
     const GITHUB_BASE_URL = "https://raw.githubusercontent.com/NHZallen/astranos-chatbot/main/music/";
     
-    // ★★★ 設定區：請在這裡修改你的音樂檔名 ★★★
     let musicLibrary = [
         { title: "PSYCHO", artist: "BABYMONSTER", file: "song1.mp3", cover: null },
-        // 範例：{ title: "歌名", artist: "歌手", file: "檔案名稱.mp3", cover: "封面圖片網址" }
     ];
 
-    // 自動組合 GitHub 網址
     musicLibrary = musicLibrary.map(track => ({
         ...track,
         id: 'gh-' + track.file,
@@ -3995,101 +3998,90 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     let currentMusicIndex = 0;
     let isMusicPlaying = false;
 
-    // 這些變數稍後會用到，先宣告
-    let audioEl, playerBar, musicStoreEl;
+    const audioEl = document.getElementById('global-audio-element');
+    const playerBar = document.getElementById('music-player-bar');
+    const musicStoreEl = document.getElementById('music-store-container');
+    
+    // 2. 介面控制元件 (注意 ID 變更)
+    const openMusicStoreBtnSidebar = document.getElementById('open-music-store-btn-sidebar');
+    const musicP2PBtnSidebar = document.getElementById('music-p2p-btn-sidebar');
+    const musicUploadBtnSidebar = document.getElementById('music-upload-btn-sidebar');
+    
+    const closeMusicStoreBtn = document.getElementById('close-music-store-btn');
+    const musicSearchInput = document.getElementById('music-search-input');
+    const musicFileInput = document.getElementById('music-file-input');
 
-    // 2. 啟動音樂功能的函數 (等待頁面載入後執行)
-    function initMusicPlayer() {
-        audioEl = document.getElementById('global-audio-element');
-        playerBar = document.getElementById('music-player-bar');
-        musicStoreEl = document.getElementById('music-store-container');
+    // --- ✨ 新增：雙擊畫面 切換播放器顯示/隱藏 ---
+    document.addEventListener('dblclick', (e) => {
+        // 如果是在輸入框或按鈕上雙擊，不觸發（避免干擾操作）
+        if (e.target.closest('input') || e.target.closest('button') || e.target.closest('textarea')) {
+            return;
+        }
         
-        const openMusicStoreBtn = document.getElementById('open-music-store-btn');
-        const closeMusicStoreBtn = document.getElementById('close-music-store-btn');
-        const musicSearchInput = document.getElementById('music-search-input');
-        const musicUploadBtn = document.getElementById('music-upload-btn');
-        const musicFileInput = document.getElementById('music-file-input');
-        const musicP2PBtn = document.getElementById('music-p2p-btn');
-
-        // 開啟音樂商店
-        if(openMusicStoreBtn) {
-            openMusicStoreBtn.addEventListener('click', () => {
-                renderMusicList(currentPlaylist);
-                musicStoreEl.classList.remove('hidden');
-                if(typeof toggleSidebar === 'function') toggleSidebar(false);
-            });
+        // 切換 hidden class
+        if (playerBar) {
+            playerBar.classList.toggle('hidden');
+            
+            // 如果顯示了，推擠一下主畫面 (Optional)
+            if (!playerBar.classList.contains('hidden')) {
+                document.body.classList.add('music-player-visible');
+            } else {
+                document.body.classList.remove('music-player-visible');
+            }
         }
+    });
 
-        // 關閉音樂商店
-        if(closeMusicStoreBtn) {
-            closeMusicStoreBtn.addEventListener('click', () => {
-                musicStoreEl.classList.add('hidden');
-            });
-        }
-
-        // 搜尋功能
-        if(musicSearchInput) {
-            musicSearchInput.addEventListener('input', (e) => {
-                const query = e.target.value.toLowerCase();
-                const filtered = musicLibrary.filter(track => 
-                    track.title.toLowerCase().includes(query) || 
-                    track.artist.toLowerCase().includes(query)
-                );
-                renderMusicList(filtered);
-            });
-        }
-
-        // 播放器按鈕事件
-        document.getElementById('player-play-btn')?.addEventListener('click', togglePlayPause);
-        document.getElementById('player-next-btn')?.addEventListener('click', playNext);
-        document.getElementById('player-prev-btn')?.addEventListener('click', playPrev);
-        document.getElementById('player-close-btn')?.addEventListener('click', () => {
-            if(audioEl) audioEl.pause();
-            isMusicPlaying = false;
-            playerBar.classList.add('hidden');
-            document.body.classList.remove('music-player-visible');
-            updatePlayerUI();
+    // --- 側邊欄按鈕事件 ---
+    
+    // 1. 開啟音樂商店
+    if(openMusicStoreBtnSidebar) {
+        openMusicStoreBtnSidebar.addEventListener('click', (e) => {
+            e.stopPropagation(); // 阻止折疊側邊欄
+            renderMusicList(currentPlaylist);
+            musicStoreEl.classList.remove('hidden');
+            toggleSidebar(false);
         });
-
-        // 音樂播完自動下一首
-        if(audioEl) audioEl.addEventListener('ended', playNext);
-
-        // 上傳功能
-        if(musicUploadBtn && musicFileInput) {
-            musicUploadBtn.addEventListener('click', () => musicFileInput.click());
-            musicFileInput.addEventListener('change', (e) => {
-                const files = Array.from(e.target.files);
-                if (files.length === 0) return;
-                files.forEach(file => {
-                    const url = URL.createObjectURL(file);
-                    const newTrack = {
-                        id: 'local-' + Date.now() + Math.random(),
-                        title: file.name.replace(/\.[^/.]+$/, ""),
-                        artist: "本地上傳",
-                        file: url, url: url, cover: null
-                    };
-                    musicLibrary.unshift(newTrack);
-                });
-                currentPlaylist = musicLibrary;
-                renderMusicList(currentPlaylist);
-                playMusic(0); 
-            });
-        }
-        
-        // P2P 按鈕 (暫時提示)
-        if(musicP2PBtn) {
-            musicP2PBtn.addEventListener('click', () => {
-                // 如果有 showNotification 函數就用，沒有就用 alert
-                if(typeof showNotification === 'function') showNotification("P2P 音樂分享準備中...", "info");
-                else alert("P2P 音樂分享準備中...");
-            });
-        }
     }
 
-    // 3. 渲染音樂列表
+    // 2. P2P 分享
+    if(musicP2PBtnSidebar) {
+        musicP2PBtnSidebar.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showNotification("P2P 音樂分享功能開發中...", "info");
+            // initP2P('music'); // 未來實作
+        });
+    }
+
+    // 3. 上傳音樂
+    if(musicUploadBtnSidebar) {
+        musicUploadBtnSidebar.addEventListener('click', (e) => {
+            e.stopPropagation();
+            musicFileInput.click();
+        });
+    }
+
+    // 關閉音樂商店
+    if(closeMusicStoreBtn) {
+        closeMusicStoreBtn.addEventListener('click', () => {
+            musicStoreEl.classList.add('hidden');
+        });
+    }
+
+    // 搜尋功能
+    if(musicSearchInput) {
+        musicSearchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const filtered = musicLibrary.filter(track => 
+                track.title.toLowerCase().includes(query) || 
+                track.artist.toLowerCase().includes(query)
+            );
+            renderMusicList(filtered);
+        });
+    }
+
+    // 3. 渲染音樂列表 (無變更)
     function renderMusicList(playlist) {
         const listContainer = document.getElementById('music-list-ul');
-        if(!listContainer) return;
         listContainer.innerHTML = '';
 
         if (playlist.length === 0) {
@@ -4110,6 +4102,7 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M8 5v14l11-7z"/></svg>
                 </button>
             `;
+            
             li.addEventListener('click', () => {
                 currentPlaylist = playlist;
                 playMusic(index);
@@ -4118,27 +4111,31 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         });
     }
 
-    // 4. 播放控制
+    // 4. 播放控制核心
     function playMusic(index) {
-        if (!audioEl) return;
         if (index < 0 || index >= currentPlaylist.length) return;
         
         currentMusicIndex = index;
         const track = currentPlaylist[index];
         
         audioEl.src = track.url;
-        audioEl.play().then(() => {
-            isMusicPlaying = true;
-            updatePlayerUI();
-            setupMediaSession(track);
-        }).catch(err => console.error("播放失敗:", err));
+        audioEl.play()
+            .then(() => {
+                isMusicPlaying = true;
+                updatePlayerUI();
+                setupMediaSession(track);
+            })
+            .catch(err => {
+                console.error("播放失敗:", err);
+                showNotification(`播放失敗: ${err.message}`, 'error');
+            });
 
+        // 播放時自動顯示播放條
         playerBar.classList.remove('hidden');
         document.body.classList.add('music-player-visible');
     }
 
     function togglePlayPause() {
-        if (!audioEl) return;
         if (audioEl.paused) {
             audioEl.play();
             isMusicPlaying = true;
@@ -4159,30 +4156,24 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         playMusic(prevIndex);
     }
 
+    // 更新 UI 狀態
     function updatePlayerUI() {
         const track = currentPlaylist[currentMusicIndex];
         if (!track) return;
 
-        const titleEl = document.getElementById('player-title');
-        const artistEl = document.getElementById('player-artist');
-        const coverEl = document.getElementById('player-cover');
-        const playIcon = document.getElementById('play-icon-svg');
-        const indicator = document.getElementById('sidebar-music-indicator');
-
-        if(titleEl) titleEl.textContent = track.title;
-        if(artistEl) artistEl.textContent = track.artist;
-        if(coverEl) coverEl.src = track.cover || 'https://via.placeholder.com/40/3b82f6/ffffff?text=♪';
+        document.getElementById('player-title').textContent = track.title;
+        document.getElementById('player-artist').textContent = track.artist;
+        document.getElementById('player-cover').src = track.cover || 'https://via.placeholder.com/40/3b82f6/ffffff?text=♪';
         
-        if (playIcon) {
-            playIcon.innerHTML = isMusicPlaying 
-                ? `<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>`
-                : `<polygon points="5 3 19 12 5 21 5 3"></polygon>`;
+        const playIcon = document.getElementById('play-icon-svg');
+        if (isMusicPlaying) {
+            playIcon.innerHTML = `<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>`;
+        } else {
+            playIcon.innerHTML = `<polygon points="5 3 19 12 5 21 5 3"></polygon>`;
         }
 
-        if (indicator) indicator.classList.toggle('hidden', !isMusicPlaying);
-
-        // 更新列表高亮
-        document.querySelectorAll('.music-list-item').forEach((item, idx) => {
+        const items = document.querySelectorAll('.music-list-item');
+        items.forEach((item, idx) => {
             if (currentPlaylist[idx] && currentPlaylist[idx].id === track.id) {
                 item.classList.add('playing');
             } else {
@@ -4191,13 +4182,16 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         });
     }
 
+    // 5. Media Session API
     function setupMediaSession(track) {
         if ('mediaSession' in navigator) {
             navigator.mediaSession.metadata = new MediaMetadata({
                 title: track.title,
                 artist: track.artist,
-                album: "Astra Music",
-                artwork: [{ src: track.cover || 'https://via.placeholder.com/512/3b82f6/ffffff?text=MUSIC', sizes: '512x512', type: 'image/png' }]
+                album: "Astra Music Store",
+                artwork: [
+                    { src: track.cover || 'https://via.placeholder.com/512/3b82f6/ffffff?text=MUSIC', sizes: '512x512', type: 'image/png' }
+                ]
             });
             navigator.mediaSession.setActionHandler('play', togglePlayPause);
             navigator.mediaSession.setActionHandler('pause', togglePlayPause);
@@ -4206,8 +4200,36 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
         }
     }
 
-    // 延遲啟動，確保 HTML 元素已載入
-    setTimeout(initMusicPlayer, 1000);
+    // 6. 事件監聽 (按鈕)
+    document.getElementById('player-play-btn').addEventListener('click', togglePlayPause);
+    document.getElementById('player-next-btn').addEventListener('click', playNext);
+    document.getElementById('player-prev-btn').addEventListener('click', playPrev);
+    
+    audioEl.addEventListener('ended', playNext);
+
+    // 7. 上傳功能 (本地暫存)
+    musicFileInput.addEventListener('change', (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        files.forEach(file => {
+            const url = URL.createObjectURL(file);
+            const newTrack = {
+                id: 'local-' + Date.now() + Math.random(),
+                title: file.name.replace(/\.[^/.]+$/, ""),
+                artist: "本地上傳",
+                file: url,
+                url: url,
+                cover: null
+            };
+            musicLibrary.unshift(newTrack);
+        });
+        
+        currentPlaylist = musicLibrary;
+        renderMusicList(currentPlaylist);
+        showNotification("已載入本地音樂！", "success");
+        playMusic(0); 
+    });
 
     // ==========================================
     // ✨ Astra Music 核心邏輯 END
