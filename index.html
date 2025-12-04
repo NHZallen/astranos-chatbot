@@ -1,4 +1,4 @@
-哪裡做錯了:<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -3099,6 +3099,56 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
             </div>
         </main>
     </div>
+        <div id="music-store-container" class="hidden h-screen w-full flex flex-col bg-[var(--chat-bg)] fixed inset-0 z-50">
+        <header class="relative z-10 p-2 md:p-4 border-b border-[var(--border-color)] bg-[var(--sidebar-bg)] shadow-md">
+            <div class="flex items-center justify-between mb-4 gap-2">
+                <button id="close-music-store-btn" class="p-2 rounded-md hover:bg-[var(--hover-bg)] mr-2 text-[var(--text-primary)] flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                </button>
+                <h1 class="text-xl font-semibold text-[var(--text-primary)] flex-shrink-0 mr-auto">ASTRAS Music</h1>
+                
+                <!-- 搜尋欄 (已改窄並放回原本位置) -->
+                <div class="relative w-32 md:w-64">
+                    <input type="text" id="music-search-input" placeholder="搜尋..." class="w-full pl-8 pr-2 py-1.5 rounded-full bg-[var(--input-field-bg)] border border-[var(--border-color)] text-sm focus:outline-none focus:border-blue-500 transition-colors">
+                    <svg class="absolute left-2.5 top-2 w-4 h-4 text-[var(--text-secondary)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </div>
+            </div>
+
+            <!-- 播放器介面 -->
+            <div class="music-player-interface flex flex-col md:flex-row items-center gap-4 p-3 rounded-xl bg-[var(--hover-bg)]">
+                <!-- 左側：封面與歌名 -->
+                <div class="flex items-center gap-3 w-full md:w-1/3">
+                    <img id="current-track-cover" src="https://via.placeholder.com/60" class="w-14 h-14 rounded-md object-cover border border-[var(--border-color)]">
+                    <div class="flex flex-col overflow-hidden">
+                        <span id="current-track-title" class="font-bold text-sm truncate text-[var(--text-primary)]">尚未播放</span>
+                        <span id="current-track-artist" class="text-xs text-[var(--text-secondary)] truncate">請選擇音樂</span>
+                    </div>
+                </div>
+
+                <!-- 中間：控制按鈕 (快進/快退/播放) -->
+                <div class="flex items-center justify-center gap-2 md:gap-4 w-full md:w-1/3">
+                    <button id="music-prev-btn" class="p-2 text-[var(--text-primary)] hover:text-blue-500"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
+                    <button id="music-rw-btn" class="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]" title="-10s"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></button>
+                    <button id="music-play-btn" class="w-12 h-12 rounded-full bg-[var(--button-primary-bg)] text-white flex items-center justify-center shadow-lg hover:brightness-110 transition-transform hover:scale-105 mx-2">
+                        <svg id="play-icon-svg" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    </button>
+                    <button id="music-ff-btn" class="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]" title="+10s"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c0-1.38.28-2.69.78-3.91L15 2"/><path d="M21 5v-3h-5"/><path d="M12 7v5l4 2"/></svg></button>
+                    <button id="music-next-btn" class="p-2 text-[var(--text-primary)] hover:text-blue-500"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
+                </div>
+
+                <!-- 右側：佔位 -->
+                <div class="hidden md:flex w-1/3"></div>
+            </div>
+        </header>
+
+        <!-- 列表區域 -->
+        <main id="music-list-container" class="flex-1 overflow-y-auto scroll-area p-2 md:p-4">
+            <ul id="music-track-list" class="space-y-2"></ul>
+        </main>
+        
+        <audio id="global-audio-player" preload="auto"></audio>
+        <input type="file" id="music-file-input" accept="audio/*" class="hidden" multiple>
+    </div>
     <div id="settings-modal" class="modal hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-0 z-50">
     <div class="bg-[var(--modal-bg)] rounded-none w-full h-full flex flex-col" style="max-height: 100vh;">
             <div class="p-6 border-b border-[var(--border-color)] flex justify-between items-center">
@@ -4141,21 +4191,36 @@ window.va = window.va || function () { (window.va.q = window.va.q || []).push(ar
     importStatusTextAuth: document.getElementById('import-status-text-auth'),
     importPercentageAuth: document.getElementById('import-percentage-auth'),
     openMusicStoreBtn: document.getElementById('open-music-store-btn'),
-            musicStoreContainer: document.getElementById('music-store-container'),
-            closeMusicStoreBtn: document.getElementById('close-music-store-btn'),
-            musicListContainer: document.getElementById('music-track-list'),
-            audioPlayer: document.getElementById('global-audio-player'),
-            musicPlayBtn: document.getElementById('music-play-btn'),
-            musicPrevBtn: document.getElementById('music-prev-btn'),
-            musicNextBtn: document.getElementById('music-next-btn'),
-            playIconSvg: document.getElementById('play-icon-svg'),
-            trackTitleEl: document.getElementById('current-track-title'),
-            trackArtistEl: document.getElementById('current-track-artist'),
-            trackCoverEl: document.getElementById('current-track-cover'),
-            musicSearchInput: document.getElementById('music-search-input'),
-            musicUploadBtn: document.getElementById('music-upload-btn'),
-            musicFileInput: document.getElementById('music-file-input'),
-            musicP2PBtn: document.getElementById('music-p2p-btn'),
+    musicStoreContainer: document.getElementById('music-store-container'),
+    closeMusicStoreBtn: document.getElementById('close-music-store-btn'),
+    musicListContainer: document.getElementById('music-track-list'),
+    audioPlayer: document.getElementById('global-audio-player'),
+    musicPlayBtn: document.getElementById('music-play-btn'),
+    musicPrevBtn: document.getElementById('music-prev-btn'),
+    musicNextBtn: document.getElementById('music-next-btn'),
+    rwBtn: document.getElementById('music-rw-btn'), // 確保有這行
+    ffBtn: document.getElementById('music-ff-btn'), // 確保有這行
+    playIconSvg: document.getElementById('play-icon-svg'),
+    trackTitleEl: document.getElementById('current-track-title'),
+    trackArtistEl: document.getElementById('current-track-artist'),
+    trackCoverEl: document.getElementById('current-track-cover'),
+    musicSearchInput: document.getElementById('music-search-input'),
+    musicUploadBtn: document.getElementById('music-upload-btn'),
+    musicFileInput: document.getElementById('music-file-input'),
+    musicP2PBtn: document.getElementById('music-p2p-btn'), // 這裡可以加逗號
+
+    // 新增：側邊欄迷你播放器元件 (補上這些以免報錯)
+    sidebarUpload: document.getElementById('sidebar-music-upload-btn'),
+    sidebarShare: document.getElementById('sidebar-music-share-btn'),
+    miniPlayer: document.getElementById('sidebar-mini-player'),
+    miniTitle: document.getElementById('mini-player-title'),
+    miniArtist: document.getElementById('mini-player-artist'),
+    miniPlayBtn: document.getElementById('mini-play-btn'),
+    miniIcon: document.getElementById('mini-play-icon'),
+    miniPrev: document.getElementById('mini-prev-btn'),
+    miniNext: document.getElementById('mini-next-btn'),
+    miniRw: document.getElementById('mini-rw-btn'),
+    miniFf: document.getElementById('mini-ff-btn'),
         };
         function toggleHistorySidebar(show) {
     const { historySidebar, historySidebarOverlay } = ALL_ELEMENTS;
@@ -11898,483 +11963,6 @@ async function sendConversationToMail(userMessageObject, aiResponseText) {
                         popover.classList.add('visible');
                     }
                 }
-            });
-
-
-            // ✨ END: 新增的附件上彈視窗函式與按鈕邏輯
-            // ==========================================
-    // ✨ P2P 分享功能 (PeerJS Implementation)
-    // ==========================================
-
-    let p2pPeer = null;
-    let p2pConn = null;
-    let p2pType = null; // 'astras' or 'folders'
-    let p2pMode = null; // 'sender' or 'receiver'
-    let html5QrcodeScanner = null;
-
-    const CHUNK_SIZE = 16 * 1024; // 16KB chunks for safe transmission
-
-    // 初始化 P2P 模組
-    function initP2P(type) {
-        p2pType = type; // 'astras' or 'folders'
-        resetP2PUI();
-        document.getElementById('p2p-modal-title').textContent = `P2P 分享 ${type === 'astras' ? 'Astras' : '資料夾'}`;
-        toggleModal(document.getElementById('p2p-share-modal'), true);
-    }
-
-    function resetP2PUI() {
-        document.getElementById('p2p-step-role').classList.remove('hidden');
-        document.getElementById('p2p-step-select').classList.add('hidden');
-        document.getElementById('p2p-step-wait').classList.add('hidden');
-        document.getElementById('p2p-step-connect').classList.add('hidden');
-        document.getElementById('p2p-step-progress').classList.add('hidden');
-        document.getElementById('p2p-reader').classList.add('hidden'); // 隱藏掃描器
-        
-        if (html5QrcodeScanner) {
-            html5QrcodeScanner.stop().catch(err => console.error("Failed to stop scanner", err));
-            html5QrcodeScanner = null;
-        }
-        if (p2pPeer) {
-            p2pPeer.destroy();
-            p2pPeer = null;
-        }
-    }
-
-    // 產生 5 碼隨機代碼 (排除易混淆字元 I, O, 0, 1)
-    function generateP2PCode() {
-        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-        let result = '';
-        for (let i = 0; i < 5; i++) {
-            result += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return result;
-    }
-
-    // 顯示選擇清單 (僅限傳送者)
-    function showP2PSelection() {
-        document.getElementById('p2p-step-role').classList.add('hidden');
-        document.getElementById('p2p-step-select').classList.remove('hidden');
-        const list = document.getElementById('p2p-item-list');
-        list.innerHTML = '';
-
-        let items = [];
-        if (p2pType === 'astras') {
-            // 僅限自訂 Astras (沒有 officialId)
-            items = astras.filter(a => !a.officialId);
-        } else {
-            items = folders;
-        }
-
-        if (items.length === 0) {
-            list.innerHTML = '<p class="text-center text-[var(--text-secondary)] p-4">沒有可分享的項目。</p>';
-            document.getElementById('p2p-confirm-selection-btn').disabled = true;
-            return;
-        } else {
-            document.getElementById('p2p-confirm-selection-btn').disabled = false;
-        }
-
-        items.forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'p2p-select-item';
-            div.innerHTML = `
-                <input type="checkbox" class="p2p-item-checkbox w-4 h-4" value="${item.id}">
-                <span class="truncate flex-1">${item.name}</span>
-            `;
-            list.appendChild(div);
-        });
-    }
-
-    // 啟動傳送方
-    async function startP2PSender() {
-        const checkboxes = document.querySelectorAll('.p2p-item-checkbox:checked');
-        if (checkboxes.length === 0) {
-            showNotification('請至少選擇一個項目', 'warning');
-            return;
-        }
-
-        const selectedIds = Array.from(checkboxes).map(cb => cb.value);
-        
-        // 準備資料
-        document.getElementById('p2p-step-select').classList.add('hidden');
-        document.getElementById('p2p-step-wait').classList.remove('hidden');
-        
-        const code = generateP2PCode();
-        const peerId = `astra-p2p-${code}`; // 在 PeerJS 伺服器上的實際 ID
-
-        document.getElementById('p2p-share-code').textContent = code;
-        
-        // 產生 QR Code
-        const qrContainer = document.getElementById('p2p-qrcode-container');
-        qrContainer.innerHTML = '';
-        new QRCode(qrContainer, {
-            text: code, // 只需要存代碼，接收方自己組裝 prefix
-            width: 180,
-            height: 180
-        });
-
-        // 初始化 Peer
-        p2pPeer = new Peer(peerId);
-
-        p2pPeer.on('open', (id) => {
-            console.log('My peer ID is: ' + id);
-        });
-
-        p2pPeer.on('connection', (conn) => {
-            p2pConn = conn;
-            setupSenderConnection(selectedIds);
-        });
-
-        p2pPeer.on('error', (err) => {
-            console.error(err);
-            if (err.type === 'unavailable-id') {
-                // 極低機率碰撞，重新產生
-                p2pPeer.destroy();
-                startP2PSender(); 
-            } else {
-                showNotification(`P2P 錯誤: ${err.type}`, 'error');
-            }
-        });
-    }
-
-    // 處理傳送邏輯
-    async function setupSenderConnection(selectedIds) {
-        document.getElementById('p2p-step-wait').classList.add('hidden');
-        document.getElementById('p2p-step-progress').classList.remove('hidden');
-        updateP2PProgress(0, "正在打包資料...");
-
-        // 打包資料
-        const zip = new JSZip();
-        
-        if (p2pType === 'astras') {
-            const selectedAstras = astras.filter(a => selectedIds.includes(a.id));
-            // 處理 Astras 的圖片
-            for (const ast of selectedAstras) {
-                // 深拷貝以免修改原始資料
-                const astraCopy = JSON.parse(JSON.stringify(ast));
-                if (astraCopy.avatarUrl && astraCopy.avatarUrl.startsWith('data:image')) {
-                     // 簡單處理：直接放 JSON，因為 JSZip 處理大量 Base64 也還行
-                     // 若要優化可分離圖片，但這裡求穩
-                }
-                zip.file(`astra_${ast.id}.json`, JSON.stringify(astraCopy));
-            }
-        } else {
-            // 處理資料夾與對話
-            const selectedFolders = folders.filter(f => selectedIds.includes(f.id));
-            const folderConvs = [];
-            
-            // 收集資料夾內的所有對話 ID
-            selectedFolders.forEach(f => {
-                if(f.conversationIds) {
-                    f.conversationIds.forEach(cid => {
-                        const c = conversations.find(conv => conv.id === cid);
-                        if(c && !c.deletedAt) folderConvs.push(c);
-                    });
-                }
-            });
-
-            zip.file('folders.json', JSON.stringify(selectedFolders));
-            zip.file('conversations.json', JSON.stringify(folderConvs));
-        }
-
-        const blob = await zip.generateAsync({ type: "blob" });
-        const arrayBuffer = await blob.arrayBuffer();
-        
-        // 開始傳送
-        p2pConn.on('open', () => {
-            // 1. 傳送 Metadata
-            p2pConn.send({
-                type: 'meta',
-                size: arrayBuffer.byteLength,
-                dataType: p2pType
-            });
-
-            // 2. 傳送 Chunks
-            const totalSize = arrayBuffer.byteLength;
-            let offset = 0;
-
-            function sendNextChunk() {
-                if (offset >= totalSize) {
-                    p2pConn.send({ type: 'end' });
-                    updateP2PProgress(100, "傳送完成！");
-                    return;
-                }
-
-                const chunk = arrayBuffer.slice(offset, offset + CHUNK_SIZE);
-                p2pConn.send({
-                    type: 'chunk',
-                    data: chunk,
-                    offset: offset
-                });
-
-                offset += chunk.byteLength;
-                const percent = (offset / totalSize) * 100;
-                updateP2PProgress(percent, `正在傳送... ${Math.round(percent)}%`);
-                
-                // 使用 setTimeout 避免阻塞 UI
-                setTimeout(sendNextChunk, 5); // 小延遲
-            }
-
-            sendNextChunk();
-        });
-    }
-
-    // 啟動接收方介面
-    function startP2PReceiverUI() {
-        document.getElementById('p2p-step-role').classList.add('hidden');
-        document.getElementById('p2p-step-connect').classList.remove('hidden');
-        document.getElementById('p2p-code-input').value = '';
-        document.getElementById('p2p-code-input').focus();
-    }
-
-    // 執行接收連線
-    function connectToSender(code) {
-        const peerId = `astra-p2p-${code.toUpperCase()}`;
-        
-        p2pPeer = new Peer(); // 自動產生 ID，因為我們是接收端
-        
-        document.getElementById('p2p-step-connect').classList.add('hidden');
-        document.getElementById('p2p-step-progress').classList.remove('hidden');
-        updateP2PProgress(5, "正在連線...");
-
-        p2pPeer.on('open', () => {
-            p2pConn = p2pPeer.connect(peerId);
-            setupReceiverConnection();
-        });
-
-        p2pPeer.on('error', (err) => {
-            console.error(err);
-            showNotification("連線失敗，請檢查代碼", "error");
-            resetP2PUI();
-            startP2PReceiverUI();
-        });
-    }
-
-    // 處理接收邏輯
-    function setupReceiverConnection() {
-        let receivedBuffer = [];
-        let receivedSize = 0;
-        let totalSize = 0;
-        let dataType = '';
-
-        p2pConn.on('open', () => {
-            updateP2PProgress(10, "已連線，等待資料...");
-        });
-
-        p2pConn.on('data', async (data) => {
-            if (data.type === 'meta') {
-                totalSize = data.size;
-                dataType = data.dataType;
-                receivedBuffer = [];
-                receivedSize = 0;
-                updateP2PProgress(10, "開始接收...");
-            } else if (data.type === 'chunk') {
-                receivedBuffer.push(data.data); // 收集 ArrayBuffer
-                receivedSize += data.data.byteLength;
-                const percent = (receivedSize / totalSize) * 100;
-                updateP2PProgress(percent, `正在接收... ${Math.round(percent)}%`);
-            } else if (data.type === 'end') {
-                updateP2PProgress(100, "接收完成，正在解壓縮...");
-                await processReceivedData(receivedBuffer, dataType);
-            }
-        });
-        
-        // 如果連線斷開
-        p2pConn.on('close', () => {
-             if(receivedSize < totalSize && totalSize > 0) {
-                 showNotification("傳輸中斷", "error");
-             }
-        });
-    }
-
-    async function processReceivedData(buffers, type) {
-        try {
-            const blob = new Blob(buffers);
-            const zip = await JSZip.loadAsync(blob);
-            
-            if (type === 'astras') {
-                let count = 0;
-                const files = Object.keys(zip.files);
-                for (const filename of files) {
-                    if (filename.startsWith('astra_') && filename.endsWith('.json')) {
-                        const content = await zip.file(filename).async("string");
-                        const astraData = JSON.parse(content);
-                        
-                        // 檢查重複：如果 id 已存在，生成新 id
-                        if (astras.some(a => a.id === astraData.id)) {
-                            astraData.id = crypto.randomUUID();
-                            astraData.name += " (匯入)";
-                        }
-                        // 確保它是自訂的
-                        astraData.officialId = null;
-                        
-                        astras.unshift(astraData);
-                        count++;
-                    }
-                }
-                showNotification(`成功接收 ${count} 個 Astras！`, 'success');
-                renderAstras();
-            } else {
-                // 資料夾
-                const foldersContent = await zip.file('folders.json').async("string");
-                const convsContent = await zip.file('conversations.json').async("string");
-                
-                const importedFolders = JSON.parse(foldersContent);
-                const importedConvs = JSON.parse(convsContent);
-                
-                // ID 對照表 (舊 ID -> 新 ID)
-                const idMap = {};
-
-                // 1. 先處理對話，並賦予新 ID
-                importedConvs.forEach(conv => {
-                    const oldId = conv.id;
-                    const newId = crypto.randomUUID();
-                    idMap[oldId] = newId;
-                    conv.id = newId;
-                    
-                    // 清除舊的 folderId，稍後重設
-                    conv.folderId = null; 
-                    
-                    // 檢查 Astras 依賴
-                    if(conv.astrasId && !astras.find(a => a.id === conv.astrasId)) {
-                        conv.astrasId = null; // 如果本地沒有該 Astra，就移除關聯
-                    }
-                    
-                    conversations.unshift(conv);
-                });
-
-                // 2. 處理資料夾
-                importedFolders.forEach(folder => {
-                    // 如果資料夾名稱重複，加後綴
-                    let folderName = folder.name;
-                    if(folders.some(f => f.name === folderName)) {
-                        folderName += " (分享)";
-                    }
-                    
-                    const newFolderId = createNewFolder(folderName);
-                    const newFolder = folders.find(f => f.id === newFolderId);
-                    
-                    // 還原屬性
-                    newFolder.color = folder.color;
-                    newFolder.icon = folder.icon;
-                    newFolder.textColor = folder.textColor;
-
-                    // 連結對話
-                    folder.conversationIds.forEach(oldConvId => {
-                        const newConvId = idMap[oldConvId];
-                        if(newConvId) {
-                            moveConversationToFolder(newConvId, newFolderId);
-                        }
-                    });
-                });
-                
-                showNotification(`成功接收 ${importedFolders.length} 個資料夾與 ${importedConvs.length} 則對話！`, 'success');
-                renderAll();
-            }
-
-            await saveAppData();
-            setTimeout(() => {
-                toggleModal(document.getElementById('p2p-share-modal'), false);
-            }, 1500);
-
-        } catch (e) {
-            console.error(e);
-            showNotification("資料解析失敗", "error");
-        }
-    }
-
-    function updateP2PProgress(percent, text) {
-        document.getElementById('p2p-progress-bar').style.width = `${percent}%`;
-        document.getElementById('p2p-percentage').textContent = `${Math.round(percent)}%`;
-        if (text) document.getElementById('p2p-status-text').textContent = text;
-    }
-
-    // 啟動 QR Code 掃描器
-    function startQRScanner() {
-        const readerElem = document.getElementById('p2p-reader');
-        readerElem.classList.remove('hidden');
-        
-        html5QrcodeScanner = new Html5Qrcode("p2p-reader");
-        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-        
-        html5QrcodeScanner.start({ facingMode: "environment" }, config, (decodedText) => {
-            // 掃描成功
-            // 假設 QR code 內容就是 5 碼代碼
-            // 簡單過濾：只取最後 5 碼 (如果使用者不小心加入前綴)
-            let code = decodedText.trim();
-            if (code.length > 5) code = code.slice(-5);
-            
-            document.getElementById('p2p-code-input').value = code;
-            html5QrcodeScanner.stop().then(() => {
-                readerElem.classList.add('hidden');
-                connectToSender(code);
-            });
-        }).catch(err => {
-            console.error(err);
-            showNotification("無法啟動相機", "error");
-        });
-    }
-            setupHistorySidebarInteractions(); // 啟用側邊欄的點擊跳轉功能
-    setupHistorySidebarTriggers();   // 啟用側邊欄的滑動和懸停觸發功能
-            ALL_ELEMENTS.showPromptsBtn.addEventListener('click', () => {
-    const container = ALL_ELEMENTS.followUpContainer;
-    
-    // 直接切換容器的顯示/隱藏
-    container.classList.toggle('hidden');
-    
-    // 根據容器「現在」是否可見，來決定按鈕是否為 active (黃色)
-    const isVisible = !container.classList.contains('hidden');
-    ALL_ELEMENTS.showPromptsBtn.classList.toggle('active', isVisible);
-});
-        const followUpContainer = document.getElementById('follow-up-container');
-        if (followUpContainer) {
-            const stopPropagation = (e) => e.stopPropagation();
-            followUpContainer.addEventListener('touchstart', stopPropagation);
-            followUpContainer.addEventListener('touchmove', stopPropagation);
-            followUpContainer.addEventListener('touchend', stopPropagation);
-        }
-            ALL_ELEMENTS.shareAstrasBtn = document.getElementById('share-astras-btn');
-            ALL_ELEMENTS.shareFoldersBtn = document.getElementById('share-folders-btn');
-            
-            ALL_ELEMENTS.shareAstrasBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                initP2P('astras');
-            });
-            
-            ALL_ELEMENTS.shareFoldersBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                initP2P('folders');
-            });
-
-            document.getElementById('close-p2p-modal-btn').addEventListener('click', () => {
-                toggleModal(document.getElementById('p2p-share-modal'), false);
-                resetP2PUI();
-            });
-
-            document.getElementById('p2p-role-sender').addEventListener('click', () => {
-                p2pMode = 'sender';
-                showP2PSelection();
-            });
-
-            document.getElementById('p2p-role-receiver').addEventListener('click', () => {
-                p2pMode = 'receiver';
-                startP2PReceiverUI();
-            });
-
-            document.getElementById('p2p-confirm-selection-btn').addEventListener('click', () => {
-                startP2PSender();
-            });
-
-            document.getElementById('p2p-connect-btn').addEventListener('click', () => {
-                const code = document.getElementById('p2p-code-input').value.trim();
-                if (code.length !== 5) {
-                    showNotification("請輸入正確的 5 碼代碼", "warning");
-                    return;
-                }
-                connectToSender(code);
-            });
-
-            document.getElementById('p2p-start-scan-btn').addEventListener('click', () => {
-                startQRScanner();
             });
             // ==========================================
             // ✨ ASTRAS 音樂播放器邏輯 (v3 最終版)
