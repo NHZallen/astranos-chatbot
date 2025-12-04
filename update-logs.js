@@ -1,5 +1,15 @@
 ﻿const updateLogs = [
          {
+    "version": "16.4.2",
+    "date": "2025-12-04",
+    "content": [
+        "<strong>【免費視覺模型登場，高性價比再升級】</strong>",
+        "本次更新引入 Amazon Nova 2 Lite 與 DeepSeek V3.2，提供零成本的圖像辨識體驗與更經濟實惠的文字處理選擇。",
+        "<strong>✨ 更新重點：</strong>",
+        "<ul><li><strong>👁️ 免費視覺：</strong> 新增 <strong>Amazon Nova 2 Lite</strong>，支援圖像輸入且完全免費。</li><li><strong>🧠 精省文字：</strong> 新增 <strong>DeepSeek V3.2</strong>，提供極具競爭力的費率與強大推理能力。</li></ul>",
+        "Astra 開發團隊 敬上"
+    ],
+         {
     "version": "16.4.1",
     "date": "2025-11-28",
     "content": [
@@ -703,6 +713,7 @@
     // 未來的新版本請加在此處最上方
 
 ];
+
 
 
 
