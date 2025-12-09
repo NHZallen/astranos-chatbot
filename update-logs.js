@@ -1,5 +1,16 @@
 ﻿const updateLogs = [
          {
+    "version": "16.4.3",
+    "date": "2025-12-10",
+    "content": [
+        "<strong>【免費編程模型登場，Grok 進入正式營運】</strong>",
+        "本次更新引入強大的免費編程助手 Mistral Devstral 2512，並針對 Grok 4.1 Fast 進行了正式定價調整，持續優化您的模型選擇陣容。",
+        "<strong>✨ 更新重點：</strong>",
+        "<ul><li><strong>💻 免費編程：</strong> 新增 <strong>Mistral Devstral 2512</strong>，專為代碼生成與技術問答優化，且完全免費。</li><li><strong>💰 費率更新：</strong> <strong>Grok 4.1 Fast</strong> 結束限時免費，更新為正式費率（輸入 $0.20 / 輸出 $0.50），並移除舊版免費通道以確保服務穩定性。</li></ul>",
+        "Astra 開發團隊 敬上"
+    ]
+},
+         {
     "version": "16.4.2",
     "date": "2025-12-04",
     "content": [
@@ -714,6 +725,7 @@
     // 未來的新版本請加在此處最上方
 
 ];
+
 
 
 
